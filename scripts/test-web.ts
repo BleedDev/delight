@@ -1,0 +1,298 @@
+/**
+ * End-to-end check against the real, current Discord web client (logged out, headless Chrome).
+ * Injects the built renderer with a fake DelightNative, then verifies the core works on Discord's
+ * actual bundle: runtime capture, finders, source patches, export hooks, hot reload, and the UI.
+ *
+ *   node scripts/test-web.ts [--headed]
+ *
+ * Runs on Node (native TS type stripping): playwright's browser transports hang under Bun on Windows.
+ */
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
+import { join, resolve } from "path";
+import { chromium } from "playwright-core";
+
+import type { BootData, PluginPayload } from "../src/shared/ipc";
+
+const ROOT = resolve(import.meta.dirname, "..");
+const DIST = join(ROOT, "dist");
+const OUT = join(ROOT, "test-results");
+mkdirSync(OUT, { recursive: true });
+
+const CHROME_PATHS = [
+    "C:/Program Files/Google/Chrome/Application/chrome.exe",
+    "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+];
+
+const plugins: PluginPayload[] = readdirSync(join(DIST, "plugins")).map(id => {
+    const dir = join(DIST, "plugins", id);
+    const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
+    return { manifest, code: readFileSync(join(dir, "index.js"), "utf8"), source: "dev" };
+});
+
+const boot: BootData = {
+    version: "test",
+    dataDir: "C:/fake",
+    settings: { quickCss: true, plugins: { experiments: { enabled: true } } },
+    plugins,
+    quickCss: "",
+};
+
+const renderer = readFileSync(join(DIST, "core", "renderer.js"), "utf8");
+
+/** Runs in the page before Discord: stands in for the preload bridge */
+function fakeNative(bootData: BootData) {
+    if (window !== window.top) return;
+    const pluginListeners: ((change: unknown) => void)[] = [];
+    (window as any).__test = { pluginListeners, savedSettings: null, nativeCalls: [] as unknown[] };
+    (window as any).DelightNative = {
+        boot: () => structuredClone(bootData),
+        saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
+        saveQuickCss: async () => { },
+        onQuickCssChange: () => { },
+        onPluginChange: (cb: (c: unknown) => void) => void pluginListeners.push(cb),
+        callNative: async (...args: unknown[]) => ((window as any).__test.nativeCalls.push(args), 42),
+        setNativeRunning: async () => { },
+        openPath: async () => "",
+        relaunch: async () => { },
+    };
+}
+
+const results: { name: string; ok: boolean; detail?: unknown; }[] = [];
+function check(name: string, ok: boolean, detail?: unknown) {
+    results.push({ name, ok, detail });
+    console.log(`${ok ? "\x1b[32m✓" : "\x1b[31m✗"} ${name}\x1b[0m${detail !== undefined ? `  \x1b[2m${JSON.stringify(detail)}\x1b[0m` : ""}`);
+}
+
+const browser = await chromium.launch({
+    executablePath: CHROME_PATHS.find(existsSync),
+    headless: !process.argv.includes("--headed"),
+});
+const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+
+const delightErrors: string[] = [];
+page.on("console", msg => {
+    const text = msg.text();
+    if (text.includes("Delight")) {
+        if (msg.type() === "error") delightErrors.push(text);
+        if (process.argv.includes("--verbose") || msg.type() !== "log") console.log(`  [page ${msg.type()}] ${text.replace(/%c/g, "").slice(0, 300)}`);
+    }
+});
+page.on("pageerror", err => delightErrors.push(`pageerror: ${err.message}`));
+
+await page.addInitScript(fakeNative, boot);
+await page.addInitScript(renderer);
+await page.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });
+
+// ---- core ---------------------------------------------------------------------------------------
+
+await page.waitForFunction(() => (window as any).Delight?.plugins.getSnapshot().some((p: any) => p.running), null, { timeout: 60_000 });
+
+const core = await page.evaluate(() => {
+    const D = (window as any).Delight;
+    const { api } = D;
+    return {
+        wreq: !!D.wreq,
+        factories: Object.keys(D.wreq.m).length,
+        loaded: Object.keys(D.wreq.c).length,
+        react: api.React.version,
+        createRoot: typeof api.createRoot,
+        dispatcherSubs: Object.keys(api.Dispatcher._subscriptions ?? {}).length,
+        userStore: typeof api.getStore("UserStore")?.getCurrentUser,
+        running: D.plugins.getSnapshot().filter((p: any) => p.running).map((p: any) => p.manifest.id),
+    };
+});
+check("captured __webpack_require__", core.wreq, { factories: core.factories, loaded: core.loaded });
+check("found React", typeof core.react === "string", core.react);
+check("found createRoot", core.createRoot === "function");
+check("found Flux dispatcher", core.dispatcherSubs > 10, { subscriptions: core.dispatcherSubs });
+check("found UserStore by name", core.userStore === "function");
+check("enabled plugins started", ["clear-urls", "experiments", "no-track"].every(id => core.running.includes(id)), core.running);
+
+// ---- flux ---------------------------------------------------------------------------------------
+
+const flux = await page.evaluate(async () => {
+    const { Dispatcher } = (window as any).Delight.api;
+    let got: unknown = null;
+    const handler = (a: any) => void (got = a.value);
+    Dispatcher.subscribe("DELIGHT_TEST", handler);
+    await Dispatcher.dispatch({ type: "DELIGHT_TEST", value: 7 });
+    Dispatcher.unsubscribe("DELIGHT_TEST", handler);
+    return got;
+});
+check("flux subscribe + dispatch", flux === 7);
+
+// ---- source patch -------------------------------------------------------------------------------
+
+const patch = await page.evaluate(() => {
+    const D = (window as any).Delight;
+    const diag = D.diagnosePatches().find((d: any) => d.plugin === "experiments");
+    let isDeveloper: unknown;
+    try {
+        isDeveloper = D.api.getStore("DeveloperExperimentStore").isDeveloper;
+    } catch (e) {
+        isDeveloper = String(e);
+    }
+    return { health: diag?.health, modules: diag?.modules, errors: diag?.errors, isDeveloper };
+});
+check("experiments source patch applied", patch.health === "applied", patch);
+check("DeveloperExperimentStore.isDeveloper is true", patch.isDeveloper === true);
+
+// ---- export hooks -------------------------------------------------------------------------------
+
+const hooks = await page.evaluate(async () => {
+    const { api, plugins } = (window as any).Delight;
+    // MessageActions may be lazy on the login page, load it the way Discord would
+    let actions = api.findByProps("sendMessage", "editMessage");
+    if (!actions) {
+        const [id] = api.findModuleIds("sendMessage(", "editMessage(");
+        if (id) api.requireModule(id);
+        actions = api.findByProps("sendMessage", "editMessage");
+    }
+    if (!actions) return { found: false };
+
+    const hookedByPlugin = api.getUnhooked(actions.sendMessage) !== actions.sendMessage;
+
+    // Instead-hook so nothing hits the network; clear-urls' before-hook still runs first
+    let captured: any;
+    const unhook = api.hook(actions, "sendMessage", "instead", (ctx: any) => {
+        captured = ctx.args[1].content;
+        return Promise.resolve();
+    }, "test");
+    await actions.sendMessage("0", { content: "look https://example.com/a?utm_source=x&id=5&si=abc ok" });
+    unhook();
+
+    await plugins.setEnabled("clear-urls", false);
+    const restored = api.getUnhooked(actions.sendMessage) === actions.sendMessage;
+    await plugins.setEnabled("clear-urls", true);
+    const rehooked = api.getUnhooked(actions.sendMessage) !== actions.sendMessage;
+
+    return { found: true, hookedByPlugin, captured, restored, rehooked };
+});
+check("clear-urls hooked sendMessage", !!hooks.found && !!hooks.hookedByPlugin, hooks);
+check("before-hook rewrote the message", hooks.captured === "look https://example.com/a?id=5 ok", hooks.captured);
+check("disabling restores the original function", !!hooks.restored);
+check("re-enabling hooks again", !!hooks.rehooked);
+
+// ---- hot reload ---------------------------------------------------------------------------------
+
+const hot = await page.evaluate(async () => {
+    const { plugins } = (window as any).Delight;
+    const test = (window as any).__test;
+    const payload = {
+        source: "dev",
+        manifest: { id: "hot-test", name: "Hot Test", enabledByDefault: true },
+        code: `module.exports = { default: { start(ctx) { window.__hotVersion = 1; ctx.onDispose(() => window.__hotDisposed = (window.__hotDisposed || 0) + 1); } } };`,
+    };
+    test.pluginListeners.forEach((cb: any) => cb({ type: "upsert", plugin: payload }));
+    await new Promise(r => setTimeout(r, 50));
+    const v1 = (window as any).__hotVersion;
+
+    payload.code = payload.code.replace("__hotVersion = 1", "__hotVersion = 2");
+    test.pluginListeners.forEach((cb: any) => cb({ type: "upsert", plugin: payload }));
+    await new Promise(r => setTimeout(r, 50));
+    const v2 = (window as any).__hotVersion;
+    const disposedOnReload = (window as any).__hotDisposed;
+
+    test.pluginListeners.forEach((cb: any) => cb({ type: "remove", id: "hot-test" }));
+    return { v1, v2, disposedOnReload, disposedTotal: (window as any).__hotDisposed, stillListed: !!plugins.get("hot-test") };
+});
+check("hot reload swaps plugin code live", hot.v1 === 1 && hot.v2 === 2, hot);
+check("old instance disposed on reload and removal", hot.disposedOnReload === 1 && hot.disposedTotal === 2 && !hot.stillListed);
+
+// ---- live module replacement --------------------------------------------------------------------
+
+const live = await page.evaluate(async () => {
+    const { plugins, api, wreq } = (window as any).Delight;
+    const test = (window as any).__test;
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+    // Any loaded module that just exports a URL constant: side-effect free, safe to re-run
+    let target: { id: string; key: string; url: string; } | undefined;
+    for (const id in wreq.c) {
+        const src = Function.prototype.toString.call(wreq.m[id]);
+        const m = src.match(/^\d+\(e,t,n\)\{(?:"use strict";)?n\.d\(t,\{(\w+):\(\)=>(\w)\}\);(?:let|var|const) \2="(https:\/\/[\w.\/-]+)"\}$/);
+        if (m && api.findModuleIds(`"${m[3]}"`).length === 1) {
+            target = { id, key: m[1], url: m[3] };
+            break;
+        }
+    }
+    if (!target) return { found: false };
+
+    const exportsObject = wreq.c[target.id].exports;
+    const before = exportsObject[target.key];
+    const payload = {
+        source: "dev",
+        manifest: { id: "live-test", name: "Live Test", enabledByDefault: true },
+        code: `module.exports = { default: { patches: [{ find: ${JSON.stringify(`"${target.url}"`)}, replace: { match: ${JSON.stringify(target.url)}, with: "https://delight.invalid/live" } }] } };`,
+    };
+
+    test.pluginListeners.forEach((cb: any) => cb({ type: "upsert", plugin: payload }));
+    await sleep(50);
+    const after = exportsObject[target.key];
+    const needsReload = plugins.get("live-test").needsReload;
+    const sameObject = wreq.c[target.id].exports === exportsObject;
+
+    await plugins.setEnabled("live-test", false);
+    const reverted = exportsObject[target.key];
+    test.pluginListeners.forEach((cb: any) => cb({ type: "remove", id: "live-test" }));
+
+    // Unsafe module: experiments patches a Flux store, which must not be re-run
+    const experiments = plugins.get("experiments");
+    return { found: true, target, before, after, reverted, needsReload, sameObject, storeReason: experiments.reloadReason ?? null };
+});
+check("found a safe loaded module to live-patch", !!live.found, live.target);
+check("source patch applied live, no reload", live.after === "https://delight.invalid/live" && live.needsReload === false && !!live.sameObject, live);
+check("disabling reverts the module live", live.reverted === live.before);
+
+// ---- native bridge ------------------------------------------------------------------------------
+
+const native = await page.evaluate(async () => {
+    const state = (window as any).Delight.plugins.get("no-track");
+    return { result: await state.ctx.native.call("getBlockedCount"), calls: (window as any).__test.nativeCalls };
+});
+check("ctx.native.call reaches the bridge", native.result === 42 && native.calls[0]?.[0] === "no-track", native);
+
+// ---- UI -----------------------------------------------------------------------------------------
+
+await page.keyboard.press("Control+Shift+D");
+await page.waitForSelector(".dl-panel", { timeout: 5000 });
+await page.waitForTimeout(300);
+await page.screenshot({ path: join(OUT, "ui-plugins.png") });
+check("Ctrl+Shift+D opens the panel", true);
+
+const toggled = await page.evaluate(async () => {
+    const sw = document.querySelector('[aria-labelledby="dl-plugin-experiments"][role="switch"]') as HTMLButtonElement;
+    const before = sw.getAttribute("aria-checked");
+    sw.click();
+    await new Promise(r => setTimeout(r, 400));
+    const state = (window as any).Delight.plugins.get("experiments");
+    const after = document.querySelector('[aria-labelledby="dl-plugin-experiments"][role="switch"]')!.getAttribute("aria-checked");
+    return { before, after, needsReload: state.needsReload, reason: state.reloadReason, saved: (window as any).__test.savedSettings?.plugins?.experiments };
+});
+check("switch disables plugin and persists", toggled.before === "true" && toggled.after === "false" && toggled.saved?.enabled === false, toggled);
+// Experiments patches a Flux store: re-running it would register a second store, so it must refuse
+check("unsafe module (Flux store) refuses live replacement, asks for reload", toggled.needsReload && /Flux store/.test(toggled.reason ?? ""), toggled.reason);
+await page.screenshot({ path: join(OUT, "ui-reload-banner.png") });
+
+await page.click("#dl-tab-patches");
+await page.waitForTimeout(200);
+await page.screenshot({ path: join(OUT, "ui-patches.png") });
+
+await page.click("#dl-tab-quickcss");
+await page.fill("#dl-quickcss", "body { outline: 3px solid rgb(255, 0, 128) !important; }");
+await page.waitForTimeout(500);
+const quickCss = await page.evaluate(() => getComputedStyle(document.body).outlineColor);
+check("Quick CSS applies live", quickCss === "rgb(255, 0, 128)", quickCss);
+await page.screenshot({ path: join(OUT, "ui-quickcss.png") });
+
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+check("Escape closes the panel", !(await page.$(".dl-panel")));
+
+check("no Delight errors in console", delightErrors.length === 0, delightErrors.slice(0, 5));
+
+await browser.close();
+
+const failed = results.filter(r => !r.ok);
+console.log(`\n${results.length - failed.length}/${results.length} passed. Screenshots in test-results/`);
+process.exit(failed.length ? 1 : 0);

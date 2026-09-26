@@ -1,0 +1,432 @@
+/* Semantic tokens map onto Discord's theme variables, so the panel follows light, dark and custom themes */
+.dl-root {
+    --dl-bg-scrim: rgb(0 0 0 / 0.6);
+    --dl-bg-panel: var(--background-base-lower, var(--background-primary, #1e1f22));
+    --dl-bg-surface: var(--background-base-low, var(--background-secondary, #2b2d31));
+    --dl-bg-surface-hover: var(--background-modifier-hover, rgb(255 255 255 / 0.04));
+    --dl-bg-input: var(--input-background, var(--background-tertiary, #1a1b1e));
+    --dl-border: var(--border-subtle, rgb(255 255 255 / 0.08));
+    --dl-text-primary: var(--text-default, var(--text-normal, #dbdee1));
+    --dl-text-secondary: var(--text-muted, #949ba4);
+    --dl-text-on-accent: #fff;
+    --dl-accent-solid: #e0508f;
+    --dl-accent-solid-hover: #c93f7c;
+    --dl-status-success: var(--status-positive, #23a55a);
+    --dl-status-warning: var(--status-warning, #f0b232);
+    --dl-status-danger: var(--status-danger, #f23f43);
+    --dl-focus-ring: var(--focus-primary, #00a8fc);
+
+    --dl-radius-panel: 16px;
+    --dl-space-inner: 8px;
+    --dl-radius-card: 10px;
+    --dl-radius-control: 6px;
+    --dl-duration-fast: 150ms;
+    --dl-duration-base: 200ms;
+
+    color: var(--dl-text-primary);
+    font-family: var(--font-primary, "gg sans", system-ui, sans-serif);
+}
+
+.dl-root *,
+.dl-root *::before,
+.dl-root *::after {
+    box-sizing: border-box;
+}
+
+.dl-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--dl-bg-scrim);
+}
+
+.dl-panel {
+    display: flex;
+    flex-direction: column;
+    inline-size: min(880px, 100%);
+    block-size: min(720px, 100%);
+    border-radius: var(--dl-radius-panel);
+    background: var(--dl-bg-panel);
+    border: 1px solid var(--dl-border);
+    box-shadow: 0 24px 64px rgb(0 0 0 / 0.45);
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .dl-scrim { animation: dl-fade-in var(--dl-duration-base) ease-out; }
+    .dl-panel { animation: dl-panel-in var(--dl-duration-base) ease-out; }
+    .dl-scrim[data-closing] { animation: dl-fade-out var(--dl-duration-fast) ease-in forwards; }
+    .dl-scrim[data-closing] .dl-panel { animation: dl-panel-out var(--dl-duration-fast) ease-in forwards; }
+}
+
+@keyframes dl-fade-in { from { opacity: 0; } }
+@keyframes dl-fade-out { to { opacity: 0; } }
+@keyframes dl-panel-in { from { opacity: 0; scale: 0.98; } }
+@keyframes dl-panel-out { to { opacity: 0; scale: 0.98; } }
+
+.dl-header {
+    display: flex;
+    align-items: center;
+    gap: var(--dl-space-inner);
+    padding: 16px 16px 0 20px;
+}
+
+.dl-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    text-wrap: balance;
+}
+
+.dl-version {
+    color: var(--dl-text-secondary);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.dl-header-actions {
+    display: flex;
+    gap: var(--dl-space-inner);
+    margin-inline-start: auto;
+}
+
+.dl-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 16px 20px 0;
+    border-block-end: 1px solid var(--dl-border);
+}
+
+.dl-tab {
+    all: unset;
+    position: relative;
+    padding: 8px 12px 12px;
+    color: var(--dl-text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.dl-tab[aria-selected="true"] {
+    color: var(--dl-text-primary);
+}
+
+.dl-tab[aria-selected="true"]::after {
+    content: "";
+    position: absolute;
+    inset-inline: 12px;
+    inset-block-end: -1px;
+    block-size: 2px;
+    border-radius: 2px;
+    background: var(--dl-accent-solid);
+}
+
+@media (hover: hover) {
+    .dl-tab:hover { color: var(--dl-text-primary); }
+}
+
+.dl-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px 20px;
+}
+
+.dl-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dl-space-inner);
+}
+
+.dl-section + .dl-section {
+    margin-block-start: 24px;
+}
+
+.dl-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--dl-space-inner);
+    margin-block-end: 16px;
+}
+
+/* ---- controls ---------------------------------------------------------------------------- */
+
+.dl-button {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-block-size: 32px;
+    padding-inline: 12px;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-surface);
+    border: 1px solid var(--dl-border);
+    color: var(--dl-text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: scale var(--dl-duration-base) ease-out;
+}
+
+.dl-button[data-variant="accent"] {
+    background: var(--dl-accent-solid);
+    border-color: transparent;
+    color: var(--dl-text-on-accent);
+}
+
+.dl-button[data-variant="icon"] {
+    min-inline-size: 32px;
+    padding: 0;
+}
+
+@media (hover: hover) {
+    .dl-button:hover { background: var(--dl-bg-surface-hover); }
+    .dl-button[data-variant="accent"]:hover { background: var(--dl-accent-solid-hover); }
+}
+
+.dl-button:active { scale: 0.97; }
+
+.dl-root :focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+.dl-input,
+.dl-textarea,
+.dl-select {
+    inline-size: 100%;
+    padding: 8px 10px;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-input);
+    border: 1px solid var(--dl-border);
+    color: var(--dl-text-primary);
+    font: inherit;
+    font-size: 14px;
+}
+
+.dl-input:focus-visible,
+.dl-textarea:focus-visible,
+.dl-select:focus-visible {
+    outline-offset: 0;
+}
+
+.dl-search {
+    flex: 1;
+}
+
+.dl-textarea {
+    resize: vertical;
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 13px;
+    line-height: 1.5;
+    tab-size: 4;
+}
+
+.dl-code-editor {
+    min-block-size: 420px;
+}
+
+.dl-switch {
+    all: unset;
+    flex: none;
+    position: relative;
+    inline-size: 40px;
+    block-size: 24px;
+    border-radius: 12px;
+    background: var(--dl-text-secondary);
+    cursor: pointer;
+    transition: background-color var(--dl-duration-fast) ease-out;
+}
+
+.dl-switch::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 3px;
+    inset-inline-start: 3px;
+    inline-size: 18px;
+    block-size: 18px;
+    border-radius: 9px;
+    background: #fff;
+    transition: translate var(--dl-duration-fast) ease-out;
+}
+
+.dl-switch[aria-checked="true"] { background: var(--dl-status-success); }
+.dl-switch[aria-checked="true"]::after { translate: 16px 0; }
+
+/* ---- cards ------------------------------------------------------------------------------- */
+
+.dl-card {
+    border-radius: var(--dl-radius-card);
+    background: var(--dl-bg-surface);
+    border: 1px solid var(--dl-border);
+}
+
+.dl-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+}
+
+.dl-card-main {
+    flex: 1;
+    min-inline-size: 0;
+}
+
+.dl-card-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.dl-card-desc {
+    margin: 4px 0 0;
+    color: var(--dl-text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+}
+
+.dl-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 14px 14px;
+    border-block-start: 1px solid var(--dl-border);
+    padding-block-start: 14px;
+}
+
+.dl-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--dl-bg-surface-hover);
+    border: 1px solid var(--dl-border);
+    color: var(--dl-text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.dl-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.dl-status[data-tone="success"] { color: var(--dl-status-success); }
+.dl-status[data-tone="warning"] { color: var(--dl-status-warning); }
+.dl-status[data-tone="danger"] { color: var(--dl-status-danger); }
+.dl-status[data-tone="muted"] { color: var(--dl-text-secondary); }
+
+.dl-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-block-end: 16px;
+    padding: 10px 14px;
+    border-radius: var(--dl-radius-card);
+    border: 1px solid var(--dl-status-warning);
+    background: color-mix(in oklab, var(--dl-status-warning) 12%, transparent);
+    font-size: 14px;
+}
+
+.dl-banner > span { flex: 1; }
+
+.dl-error {
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: var(--dl-radius-control);
+    background: color-mix(in oklab, var(--dl-status-danger) 12%, transparent);
+    color: var(--dl-text-primary);
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* ---- fields ------------------------------------------------------------------------------ */
+
+.dl-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dl-field-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dl-field-row > .dl-field-text { flex: 1; }
+
+.dl-label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.dl-hint {
+    margin: 0;
+    color: var(--dl-text-secondary);
+    font-size: 13px;
+    text-wrap: pretty;
+}
+
+.dl-mono {
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.dl-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--dl-text-secondary);
+    font-size: 14px;
+    text-wrap: balance;
+}
+
+.dl-empty strong {
+    display: block;
+    margin-block-end: 4px;
+    color: var(--dl-text-primary);
+    font-size: 16px;
+}
+
+.dl-sr-only {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* The dialog container takes focus on open so screen readers land inside it, it isn't a control */
+.dl-panel:focus {
+    outline: none;
+}
+
+/* Inside Discord's settings panel: Discord provides the chrome and padding */
+.dl-embedded {
+    padding-block-end: 24px;
+}

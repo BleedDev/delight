@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "lib": ["ES2023", "DOM", "DOM.Iterable"],
+        "jsx": "react-jsx",
+        "strict": true,
+        "noImplicitOverride": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "types": ["bun", "node"],
+        "paths": {
+            "@delight/api": ["./src/api/index.ts"],
+            "@delight/api/*": ["./src/api/*"],
+            "@shared/*": ["./src/shared/*"]
+        }
+    },
+    "include": ["src", "plugins", "userplugins", "scripts", "tests"]
+}

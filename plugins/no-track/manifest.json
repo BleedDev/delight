@@ -1,0 +1,8 @@
+{
+    "id": "no-track",
+    "name": "No Track",
+    "description": "Blocks Discord's analytics and metrics requests before they leave your machine.",
+    "version": "1.0.0",
+    "authors": ["Delight"],
+    "enabledByDefault": true
+}
