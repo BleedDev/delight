@@ -450,9 +450,16 @@ const toolkit = await page.evaluate(async () => {
     const list = builtIns?.exports[builtIns.key]([1], true, false) ?? [];
     const command = list.find((c: any) => c.untranslatedName === "delight");
     const shrug = list.find((c: any) => c.untranslatedName === "shrug");
+    const nick = list.find((c: any) => c.untranslatedName === "nick");
+    // Replies go through Discord's sendBotMessage ("Only you can see this"): capture them
+    const botActions = api.findByProps("sendBotMessage", "sendMessage");
+    const replies: [string, string][] = [];
+    const unhookBot = botActions && api.hook(botActions, "sendBotMessage", "instead", (c: any) => void replies.push([c.args[0], c.args[1]]), "test");
+    (window as any).__botReplies = replies;
     // Discord runs it as execute(options, context)
-    const result = await command?.execute([{ name: "text", type: 3, value: "Command toast test" }], { channel: { id: "1" } });
-    const commandToast = await toastText("Command toast test");
+    const result = await command?.execute([{ name: "text", type: 3, value: "Command reply test" }], { channel: { id: "1" } });
+    const commandToast = replies.find(r => r[1] === "Command reply test") ?? null;
+    unhookBot?.();
 
     // Render Discord's real Menu with the context a message menu gets from the navId patch
     const root = document.createElement("div");
@@ -496,6 +503,7 @@ const toolkit = await page.evaluate(async () => {
         running, menuHooked, commandsHooked,
         command: command && { id: command.id, inputType: command.inputType, applicationId: command.applicationId, options: command.options?.length },
         shrug: shrug && { inputType: shrug.inputType, applicationId: shrug.applicationId },
+        nick: nick && { inputType: nick.inputType, applicationId: nick.applicationId },
         result: result ?? null, commandToast,
         rendered, copyToast, copied, renderError,
         listAfter, menuRestored, commandsRestored,
@@ -509,8 +517,8 @@ check("navId source patch applied, no errors", toolkit.navPatch?.health === "app
 check("navId rewrite hands menus their props and compiles on every navId module", toolkit.rewrite.modules >= 5 && !toolkit.rewrite.compileErrors.length && toolkit.rewrite.sample.includes('delightMenuArgs:arguments[0],navId:"clean-up-inactive-gdms"') && toolkit.rewrite.menuDestructuringKept, toolkit.rewrite);
 check("built-in commands module found", !!toolkit.builtIns && toolkit.listBefore.includes("shrug") && !toolkit.listBefore.includes("delight"), toolkit.builtIns);
 check("toolkit-demo started, Menu and command list hooked", toolkit.running && toolkit.menuHooked && toolkit.commandsHooked);
-check("/delight listed with Discord's built-ins", !!toolkit.command && toolkit.command.inputType === toolkit.shrug?.inputType && toolkit.command.applicationId === toolkit.shrug?.applicationId, toolkit.command);
-check("/delight runs locally and shows a toast", toolkit.result === null && toolkit.commandToast?.type === "success", toolkit.commandToast);
+check("/delight listed as a non-text built-in like /nick (Discord never sends its result)", !!toolkit.command && toolkit.command.inputType === toolkit.nick?.inputType && toolkit.command.applicationId === toolkit.nick?.applicationId && toolkit.command.inputType !== toolkit.shrug?.inputType, { command: toolkit.command, nick: toolkit.nick, shrug: toolkit.shrug });
+check("/delight replies ephemerally (Only you can see this), returns nothing for Discord to send", toolkit.result == null && JSON.stringify(toolkit.commandToast) === '["1","Command reply test"]', toolkit.commandToast);
 check("message menu shows the plugin's item next to Discord's", toolkit.rendered.includes("Native item") && toolkit.rendered.some((t: string) => t.includes("Copy Message ID (Delight)")), toolkit.renderError ?? toolkit.rendered);
 check("menu item gets the message from menu props and copies its id", toolkit.copied === "123456789" && toolkit.copyToast?.type === "success", { copied: toolkit.copied, toast: toolkit.copyToast });
 check("stopping the plugin removes its command and the command hook", !toolkit.listAfter.includes("delight") && toolkit.commandsRestored);
@@ -584,12 +592,16 @@ const silent = await page.evaluate(async () => {
     // /silenttyping toggles the setting and says so
     const builtIns = api.findExport(toolkit.filters.builtInCommands);
     const command = builtIns?.exports[builtIns.key]([1], true, false).find((c: any) => c.untranslatedName === "silenttyping");
-    await command?.execute([], { channel: { id: "1" } });
+    const botActions = api.findByProps("sendBotMessage", "sendMessage");
+    const replies: [string, string][] = [];
+    const unhookBot = botActions && api.hook(botActions, "sendBotMessage", "instead", (c: any) => void replies.push([c.args[0], c.args[1]]), "test");
+    const returned = await command?.execute([], { channel: { id: "1" } });
     const afterCommand = state?.ctx.settings.get("enabled");
-    const commandToast = await toastText("Silent typing off");
     await command?.execute([], { channel: { id: "1" } });
     const afterSecondCommand = state?.ctx.settings.get("enabled");
-    const commandToastOn = await toastText("Silent typing on");
+    unhookBot?.();
+    const commandToast = replies[0]?.[1] ?? null;
+    const commandToastOn = replies[1]?.[1] ?? null;
 
     // Chat bar button: the source patch lands in ChannelTextAreaButtons once that module runs
     const [buttonsModule] = api.findModuleIds('"ChannelTextAreaButtons"');
@@ -643,7 +655,7 @@ const silent = await page.evaluate(async () => {
 check("silent-typing: Discord's typing actions found", !!silent.typing && silent.untouchedBefore && silent.sentBefore, silent.typing);
 check("silent-typing: startTyping hooked and blocked while enabled, stopTyping untouched", silent.running && silent.hooked && silent.blocked && silent.stopStillSent);
 check("silent-typing: the Enabled setting lets typing through when off", silent.sentWhenSettingOff);
-check("silent-typing: /silenttyping toggles it with a toast", silent.command && silent.afterCommand === false && silent.afterSecondCommand === true && !!silent.commandToast && silent.commandToastOn?.type === "success", { after: [silent.afterCommand, silent.afterSecondCommand], toasts: [silent.commandToast, silent.commandToastOn] });
+check("silent-typing: /silenttyping toggles it and replies only to you", silent.command && silent.afterCommand === false && silent.afterSecondCommand === true && /off/.test(silent.commandToast ?? "") && /on/.test(silent.commandToastOn ?? ""), { after: [silent.afterCommand, silent.afterSecondCommand], replies: [silent.commandToast, silent.commandToastOn] });
 check("silent-typing: chat bar patch applied to ChannelTextAreaButtons", !silent.requireError && silent.patch?.health === "applied" && silent.patch.modules.includes(silent.buttonsModule), { patch: silent.patch, module: silent.buttonsModule, error: silent.requireError });
 check("silent-typing: button goes before the send button", JSON.stringify(silent.injectedKeys) === '["emoji","delight-silent-typing","submit"]', silent.injectedKeys);
 check("silent-typing: button renders with Discord's chat button and toggles", silent.discordButton && silent.wrapperClass.startsWith("buttonContainer_") && /on/.test(silent.labelOn ?? "") && /off/.test(silent.labelOff ?? "") && silent.settingAfterClick === false, { on: silent.labelOn, off: silent.labelOff, wrapper: silent.wrapperClass });

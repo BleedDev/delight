@@ -25,11 +25,12 @@ const settings = {
 
 let context: PluginContext<Settings> | undefined;
 
+/** Flips the setting and says what it is now */
 function toggle() {
-    if (!context) return;
+    if (!context) return "";
     const enabled = !context.settings.get("enabled");
     context.settings.set("enabled", enabled);
-    context.toast(enabled ? "Silent typing on: others won't see you typing" : "Silent typing off", { type: enabled ? "success" : "info" });
+    return enabled ? "Silent typing is on: others won't see you typing." : "Silent typing is off.";
 }
 
 let containerClass: string | undefined;
@@ -128,7 +129,8 @@ export default definePlugin({
         ctx.command({
             name: "silenttyping",
             description: "Turn silent typing on or off",
-            execute: toggle,
+            // An "Only you can see this" reply in the channel, nothing is ever sent
+            execute: () => ({ ephemeral: toggle() }),
         });
     },
 });

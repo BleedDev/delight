@@ -3,11 +3,15 @@
  *
  * Discord's command picker asks one function for the built-in commands every time it searches:
  * `getBuiltInCommands(commandTypes, includeAll, textOnly)` in the module that defines /tableflip.
- * An after-hook appends ours. Discord then calls `command.execute(options, context)` itself, and for
- * BUILT_IN_TEXT commands sends the returned `{ content }` as a message.
+ * An after-hook appends ours. Discord then calls `command.execute(options, context)` itself.
+ *
+ * Ours are registered as BUILT_IN (like /nick), never BUILT_IN_TEXT (like /shrug): Discord sends a
+ * text built-in's result as a message, and a command like /silenttyping must never post anything.
+ * Replies are ephemeral by default (Discord's own "Only you can see this" message); a real message is
+ * only sent when the plugin explicitly returns { content }.
  */
 import { Logger } from "../logger";
-import { functionSource } from "../webpack/find";
+import { filters, find, functionSource } from "../webpack/find";
 import { inModulesWith, SharedHook } from "./shared";
 import { showToast } from "./toasts";
 
@@ -44,13 +48,16 @@ export interface CommandContext {
     guild?: any;
     /** Discord's parsed options, as passed to built-in commands */
     rawOptions: { name: string; type: number; value: any; }[];
+    /** Reply with an ephemeral message only you can see (Discord's "Only you can see this") */
+    reply(content: string): void;
 }
 
-/** Return this from execute to have Discord send it as a message from you */
-export interface CommandResult {
-    content: string;
-    tts?: boolean;
-}
+/**
+ * What execute may return:
+ *   { ephemeral: "..." }  an "Only you can see this" reply (same as context.reply)
+ *   { content: "..." }    sent as a real message from you, visible to everyone in the channel
+ */
+export type CommandResult = { ephemeral: string; } | { content: string; tts?: boolean; };
 
 export interface CommandDefinition {
     /** Lowercase, no spaces, as typed after the slash */
@@ -63,10 +70,20 @@ export interface CommandDefinition {
     execute(args: Record<string, any>, context: CommandContext): void | CommandResult | Promise<void | CommandResult>;
 }
 
-// Discord's own values, used if its /shrug can't be read at runtime
+// Discord's own values, used if its /nick can't be read at runtime
 const CHAT_INPUT = 1;
-const BUILT_IN_TEXT = 1;
+const BUILT_IN = 0;
 const BUILT_IN_APPLICATION_ID = "-1";
+
+// MessageActions: sendBotMessage (ephemeral Clyde-style replies, what /nick uses) and sendMessage
+let messageActions: any;
+const actions = () => messageActions ??= find(filters.byProps("sendBotMessage", "sendMessage"));
+
+function replyEphemeral(channelId: string | undefined, content: string) {
+    const a = actions();
+    if (channelId && a?.sendBotMessage) a.sendBotMessage(channelId, content);
+    else showToast(content);
+}
 
 const commands = new Map<string, any>();
 let nextId = 10000;
@@ -89,7 +106,7 @@ function toDiscordCommand(def: CommandDefinition, owner: string) {
         untranslatedDescription: def.description,
         displayDescription: def.description,
         type: CHAT_INPUT,
-        inputType: BUILT_IN_TEXT,
+        inputType: BUILT_IN,
         applicationId: BUILT_IN_APPLICATION_ID,
         options: def.options?.map(option),
         predicate: def.predicate,
@@ -97,12 +114,18 @@ function toDiscordCommand(def: CommandDefinition, owner: string) {
         execute: async (rawOptions: CommandContext["rawOptions"], context: { channel: any; guild?: any; }) => {
             const args: Record<string, any> = {};
             for (const o of rawOptions ?? []) args[o.name] = o.value;
+            const channelId = context?.channel?.id;
+            const reply = (content: string) => replyEphemeral(channelId, content);
             try {
-                const result = await def.execute(args, { channel: context?.channel, guild: context?.guild, rawOptions });
-                if (result && typeof result.content === "string" && result.content) return result;
+                const result = await def.execute(args, { channel: context?.channel, guild: context?.guild, rawOptions, reply });
+                if (result && "ephemeral" in result && result.ephemeral) reply(result.ephemeral);
+                // Only on explicit request: a real message, sent by us (Discord never sends BUILT_IN results)
+                else if (result && "content" in result && result.content && channelId) {
+                    actions()?.sendMessage(channelId, { content: result.content, tts: result.tts ?? false, invalidEmojis: [], validNonShortcutEmojis: [] });
+                }
             } catch (err) {
                 logger.error(`/${def.name} (${owner}) threw`, err);
-                showToast(`/${def.name} failed: ${err instanceof Error ? err.message : err}`, { type: "failure" });
+                reply(`/${def.name} failed: ${err instanceof Error ? err.message : err}`);
             }
         },
     };
@@ -119,11 +142,12 @@ const commandsHook = new SharedHook(builtInCommandsFilter, "after", ({ args, res
     if (!commands.size || !Array.isArray(result)) return;
     const [types, , textOnly] = args as [number[], boolean, boolean];
 
-    // Copy Discord's own values from /shrug (a text built-in like ours), in case its enums change
-    const shrug = result.find((c: any) => c?.untranslatedName === "shrug");
+    // Copy Discord's own values from /nick (a non-text built-in like ours), in case its enums change
+    const nick = result.find((c: any) => c?.untranslatedName === "nick");
     const ours = [...commands.values()].filter(c => {
-        if (shrug) Object.assign(c, { type: shrug.type, inputType: shrug.inputType, applicationId: shrug.applicationId });
-        return (!Array.isArray(types) || types.includes(c.type)) && (!textOnly || !shrug || c.inputType === shrug.inputType);
+        if (nick) Object.assign(c, { type: nick.type, inputType: nick.inputType, applicationId: nick.applicationId });
+        // textOnly lists only commands that produce message text: ours never do
+        return (!Array.isArray(types) || types.includes(c.type)) && !textOnly;
     });
     return ours.length ? [...result, ...ours] : undefined;
 });

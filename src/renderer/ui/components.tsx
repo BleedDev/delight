@@ -64,24 +64,33 @@ export function TextField({ id, label, hideLabel, description, value, onChange, 
     multiline?: boolean;
     type?: string;
 }) {
-    const Native = DiscordUI.TextField.get;
-    if (Native) {
+    const hint = description && <p className="dl-hint" id={`${id}-hint`}>{description}</p>;
+    const labelEl = <label className={hideLabel ? "dl-sr-only" : "dl-label"} htmlFor={id}>{label}</label>;
+    const describedBy = description ? `${id}-hint` : undefined;
+
+    // Discord's inputs, with our label and description around them so every setting row reads the same
+    const NativeInput = DiscordUI.TextField.get;
+    const NativeArea = DiscordUI.TextArea.get;
+    if (!multiline && NativeInput) {
         return (
-            <Native
-                id={id}
-                label={label}
-                hideLabel={hideLabel}
-                description={description}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                multiline={multiline}
-                maxRows={multiline ? 8 : undefined}
-                type={type}
-            />
+            <div className="dl-field">
+                {labelEl}
+                <NativeInput
+                    {...{ id, value, onChange, placeholder, type, size: "md", fullWidth: true, "aria-label": label, "aria-describedby": describedBy } as any}
+                />
+                {hint}
+            </div>
         );
     }
-    const hint = description && <p className="dl-hint" id={`${id}-hint`}>{description}</p>;
+    if (multiline && NativeArea) {
+        return (
+            <div className="dl-field">
+                {labelEl}
+                <NativeArea {...{ id, value, onChange, placeholder, rows: 4, autosize: true, "aria-label": label, "aria-describedby": describedBy } as any} />
+                {hint}
+            </div>
+        );
+    }
     const common = { id, placeholder, value, "aria-describedby": description ? `${id}-hint` : undefined };
     return (
         <div className="dl-field">
