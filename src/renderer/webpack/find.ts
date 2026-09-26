@@ -1,3 +1,4 @@
+import { getUnhooked } from "../patching/hooks";
 import { lazy } from "../utils/lazy";
 import { getOriginalFactory, moduleListeners, stats, WebpackRequire, wreq } from "./runtime";
 
@@ -24,6 +25,9 @@ export interface FoundExport<T = any> {
 const sourceCache = new WeakMap<Function, string>();
 
 export function functionSource(fn: Function) {
+    // A hooked function is our wrapper: finders must see the code of what it wraps, otherwise
+    // hooking an export makes it unfindable by code for every other plugin
+    fn = getUnhooked(fn);
     let src = sourceCache.get(fn);
     if (src === undefined) {
         try {

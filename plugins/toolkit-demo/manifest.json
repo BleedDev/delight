@@ -1,0 +1,8 @@
+{
+    "id": "toolkit-demo",
+    "name": "Toolkit Demo",
+    "description": "Example of the plugin toolkit: a /delight command, a toast, and a Copy Message ID item in the message menu.",
+    "version": "1.0.0",
+    "authors": ["Delight"],
+    "enabledByDefault": false
+}

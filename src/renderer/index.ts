@@ -2,6 +2,7 @@
  * Renderer entry. Runs in Discord's page before any of Discord's scripts.
  */
 import * as api from "@delight/api";
+import { isPluginEnabled } from "@shared/ipc";
 
 import { Logger } from "./logger";
 import { Native } from "./native";
@@ -10,6 +11,7 @@ import { PluginManager } from "./plugins/manager";
 import { Settings } from "./settings";
 import { QuickCss } from "./styles";
 import { Themes } from "./themes";
+import { registerToolkitPatches, Toolkit } from "./toolkit";
 import { installHotkey, SettingsUI } from "./ui";
 import { installSettingsEntry } from "./ui/settingsEntry";
 import { onCommonReady } from "./webpack/common";
@@ -34,6 +36,7 @@ const Delight = {
     diagnosePatches,
     stats,
     pendingWaiters,
+    toolkit: Toolkit,
     get wreq() {
         return wreq;
     },
@@ -55,6 +58,7 @@ function boot() {
     // Themes first: Quick CSS goes after them in <head>, so it wins
     Themes.init(data.themes);
     QuickCss.init(data.quickCss);
+    registerToolkitPatches(data.plugins.filter(p => isPluginEnabled(data.settings, p.manifest)).map(p => p.code));
     PluginManager.boot(data.plugins);
     installHotkey();
     installSettingsEntry();
