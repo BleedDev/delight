@@ -7,8 +7,10 @@ import {
     parseRegistry,
     RegistryEntry,
     sha256Hex,
+    sortListings,
     storeAction,
     validateEntry,
+    validateThemeEntry,
     whyNotHash,
     whyNotManifest,
     whyNotStoreUrl,
@@ -112,6 +114,83 @@ describe("registry validation", () => {
         if (!("registry" in result)) throw new Error(result.error);
         expect(result.problems).toEqual([]);
         expect(result.registry.plugins.length).toBeGreaterThan(0);
+        // Every official plugin has a category, so the store's filters have something to show
+        expect(result.registry.plugins.every(p => p.tags.length > 0)).toBe(true);
+    });
+});
+
+describe("store page extras", () => {
+    test("changelog, screenshots, source and date are kept when valid, defaulted when missing", () => {
+        const entry = entryOf({
+            ...valid(),
+            updatedAt: "2026-09-26",
+            source: "https://github.com/someone/my-plugin",
+            screenshots: ["https://example.com/a.png"],
+            changelog: [{ version: "1.2.0", notes: ["Faster"], extra: 1 }],
+        });
+        expect(entry.updatedAt).toBe("2026-09-26");
+        expect(entry.source).toBe("https://github.com/someone/my-plugin");
+        expect(entry.screenshots).toEqual(["https://example.com/a.png"]);
+        expect(entry.changelog).toEqual([{ version: "1.2.0", notes: ["Faster"] }]);
+
+        const bare = entryOf(valid());
+        expect(bare.screenshots).toEqual([]);
+        expect(bare.changelog).toEqual([]);
+        expect("source" in bare).toBe(false);
+    });
+
+    test("extras are checked as strictly as the rest", () => {
+        const bad = (extra: object) => validateEntry({ ...valid(), ...extra });
+        expect(bad({ source: "javascript:alert(1)" })).toHaveProperty("error");
+        expect(bad({ screenshots: ["http://example.com/a.png"] })).toHaveProperty("error");
+        expect(bad({ screenshots: Array(7).fill("https://example.com/a.png") })).toHaveProperty("error");
+        expect(bad({ updatedAt: "yesterday" })).toHaveProperty("error");
+        expect(bad({ updatedAt: "2026-13-45" })).toHaveProperty("error");
+        expect(bad({ changelog: [{ version: "new", notes: [] }] })).toHaveProperty("error");
+        expect(bad({ changelog: [{ version: "1.0.0", notes: "not a list" }] })).toHaveProperty("error");
+    });
+
+    test("sorting by name or newest, undated last", () => {
+        const e = (name: string, updatedAt?: string) => ({ ...entryOf({ ...valid(), id: name.toLowerCase(), name }), ...(updatedAt && { updatedAt }) });
+        const items = [e("Beta", "2026-01-01"), e("Alpha"), e("Gamma", "2026-09-01"), e("Delta", "2026-01-01")];
+        expect(sortListings(items, "name").map(i => i.name)).toEqual(["Alpha", "Beta", "Delta", "Gamma"]);
+        expect(sortListings(items, "updated").map(i => i.name)).toEqual(["Gamma", "Beta", "Delta", "Alpha"]);
+    });
+});
+
+describe("theme entries", () => {
+    const theme = () => ({
+        id: "midnight",
+        name: "Midnight",
+        description: "Black",
+        authors: ["Evi"],
+        version: "1.0.0",
+        file: { url: "https://example.com/midnight.css", sha256: hash("b") },
+    });
+
+    test("a registry without themes still parses, with an empty list", () => {
+        const result = parseRegistry({ schema: 1, plugins: [valid()] });
+        if (!("registry" in result)) throw 0;
+        expect(result.registry.themes).toEqual([]);
+    });
+
+    test("themes are validated like plugins, one https file each", () => {
+        const result = parseRegistry({ schema: 1, plugins: [], themes: [theme(), { ...theme(), id: "../up" }, theme()] });
+        if (!("registry" in result)) throw 0;
+        expect(result.registry.themes.map(t => t.id)).toEqual(["midnight"]);
+        expect(result.problems).toHaveLength(2);
+        expect(result.problems.every(p => p.startsWith("theme "))).toBe(true);
+
+        expect(validateThemeEntry({ ...theme(), file: { url: "http://example.com/a.css", sha256: hash("b") } })).toHaveProperty("error");
+        expect(validateThemeEntry({ ...theme(), file: { url: "https://example.com/a.css", sha256: "nope" } })).toHaveProperty("error");
+        expect(validateThemeEntry({ ...theme(), file: undefined })).toHaveProperty("error");
+        expect(parseRegistry({ schema: 1, plugins: [], themes: "no" })).toHaveProperty("error");
+    });
+
+    test("a theme and a plugin may share an id", () => {
+        const result = parseRegistry({ schema: 1, plugins: [{ ...valid(), id: "midnight" }], themes: [theme()] });
+        if (!("registry" in result)) throw 0;
+        expect(result.problems).toEqual([]);
     });
 });
 

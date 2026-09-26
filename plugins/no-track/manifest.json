@@ -4,5 +4,7 @@
     "description": "Blocks Discord's analytics and metrics requests before they leave your machine.",
     "version": "1.0.0",
     "authors": ["Evi"],
+    "tags": ["privacy"],
+    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
     "enabledByDefault": true
 }

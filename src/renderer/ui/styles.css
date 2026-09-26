@@ -37,6 +37,7 @@
     --dl-badge-bg: var(--badge-background-default, rgb(151 151 159 / 0.2));
     --dl-badge-text: var(--badge-text-default, var(--text-subtle, #b5bac1));
     --dl-switch-on: var(--status-positive, #23a55a);
+    --dl-brand: var(--brand-500, #5865f2);
     --dl-focus-ring: var(--border-focus, var(--focus-primary, #00a8fc));
     /* Evi's brand color, only for marking matched code in Patch Helper */
     --dl-accent-solid: #e0508f;
@@ -323,7 +324,7 @@
 }
 
 .dl-row {
-    padding: 16px 20px;
+    padding: 12px 16px;
 }
 
 .dl-row + .dl-row {
@@ -331,7 +332,7 @@
 }
 
 .dl-row > * + * {
-    margin-block-start: 12px;
+    margin-block-start: 10px;
 }
 
 /* The collapsed settings panel takes no space; its own padding opens up with it */
@@ -343,14 +344,14 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    min-block-size: 40px;
+    min-block-size: 32px;
 }
 
 .dl-row-text {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     min-inline-size: 0;
 }
 
@@ -382,7 +383,12 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 4px 12px;
-    margin-block-start: 2px;
+}
+
+/* Statuses ride on the title line, set a little apart from the badges */
+.dl-row-title > .dl-row-meta {
+    display: inline-flex;
+    margin-inline-start: 4px;
 }
 
 .dl-row-controls {
@@ -396,7 +402,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    margin-block-start: 16px;
+    margin-block-start: 12px;
     padding: 16px;
     border-radius: var(--dl-radius-control);
     background: var(--dl-bg-group-head);
@@ -423,6 +429,16 @@
 }
 
 /* ---- expanding ----------------------------------------------------------------------------- */
+
+/*
+ * Opening settings grows the page below the row you clicked. Chrome's scroll anchoring would pin a
+ * row further down and scroll to keep it still, so the page jumps under your cursor: Evi's views
+ * never serve as anchors, and what you clicked stays where it is.
+ */
+.dl-root,
+.dl-root * {
+    overflow-anchor: none;
+}
 
 .dl-collapse {
     display: grid;
@@ -514,6 +530,11 @@
 }
 
 .dl-banner > svg { flex: none; color: var(--dl-text-warning); }
+
+/* Discord's notice pins its icon to the first line; centre it like the text and the button */
+.dl-notice > * { align-items: center; }
+.dl-notice > * > :first-child:has(svg),
+.dl-notice > * > svg:first-child { align-self: center; margin-block: 0; }
 .dl-banner[data-tone="danger"] { border-color: var(--dl-text-critical); background: var(--dl-bg-critical); }
 .dl-banner[data-tone="danger"] > svg { color: var(--dl-text-critical); }
 .dl-banner-text,
@@ -1059,6 +1080,13 @@
 /* ==== end Backup tab ========================================================================== */
 /* ---- store (StoreTab.tsx) ---------------------------------------------------------------- */
 
+.dl-store-status {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+}
+
 .dl-store-status:empty,
 .dl-store-registry:empty { display: none; }
 
@@ -1066,6 +1094,419 @@
     background: color-mix(in oklab, var(--dl-text-warning) 18%, transparent);
     color: var(--dl-text-warning);
 }
+
+/* The way into the store, on top of the Plugins and Themes tabs */
+.dl-store-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-store-banner-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    inline-size: 56px;
+    block-size: 56px;
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-brand);
+    color: var(--dl-text-on-accent);
+}
+
+.dl-store-banner-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-inline-size: 0;
+}
+
+.dl-store-banner-text > * { margin: 0; }
+.dl-store-banner-text > p { max-inline-size: 60ch; text-wrap: pretty; }
+
+/* A letter tile standing in for an icon, the registry has no images for the list */
+.dl-store-glyph {
+    display: grid;
+    flex: none;
+    place-items: center;
+    inline-size: 40px;
+    block-size: 40px;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-emphasis);
+    color: var(--dl-text-strong);
+    font-size: 18px;
+    font-weight: 700;
+    align-self: flex-start;
+}
+
+.dl-store-glyph[data-size="lg"] {
+    inline-size: 72px;
+    block-size: 72px;
+    border-radius: var(--dl-radius-group);
+    font-size: 32px;
+}
+
+/* A heading that opens something: looks like the heading, acts like a link */
+.dl-link-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.dl-link-button:hover { text-decoration: underline; }
+
+.dl-link-button:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.dl-store-filters { align-items: flex-start; }
+
+.dl-store-sort {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    min-inline-size: 200px;
+}
+
+.dl-store-sort > :last-child { flex: 1; }
+.dl-store-sort .dl-select { min-block-size: 32px; padding-block: 4px; font-size: 14px; }
+
+.dl-store-updates {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-store-updates-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dl-store-updates-head > svg { flex: none; color: var(--dl-text-positive); }
+
+
+/* The store's listing: a grid of cards, each one opening the item's page */
+.dl-store-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dl-store-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-inline-size: 0;
+    padding: 16px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+    transition: background-color var(--dl-duration-fast) ease-out, border-color var(--dl-duration-fast) ease-out;
+}
+
+@media (hover: hover) {
+    .dl-store-card:hover {
+        background: var(--dl-bg-emphasis);
+        border-color: var(--dl-border-control);
+    }
+}
+
+.dl-store-card:focus-within:has(.dl-store-card-link:focus-visible) {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+.dl-store-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.dl-store-card-title {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+
+.dl-store-card-title > * {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The title's button covers the whole card, so anywhere on it opens the page */
+.dl-store-card-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.dl-store-card-link:hover { text-decoration: none; }
+.dl-store-card-link:focus-visible { outline: none; }
+
+/* Controls stay clickable above the stretched link */
+.dl-store-card .dl-star,
+.dl-store-card .dl-row-controls,
+.dl-store-card .dl-store-confirm {
+    position: relative;
+    z-index: 1;
+}
+
+.dl-store-card-desc {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    text-wrap: pretty;
+}
+
+.dl-store-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dl-store-tag {
+    padding: 1px 8px;
+    border-radius: var(--dl-radius-round);
+    background: var(--dl-bg-emphasis);
+    color: var(--dl-text-subtle);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+}
+
+.dl-store-card-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-block-size: 32px;
+    margin-block-start: auto;
+    padding-block-start: 10px;
+    border-block-start: 1px solid var(--dl-border-divider);
+}
+
+.dl-store-card-foot > .dl-store-status {
+    flex: 1;
+    min-inline-size: 0;
+}
+
+/* GitHub-style star toggle */
+.dl-star {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    min-block-size: 28px;
+    padding: 2px 8px;
+    border-radius: var(--dl-radius-round);
+    border: 1px solid var(--dl-border-control);
+    background: transparent;
+    color: var(--dl-interactive);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.dl-star[data-size="lg"] {
+    min-block-size: 32px;
+    padding-inline: 12px;
+    border-radius: var(--dl-radius-control);
+    font-size: 14px;
+}
+
+@media (hover: hover) {
+    .dl-star:hover { background: var(--dl-bg-hover); color: var(--dl-interactive-hover); }
+}
+
+.dl-star[aria-pressed="true"] { color: var(--dl-text-strong); }
+.dl-star[aria-pressed="true"] > svg { color: #f0b232; }
+
+.dl-star:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+/* ---- store detail page ------------------------------------------------------------------- */
+
+.dl-store-detail-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.dl-store-detail-head .dl-store-glyph { align-self: center; }
+
+.dl-store-detail-title {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-inline-size: 0;
+}
+
+.dl-store-detail-title h2 { margin: 0; }
+
+.dl-store-detail-desc {
+    margin: 0;
+    max-inline-size: 72ch;
+    text-wrap: pretty;
+}
+
+.dl-store-shots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.dl-store-shot {
+    margin: 0;
+    aspect-ratio: 16 / 10;
+    border-radius: var(--dl-radius-control);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+    overflow: hidden;
+}
+
+.dl-store-shot > img {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-store-shot[data-loading] { animation: dl-pulse 1.2s ease-in-out infinite alternate; }
+}
+
+@keyframes dl-pulse {
+    to { opacity: 0.5; }
+}
+
+.dl-store-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    margin: 0;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-border-divider);
+    overflow: hidden;
+}
+
+.dl-store-fact {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 16px;
+    background: var(--dl-bg-panel);
+}
+
+.dl-store-fact > dt,
+.dl-store-fact > dd { margin: 0; }
+
+.dl-store-access {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-store-access > svg { flex: none; margin-block-start: 1px; color: var(--dl-text-positive); }
+.dl-store-access > div { display: flex; flex-direction: column; gap: 2px; }
+.dl-store-access p { margin: 0; max-inline-size: 72ch; text-wrap: pretty; }
+
+.dl-store-access[data-native] {
+    border-color: color-mix(in oklab, var(--dl-text-warning) 45%, transparent);
+    background: var(--dl-bg-warning);
+}
+
+.dl-store-access[data-native] > svg { color: var(--dl-text-warning); }
+
+.dl-store-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-link, #00a8fc);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.dl-store-source:hover { text-decoration: underline; }
+
+.dl-store-source:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Release notes, for store items and Evi itself */
+.dl-changelog {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dl-changelog > li {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-inline-start: 12px;
+    border-inline-start: 2px solid var(--dl-border-divider);
+}
+
+.dl-changelog ul {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding-inline-start: 18px;
+    list-style: disc;
+    color: var(--dl-text-subtle);
+}
+
+/* ---- installed lists ----------------------------------------------------------------------- */
+
+.dl-bulk {
+    display: flex;
+    flex: none;
+    gap: 8px;
+}
+
+.dl-crash { flex-wrap: wrap; }
 
 .dl-store-confirm {
     display: flex;
@@ -1100,4 +1541,50 @@
    Our fallback inputs (.dl-input / .dl-textarea) keep the outline above. */
 .dl-root :where(input, textarea):not(.dl-input, .dl-textarea):focus-visible {
     outline: none;
+}
+
+/* ---- dialogs (components.tsx Dialog) --------------------------------------------------------- */
+
+/* Above the Evi panel, and above Discord's settings layer when embedded there */
+.dl-dialog-scrim { z-index: 10001; }
+
+.dl-dialog {
+    display: flex;
+    flex-direction: column;
+    inline-size: min(560px, 100%);
+    max-block-size: min(720px, 100%);
+    border-radius: var(--dl-radius-panel);
+    border: 1px solid var(--dl-border-divider);
+    background: var(--dl-bg-panel);
+    box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
+    overflow: hidden;
+}
+
+.dl-dialog:focus { outline: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-dialog { animation: dl-panel-in var(--dl-duration-base) ease-out; }
+}
+
+.dl-dialog-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 16px 12px 24px;
+}
+
+.dl-dialog-head > h2 { flex: 1; margin: 0; }
+
+.dl-dialog-body {
+    min-block-size: 0;
+    padding: 0 24px 24px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* Plugin settings sit straight on the dialog, no inset box */
+.dl-dialog .dl-row-settings {
+    margin: 0;
+    padding: 0;
+    background: none;
 }

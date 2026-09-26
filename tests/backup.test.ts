@@ -205,6 +205,16 @@ describe("import planning", () => {
         expect(p.changes).toBeGreaterThan(0);
     });
 
+    test("replace keeps this device's own preferences, which backups don't carry", () => {
+        const state = source();
+        state.settings.autoUpdate = true;
+        state.settings.lastSeenVersion = "0.2.0";
+        const plan = planImport(state, other(), "replace");
+        expect(plan.settings.autoUpdate).toBe(true);
+        expect(plan.settings.lastSeenVersion).toBe("0.2.0");
+        expect(plan.settings.plugins).toEqual(other().settings.plugins);
+    });
+
     test("merge keeps what the backup doesn't mention", () => {
         const state = source();
         state.settings.plugins.mine = { enabled: true, settings: { keep: 1 } };

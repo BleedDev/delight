@@ -4,5 +4,7 @@
     "description": "Deleted messages stay in the chat, marked as deleted, and edited messages show what they said before. Kept in memory only: nothing is saved, and it's all gone when Discord restarts.",
     "version": "1.0.0",
     "authors": ["Evi"],
+    "tags": ["messages"],
+    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
     "enabledByDefault": false
 }
