@@ -4,3 +4,6 @@ userplugins/*
 !userplugins/.gitkeep
 *.exe
 test-results/
+
+# evi.rest local database
+server/data/
