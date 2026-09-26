@@ -1,33 +1,129 @@
 /**
- * Settings UI building blocks. Controls are Discord's own (see discord.tsx) so they look and behave
- * exactly like the rest of Discord's settings; Delight's versions below are only fallbacks for when
- * Discord renames one of its components.
+ * Settings UI building blocks. Controls and typography are Discord's own (see discord.tsx) so the
+ * settings look and behave exactly like the rest of Discord's; Delight's versions below are only
+ * fallbacks for when Discord renames one of its components. Layout (sections, lists, rows) follows
+ * the measurements of Discord's own settings layout, see styles.css.
  */
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactElement, ReactNode } from "react";
 
 import type { SettingDefinition } from "../plugins/types";
 import { React } from "../webpack/common";
 import { DiscordUI } from "./discord";
+import { Icon, iconComponent, IconName } from "./icons";
 
-export function Button({ variant, children, onClick, disabled, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "accent" | "icon"; }) {
-    const Native = DiscordUI.Button.get;
-    // Icon-only buttons stay ours: Discord's button has no icon-only size that fits these rows
-    if (Native && variant !== "icon") {
-        const { Colors = {}, Sizes = {} } = Native as any;
+export { Icon, iconComponent };
+export type { IconName };
+
+const cx = (...names: (string | false | undefined)[]) => names.filter(Boolean).join(" ");
+
+// ---- typography -------------------------------------------------------------------------------
+
+/**
+ * Discord's text component: `variant` is a name from its type scale ("heading-md/medium",
+ * "text-sm/normal", ...) and `color` one of its text tokens ("text-strong", "text-subtle", ...).
+ */
+export function Text({ variant, tag = "div", color, className, id, children, tabular, role }: {
+    variant: string;
+    tag?: string;
+    color?: string;
+    className?: string;
+    id?: string;
+    children?: ReactNode;
+    tabular?: boolean;
+    role?: string;
+}) {
+    const Native = DiscordUI.Text.get;
+    if (Native) {
+        return <Native variant={variant} tag={tag} color={color} className={className} id={id} tabularNumbers={tabular} role={role}>{children}</Native>;
+    }
+    const Tag = tag as "div";
+    return <Tag className={cx("dl-text", tabular && "dl-tabular", className)} data-variant={variant} data-color={color} id={id} role={role}>{children}</Tag>;
+}
+
+// ---- buttons ----------------------------------------------------------------------------------
+
+type ButtonVariant = "accent" | "secondary" | "danger" | "icon";
+
+const manaVariant = { accent: "primary", secondary: "secondary", danger: "critical-secondary", icon: "icon-only" } as const;
+
+/**
+ * Discord's button. `children` is the label and `icon` goes before it. Variant "icon" is icon-only
+ * and needs an aria-label; prefer IconButton, which adds the tooltip.
+ */
+export function Button({ variant = "secondary", size = "sm", icon, children, onClick, disabled, type = "button", className, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?: ButtonVariant;
+    size?: "sm" | "md";
+    icon?: IconName;
+}) {
+    const text = typeof children === "string" ? children : undefined;
+    const Mana = DiscordUI.ManaButton.get;
+    // Discord's button takes a plain-text label; anything richer uses the fallbacks below
+    if (Mana && (text || (variant === "icon" && icon))) {
         return (
-            <Native
-                color={variant === "accent" ? Colors.BRAND : Colors.PRIMARY}
+            <Mana
+                variant={manaVariant[variant]}
+                size={size}
+                text={text}
+                icon={icon && iconComponent(icon)}
+                type={type as "button" | "submit"}
+                onClick={onClick as () => void}
+                disabled={disabled}
+                className={className}
+                id={props.id}
+                aria-label={props["aria-label"]}
+                aria-expanded={props["aria-expanded"] as boolean | undefined}
+                aria-controls={props["aria-controls"]}
+            />
+        );
+    }
+
+    const Legacy = DiscordUI.Button.get;
+    if (Legacy && variant !== "icon") {
+        const { Colors = {}, Sizes = {} } = Legacy as any;
+        return (
+            <Legacy
+                color={variant === "accent" ? Colors.BRAND : variant === "danger" ? Colors.RED : Colors.PRIMARY}
                 size={Sizes.SMALL}
                 onClick={onClick as any}
                 disabled={disabled}
                 aria-label={props["aria-label"]}
             >
-                <span className="dl-button-content">{children}</span>
-            </Native>
+                <span className="dl-button-content">{icon && <Icon name={icon} />}{children}</span>
+            </Legacy>
         );
     }
-    return <button type="button" className="dl-button" data-variant={variant} onClick={onClick} disabled={disabled} {...props}>{children}</button>;
+
+    return (
+        <button type={type} className={cx("dl-button", className)} data-variant={variant} data-size={size} onClick={onClick} disabled={disabled} {...props}>
+            {icon && <Icon name={icon} />}
+            {children}
+        </button>
+    );
 }
+
+/** Discord's tooltip on a focusable element; without it, the element's aria-label still names it */
+export function Tooltip({ text, children }: { text: string; children: ReactElement; }) {
+    const Native = DiscordUI.Tooltip.get;
+    return Native ? <Native text={text}>{children}</Native> : children;
+}
+
+/** Icon-only button: the label is both its accessible name and its tooltip */
+export function IconButton({ icon, label, onClick, className, ...props }: {
+    icon: IconName;
+    label: string;
+    onClick(): void;
+    className?: string;
+    "aria-expanded"?: boolean;
+    "aria-controls"?: string;
+}) {
+    return (
+        <Tooltip text={label}>
+            <Button variant="icon" icon={icon} aria-label={label} onClick={onClick} className={className} {...props} />
+        </Tooltip>
+    );
+}
+
+// ---- inputs -----------------------------------------------------------------------------------
 
 export function Switch({ checked, onChange, label, labelledBy }: {
     checked: boolean;
@@ -52,8 +148,30 @@ export function Switch({ checked, onChange, label, labelledBy }: {
     );
 }
 
-/** Single-line text input, Discord's when available */
-export function TextField({ id, label, hideLabel, description, value, onChange, placeholder, multiline, type = "text" }: {
+/** Discord's settings toggle row: label and description on the left, switch on the right */
+export function SwitchRow({ id, label, description, checked, onChange }: {
+    id: string;
+    label: string;
+    description?: string;
+    checked: boolean;
+    onChange(checked: boolean): void;
+}) {
+    const Native = DiscordUI.SwitchRow.get;
+    if (Native) return <Native label={label} description={description} checked={checked} onChange={onChange} />;
+    const labelId = `${id}-label`;
+    return (
+        <div className="dl-switch-row">
+            <div className="dl-switch-row-text">
+                <Text variant="text-md/medium" color="text-strong" id={labelId}>{label}</Text>
+                {description && <Text tag="p" variant="text-sm/normal" color="text-subtle">{description}</Text>}
+            </div>
+            <Switch checked={checked} onChange={onChange} labelledBy={labelId} />
+        </div>
+    );
+}
+
+/** Text input with its label and description, Discord's when available */
+export function TextField({ id, label, hideLabel, description, value, onChange, placeholder, multiline, type = "text", inputMode, spellCheck }: {
     id: string;
     label: string;
     hideLabel?: boolean;
@@ -63,11 +181,34 @@ export function TextField({ id, label, hideLabel, description, value, onChange, 
     placeholder?: string;
     multiline?: boolean;
     type?: string;
+    inputMode?: string;
+    spellCheck?: boolean;
 }) {
-    const Native = DiscordUI.TextField.get;
-    if (Native) {
+    const Area = DiscordUI.TextArea.get;
+    if (multiline && Area) {
+        return <Area id={id} label={label} hideLabel={hideLabel} description={description} value={value} onChange={onChange} placeholder={placeholder} rows={4} autosize />;
+    }
+    const Input = DiscordUI.TextInput.get;
+    if (Input && !multiline) {
         return (
-            <Native
+            <Input
+                id={id}
+                label={label}
+                hideLabel={hideLabel}
+                description={description}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                type={type}
+                inputMode={inputMode}
+                spellCheck={spellCheck}
+            />
+        );
+    }
+    const Legacy = DiscordUI.TextField.get;
+    if (Legacy) {
+        return (
+            <Legacy
                 id={id}
                 label={label}
                 hideLabel={hideLabel}
@@ -81,57 +222,218 @@ export function TextField({ id, label, hideLabel, description, value, onChange, 
             />
         );
     }
-    const hint = description && <p className="dl-hint" id={`${id}-hint`}>{description}</p>;
-    const common = { id, placeholder, value, "aria-describedby": description ? `${id}-hint` : undefined };
+    const common = { id, placeholder, value, spellCheck, "aria-describedby": description ? `${id}-hint` : undefined };
     return (
         <div className="dl-field">
             <label className={hideLabel ? "dl-sr-only" : "dl-label"} htmlFor={id}>{label}</label>
+            {description && <p className="dl-hint" id={`${id}-hint`}>{description}</p>}
             {multiline
                 ? <textarea className="dl-textarea" rows={4} {...common} onChange={e => onChange(e.currentTarget.value)} />
-                : <input className="dl-input" type={type} {...common} onChange={e => onChange(e.currentTarget.value)} />}
-            {hint}
+                : <input className="dl-input" type={type} inputMode={inputMode as any} {...common} onChange={e => onChange(e.currentTarget.value)} />}
         </div>
     );
 }
 
-/** Large code textarea (Quick CSS), Discord's when available */
-export function CodeArea({ id, value, onChange, placeholder }: { id: string; value: string; onChange(value: string): void; placeholder?: string; }) {
+/** Search input with Discord's magnifying glass and clear button */
+export function SearchField({ id, label, value, onChange, placeholder }: {
+    id: string;
+    label: string;
+    value: string;
+    onChange(value: string): void;
+    placeholder?: string;
+}) {
+    const Input = DiscordUI.TextInput.get;
+    if (Input) {
+        return (
+            <Input
+                id={id}
+                label={label}
+                hideLabel
+                type="search"
+                leading={iconComponent("search")}
+                clearable
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                autoComplete="off"
+                spellCheck={false}
+            />
+        );
+    }
+    return (
+        <div className="dl-search-fallback">
+            <label className="dl-sr-only" htmlFor={id}>{label}</label>
+            <Icon name="search" />
+            <input className="dl-input" id={id} type="search" autoComplete="off" spellCheck={false} placeholder={placeholder} value={value} onChange={e => onChange(e.currentTarget.value)} />
+        </div>
+    );
+}
+
+/** Large code textarea (Quick CSS), Discord's when available. The label names it for screen readers. */
+export function CodeArea({ id, value, onChange, placeholder, label }: {
+    id: string;
+    value: string;
+    onChange(value: string): void;
+    placeholder?: string;
+    label?: string;
+}) {
     const Native = DiscordUI.TextArea.get;
     if (Native) {
         return (
             <div className="dl-code-native">
-                <Native id={id} value={value} onChange={onChange} placeholder={placeholder} rows={22} spellCheck={false} />
+                <Native id={id} label={label} hideLabel value={value} onChange={onChange} placeholder={placeholder} rows={22} spellCheck={false} />
             </div>
         );
     }
-    return <textarea id={id} className="dl-textarea dl-code-editor" spellCheck={false} placeholder={placeholder} value={value} onChange={e => onChange(e.currentTarget.value)} />;
-}
-
-const icons = {
-    check: "M5 12.5l4.5 4.5L19 7.5",
-    warning: "M12 4l9 16H3l9-16zm0 6v4m0 3v.5",
-    cross: "M6 6l12 12M18 6L6 18",
-    clock: "M12 7v5l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z",
-    folder: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z",
-    reload: "M20 11a8 8 0 10-2.3 5.7M20 5v6h-6",
-    chevron: "M9 6l6 6-6 6",
-};
-
-export function Icon({ name, size = 16 }: { name: keyof typeof icons; size?: number; }) {
     return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d={icons[name]} />
-        </svg>
+        <div className="dl-field">
+            {label && <label className="dl-sr-only" htmlFor={id}>{label}</label>}
+            <textarea id={id} className="dl-textarea dl-code-editor" spellCheck={false} placeholder={placeholder} value={value} onChange={e => onChange(e.currentTarget.value)} />
+        </div>
     );
 }
 
+/** A row of single-choice filter chips, Discord's filter tags when available */
+export function FilterChips<K extends string>({ label, options, value, onChange }: {
+    label: string;
+    options: { id: K; label: string; count?: number; }[];
+    value: K;
+    onChange(value: K): void;
+}) {
+    const Native = DiscordUI.TagGroup.get;
+    if (Native) {
+        return (
+            <div className="dl-chips-native">
+                <Native
+                    label={label}
+                    items={options.map(o => ({ id: o.id, label: o.count === undefined ? o.label : `${o.label} ${o.count}` }))}
+                    selectionMode="single"
+                    disallowEmptySelection
+                    selectedKeys={[value]}
+                    onSelectionChange={keys => {
+                        const [next] = keys;
+                        if (next) onChange(next as K);
+                    }}
+                    variant="filter"
+                    size="sm"
+                />
+            </div>
+        );
+    }
+    return (
+        <div className="dl-chips" role="group" aria-label={label}>
+            {options.map(o => (
+                <button key={o.id} type="button" className="dl-chip" aria-pressed={o.id === value} onClick={() => onChange(o.id)}>
+                    {o.label}
+                    {o.count !== undefined && <span className="dl-tabular">{o.count}</span>}
+                </button>
+            ))}
+        </div>
+    );
+}
+
+// ---- status -----------------------------------------------------------------------------------
+
 export type Tone = "success" | "warning" | "danger" | "muted";
 
+const toneIcon = { success: "circleCheck", warning: "warning", danger: "circleError", muted: "clock" } as const;
+
 /** Status is always icon + words, never color alone */
-export function Status({ tone, children }: { tone: Tone; children: ReactNode; }) {
-    const icon = ({ success: "check", warning: "warning", danger: "cross", muted: "clock" } as const)[tone];
-    return <span className="dl-status" data-tone={tone}><Icon name={icon} size={14} />{children}</span>;
+export function Status({ tone, children, quiet }: {
+    tone: Tone;
+    children: ReactNode;
+    /** Only the icon takes the tone's color: for the expected state, which shouldn't draw the eye */
+    quiet?: boolean;
+}) {
+    return (
+        <span className="dl-status" data-tone={tone} data-quiet={quiet ? "" : undefined}>
+            <Icon name={toneIcon[tone]} size={14} />
+            {children}
+        </span>
+    );
 }
+
+/** A small label next to a title, styled like Discord's badges */
+export function Badge({ children }: { children: ReactNode; }) {
+    return <span className="dl-badge">{children}</span>;
+}
+
+/** Discord's inline notice with an optional action; Delight's banner when it isn't available */
+export function Notice({ tone, action, children }: { tone: "warning" | "danger" | "info"; action?: ReactNode; children: ReactNode; }) {
+    const Native = DiscordUI.Notice.get;
+    const messageType = ({ warning: "warn", danger: "danger", info: "info" } as const)[tone];
+    const body = Native
+        ? <Native messageType={messageType} action={action}>{children}</Native>
+        : (
+            <div className="dl-banner" data-tone={tone}>
+                <Icon name={tone === "info" ? "info" : tone === "danger" ? "circleError" : "warning"} size={20} />
+                <span className="dl-banner-text">{children}</span>
+                {action}
+            </div>
+        );
+    return <div className="dl-notice" role={tone === "danger" ? "alert" : "status"}>{body}</div>;
+}
+
+// ---- layout -----------------------------------------------------------------------------------
+
+/** A titled group of settings, like one of Discord's settings categories */
+export function Section({ title, description, action, children, id }: {
+    title?: string;
+    description?: ReactNode;
+    action?: ReactNode;
+    children: ReactNode;
+    /** Id for the title, which labels the section */
+    id?: string;
+}) {
+    const titleId = title && id ? `${id}-title` : undefined;
+    return (
+        <section className="dl-section" id={id} aria-labelledby={titleId}>
+            {(title || action) && (
+                <div className="dl-section-head">
+                    <div className="dl-section-text">
+                        {title && <Text tag="h2" variant="heading-xl/normal" color="text-strong" id={titleId}>{title}</Text>}
+                        {description && <Text tag="p" variant="text-sm/normal" color="text-subtle">{description}</Text>}
+                    </div>
+                    {action}
+                </div>
+            )}
+            {children}
+        </section>
+    );
+}
+
+/** Rows in one bordered group with dividers between them, like Discord's settings cards */
+export function List({ children, label }: { children: ReactNode; label?: string; }) {
+    return <ul className="dl-list" aria-label={label}>{children}</ul>;
+}
+
+/** Orients the reader when a list is empty and offers the one next step */
+export function EmptyState({ icon, title, children, action }: { icon: IconName; title: string; children?: ReactNode; action?: ReactNode; }) {
+    return (
+        <div className="dl-empty">
+            <span className="dl-empty-icon"><Icon name={icon} size={24} /></span>
+            <Text tag="h3" variant="heading-md/semibold" color="text-strong">{title}</Text>
+            {children && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-empty-text">{children}</Text>}
+            {action}
+        </div>
+    );
+}
+
+/**
+ * Expands and collapses its content with an interruptible height transition. The content mounts on
+ * first open and then stays, hidden from focus and screen readers while collapsed.
+ */
+export function Collapse({ open, id, children }: { open: boolean; id: string; children: ReactNode; }) {
+    const [mounted, setMounted] = React.useState(open);
+    if (open && !mounted) setMounted(true);
+    return (
+        <div className="dl-collapse" id={id} data-open={open ? "" : undefined}>
+            <div className="dl-collapse-clip">{(open || mounted) && children}</div>
+        </div>
+    );
+}
+
+// ---- plugin settings --------------------------------------------------------------------------
 
 export function SettingField({ id, definition, value, onChange }: {
     id: string;
@@ -140,18 +442,9 @@ export function SettingField({ id, definition, value, onChange }: {
     onChange(value: unknown): void;
 }) {
     const labelId = `${id}-label`;
-    const hint = definition.description && <p className="dl-hint" id={`${id}-hint`}>{definition.description}</p>;
 
     if (definition.type === "boolean") {
-        return (
-            <div className="dl-field-row">
-                <div className="dl-field-text">
-                    <div className="dl-label" id={labelId}>{definition.label}</div>
-                    {hint}
-                </div>
-                <Switch checked={!!value} onChange={onChange} labelledBy={labelId} />
-            </div>
-        );
+        return <SwitchRow id={id} label={definition.label} description={definition.description} checked={!!value} onChange={onChange} />;
     }
 
     if (definition.type === "string") {
@@ -183,7 +476,7 @@ export function SettingField({ id, definition, value, onChange }: {
                 aria-label={definition.label}
             />
             : (
-                <select id={id} className="dl-select" value={String(value)} onChange={e => onChange(e.currentTarget.value)}>
+                <select id={id} className="dl-select" value={String(value)} aria-labelledby={labelId} onChange={e => onChange(e.currentTarget.value)}>
                     {definition.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
             );
@@ -213,6 +506,7 @@ export function SettingField({ id, definition, value, onChange }: {
                     description={definition.description}
                     value={String(value ?? "")}
                     type="number"
+                    inputMode="decimal"
                     onChange={v => {
                         const n = Number(v);
                         if (v.trim() && !Number.isNaN(n)) onChange(n);
@@ -224,8 +518,8 @@ export function SettingField({ id, definition, value, onChange }: {
 
     return (
         <div className="dl-field">
-            <div className="dl-label" id={labelId}>{definition.label}</div>
-            {hint}
+            <Text variant="text-md/medium" color="text-strong" id={labelId}>{definition.label}</Text>
+            {definition.description && <Text tag="p" variant="text-sm/normal" color="text-subtle">{definition.description}</Text>}
             {control}
         </div>
     );

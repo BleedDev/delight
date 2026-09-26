@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { moduleSources } from "../patching/diagnose";
 import { evaluatePatch, Excerpt, PatchDraft, PatchHelperResult } from "../patching/helper";
 import { React } from "../webpack/common";
-import { Button, Status, TextField } from "./components";
+import { Button, EmptyState, Section, Status, Text, TextField } from "./components";
 
 /** Scanning every module isn't free, wait for a typing pause */
 const DEBOUNCE_MS = 250;
@@ -34,8 +34,8 @@ function Code({ label, excerpt, kind }: { label: string; excerpt: Excerpt; kind?
 function ResultCard({ id, title, status, children }: { id: string; title: string; status: ReactNode; children?: ReactNode; }) {
     return (
         <section className="dl-card" id={id} aria-labelledby={`${id}-title`}>
-            <div className="dl-card-head" style={{ alignItems: "center" }}>
-                <h3 className="dl-card-title" id={`${id}-title`} style={{ flex: 1 }}>{title}</h3>
+            <div className="dl-card-head">
+                <Text tag="h3" variant="heading-md/medium" color="text-strong" id={`${id}-title`} className="dl-grow">{title}</Text>
                 {status}
             </div>
             {children && <div className="dl-card-body">{children}</div>}
@@ -136,13 +136,18 @@ function SnippetCard({ snippet }: { snippet: string; }) {
         return () => clearTimeout(t);
     }, [copied]);
 
-    const copy = () => navigator.clipboard.writeText(snippet).then(() => setCopied(true), () => { });
+    // Only animate the icon once it actually swaps, not when the card first appears
+    const swapped = React.useRef(false);
+    const copy = () => navigator.clipboard.writeText(snippet).then(() => {
+        swapped.current = true;
+        setCopied(true);
+    }, () => { });
 
     return (
         <ResultCard
             id="dl-ph-snippet"
             title="Patch"
-            status={<Button onClick={copy}>{copied ? "Copied" : "Copy patch"}</Button>}
+            status={<Button icon={copied ? "check" : "copy"} className={swapped.current ? "dl-icon-swap" : undefined} onClick={copy}>{copied ? "Copied" : "Copy patch"}</Button>}
         >
             <p className="dl-hint">Add this to your plugin’s <code className="dl-mono">patches</code> array.</p>
             <pre className="dl-code">{snippet}</pre>
@@ -177,51 +182,57 @@ export function PatchHelperTab() {
     const result = state?.result;
 
     return (
-        <div className="dl-stack" style={{ gap: 16 }}>
-            <div className="dl-ph-fields dl-stack" style={{ gap: 16 }}>
-                <TextField
-                    id="dl-ph-find"
-                    label="Find"
-                    description="Text that only the target module contains. Write /…/flags for a regex."
-                    placeholder="Object.defineProperties(this,{isDeveloper"
-                    value={input.find}
-                    onChange={field("find")}
-                />
-                <TextField
-                    id="dl-ph-match"
-                    label="Match"
-                    description="What to replace in that module, text or /…/flags. \i matches any identifier."
-                    placeholder="/(?<=isDeveloper:\{[^}]*?get:\(\)=>)\i/"
-                    value={input.match}
-                    onChange={field("match")}
-                />
-                <TextField
-                    id="dl-ph-replace"
-                    label="Replace with"
-                    description="$1 inserts a capture group, $& the whole match, $self your plugin."
-                    placeholder="true"
-                    value={input.replace}
-                    onChange={field("replace")}
-                />
-            </div>
-
-            <p className="dl-hint" role="status" aria-live="polite">
-                {!input.find ? "" : checking || !state ? "Checking…" : `Checked ${state.scanned.toLocaleString()} modules.`}
-            </p>
-
-            {!input.find ? (
-                <div className="dl-empty">
-                    <strong>Try a patch against Discord’s code</strong>
-                    Enter a find to see which module it hits. Nothing is applied, it’s a preview.
+        <div className="dl-tab">
+            <Section id="dl-ph-draft" title="Patch" description="Nothing is applied: this previews a patch against the code Discord is running right now.">
+                <div className="dl-ph-fields dl-stack-loose">
+                    <TextField
+                        id="dl-ph-find"
+                        label="Find"
+                        description="Text that only the target module contains. Write /…/flags for a regex."
+                        placeholder="Object.defineProperties(this,{isDeveloper"
+                        spellCheck={false}
+                        value={input.find}
+                        onChange={field("find")}
+                    />
+                    <TextField
+                        id="dl-ph-match"
+                        label="Match"
+                        description="What to replace in that module, text or /…/flags. \i matches any identifier."
+                        placeholder="/(?<=isDeveloper:\{[^}]*?get:\(\)=>)\i/"
+                        spellCheck={false}
+                        value={input.match}
+                        onChange={field("match")}
+                    />
+                    <TextField
+                        id="dl-ph-replace"
+                        label="Replace with"
+                        description="$1 inserts a capture group, $& the whole match, $self your plugin."
+                        placeholder="true"
+                        spellCheck={false}
+                        value={input.replace}
+                        onChange={field("replace")}
+                    />
                 </div>
-            ) : result && (
-                <div className="dl-stack" aria-busy={checking} data-checking={checking ? "" : undefined}>
-                    <ModuleCard result={result} scanned={state.scanned} onPick={setPreferred} />
-                    {result.moduleId && <MatchCard result={result} hasMatch={!!input.match} />}
-                    {result.matchCount > 0 && <ResultChangeCard result={result} />}
-                    {result.snippet && <SnippetCard snippet={result.snippet} />}
-                </div>
-            )}
+            </Section>
+
+            <Section id="dl-ph-results" title="Results">
+                <p className="dl-hint dl-tabular" role="status" aria-live="polite">
+                    {!input.find ? "" : checking || !state ? "Checking…" : `Checked ${state.scanned.toLocaleString()} modules.`}
+                </p>
+
+                {!input.find ? (
+                    <EmptyState icon="beaker" title="Try a patch against Discord’s code">
+                        Enter a find above to see which module it hits, what your match catches, and whether the result still compiles.
+                    </EmptyState>
+                ) : result && (
+                    <div className="dl-stack" aria-busy={checking} data-checking={checking ? "" : undefined}>
+                        <ModuleCard result={result} scanned={state.scanned} onPick={setPreferred} />
+                        {result.moduleId && <MatchCard result={result} hasMatch={!!input.match} />}
+                        {result.matchCount > 0 && <ResultChangeCard result={result} />}
+                        {result.snippet && <SnippetCard snippet={result.snippet} />}
+                    </div>
+                )}
+            </Section>
         </div>
     );
 }
