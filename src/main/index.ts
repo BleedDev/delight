@@ -9,6 +9,7 @@ import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
 import { applyChromiumSwitches, getPluginPayloads, initPlugins } from "./plugins";
 import { saveSettings, settings } from "./settings";
+import { initStore } from "./store";
 import { getThemePayloads, initThemes } from "./themes";
 
 declare global {
@@ -130,6 +131,7 @@ function setup() {
     initBackup();
     // Themes need nothing from Electron to load, have them ready for the first window's boot
     initThemes();
+    initStore();
     watchQuickCss();
     persistAcrossUpdates(shimAsar);
 }
