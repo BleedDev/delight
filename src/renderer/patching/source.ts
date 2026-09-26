@@ -52,13 +52,15 @@ const records: PatchRecord[] = [];
 
 const IDENT = String.raw`(?:[A-Za-z_$][\w$]*)`;
 
-function canonicalizeMatch(match: string | RegExp) {
+/** Expands `\i` in a RegExp match into the identifier pattern. Strings are matched literally. */
+export function canonicalizeMatch(match: string | RegExp) {
     if (typeof match === "string") return match;
     const source = match.source.replace(/(?<!\\)\\i/g, IDENT);
     return new RegExp(source, match.flags);
 }
 
-function canonicalizeReplace(replace: Replacement["with"], plugin: string): Replacement["with"] {
+/** Expands `$self` in a replacement into a reference to the plugin at runtime */
+export function canonicalizeReplace(replace: Replacement["with"], plugin: string): Replacement["with"] {
     const self = `Delight.$(${JSON.stringify(plugin)})`;
     if (typeof replace === "string") return replace.replaceAll("$self", self);
     return (...args) => replace(...args).replaceAll("$self", self);
@@ -71,14 +73,21 @@ export function matchesFind(code: string, find: string | RegExp) {
 }
 
 /** Method shorthand factories like `123(e,t,n){...}` are not expressions, turn them into functions */
-function normalizeFactorySource(code: string) {
+export function normalizeFactorySource(code: string) {
     if (/^(?:function\b|async\b|\()/.test(code)) return code;
     return code.replace(/^(?:[\w$]+|"(?:[^"\\]|\\.)*")(?=\s*\()/, "function");
 }
 
-function compile(code: string, moduleId: string): ModuleFactory {
-    // Indirect eval: global scope, no access to our locals
-    return (0, eval)(`0,${code}\n//# sourceURL=delight://modules/${moduleId}.js`);
+export type CompileResult = { ok: true; factory: ModuleFactory; } | { ok: false; error: string; };
+
+/** Compiles normalized factory source without running it */
+export function tryCompile(code: string, moduleId: string): CompileResult {
+    try {
+        // Indirect eval: global scope, no access to our locals
+        return { ok: true, factory: (0, eval)(`0,${code}\n//# sourceURL=delight://modules/${moduleId}.js`) };
+    } catch (err) {
+        return { ok: false, error: String(err) };
+    }
 }
 
 export function registerPatches(plugin: string, patches: SourcePatch[]) {
@@ -160,13 +169,14 @@ export function applySourcePatches(
         if (patch.group && failed) next = code;
 
         if (next !== code) {
-            try {
-                current = compile(next, moduleId);
+            const compiled = tryCompile(next, moduleId);
+            if (compiled.ok) {
+                current = compiled.factory;
                 code = next;
                 patchedBy.push(record.plugin);
-            } catch (err) {
+            } else {
                 failed = replacements.length;
-                errors.push(`module ${moduleId}: patched code does not compile, patch reverted: ${err}`);
+                errors.push(`module ${moduleId}: patched code does not compile, patch reverted: ${compiled.error}`);
             }
         }
 

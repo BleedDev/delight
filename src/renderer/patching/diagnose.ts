@@ -15,8 +15,8 @@ export interface PatchDiagnosis extends PatchRecord {
     candidates: string[];
 }
 
-/** Checks every registered patch against all module factories Discord has registered so far */
-export function diagnosePatches(): PatchDiagnosis[] {
+/** [id, original source] of every module factory Discord has registered so far, loaded or not */
+export function moduleSources(): [id: string, source: string][] {
     const sources: [string, string][] = [];
     if (wreq) {
         for (const id in wreq.m) {
@@ -24,6 +24,12 @@ export function diagnosePatches(): PatchDiagnosis[] {
             if (factory) sources.push([id, functionSource(factory)]);
         }
     }
+    return sources;
+}
+
+/** Checks every registered patch against all module factories Discord has registered so far */
+export function diagnosePatches(): PatchDiagnosis[] {
+    const sources = moduleSources();
 
     return getPatchRecords().map(record => {
         const candidates = sources.filter(([, src]) => matchesFind(src, record.patch.find)).map(([id]) => id);
