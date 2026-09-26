@@ -4,9 +4,10 @@
  *   bun scripts/test-cli.ts          test the source CLI
  *   bun scripts/test-cli.ts --exe    test the compiled dist/delight.exe
  */
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 
+import pkg from "../package.json";
 import { createAsar, readAsarFile } from "../src/shared/asar";
 import { ORIGINAL_ASAR, SHIM_MARKER } from "../src/shared/shim";
 
@@ -76,5 +77,124 @@ writeFileSync(asar, createAsar({ "index.js": "// vencord", "package.json": "{}" 
 r = cli("install");
 check("refuses to install over another client mod", r.out.includes("another client mod"), r.out);
 check("other mod's files left alone", readAsarFile(asar, "index.js") === "// vencord");
+
+// ── delight update, against a local fake of GitHub's API. Never touches the network. ──
+
+let latest: { status: number; tag?: string; } = { status: 404 };
+let asset = new Uint8Array();
+let checksum = "";
+let downloads = 0;
+
+const server = Bun.serve({
+    port: 0,
+    hostname: "127.0.0.1",
+    fetch(req) {
+        const { pathname, origin } = new URL(req.url);
+        if (pathname === "/repos/BleedDev/delight/releases/latest") {
+            if (!latest.tag) return new Response(JSON.stringify({ message: "Not Found" }), { status: latest.status });
+            return Response.json({
+                tag_name: latest.tag,
+                html_url: `${origin}/releases/${latest.tag}`,
+                draft: false,
+                prerelease: false,
+                assets: ["delight.exe", "delight.exe.sha256"].map(name => ({ name, browser_download_url: `${origin}/download/${name}` })),
+            });
+        }
+        if (pathname === "/download/delight.exe") {
+            downloads++;
+            return new Response(asset);
+        }
+        if (pathname === "/download/delight.exe.sha256") return new Response(`${checksum}  delight.exe\n`);
+        return new Response("Not Found", { status: 404 });
+    },
+});
+const API = server.url.href.replace(/\/$/, "");
+
+// The exe updates itself in place, so work on a copy
+const BIN = join(BASE, "bin");
+const exeCopy = join(BIN, "delight.exe");
+if (EXE) {
+    mkdirSync(BIN, { recursive: true });
+    copyFileSync(join(ROOT, "dist", "delight.exe"), exeCopy);
+}
+
+/** Async so the fake server in this process can answer while the CLI runs */
+async function update(args: string[], api = API) {
+    const cmd = EXE ? [exeCopy, ...args] : ["bun", join(ROOT, "src", "cli", "index.ts"), ...args];
+    const proc = Bun.spawn(cmd, {
+        env: { ...process.env, LOCALAPPDATA: LOCAL, APPDATA: ROAMING, NO_COLOR: "1", DELIGHT_UPDATE_API: api },
+        stdout: "pipe",
+        stderr: "pipe",
+    });
+    const [out, err, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
+    return { code, out: out + err };
+}
+
+latest = { status: 404 };
+r = await update(["update"]);
+check("update: no releases yet is reported clearly", r.code === 0 && r.out.includes("No Delight release has been published yet"), r.out);
+
+latest = { status: 200, tag: `v${pkg.version}` };
+r = await update(["update"]);
+check("update: same version is up to date", r.code === 0 && r.out.includes(`${pkg.version} is up to date`), r.out);
+
+latest = { status: 200, tag: "v0.0.1" };
+r = await update(["update", "--check"]);
+check("update: older release is up to date", r.code === 0 && r.out.includes("is up to date"), r.out);
+
+latest = { status: 200, tag: "v99.0.0" };
+r = await update(["update", "--check"]);
+check("update --check: newer version reported", r.code === 0 && r.out.includes("99.0.0 is available"), r.out);
+check("update --check: nothing downloaded", downloads === 0, `${downloads} downloads`);
+if (EXE) check("update --check: exe untouched", readFileSync(exeCopy).equals(readFileSync(join(ROOT, "dist", "delight.exe"))) && !existsSync(`${exeCopy}.old`));
+
+latest = { status: 500 };
+r = await update(["update", "--check"]);
+check("update: API error fails with a message", r.code === 1 && r.out.includes("GitHub answered 500"), r.out);
+
+// Grab a free port, then close it so nothing is listening there
+const closed = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: () => new Response() });
+const deadApi = closed.url.href.replace(/\/$/, "");
+closed.stop(true);
+r = await update(["update", "--check"], deadApi);
+check("update: network error fails with a message", r.code === 1 && r.out.includes("Couldn't reach"), r.out);
+
+latest = { status: 200, tag: "v99.0.0" };
+if (!EXE) {
+    r = await update(["update"]);
+    check("update from source points at git pull", r.code === 0 && r.out.includes("git pull") && downloads === 0, r.out);
+} else {
+    const original = readFileSync(exeCopy);
+    // Trailing bytes don't affect the exe, but make the new file distinguishable from the old one
+    asset = Buffer.concat([original, Buffer.from("DELIGHT-TEST-UPDATE")]);
+
+    checksum = "0".repeat(64);
+    r = await update(["update"]);
+    check("update: checksum mismatch rejected", r.code === 1 && r.out.includes("Checksum mismatch"), r.out);
+    check("update: exe untouched after a bad checksum", readFileSync(exeCopy).equals(original) && !existsSync(`${exeCopy}.old`) && !existsSync(`${exeCopy}.new`));
+
+    // Clean Discord again (the last test left another mod in place) and drop the data folder, to see the new exe install
+    rmSync(join(RESOURCES, ORIGINAL_ASAR), { force: true });
+    writeFileSync(join(RESOURCES, "app.asar"), discordAsar);
+    rmSync(join(ROAMING, "Delight"), { recursive: true, force: true });
+
+    checksum = new Bun.CryptoHasher("sha256").update(asset).digest("hex");
+    r = await update(["update"]);
+    check("update: succeeds with a valid checksum", r.code === 0 && r.out.includes("Updated") && r.out.includes("99.0.0"), r.out);
+    check("update: exe replaced by the download", readFileSync(exeCopy).equals(asset));
+    check("update: previous exe kept as .old", existsSync(`${exeCopy}.old`) && readFileSync(`${exeCopy}.old`).equals(original));
+    check("update: new exe ran install", r.out.includes("Installed Delight") && existsSync(join(ROAMING, "Delight", "core", "main.js")) && shim().startsWith(SHIM_MARKER), r.out);
+
+    r = await update(["status"]);
+    check("update: next run removes the .old", r.code === 0 && !existsSync(`${exeCopy}.old`), r.out);
+}
+server.stop(true);
+
+// The release workflow must parse and must only ever produce drafts
+const workflow = Bun.YAML.parse(readFileSync(join(ROOT, ".github", "workflows", "release.yml"), "utf8")) as any;
+const triggers = Object.keys(workflow?.on ?? {}).sort().join(",");
+check("release.yml parses, triggers only on manual runs and v* tags", triggers === "push,workflow_dispatch" && JSON.stringify(workflow.on.push) === JSON.stringify({ tags: ["v*"] }), triggers);
+const releaseStep = workflow?.jobs?.release?.steps?.find((s: any) => /gh release create/.test(s.run ?? ""));
+check("release.yml creates a draft", /--draft\b/.test(releaseStep?.run ?? ""), releaseStep?.run);
 
 process.exit(failed ? 1 : 0);

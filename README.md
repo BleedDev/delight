@@ -25,9 +25,20 @@ To ship it: `bun run compile` builds `dist/delight.exe`, a single-file installer
 delight install   [--flavor stable|ptb|canary|development|all] [--restart] [--dev]
 delight uninstall [--flavor ...] [--restart]
 delight status
+delight update    [--check] [--flavor ...] [--restart]
 ```
 
 Launch `Discord.exe --vanilla` to start once without Delight.
+
+### Updating
+
+`delight update` asks GitHub for the latest published release of `BleedDev/delight`. If it's newer than the running exe, it downloads the new `delight.exe` next to the current one and checks it against the release's `delight.exe.sha256`. A mismatch is rejected and nothing changes. Windows can't overwrite a running exe, so the current one is renamed to `delight.exe.old`, the new one takes its name, and the `.old` is removed the next time Delight runs. Then the new exe runs `install` (with your `--flavor` / `--restart`), which refreshes the core and official plugins in `%APPDATA%\Delight`.
+
+`delight update --check` only reports whether a newer release exists. Source checkouts (`bun src/cli/index.ts`) don't replace themselves: update them with `git pull` and `bun run build`.
+
+### Releasing
+
+`.github/workflows/release.yml` never publishes anything. It runs only when started from the Actions tab (with a `version` input) or when a `v*` tag is pushed. The version must match `package.json`. It builds, typechecks, runs the unit and CLI tests, compiles `delight.exe`, and creates a **draft** release with `delight.exe` and `delight.exe.sha256` attached. A maintainer reviews the draft and publishes it; only then does `delight update` see it. Versions with a `-suffix` are marked as prereleases, which `delight update` ignores.
 
 ## How it works
 
@@ -141,6 +152,6 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 | `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing |
 | `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, UI. It runs on Node because Playwright's transports hang under Bun on Windows. |
 | `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, auto-injection after an update |
-| `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `--exe` runs it against the compiled binary |
+| `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `delight update` against a local fake of GitHub's API (`DELIGHT_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection and self-replacement on a copy of the exe |
 
 None of the tests touch your real Discord install or profile.
