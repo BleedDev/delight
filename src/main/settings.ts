@@ -5,7 +5,8 @@ import { SETTINGS_FILE } from "./paths";
 
 function load(): DelightSettings {
     try {
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(readFileSync(SETTINGS_FILE, "utf8")) };
+        // Files from older versions lack newer keys, defaults fill them in
+        return { ...structuredClone(DEFAULT_SETTINGS), ...JSON.parse(readFileSync(SETTINGS_FILE, "utf8")) };
     } catch {
         return structuredClone(DEFAULT_SETTINGS);
     }

@@ -11,13 +11,20 @@ export interface ManagedStyle {
     remove(): void;
 }
 
-/** A <style> element appended to <head>. Created before the DOM exists is fine, it's attached later. */
-export function createStyle(css: string, id?: string): ManagedStyle {
+/**
+ * A <style> element appended to <head>. Created before the DOM exists is fine, it's attached later.
+ * With `beforeId`, it goes right before that element instead, when it's there.
+ */
+export function createStyle(css: string, id?: string, beforeId?: string): ManagedStyle {
     const el = document.createElement("style");
     if (id) el.id = id;
     el.textContent = css;
     let removed = false;
-    whenDomReady(() => !removed && document.head.append(el));
+    whenDomReady(() => {
+        if (removed) return;
+        const anchor = beforeId && document.getElementById(beforeId);
+        anchor && anchor.parentNode === document.head ? anchor.before(el) : document.head.append(el);
+    });
 
     return {
         update: next => void (el.textContent = next),
@@ -27,6 +34,9 @@ export function createStyle(css: string, id?: string): ManagedStyle {
         },
     };
 }
+
+/** Themes are inserted before this element, so Quick CSS wins over them */
+export const QUICK_CSS_ID = "delight-quickcss";
 
 let quickCss: ManagedStyle | undefined;
 let quickCssSource = "";
@@ -42,7 +52,7 @@ export const QuickCss = {
     init(initial: string) {
         quickCssSource = initial;
         // Last in <head> so it wins over plugin styles of equal specificity
-        quickCss = createStyle(Settings.data.quickCss ? initial : "", "delight-quickcss");
+        quickCss = createStyle(Settings.data.quickCss ? initial : "", QUICK_CSS_ID);
         Native.onQuickCssChange(css => {
             quickCssSource = css;
             QuickCss.apply();

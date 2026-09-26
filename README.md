@@ -17,7 +17,7 @@ With `bun run dev` running:
 - **Renderer core edits** apply on `Ctrl+R` in Discord.
 - **Main process edits** need Discord restarted.
 
-Press `Ctrl+Shift+D` in Discord to open the settings panel, where you manage plugins, Quick CSS and patch health, and try out new source patches in the Patch Helper. The same pages are also in Discord's own settings, under Delight.
+Press `Ctrl+Shift+D` in Discord to open the settings panel, where you manage plugins, themes, Quick CSS and patch health, and try out new source patches in the Patch Helper. The same pages are also in Discord's own settings, under Delight.
 
 To ship it: `bun run compile` builds `dist/delight.exe`, a single-file installer with the core and official plugins embedded.
 
@@ -59,6 +59,21 @@ Discord.exe
   - **Export hooks** (`src/renderer/patching/hooks.ts`) are chained `before` / `after` / `instead` hooks on any function (module exports, store methods, components). They survive most Discord updates. Exports are made configurable at capture time so this always works.
 - **Patch health.** The Patches tab checks every source patch against every module factory Discord has registered. Each patch is reported as `applied`, `waiting` (lazy chunk), `broken` (Discord changed) or `ambiguous`. After a Discord update, you see exactly which patch broke.
 - **Patch Helper.** Write a `find`, `match` and `replace` and see, as you type, which modules the find hits, what the match catches with context, the code before and after, and whether the patched module still compiles. It uses the patcher's own matching and compile steps, and gives you the finished patch to paste into your plugin.
+
+## Themes
+
+A theme is a `.css` file in `%APPDATA%\Delight\themes`. Turn it on in the Themes tab. Saving the file restyles Discord right away, and new files show up without a reload. BetterDiscord-style headers are read for the name, description, author and version:
+
+```css
+/**
+ * @name Midnight
+ * @description A darker Discord
+ * @author you
+ * @version 1.0.0
+ */
+```
+
+Without a header, the file name is used. **Add from URL** downloads an `https://` link to a CSS file (up to 2 MB) into the themes folder and turns it on. For GitHub, use the Raw link. Enabled themes apply before Discord first paints, and Quick CSS always goes on top of them.
 
 ## Writing a plugin
 
@@ -150,10 +165,10 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 
 | Suite | What it proves |
 |---|---|
-| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation |
-| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, UI. It runs on Node because Playwright's transports hang under Bun on Windows. |
-| `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, auto-injection after an update |
-| `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `delight update` against a local fake of GitHub's API (`DELIGHT_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection and self-replacement on a copy of the exe |
+| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation. Theme header parsing and remote theme checks |
+| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, UI including the Patch Helper and Themes tabs. It runs on Node because Playwright's transports hang under Bun on Windows. |
+| `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (applied at startup, live from the folder, ordered under Quick CSS, downloaded from a URL), auto-injection after an update |
+| `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `delight update` against a local fake of GitHub's API (`DELIGHT_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection, self-replacement on a copy of the exe, and that updates only refresh Discords that already have Delight |
 
 None of the tests touch your real Discord install or profile.
 

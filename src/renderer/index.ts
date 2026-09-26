@@ -9,6 +9,7 @@ import { diagnosePatches } from "./patching/diagnose";
 import { PluginManager } from "./plugins/manager";
 import { Settings } from "./settings";
 import { QuickCss } from "./styles";
+import { Themes } from "./themes";
 import { installHotkey, SettingsUI } from "./ui";
 import { installSettingsEntry } from "./ui/settingsEntry";
 import { onCommonReady } from "./webpack/common";
@@ -28,6 +29,7 @@ const Delight = {
     api,
     plugins: PluginManager,
     settings: Settings,
+    themes: Themes,
     ui: SettingsUI,
     diagnosePatches,
     stats,
@@ -50,6 +52,8 @@ function boot() {
 
     const data = Native.boot();
     Settings.init(data.settings);
+    // Themes first: Quick CSS goes after them in <head>, so it wins
+    Themes.init(data.themes);
     QuickCss.init(data.quickCss);
     PluginManager.boot(data.plugins);
     installHotkey();
