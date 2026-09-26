@@ -15,6 +15,7 @@ import { join, resolve } from "path";
 
 import { parseBackup } from "../src/shared/backup";
 import { createShimAsar, ORIGINAL_ASAR } from "../src/shared/shim";
+import { disablePasskeys } from "./no-passkeys.ts";
 
 const ROOT = resolve(import.meta.dir, "..");
 const BASE = join(ROOT, "test-results", "electron");
@@ -130,6 +131,8 @@ const fakeDiscordPreload = `
 const { contextBridge } = require("electron");
 // Not "DiscordNative": that would switch Discord's web code into desktop mode, which needs the real native APIs
 contextBridge.exposeInMainWorld("__fakeDiscordPreload", { ran: true });
+// discord.com asks for passkeys on its login page, which can pop a Windows Hello dialog: switch WebAuthn off
+require("electron").webFrame.executeJavaScript(${JSON.stringify(`(${disablePasskeys})()`)});
 `;
 
 function fakeVersion(version: string) {

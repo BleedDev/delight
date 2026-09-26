@@ -11,6 +11,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
 import { join, resolve } from "path";
 import { chromium } from "playwright-core";
 
+import { disablePasskeys } from "./no-passkeys.ts";
+
 import type { BootData, PluginPayload, ThemePayload } from "../src/shared/ipc";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -137,6 +139,8 @@ page.on("console", msg => {
 });
 page.on("pageerror", err => delightErrors.push(`pageerror: ${err.message}`));
 
+// Before anything else: discord.com would otherwise pop a Windows passkey dialog on the desktop
+await page.addInitScript(disablePasskeys);
 await page.addInitScript(fakeNative, boot);
 await page.addInitScript(renderer);
 await page.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });
