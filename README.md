@@ -75,6 +75,12 @@ A theme is a `.css` file in `%APPDATA%\Delight\themes`. Turn it on in the Themes
 
 Without a header, the file name is used. **Add from URL** downloads an `https://` link to a CSS file (up to 2 MB) into the themes folder and turns it on. For GitHub, use the Raw link. Enabled themes apply before Discord first paints, and Quick CSS always goes on top of them.
 
+## Message Logger
+
+An official plugin, off by default. Deleted messages stay in the chat, tinted red and marked **Deleted**, and edited messages show their previous versions under them, rendered with Discord's own markdown. Messages you delete yourself vanish as usual. Settings: keep deleted messages, keep edit history, ignore my own deletes, ignore my own messages, ignore bots, and how many messages to log per channel (the oldest are forgotten past it). The settings card counts what's logged and has a **Clear logged messages** button.
+
+Nothing is written to disk. It uses no source patches: it hooks MessageStore's own entries in the Flux dispatcher, so only MessageStore keeps a deleted message (unread counts and mentions still see the delete), and the exported function that renders a message's accessories. Turning it off really deletes the kept messages and hides every edit history.
+
 ## Writing a plugin
 
 A plugin is a folder in `plugins/` (official) or `userplugins/` (yours, gitignored):
@@ -205,7 +211,7 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 | Suite | What it proves |
 |---|---|
 | `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation. Theme header parsing and remote theme checks. The menu props patch: what gets rewritten and what must not be |
-| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, toasts, menu items, slash commands, UI including the Patch Helper and Themes tabs. It runs on Node because Playwright's transports hang under Bun on Windows. |
+| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, toasts, menu items, slash commands, the message logger on a synthetic channel (loads Discord's lazy chat chunks), UI including the Patch Helper and Themes tabs. It runs on Node because Playwright's transports hang under Bun on Windows. |
 | `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (applied at startup, live from the folder, ordered under Quick CSS, downloaded from a URL), auto-injection after an update |
 | `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `delight update` against a local fake of GitHub's API (`DELIGHT_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection, self-replacement on a copy of the exe, and that updates only refresh Discords that already have Delight |
 
