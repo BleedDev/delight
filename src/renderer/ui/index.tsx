@@ -3,6 +3,7 @@ import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
 import { Button, Icon, useStore } from "./components";
 import { PatchesTab } from "./PatchesTab";
+import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
 import css from "./styles.css" with { type: "text" };
@@ -34,6 +35,7 @@ const tabs = [
     { id: "plugins", label: "Plugins", Component: PluginsTab },
     { id: "quickcss", label: "Quick CSS", Component: QuickCssTab },
     { id: "patches", label: "Patches", Component: PatchesTab },
+    { id: "patchhelper", label: "Patch Helper", Component: PatchHelperTab },
 ] as const;
 
 function Panel() {

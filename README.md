@@ -17,7 +17,7 @@ With `bun run dev` running:
 - **Renderer core edits** apply on `Ctrl+R` in Discord.
 - **Main process edits** need Discord restarted.
 
-Press `Ctrl+Shift+D` in Discord to open the settings panel, where you manage plugins, Quick CSS and patch health.
+Press `Ctrl+Shift+D` in Discord to open the settings panel, where you manage plugins, Quick CSS and patch health, and try out new source patches in the Patch Helper. The same pages are also in Discord's own settings, under Delight.
 
 To ship it: `bun run compile` builds `dist/delight.exe`, a single-file installer with the core and official plugins embedded.
 
@@ -47,6 +47,7 @@ Discord.exe
   - **Source patches** (`src/renderer/patching/source.ts`) rewrite a module's code right before it first runs. They can change anything. `\i` matches any minified identifier, and `$self` refers to your plugin. Each patch is compiled separately and reverted if it produces invalid code.
   - **Export hooks** (`src/renderer/patching/hooks.ts`) are chained `before` / `after` / `instead` hooks on any function (module exports, store methods, components). They survive most Discord updates. Exports are made configurable at capture time so this always works.
 - **Patch health.** The Patches tab checks every source patch against every module factory Discord has registered. Each patch is reported as `applied`, `waiting` (lazy chunk), `broken` (Discord changed) or `ambiguous`. After a Discord update, you see exactly which patch broke.
+- **Patch Helper.** Write a `find`, `match` and `replace` and see, as you type, which modules the find hits, what the match catches with context, the code before and after, and whether the patched module still compiles. It uses the patcher's own matching and compile steps, and gives you the finished patch to paste into your plugin.
 
 ## Writing a plugin
 
@@ -138,7 +139,7 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 
 | Suite | What it proves |
 |---|---|
-| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing |
+| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation |
 | `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, UI. It runs on Node because Playwright's transports hang under Bun on Windows. |
 | `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, auto-injection after an update |
 | `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `--exe` runs it against the compiled binary |
