@@ -1,0 +1,11 @@
+{
+    "id": "fast-lists",
+    "name": "Fast Lists",
+    "description": "Keeps Discord smooth with hundreds of servers and long chats. Servers, messages and members far out of view skip rendering work, without ever being removed, so nothing flickers, disappears or jumps.",
+    "version": "2.0.0",
+    "authors": [
+        "Delight"
+    ],
+    "enabledByDefault": true,
+    "main": "index.js"
+}

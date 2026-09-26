@@ -11,6 +11,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
 import { join, resolve } from "path";
 import { chromium } from "playwright-core";
 
+import { disablePasskeys } from "./no-passkeys.ts";
+
 import type { BootData, PluginPayload, ThemePayload } from "../src/shared/ipc";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -62,11 +64,15 @@ function fakeNative(bootData: BootData) {
     if (window !== window.top) return;
     const pluginListeners: ((change: unknown) => void)[] = [];
     const themeListeners: ((change: unknown) => void)[] = [];
-    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[] };
+    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[], bootOk: 0, exitedSafeMode: 0 };
     (window as any).DelightNative = {
         boot: () => structuredClone(bootData),
         saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
+        saveSettingsSync: (s: unknown) => void ((window as any).__test.savedSettings = structuredClone(s)),
         saveQuickCss: async () => { },
+        saveQuickCssSync: () => { },
+        reportBootOk: () => void (window as any).__test.bootOk++,
+        exitSafeMode: async () => void (window as any).__test.exitedSafeMode++,
         onQuickCssChange: () => { },
         onPluginChange: (cb: (c: unknown) => void) => void pluginListeners.push(cb),
         onThemeChange: (cb: (c: unknown) => void) => void themeListeners.push(cb),
@@ -77,12 +83,73 @@ function fakeNative(bootData: BootData) {
             themeListeners.forEach(cb => cb({ type: "upsert", theme }));
             return { ok: true, file: theme.file };
         },
+        // Plugin store: a small registry, one plugin installed, one with an update, one native
+        storeList: async () => {
+            const file = (id: string, name: string) => ({ url: `https://example.com/${id}/${name}`, sha256: "0".repeat(64) });
+            const entry = (id: string, name: string, description: string, version: string, native = false, tags: string[] = []) => ({
+                id, name, description, authors: ["Delight"], version, tags, native, minDelightVersion: "0.1.0",
+                files: { "manifest.json": file(id, "manifest.json"), "index.js": file(id, "index.js"), ...(native ? { "native.js": file(id, "native.js") } : {}) },
+            });
+            return {
+                ok: true,
+                registryUrl: "https://raw.githubusercontent.com/BleedDev/delight/main/registry.json",
+                problems: [],
+                plugins: [
+                    entry("store-clock", "Message Clock", "Shows the exact send time next to every message.", "1.0.0", false, ["messages"]),
+                    entry("store-quiet", "Quiet Mode", "Hides typing indicators and read states until you ask for them.", "1.3.0", false, ["privacy"]),
+                    entry("store-rpc", "Local RPC", "Exposes a local API so other apps can read your current channel.", "0.4.0", true, ["integration"]),
+                    entry("store-theme-sync", "Theme Sync", "Follows your system's light and dark mode.", "2.1.0"),
+                ],
+                installed: [{ id: "store-quiet", version: "1.2.0", fromStore: true }, { id: "store-theme-sync", version: "2.1.0", fromStore: true }],
+            };
+        },
+        storeInstall: async (id: string, options?: { allowNative?: boolean; }) => {
+            (window as any).__test.storeInstalls.push({ id, options });
+            if (id === "store-rpc" && !options?.allowNative) return { ok: false, error: "Needs confirmation" };
+            const plugin = { source: "user", manifest: { id, name: id, version: "9.9.9" }, code: "module.exports = { default: {} };" };
+            pluginListeners.forEach(cb => cb({ type: "upsert", plugin }));
+            return { ok: true, id, version: id === "store-quiet" ? "1.3.0" : "1.0.0" };
+        },
+        storeUninstall: async (id: string) => ({ ok: true, id, version: "1.0.0" }),
+        onStoreProgress: () => { },
         callNative: async (...args: unknown[]) => ((window as any).__test.nativeCalls.push(args), 42),
         setNativeRunning: async () => { },
+        // Backup: main's dialogs and file IO, answered with a fixed backup that turns the test theme on
+        exportBackup: async () => ({ ok: true, path: "C:\\Users\\you\\Documents\\delight-backup-2026-09-26.json" }),
+        openBackup: async () => {
+            const preview = (mode: string) => ({
+                mode,
+                pluginsEnabled: ["Toolkit Demo"],
+                pluginsDisabled: mode === "replace" ? ["Clear URLs"] : [],
+                pluginSettingsChanged: ["Smooth Typing"],
+                missingPlugins: [{ id: "spotify-controls", name: "Spotify Controls", source: "user", enabled: true }],
+                themesAdded: ["midnight.css"],
+                themesOverwritten: ["web-test.css"],
+                themesEnabled: ["web-test.css"],
+                themesDisabled: [],
+                quickCss: mode === "replace" ? "replaced" : "kept",
+                changes: 7,
+            });
+            return {
+                ok: true,
+                token: "test-token",
+                fileName: "delight-backup-2026-09-20.json",
+                createdAt: "2026-09-20T18:42:00.000Z",
+                delightVersion: "0.1.0",
+                previews: { merge: preview("merge"), replace: preview("replace") },
+            };
+        },
+        applyBackup: async (token: string, mode: string) => {
+            const current = (window as any).Delight.settings.data;
+            const settings = { ...structuredClone(current), enabledThemes: [...current.enabledThemes, "web-test.css"] };
+            (window as any).__test.applied = { token, mode };
+            return { ok: true, settings, preview: { changes: 7 } };
+        },
         openPath: async () => "",
         relaunch: async () => { },
     };
 }
+
 
 const results: { name: string; ok: boolean; detail?: unknown; }[] = [];
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -106,21 +173,8 @@ page.on("console", msg => {
 });
 page.on("pageerror", err => delightErrors.push(`pageerror: ${err.message}`));
 
-// The login page calls WebAuthn, which pops a Windows Hello / passkey dialog on the desktop: refuse it
-await page.addInitScript(() => {
-    const refuse = () => Promise.reject(new DOMException("Disabled in tests", "NotAllowedError"));
-    try {
-        if (navigator.credentials) {
-            Object.defineProperty(navigator.credentials, "get", { value: refuse, configurable: true });
-            Object.defineProperty(navigator.credentials, "create", { value: refuse, configurable: true });
-        }
-        const p = (window as any).PublicKeyCredential;
-        if (p) {
-            p.isConditionalMediationAvailable = () => Promise.resolve(false);
-            p.isUserVerifyingPlatformAuthenticatorAvailable = () => Promise.resolve(false);
-        }
-    } catch { }
-});
+// Before anything else: discord.com would otherwise pop a Windows passkey dialog on the desktop
+await page.addInitScript(disablePasskeys);
 await page.addInitScript(fakeNative, boot);
 await page.addInitScript(renderer);
 await page.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });
@@ -396,9 +450,16 @@ const toolkit = await page.evaluate(async () => {
     const list = builtIns?.exports[builtIns.key]([1], true, false) ?? [];
     const command = list.find((c: any) => c.untranslatedName === "delight");
     const shrug = list.find((c: any) => c.untranslatedName === "shrug");
+    const nick = list.find((c: any) => c.untranslatedName === "nick");
+    // Replies go through Discord's sendBotMessage ("Only you can see this"): capture them
+    const botActions = api.findByProps("sendBotMessage", "sendMessage");
+    const replies: [string, string][] = [];
+    const unhookBot = botActions && api.hook(botActions, "sendBotMessage", "instead", (c: any) => void replies.push([c.args[0], c.args[1]]), "test");
+    (window as any).__botReplies = replies;
     // Discord runs it as execute(options, context)
-    const result = await command?.execute([{ name: "text", type: 3, value: "Command toast test" }], { channel: { id: "1" } });
-    const commandToast = await toastText("Command toast test");
+    const result = await command?.execute([{ name: "text", type: 3, value: "Command reply test" }], { channel: { id: "1" } });
+    const commandToast = replies.find(r => r[1] === "Command reply test") ?? null;
+    unhookBot?.();
 
     // Render Discord's real Menu with the context a message menu gets from the navId patch
     const root = document.createElement("div");
@@ -442,6 +503,7 @@ const toolkit = await page.evaluate(async () => {
         running, menuHooked, commandsHooked,
         command: command && { id: command.id, inputType: command.inputType, applicationId: command.applicationId, options: command.options?.length },
         shrug: shrug && { inputType: shrug.inputType, applicationId: shrug.applicationId },
+        nick: nick && { inputType: nick.inputType, applicationId: nick.applicationId },
         result: result ?? null, commandToast,
         rendered, copyToast, copied, renderError,
         listAfter, menuRestored, commandsRestored,
@@ -455,13 +517,458 @@ check("navId source patch applied, no errors", toolkit.navPatch?.health === "app
 check("navId rewrite hands menus their props and compiles on every navId module", toolkit.rewrite.modules >= 5 && !toolkit.rewrite.compileErrors.length && toolkit.rewrite.sample.includes('delightMenuArgs:arguments[0],navId:"clean-up-inactive-gdms"') && toolkit.rewrite.menuDestructuringKept, toolkit.rewrite);
 check("built-in commands module found", !!toolkit.builtIns && toolkit.listBefore.includes("shrug") && !toolkit.listBefore.includes("delight"), toolkit.builtIns);
 check("toolkit-demo started, Menu and command list hooked", toolkit.running && toolkit.menuHooked && toolkit.commandsHooked);
-check("/delight listed with Discord's built-ins", !!toolkit.command && toolkit.command.inputType === toolkit.shrug?.inputType && toolkit.command.applicationId === toolkit.shrug?.applicationId, toolkit.command);
-check("/delight runs locally and shows a toast", toolkit.result === null && toolkit.commandToast?.type === "success", toolkit.commandToast);
+check("/delight listed as a non-text built-in like /nick (Discord never sends its result)", !!toolkit.command && toolkit.command.inputType === toolkit.nick?.inputType && toolkit.command.applicationId === toolkit.nick?.applicationId && toolkit.command.inputType !== toolkit.shrug?.inputType, { command: toolkit.command, nick: toolkit.nick, shrug: toolkit.shrug });
+check("/delight replies ephemerally (Only you can see this), returns nothing for Discord to send", toolkit.result == null && JSON.stringify(toolkit.commandToast) === '["1","Command reply test"]', toolkit.commandToast);
 check("message menu shows the plugin's item next to Discord's", toolkit.rendered.includes("Native item") && toolkit.rendered.some((t: string) => t.includes("Copy Message ID (Delight)")), toolkit.renderError ?? toolkit.rendered);
 check("menu item gets the message from menu props and copies its id", toolkit.copied === "123456789" && toolkit.copyToast?.type === "success", { copied: toolkit.copied, toast: toolkit.copyToast });
 check("stopping the plugin removes its command and the command hook", !toolkit.listAfter.includes("delight") && toolkit.commandsRestored);
 check("the shared Menu hook stays while another plugin still uses menus", !toolkit.menuRestored);
 await page.screenshot({ path: join(OUT, "toolkit-toast.png") });
+
+// Helpers for the plugin suites below, in the page
+await page.evaluate(() => {
+    const { api } = (window as any).Delight;
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+    const popToast = api.find(api.filters.byCode("queuedToastsMap.get("));
+    (window as any).__qa = {
+        sleep,
+        // Discord shows one toast at a time and queues the rest: dismiss each once seen
+        toastText: async (text: string) => {
+            for (let i = 0; i < 30; i++) {
+                const el = [...document.querySelectorAll('[role="status"]')].find(e => e.textContent?.includes(text));
+                if (el) {
+                    popToast?.();
+                    return { text: el.textContent, type: el.getAttribute("data-type") };
+                }
+                await sleep(100);
+            }
+            return null;
+        },
+        load: (filter: any, ...code: string[]) => {
+            let found = api.findExport(filter);
+            if (!found) {
+                for (const id of api.findModuleIds(...code)) api.requireModule(id);
+                found = api.findExport(filter);
+            }
+            return found;
+        },
+    };
+});
+
+// ---- silent-typing ------------------------------------------------------------------------------
+
+const silent = await page.evaluate(async () => {
+    const { api, plugins, toolkit, diagnosePatches } = (window as any).Delight;
+    const { sleep, toastText, load } = (window as any).__qa;
+
+    // Discord's typing actions: startTyping dispatches TYPING_START_LOCAL, whose store handler sends the request
+    const typing = load(api.filters.byProps("startTyping", "stopTyping"), "TYPING_START_LOCAL", "startTyping(");
+    const actions = typing?.value;
+    const dispatched: string[] = [];
+    const onStart = (a: any) => void dispatched.push(`start:${a.channelId}`);
+    const onStop = (a: any) => void dispatched.push(`stop:${a.channelId}`);
+    api.Dispatcher.subscribe("TYPING_START_LOCAL", onStart);
+    api.Dispatcher.subscribe("TYPING_STOP_LOCAL", onStop);
+
+    const untouchedBefore = !!actions && api.getUnhooked(actions.startTyping) === actions.startTyping;
+    actions?.startTyping("100");
+    const sentBefore = dispatched.includes("start:100");
+
+    await plugins.setEnabled("silent-typing", true);
+    const state = plugins.get("silent-typing");
+    const running = !!state?.running;
+    const hooked = !!actions && api.getUnhooked(actions.startTyping) !== actions.startTyping;
+    actions?.startTyping("101");
+    actions?.stopTyping("101");
+    const blocked = !dispatched.includes("start:101");
+    const stopStillSent = dispatched.includes("stop:101");
+
+    // The "Enabled" setting lets typing through without stopping the plugin
+    state?.ctx.settings.set("enabled", false);
+    actions?.startTyping("102");
+    const sentWhenSettingOff = dispatched.includes("start:102");
+    state?.ctx.settings.set("enabled", true);
+
+    // /silenttyping toggles the setting and says so
+    const builtIns = api.findExport(toolkit.filters.builtInCommands);
+    const command = builtIns?.exports[builtIns.key]([1], true, false).find((c: any) => c.untranslatedName === "silenttyping");
+    const botActions = api.findByProps("sendBotMessage", "sendMessage");
+    const replies: [string, string][] = [];
+    const unhookBot = botActions && api.hook(botActions, "sendBotMessage", "instead", (c: any) => void replies.push([c.args[0], c.args[1]]), "test");
+    const returned = await command?.execute([], { channel: { id: "1" } });
+    const afterCommand = state?.ctx.settings.get("enabled");
+    await command?.execute([], { channel: { id: "1" } });
+    const afterSecondCommand = state?.ctx.settings.get("enabled");
+    unhookBot?.();
+    const commandToast = replies[0]?.[1] ?? null;
+    const commandToastOn = replies[1]?.[1] ?? null;
+
+    // Chat bar button: the source patch lands in ChannelTextAreaButtons once that module runs
+    const [buttonsModule] = api.findModuleIds('"ChannelTextAreaButtons"');
+    let requireError: string | null = null;
+    try {
+        if (buttonsModule) api.requireModule(buttonsModule);
+    } catch (err) {
+        requireError = String(err);
+    }
+    const diag = diagnosePatches().find((d: any) => d.plugin === "silent-typing");
+    const self = (window as any).Delight.$("silent-typing");
+    const buttons: any[] = [{ key: "emoji" }, { key: "submit" }];
+    self?.injectButton(buttons, { channel: { id: "1" } });
+    const injectedKeys = buttons.map(b => b?.key);
+
+    // The button itself, with Discord's chat bar button component
+    const root = document.createElement("div");
+    document.body.appendChild(root);
+    const reactRoot = api.createRoot(root);
+    reactRoot.render(api.React.createElement(self.SilentTypingButton));
+    await sleep(200);
+    const button = root.querySelector('[aria-label^="Silent typing"]') as HTMLElement | null;
+    const labelOn = button?.getAttribute("aria-label") ?? null;
+    const discordButton = !!button && !button.classList.contains("dl-silent-typing-fallback");
+    const wrapperClass = root.firstElementChild?.className ?? "";
+    button?.click();
+    await sleep(200);
+    const labelOff = root.querySelector('[aria-label^="Silent typing"]')?.getAttribute("aria-label") ?? null;
+    const settingAfterClick = state?.ctx.settings.get("enabled");
+    await toastText("Silent typing");
+    reactRoot.unmount();
+    root.remove();
+
+    await plugins.setEnabled("silent-typing", false);
+    const restored = !!actions && api.getUnhooked(actions.startTyping) === actions.startTyping;
+    actions?.startTyping("103");
+    const sentAfterDisable = dispatched.includes("start:103");
+    const commandRemoved = !builtIns?.exports[builtIns.key]([1], true, false).some((c: any) => c.untranslatedName === "silenttyping");
+    api.Dispatcher.unsubscribe("TYPING_START_LOCAL", onStart);
+    api.Dispatcher.unsubscribe("TYPING_STOP_LOCAL", onStop);
+
+    return {
+        typing: typing && { id: typing.id, key: typing.key }, untouchedBefore, sentBefore,
+        running, hooked, blocked, stopStillSent, sentWhenSettingOff,
+        command: !!command, afterCommand, afterSecondCommand, commandToast, commandToastOn,
+        buttonsModule, requireError, patch: diag && { health: diag.health, modules: diag.modules, errors: diag.errors.slice(0, 2) }, injectedKeys,
+        labelOn, labelOff, discordButton, wrapperClass, settingAfterClick,
+        restored, sentAfterDisable, commandRemoved,
+    };
+});
+check("silent-typing: Discord's typing actions found", !!silent.typing && silent.untouchedBefore && silent.sentBefore, silent.typing);
+check("silent-typing: startTyping hooked and blocked while enabled, stopTyping untouched", silent.running && silent.hooked && silent.blocked && silent.stopStillSent);
+check("silent-typing: the Enabled setting lets typing through when off", silent.sentWhenSettingOff);
+check("silent-typing: /silenttyping toggles it and replies only to you", silent.command && silent.afterCommand === false && silent.afterSecondCommand === true && /off/.test(silent.commandToast ?? "") && /on/.test(silent.commandToastOn ?? ""), { after: [silent.afterCommand, silent.afterSecondCommand], replies: [silent.commandToast, silent.commandToastOn] });
+check("silent-typing: chat bar patch applied to ChannelTextAreaButtons", !silent.requireError && silent.patch?.health === "applied" && silent.patch.modules.includes(silent.buttonsModule), { patch: silent.patch, module: silent.buttonsModule, error: silent.requireError });
+check("silent-typing: button goes before the send button", JSON.stringify(silent.injectedKeys) === '["emoji","delight-silent-typing","submit"]', silent.injectedKeys);
+check("silent-typing: button renders with Discord's chat button and toggles", silent.discordButton && silent.wrapperClass.startsWith("buttonContainer_") && /on/.test(silent.labelOn ?? "") && /off/.test(silent.labelOff ?? "") && silent.settingAfterClick === false, { on: silent.labelOn, off: silent.labelOff, wrapper: silent.wrapperClass });
+check("silent-typing: disabling restores startTyping and removes the command", silent.restored && silent.sentAfterDisable && silent.commandRemoved);
+
+// ---- quick-actions ------------------------------------------------------------------------------
+
+const IMAGE_URL = "https://cdn.discordapp.com/attachments/1/2/cat.png?ex=1&is=2&hm=3";
+
+/** Renders Discord's message menu with the props the navId patch gives it, returns the item labels */
+async function renderMessageMenu(args: unknown, nativeIds: string[]) {
+    return page.evaluate(async ({ args, nativeIds }) => {
+        const { api, toolkit } = (window as any).Delight;
+        const { sleep } = (window as any).__qa;
+        const menu = api.findExport(toolkit.filters.menu);
+        const Item = toolkit.resolveMenuComponents().Item;
+        const Group = toolkit.resolveMenuComponents().Group;
+        (window as any).__qaRoot?.unmount();
+        document.getElementById("qa-root")?.remove();
+        const root = document.createElement("div");
+        root.id = "qa-root";
+        document.body.appendChild(root);
+        const reactRoot = (window as any).__qaRoot = api.createRoot(root);
+        const h = api.React.createElement;
+        // Discord's own items, in one group like the real message menu's Copy Text group
+        reactRoot.render(h(menu.exports[menu.key], { navId: "message", onClose: () => { }, "aria-label": "test", delightMenuArgs: args },
+            h(Group, null, nativeIds.map(id => h(Item, { key: id, id, label: `Native ${id}`, action: () => { } })))));
+        await sleep(300);
+        return [...root.querySelectorAll('[role="menuitem"]')].map(e => ({ id: e.id, text: e.textContent ?? "" }));
+    }, { args, nativeIds });
+}
+
+/** Clicks a rendered menu item by label, returns the clipboard and the toast it showed */
+async function clickMenuItem(label: string, toast?: string) {
+    return page.evaluate(async ({ label, toast }) => {
+        const { toastText } = (window as any).__qa;
+        const item = [...document.querySelectorAll('#qa-root [role="menuitem"], [role="menu"] [role="menuitem"]')]
+            .find(e => e.textContent === label) as HTMLElement | undefined;
+        if (!item) return { clicked: false, clipboard: null, toast: null };
+        item.click();
+        const shown = toast ? await toastText(toast) : null;
+        return { clicked: true, clipboard: await navigator.clipboard.readText().catch(e => `clipboard: ${e}`), toast: shown };
+    }, { label, toast });
+}
+
+await page.evaluate(async () => {
+    const w = window as any;
+    w.__opened = [];
+    w.__realOpen = window.open;
+    window.open = ((url: string) => void w.__opened.push(url)) as any;
+    await w.Delight.plugins.setEnabled("quick-actions", true);
+});
+
+const fullMessage = {
+    message: {
+        id: "987", channel_id: "555", content: "**hola** amigo `code`",
+        attachments: [{ url: IMAGE_URL, filename: "cat.png", content_type: "image/png" }], embeds: [],
+    },
+    channel: { id: "555", guild_id: "444" },
+};
+const qaItems = await renderMessageMenu(fullMessage, ["copy-text"]);
+const qaLabels = qaItems.map(i => i.text);
+check("quick-actions: message menu gets all items next to Copy Text",
+    ["Native copy-text", "Copy Message Link", "Copy Raw Text", "Copy Message ID", "Search Image", "Translate with Google"].every(l => qaLabels.includes(l)),
+    qaLabels);
+
+const copiedLink = await clickMenuItem("Copy Message Link", "Message link copied");
+check("quick-actions: Copy Message Link copies Discord's link format", copiedLink.clipboard === "https://discord.com/channels/444/555/987" && copiedLink.toast?.type === "success", copiedLink);
+const copiedRaw = await clickMenuItem("Copy Raw Text", "Raw text copied");
+check("quick-actions: Copy Raw Text copies the markdown source", copiedRaw.clipboard === "**hola** amigo `code`" && copiedRaw.toast?.type === "success", copiedRaw);
+const copiedId = await clickMenuItem("Copy Message ID", "Message ID copied");
+check("quick-actions: Copy Message ID copies the id", copiedId.clipboard === "987" && copiedId.toast?.type === "success", copiedId);
+
+// Search Image is a submenu: hover it to open, then pick an engine
+const searchItem = qaItems.find(i => i.text === "Search Image");
+await page.hover(`[id="${searchItem?.id}"]`).catch(() => { });
+await page.waitForTimeout(400);
+const engines = await page.evaluate(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map(e => e.textContent));
+await page.screenshot({ path: join(OUT, "quick-actions-menu.png") });
+// Menu re-rendered on every hover and click: items added to Discord's group must not pile up
+const rawCount = await page.evaluate(() => [...document.querySelectorAll('#qa-root [role="menuitem"]')].filter(e => e.textContent === "Copy Raw Text").length);
+check("quick-actions: re-renders don't duplicate items in Discord's group", rawCount === 1, rawCount);
+const lens = await clickMenuItem("Google Lens");
+await renderMessageMenu(fullMessage, ["copy-text"]);
+await clickMenuItem("Translate with Google");
+const opened: string[] = await page.evaluate(() => (window as any).__opened);
+check("quick-actions: Search Image lists Google Lens, Yandex and TinEye", ["Google Lens", "Yandex", "TinEye"].every(e => engines.includes(e)), engines);
+check("quick-actions: Google Lens opens the image in the browser", lens.clicked && opened[0] === `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(IMAGE_URL)}`, opened[0]);
+check("quick-actions: Translate opens Google Translate with the text", !!opened[1] && new URL(opened[1]).searchParams.get("text") === "**hola** amigo `code`" && new URL(opened[1]).searchParams.get("sl") === "auto", opened[1]);
+
+// Only what applies: no text means no raw text or translate, no image means no search, and
+// Discord's own Copy Message Link / developer mode Copy Message ID aren't duplicated
+const bare = (await renderMessageMenu({ message: { id: "988", channel_id: "555", content: "", attachments: [], embeds: [] }, channel: { id: "555" } }, ["copy-link", "devmode-copy-id-988"])).map(i => i.text);
+check("quick-actions: items only appear when they apply", !["Copy Raw Text", "Translate with Google", "Search Image", "Copy Message Link", "Copy Message ID"].some(l => bare.includes(l)), bare);
+const dm = await renderMessageMenu({ message: { id: "989", channel_id: "556", content: "", attachments: [], embeds: [] }, channel: { id: "556" } }, []);
+const dmLink = await clickMenuItem("Copy Message Link", "Message link copied");
+check("quick-actions: a DM message gets an @me link, in a group of its own", dm.map(i => i.text).includes("Copy Message ID") && dmLink.clipboard === "https://discord.com/channels/@me/556/989", { items: dm.map(i => i.text), link: dmLink.clipboard });
+
+const qaStopped = await page.evaluate(async () => {
+    const w = window as any;
+    await w.Delight.plugins.setEnabled("quick-actions", false);
+    window.open = w.__realOpen;
+    return true;
+});
+const afterStop = (await renderMessageMenu(fullMessage, ["copy-text"])).map(i => i.text);
+check("quick-actions: disabling removes its items", qaStopped && JSON.stringify(afterStop) === '["Native copy-text"]', afterStop);
+await page.evaluate(() => {
+    (window as any).__qaRoot?.unmount();
+    document.getElementById("qa-root")?.remove();
+});
+// ---- message logger -----------------------------------------------------------------------------
+
+// Logged out, MessageStore still works for a channel we "load" ourselves: dispatch Discord's own
+// actions for a fake channel and check what the plugin and the store make of them
+const logger = await page.evaluate(async () => {
+    const { api, plugins, wreq, diagnosePatches } = (window as any).Delight;
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+    const { Dispatcher } = api;
+    const store = api.getStore("MessageStore");
+    const handlersOf = () => Dispatcher._actionHandlers._dependencyGraph.getNodeData(store.getDispatchToken()).actionHandler;
+    const handlers = handlersOf();
+    const originals = { del: handlers.MESSAGE_DELETE, bulk: handlers.MESSAGE_DELETE_BULK, update: handlers.MESSAGE_UPDATE };
+
+    // The accessories renderer and Discord's content renderer live in lazy chunks: load chunks until
+    // both are registered, then run them the way opening a chat would: Discord's lazy "Channel"
+    // route component declares the chunks it needs next to its name
+    const wanted = [["channelMessageProps:{message:", "isAutomodBlockedMessage:"], ['"useMessageRenderedContent"', "hideSimpleEmbedContent"]];
+    const route = /createPromise:\(\)=>Promise\.all\(\[((?:\w\.e\("\d+"\),?)+)\]\)\.then\(\w\.bind\(\w,(\d+)\)\),webpackId:\d+,name:"Channel"[,}]/;
+    let chunkIds: string[] = [];
+    let channelModule: string | undefined;
+    for (const id of api.findModuleIds('name:"Channel"')) {
+        const m = api.functionSource(wreq.m[id]).match(route);
+        if (m) {
+            chunkIds = [...m[1].matchAll(/"(\d+)"/g)].map((x: RegExpMatchArray) => x[1]);
+            channelModule = m[2];
+            break;
+        }
+    }
+    const loadStart = performance.now();
+    let chunksLoaded = 0;
+    await Promise.all(chunkIds.map(id => wreq.e(id).then(() => chunksLoaded++, () => { })));
+    const loadMs = Math.round(performance.now() - loadStart);
+    const moduleIds = wanted.map(code => api.findModuleIds(...code)[0]);
+    const requireErrors: string[] = [];
+    for (const id of moduleIds) {
+        try {
+            if (id) api.requireModule(id);
+        } catch (err) {
+            requireErrors.push(String(err).slice(0, 200));
+        }
+    }
+    const accessories = moduleIds[0] && api.findExport(api.filters.byCode(...wanted[0]));
+
+    await plugins.setEnabled("message-logger", true);
+    const state = plugins.get("message-logger");
+    const log = state.definition.getLog();
+    const running = !!state.running && !!log;
+    const hooked = {
+        del: api.getUnhooked(handlers.MESSAGE_DELETE) !== handlers.MESSAGE_DELETE,
+        bulk: api.getUnhooked(handlers.MESSAGE_DELETE_BULK) !== handlers.MESSAGE_DELETE_BULK,
+        update: api.getUnhooked(handlers.MESSAGE_UPDATE) !== handlers.MESSAGE_UPDATE,
+        accessories: !!accessories && api.getUnhooked(accessories.exports[accessories.key]) !== accessories.exports[accessories.key],
+    };
+
+    const channelId = "777000000000000001";
+    const raw = (id: string, content: string) => ({
+        id, channel_id: channelId, author: { id: "555", username: "someone", discriminator: "0", avatar: null }, content,
+        timestamp: new Date(Date.UTC(2026, 0, 1, 12, Number(id.slice(-2)))).toISOString(),
+        edited_timestamp: null, type: 0, flags: 0, attachments: [], embeds: [], mentions: [], mention_roles: [], pinned: false, tts: false,
+    });
+    const ids = Array.from({ length: 15 }, (_, i) => `88800000000000${i + 10}`);
+    await Dispatcher.dispatch({
+        type: "LOAD_MESSAGES_SUCCESS", channelId, messages: ids.map(id => raw(id, `message ${id}`)).reverse(),
+        isBefore: false, isAfter: false, hasMoreBefore: false, hasMoreAfter: false, isStale: false,
+    });
+    const loaded = ids.filter(id => store.getMessage(channelId, id)).length;
+    const [a, b, c, d] = ids;
+    const e = ids[14];
+
+    // Other stores must still see deletes: only MessageStore keeps the message
+    const seenBySubscribers: string[] = [];
+    const onDelete = (x: any) => seenBySubscribers.push(x.id);
+    Dispatcher.subscribe("MESSAGE_DELETE", onDelete);
+
+    // Edit twice, then delete the same message
+    await Dispatcher.dispatch({ type: "MESSAGE_UPDATE", message: { id: a, channel_id: channelId, content: "edited **once**", edited_timestamp: new Date().toISOString() } });
+    await Dispatcher.dispatch({ type: "MESSAGE_UPDATE", message: { id: a, channel_id: channelId, content: "edited twice", edited_timestamp: new Date().toISOString() } });
+    // An embed-only update is not an edit
+    await Dispatcher.dispatch({ type: "MESSAGE_UPDATE", message: { id: a, channel_id: channelId, embeds: [] } });
+    const edits = log.get(channelId, a)?.edits.map((x: any) => x.content);
+    const storeContent = store.getMessage(channelId, a)?.content;
+
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: a, channelId });
+    const keptA = { inStore: !!store.getMessage(channelId, a), deleted: log.isDeleted(channelId, a) };
+
+    // Local deletes (ephemeral dismissals, failed sends) always go through
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: b, channelId, local: true });
+    const localB = !!store.getMessage(channelId, b);
+
+    // Bulk: the known one is kept, an unknown id passes through untouched
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE_BULK", ids: [c, "1"], channelId });
+    const keptC = !!store.getMessage(channelId, c) && log.isDeleted(channelId, c);
+
+    // A delete you start yourself vanishes as usual ("Ignore my own deletes" is on by default).
+    // The test's instead-hook keeps the request off the network; the plugin's before-hook still runs.
+    let actions = api.findByProps("deleteMessage", "editMessage", "sendMessage");
+    if (!actions) {
+        for (const id of api.findModuleIds("sendMessage(", "editMessage(")) api.requireModule(id);
+        actions = api.findByProps("deleteMessage", "editMessage", "sendMessage");
+    }
+    const unhookDelete = actions && api.hook(actions, "deleteMessage", "instead", () => Promise.resolve(), "test");
+    await actions?.deleteMessage(channelId, d);
+    unhookDelete?.();
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: d, channelId });
+    const selfD = { inStore: !!store.getMessage(channelId, d), logged: !!log.get(channelId, d) };
+    Dispatcher.unsubscribe("MESSAGE_DELETE", onDelete);
+
+    // Render what the accessories hook adds, inside a chat row like Discord's
+    const host = document.createElement("ul");
+    host.innerHTML = `<li data-list-item-id="chat-messages___chat-messages-${channelId}-${a}" id="chat-messages-${channelId}-${a}"></li>`;
+    document.body.appendChild(host);
+    const root = api.createRoot(host.firstElementChild);
+    const render: Record<string, any> = { error: null };
+    try {
+        const hookedFn = accessories?.exports[accessories.key];
+        const message = store.getMessage(channelId, a);
+        const result = hookedFn?.({ channelMessageProps: { message, channel: { id: channelId } }, hasSpoilerEmbeds: false, hasBailedAst: false, isInteracting: false });
+        const snapshot = hookedFn?.({ channelMessageProps: { message, channel: { id: channelId } }, isMessageSnapshot: true });
+        const ours = result?.props?.children?.[1];
+        render.appended = !!ours && result.props.children.length === 2;
+        render.snapshotUntouched = !Array.isArray(snapshot?.props?.children);
+        if (ours) root.render(ours);
+        await sleep(300);
+        const li = host.firstElementChild as HTMLElement;
+        const tag = li.querySelector(".dl-ml-deleted");
+        render.text = li.textContent;
+        render.bold = li.querySelector(".dl-ml-version strong")?.textContent ?? null;
+        render.markup = li.querySelector(".dl-ml-content")?.className ?? null;
+        render.tagColor = tag && getComputedStyle(tag).color;
+        render.rowBackground = getComputedStyle(li).backgroundColor;
+        render.rowShadow = getComputedStyle(li).boxShadow;
+    } catch (err) {
+        render.error = String(err);
+    }
+
+    // Caps: 10 per channel. Deleting 10 more evicts the oldest deleted ones, which then really go
+    state.ctx.settings.set("limit", 10);
+    await sleep(50);
+    const rest = ids.slice(4, 14);
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE_BULK", ids: rest, channelId });
+    await sleep(50);
+    const caps = {
+        logged: log.counts(),
+        evictedGoneFromStore: [a, c].map(id => !store.getMessage(channelId, id)),
+        newestKept: rest.every(id => !!store.getMessage(channelId, id) && log.isDeleted(channelId, id)),
+    };
+    state.ctx.settings.set("limit", 50);
+    // One more edit so disabling has history to hide too
+    await Dispatcher.dispatch({ type: "MESSAGE_UPDATE", message: { id: rest[0], channel_id: channelId, content: "changed" } });
+    // The first message was evicted by the cap: show a surviving one in the row instead
+    const surviving = accessories?.exports[accessories.key]({ channelMessageProps: { message: store.getMessage(channelId, rest[0]), channel: { id: channelId } } });
+    if (surviving) root.render(surviving.props.children[1]);
+    await sleep(100);
+    const beforeStop = {
+        counts: log.counts(),
+        rendered: !!host.querySelector(".dl-ml-deleted") && !!host.querySelector(".dl-ml-history"),
+        rowBackground: getComputedStyle(host.firstElementChild!).backgroundColor,
+    };
+
+    await plugins.setEnabled("message-logger", false);
+    await sleep(100);
+    const handlersNow = handlersOf();
+    const stopped = {
+        keptGone: rest.every(id => !store.getMessage(channelId, id)),
+        unhooked: handlersNow.MESSAGE_DELETE === originals.del && handlersNow.MESSAGE_DELETE_BULK === originals.bulk && handlersNow.MESSAGE_UPDATE === originals.update,
+        purgeHandlerRemoved: !Object.keys(handlersNow).some(k => k.startsWith("DELIGHT_")),
+        accessoriesRestored: !!accessories && api.getUnhooked(accessories.exports[accessories.key]) === accessories.exports[accessories.key],
+        logCleared: log.counts(),
+        renderedGone: !host.querySelector(".dl-ml"),
+        rowBackground: getComputedStyle(host.firstElementChild!).backgroundColor,
+        style: !!document.getElementById("delight-plugin-message-logger"),
+    };
+    // With the plugin off, a delete removes the message like stock Discord
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: e, channelId });
+    const stockDelete = !store.getMessage(channelId, e);
+    root.unmount();
+    host.remove();
+
+    return {
+        chunks: { total: chunkIds.length, loaded: chunksLoaded, loadMs, channelModule, moduleIds, requireErrors },
+        running, hooked, loaded, first: a, edits, storeContent, keptA, localB, keptC, seenBySubscribers, selfD, render, caps, beforeStop, stopped, stockDelete,
+        patches: diagnosePatches().filter((p: any) => p.plugin === "message-logger").length,
+    };
+});
+check("message-logger: loaded the lazy accessories and content renderers", logger.chunks.moduleIds.every(Boolean) && !logger.chunks.requireErrors.length, logger.chunks);
+check("message-logger: hooks MessageStore's delete/update handlers and the accessories renderer", logger.running && Object.values(logger.hooked).every(Boolean), logger.hooked);
+check("message-logger: no source patches to break", logger.patches === 0);
+check("MessageStore accepts a synthetic channel logged out", logger.loaded === 15, logger.loaded);
+check("edits record previous versions, embed-only updates don't", JSON.stringify(logger.edits) === JSON.stringify([`message ${logger.first}`, "edited **once**"]) && logger.storeContent === "edited twice", { edits: logger.edits, store: logger.storeContent });
+check("a deleted message stays in MessageStore, marked deleted", logger.keptA.inStore && logger.keptA.deleted, logger.keptA);
+check("other stores and subscribers still get MESSAGE_DELETE", logger.seenBySubscribers.includes(logger.first), logger.seenBySubscribers);
+check("local deletes pass through", !logger.localB);
+check("bulk deletes are kept per message", logger.keptC);
+check("a delete you started yourself isn't kept (Ignore my own deletes)", !logger.selfD.inStore && !logger.selfD.logged, logger.selfD);
+check("accessories hook appends the log view, leaves forwarded snapshots alone", !!logger.render.appended && !!logger.render.snapshotUntouched && !logger.render.error, logger.render.error ?? undefined);
+check("deleted message renders its tag, row tint and edit history", /Edited from/.test(logger.render.text ?? "") && /Deleted/.test(logger.render.text ?? "")
+    && logger.render.rowBackground !== "rgba(0, 0, 0, 0)" && logger.render.rowShadow !== "none", logger.render);
+check("old versions go through Discord's markdown renderer and markup class", logger.render.bold === "once" && /markup_/.test(logger.render.markup ?? ""), { bold: logger.render.bold, markup: logger.render.markup });
+check("per-channel cap evicts the oldest, evicted deleted messages really go", logger.caps.logged.deleted === 10 && logger.caps.evictedGoneFromStore.every(Boolean) && logger.caps.newestKept, logger.caps);
+check("disabling deletes kept messages for real and restores MessageStore's handlers", logger.stopped.keptGone && logger.stopped.unhooked && logger.stopped.purgeHandlerRemoved && logger.stopped.accessoriesRestored, logger.stopped);
+check("disabling clears the log, unmounts tags and history, removes the tint", logger.beforeStop.rendered && logger.beforeStop.rowBackground !== "rgba(0, 0, 0, 0)" && logger.stopped.renderedGone && logger.stopped.logCleared.deleted + logger.stopped.logCleared.edited === 0
+    && logger.stopped.rowBackground === "rgba(0, 0, 0, 0)" && !logger.stopped.style, { before: logger.beforeStop, after: logger.stopped });
+check("with the plugin off, deletes behave like stock Discord", logger.stockDelete);
 
 // ---- UI -----------------------------------------------------------------------------------------
 
@@ -585,11 +1092,162 @@ const added = {
 check("Add from URL lists the theme and turns it on", added.value === "on" && added.listed && /Remote Theme/.test(added.status ?? ""), added);
 await page.screenshot({ path: join(OUT, "ui-themes-added.png") });
 
+// ---- backup -------------------------------------------------------------------------------------
+
+await page.click("#dl-tab-backup");
+await page.getByRole("button", { name: "Export backup" }).click();
+await page.waitForTimeout(200);
+const exportStatus = await page.evaluate(() => document.querySelector("#dl-tabpanel [role=status]")?.textContent);
+check("Backup: export reports where it saved", exportStatus === "Saved to C:\\Users\\you\\Documents\\delight-backup-2026-09-26.json", exportStatus);
+
+await page.getByRole("button", { name: "Choose backup file" }).click();
+await page.waitForSelector(".dl-backup-preview", { timeout: 5000 });
+await page.waitForTimeout(200);
+const backupPreview = await page.evaluate(() => document.querySelector(".dl-backup-preview")?.textContent ?? "");
+check("Backup: preview shows the file and what changes", [
+    "delight-backup-2026-09-20.json", "with Delight v0.1.0", "Turns on 1 plugin: Toolkit Demo", "Overwrites 1 theme",
+    "Keeps your Quick CSS", "Spotify Controls", "plugins/spotify-controls", "Merge backup",
+].every(t => backupPreview.includes(t)), backupPreview.slice(0, 300));
+await page.screenshot({ path: join(OUT, "ui-backup.png") });
+
+await page.getByRole("button", { name: "Merge backup" }).click();
+await page.waitForTimeout(300);
+const restored = {
+    applied: await page.evaluate(() => (window as any).__test.applied),
+    status: await page.evaluate(() => [...document.querySelectorAll("#dl-tabpanel [role=status]")].map(e => e.textContent).join(" | ")),
+    theme: await themeVar("--dl-test-theme"),
+    previewGone: !(await page.$(".dl-backup-preview")),
+};
+check("Backup: restoring applies the new settings live", restored.applied?.mode === "merge" && restored.theme === "edited" && restored.previewGone && restored.status.includes("Restored delight-backup-2026-09-20.json, 7 changes applied"), restored);
+await page.screenshot({ path: join(OUT, "ui-backup-restored.png") });
+// ---- store --------------------------------------------------------------------------------------
+
+await page.click("#dl-tab-store");
+await page.waitForSelector('[data-store-id="store-rpc"]', { timeout: 5000 });
+await page.waitForTimeout(200);
+await page.screenshot({ path: join(OUT, "ui-store.png") });
+const storeCard = (id: string) => page.evaluate(i => document.querySelector(`[data-store-id="${i}"]`)?.textContent ?? "", id);
+const storeList = {
+    clock: await storeCard("store-clock"),
+    quiet: await storeCard("store-quiet"),
+    rpc: await storeCard("store-rpc"),
+    sync: await storeCard("store-theme-sync"),
+};
+check("Store tab lists plugins with description, authors and version", storeList.clock.includes("Message Clock") && storeList.clock.includes("exact send time") && storeList.clock.includes("By Delight") && storeList.clock.includes("v1.0.0"), storeList.clock);
+check("Store shows Install, Update + Uninstall, and Installed states", /Install$/.test(storeList.clock) && storeList.quiet.includes("Update available, you have v1.2.0") && storeList.quiet.includes("Uninstall") && storeList.sync.includes("Installed v2.1.0"), storeList);
+check("native plugins carry a badge", storeList.rpc.includes("Native") && !storeList.clock.includes("Native"));
+
+await page.fill("#dl-store-search", "privacy");
+await page.waitForTimeout(150);
+const searched = await page.evaluate(() => [...document.querySelectorAll("[data-store-id]")].map(e => e.getAttribute("data-store-id")));
+check("Store search matches tags", JSON.stringify(searched) === '["store-quiet"]', searched);
+await page.fill("#dl-store-search", "");
+
+const storeButton = (id: string, name: string) => page.locator(`[data-store-id="${id}"]`).getByRole("button", { name, exact: true });
+await storeButton("store-rpc", "Install").click();
+await page.waitForSelector('[data-store-id="store-rpc"] .dl-store-confirm', { timeout: 2000 });
+await page.screenshot({ path: join(OUT, "ui-store-native-confirm.png") });
+const confirmText = await page.evaluate(() => document.querySelector(".dl-store-confirm")?.textContent ?? "");
+const installsBeforeConfirm = await page.evaluate(() => (window as any).__test.storeInstalls.length);
+check("installing a native plugin asks first, explaining full access", /full access to your computer/.test(confirmText) && installsBeforeConfirm === 0, confirmText.slice(0, 120));
+await storeButton("store-rpc", "Install with full access").click();
+await page.waitForTimeout(300);
+const nativeInstall = {
+    calls: await page.evaluate(() => (window as any).__test.storeInstalls),
+    card: await storeCard("store-rpc"),
+};
+check("confirming installs with allowNative and shows the result", nativeInstall.calls.at(-1)?.options?.allowNative === true && nativeInstall.card.includes("Installed and turned on"), nativeInstall);
+
+await storeButton("store-quiet", "Update").click();
+await page.waitForTimeout(300);
+const updated = await storeCard("store-quiet");
+check("Update installs the new version", updated.includes("Updated to v1.3.0") && !updated.includes("Update available"), updated);
+await page.screenshot({ path: join(OUT, "ui-store-after.png") });
+
 await page.keyboard.press("Escape");
 await page.waitForTimeout(300);
 check("Escape closes the panel", !(await page.$(".dl-panel")));
 
+check("healthy start reported once plugins ran for a while", await page.evaluate(() => (window as any).__test.bootOk === 1));
 check("no Delight errors in console", delightErrors.length === 0, delightErrors.slice(0, 5));
+
+// ---- safe mode ----------------------------------------------------------------------------------
+
+// A fresh page that main booted in safe mode, after a crash loop with a few recorded changes
+const now = Date.now();
+const safeBoot: BootData = {
+    ...boot,
+    settings: { quickCss: true, plugins: { experiments: { enabled: true } }, enabledThemes: ["web-test.css"] },
+    quickCss: "body { outline: 3px solid rgb(255, 0, 128) !important; }",
+    safeMode: {
+        reason: "crash-loop",
+        failures: 2,
+        changes: [
+            { kind: "plugin", id: "experiments", action: "enabled", at: now - 3 * 60_000 },
+            { kind: "theme", id: "web-test.css", action: "updated", at: now - 2 * 3600_000 },
+            { kind: "quickCss", id: "quick.css", action: "edited", at: now - 2 * 86400_000 },
+        ],
+    },
+};
+const safePage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+safePage.on("console", msg => msg.type() === "error" && msg.text().includes("Delight") && delightErrors.push(`safe mode: ${msg.text()}`));
+safePage.on("pageerror", err => delightErrors.push(`safe mode pageerror: ${err.message}`));
+await safePage.addInitScript(disablePasskeys);
+await safePage.addInitScript(fakeNative, safeBoot);
+await safePage.addInitScript(renderer);
+await safePage.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });
+await safePage.waitForFunction(() => (window as any).Delight?.safeMode.reportedOk && document.querySelector(".dl-safe-float"), null, { timeout: 60_000 });
+await safePage.waitForTimeout(300);
+await safePage.screenshot({ path: join(OUT, "safe-mode-notice.png") });
+
+const safe = await safePage.evaluate(() => {
+    const D = (window as any).Delight;
+    const css = (el: Element, prop: string) => getComputedStyle(el).getPropertyValue(prop).trim();
+    const notice = document.querySelector(".dl-safe-float .dl-safe")!;
+    return {
+        active: D.safeMode.active,
+        running: D.plugins.getSnapshot().filter((p: any) => p.running).map((p: any) => p.manifest.id),
+        evaluated: D.plugins.getSnapshot().filter((p: any) => p.definition).map((p: any) => p.manifest.id),
+        listed: D.plugins.getSnapshot().length,
+        patches: D.diagnosePatches().filter((d: any) => d.plugin !== "delight").length,
+        theme: css(document.documentElement, "--dl-test-theme"),
+        outline: css(document.body, "outline-color"),
+        bootOk: (window as any).__test.bootOk,
+        text: notice.textContent,
+        buttons: [...notice.querySelectorAll("button")].map(b => b.textContent || b.getAttribute("aria-label")),
+        labelled: document.getElementById(notice.getAttribute("aria-labelledby")!)?.textContent,
+    };
+});
+check("safe mode: no plugin evaluated, started or patching, all still listed", safe.active && !safe.running.length && !safe.evaluated.length && !safe.patches && safe.listed === plugins.length, safe);
+check("safe mode: enabled theme and Quick CSS not applied", safe.theme === "" && safe.outline !== "rgb(255, 0, 128)", { theme: safe.theme, outline: safe.outline });
+check("safe mode start is still reported healthy", safe.bootOk === 1);
+check("notice explains why and names the newest change that's still on", safe.labelled === "Delight is in safe mode" && safe.text.includes("last 2 times")
+    && /Most recent change: Experiments \(plugin, turned on 3 minutes ago\)/.test(safe.text) && /Also changed recently:Web Test \(theme, updated 2 hours ago\)Quick CSS \(edited 2 days ago\)/.test(safe.text), safe.text);
+check("notice offers disabling it and leaving safe mode", ["Disable Experiments and restart", "Exit safe mode and restart", "Hide safe mode notice"].every(b => safe.buttons.includes(b)), safe.buttons);
+
+await safePage.getByRole("button", { name: "Hide safe mode notice" }).click();
+await safePage.waitForTimeout(100);
+check("notice can be hidden", !(await safePage.$(".dl-safe-float")));
+
+await safePage.keyboard.press("Control+Shift+D");
+await safePage.waitForSelector(".dl-panel .dl-safe", { timeout: 5000 });
+await safePage.waitForTimeout(300);
+await safePage.screenshot({ path: join(OUT, "safe-mode-plugins.png") });
+const paused = await safePage.evaluate(() => document.querySelector('[aria-labelledby="dl-plugin-experiments"]')?.textContent ?? "");
+check("Plugins tab repeats the notice, enabled plugins show as paused", paused.includes("Paused in safe mode"), paused);
+
+await safePage.click("#dl-tab-themes");
+await safePage.waitForTimeout(200);
+const themesHint = await safePage.evaluate(() => document.querySelector("#dl-tabpanel .dl-banner")?.textContent ?? "");
+check("Themes tab says themes are off in safe mode", themesHint.includes("Safe mode is on: themes aren’t applied"), themesHint);
+await safePage.click("#dl-tab-plugins");
+await safePage.waitForTimeout(200);
+
+await safePage.evaluate(() => [...document.querySelectorAll(".dl-panel .dl-safe button")].find(b => b.textContent?.includes("Disable Experiments"))!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+await safePage.waitForTimeout(200);
+const disabled = await safePage.evaluate(() => ({ saved: (window as any).__test.savedSettings, exited: (window as any).__test.exitedSafeMode }));
+check("\"Disable Experiments and restart\" saves it off right away, then leaves safe mode", disabled.saved?.plugins?.experiments?.enabled === false && disabled.exited === 1, disabled);
+check("no Delight errors in safe mode", delightErrors.length === 0, delightErrors.slice(0, 5));
 
 await browser.close();
 

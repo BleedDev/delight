@@ -12,6 +12,7 @@
         "esModuleInterop": true,
         "isolatedModules": true,
         "noEmit": true,
+        "allowImportingTsExtensions": true,
         "types": ["bun", "node"],
         "paths": {
             "@delight/api": ["./src/api/index.ts"],

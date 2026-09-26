@@ -8,13 +8,13 @@ async function copy(text: string) {
 
 export default definePlugin({
     start(ctx) {
-        // Runs locally; returning { content } would have Discord send it as your message
+        // Runs locally and replies with an "Only you can see this" message. Returning { content } instead would send a real message.
         ctx.command({
             name: "delight",
             description: "Say hi from Delight",
             options: [{ name: "text", description: "What the toast says", type: "string" }],
             execute(args) {
-                ctx.toast(args.text || `Delight ${(window as any).Delight?.version ?? ""} is running`, { type: "success" });
+                return { ephemeral: args.text || `Delight ${(window as any).Delight?.version ?? ""} is running` };
             },
         });
 

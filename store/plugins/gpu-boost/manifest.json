@@ -1,0 +1,13 @@
+{
+    "id": "gpu-boost",
+    "name": "GPU Zero-Copy",
+    "description": "Lets the GPU read rendered tiles directly instead of copying them first (Chromium's zero-copy uploads), which can help high refresh rate displays. Discord already has GPU rendering on; this is the one extra switch it leaves off. Takes effect after restarting Discord.",
+    "version": "1.0.0",
+    "authors": [
+        "Delight"
+    ],
+    "chromiumSwitches": {
+        "enable-zero-copy": true
+    },
+    "main": "index.js"
+}

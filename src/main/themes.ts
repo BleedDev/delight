@@ -1,10 +1,12 @@
 import { AddThemeResult, IPC, ThemeChange, ThemePayload } from "@shared/ipc";
 import { isThemeFile, MAX_THEME_BYTES, parseThemeMeta, themeFileName, whyNotCss } from "@shared/themes";
-import { ipcMain, net, webContents } from "electron";
+import { ipcMain, webContents } from "electron";
 import { existsSync, FSWatcher, mkdirSync, readdirSync, readFileSync, watch, writeFileSync } from "fs";
 import { join } from "path";
 
+import { downloadHttps } from "./download";
 import { THEMES_DIR } from "./paths";
+import { SafeMode } from "./safeMode";
 
 const themes = new Map<string, ThemePayload>();
 
@@ -25,7 +27,7 @@ function broadcast(change: ThemeChange) {
     }
 }
 
-function reloadTheme(file: string) {
+export function reloadTheme(file: string) {
     const previous = themes.get(file);
     const next = readTheme(file);
     // Editors touch files on save without changing them, don't restyle Discord for that
@@ -39,6 +41,7 @@ function reloadTheme(file: string) {
         return;
     }
     themes.set(file, next);
+    SafeMode.recordChange({ kind: "theme", id: file, action: previous ? "updated" : "installed" });
     broadcast({ type: "upsert", theme: next });
 }
 
@@ -85,28 +88,6 @@ function watchThemes() {
     start();
 }
 
-/** Reads the body, giving up as soon as it passes the size cap */
-async function readCapped(res: Response) {
-    const declared = Number(res.headers.get("content-length"));
-    if (declared > MAX_THEME_BYTES) return null;
-
-    const reader = res.body?.getReader();
-    if (!reader) return new Uint8Array();
-    const chunks: Uint8Array[] = [];
-    let size = 0;
-    for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        size += value.byteLength;
-        if (size > MAX_THEME_BYTES) {
-            reader.cancel().catch(() => { });
-            return null;
-        }
-        chunks.push(value);
-    }
-    return Buffer.concat(chunks);
-}
-
 /** Uses a name that's free, unless the same theme is already there (re-adding updates nothing) */
 function pickFile(wanted: string, css: string) {
     const base = wanted.replace(/\.css$/i, "");
@@ -118,26 +99,10 @@ function pickFile(wanted: string, css: string) {
 }
 
 export async function addThemeFromUrl(input: string): Promise<AddThemeResult> {
-    let url: URL;
-    try {
-        url = new URL(input.trim());
-    } catch {
-        return { ok: false, error: "That isn't a valid URL" };
-    }
-    if (url.protocol !== "https:") return { ok: false, error: "Only https:// links are allowed" };
-
-    let res: Response;
-    try {
-        res = await net.fetch(url.href, { signal: AbortSignal.timeout(20_000) });
-    } catch (err) {
-        return { ok: false, error: `Couldn't download it: ${(err as Error).message}` };
-    }
-    if (!res.ok) return { ok: false, error: `The server answered ${res.status} ${res.statusText}`.trim() };
-    if (new URL(res.url || url.href).protocol !== "https:") return { ok: false, error: "The link redirected away from https" };
-
-    const body = await readCapped(res).catch(() => undefined);
-    if (body === undefined) return { ok: false, error: "The download was interrupted" };
-    if (body === null) return { ok: false, error: `That file is larger than ${MAX_THEME_BYTES / 1024 / 1024} MB` };
+    const download = await downloadHttps(input, MAX_THEME_BYTES);
+    if (!download.ok) return download;
+    const url = new URL(input.trim());
+    const { body } = download;
 
     let css: string;
     try {
@@ -145,7 +110,7 @@ export async function addThemeFromUrl(input: string): Promise<AddThemeResult> {
     } catch {
         return { ok: false, error: "That file isn't text" };
     }
-    const problem = whyNotCss(css, res.headers.get("content-type") ?? "");
+    const problem = whyNotCss(css, download.contentType);
     if (problem) return { ok: false, error: problem };
 
     const file = pickFile(themeFileName(url, parseThemeMeta(css, "")), css);

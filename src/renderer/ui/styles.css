@@ -516,7 +516,8 @@
 .dl-banner > svg { flex: none; color: var(--dl-text-warning); }
 .dl-banner[data-tone="danger"] { border-color: var(--dl-text-critical); background: var(--dl-bg-critical); }
 .dl-banner[data-tone="danger"] > svg { color: var(--dl-text-critical); }
-.dl-banner-text { flex: 1; text-wrap: pretty; }
+.dl-banner-text,
+.dl-banner > span { flex: 1; text-wrap: pretty; }
 
 .dl-error {
     margin: 0;
@@ -955,4 +956,148 @@
 .dl-root [data-checking] {
     opacity: 0.6;
     transition: opacity var(--dl-duration-fast) ease-out;
+}
+
+/* ==== safe mode (SafeModeNotice.tsx) ========================================================= */
+
+.dl-safe {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dl-space-inner);
+    padding: 16px 20px 20px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid color-mix(in oklab, var(--dl-text-warning) 45%, transparent);
+    background: var(--dl-bg-warning);
+    color: var(--dl-text-default);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.dl-safe-head {
+    display: flex;
+    align-items: center;
+    gap: var(--dl-space-inner);
+    min-block-size: 32px;
+}
+
+.dl-safe-icon {
+    display: inline-flex;
+    color: var(--dl-text-warning);
+}
+
+.dl-safe-title {
+    flex: 1;
+    margin: 0;
+    color: var(--dl-text-strong);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-wrap: balance;
+}
+
+.dl-safe-text {
+    margin: 0;
+    max-inline-size: 72ch;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+}
+
+.dl-safe-suspect { color: var(--dl-text-strong); }
+.dl-safe-meta { color: var(--dl-text-subtle); }
+
+.dl-safe-changes {
+    margin: 4px 0 0;
+    padding-inline-start: 20px;
+}
+
+.dl-safe-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dl-space-inner);
+    margin-block-start: 8px;
+}
+
+/* Floating over Discord, under the settings panel's scrim */
+.dl-safe-float {
+    position: fixed;
+    inset-block-end: 16px;
+    inset-inline-end: 16px;
+    z-index: 9999;
+    inline-size: min(440px, calc(100vw - 32px));
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-bg-panel);
+    box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-safe-float { animation: dl-panel-in var(--dl-duration-base) ease-out; }
+}
+
+/* ==== end safe mode ========================================================================== */
+
+/* ==== Backup tab (BackupTab.tsx) ============================================================= */
+
+.dl-backup-changes {
+    margin: 0;
+    padding-inline-start: 20px;
+    list-style: disc;
+    color: var(--dl-text-default);
+    font-size: 14px;
+    line-height: 1.4;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+}
+
+.dl-backup-changes li + li { margin-block-start: 4px; }
+
+.dl-backup-changes .dl-mono,
+.dl-backup-changes .dl-badge {
+    margin-inline-start: 6px;
+    color: var(--dl-text-subtle);
+}
+
+/* ==== end Backup tab ========================================================================== */
+/* ---- store (StoreTab.tsx) ---------------------------------------------------------------- */
+
+.dl-store-status:empty,
+.dl-store-registry:empty { display: none; }
+
+.dl-badge[data-tone="warning"] {
+    background: color-mix(in oklab, var(--dl-text-warning) 18%, transparent);
+    color: var(--dl-text-warning);
+}
+
+.dl-store-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dl-space-inner);
+    padding: 16px;
+    border-radius: var(--dl-radius-control);
+    border: 1px solid color-mix(in oklab, var(--dl-text-warning) 45%, transparent);
+    background: var(--dl-bg-warning);
+}
+
+.dl-store-confirm > p { margin: 0; }
+
+.dl-store-confirm:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+.dl-store-confirm-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--dl-text-strong);
+    font-weight: 600;
+}
+
+.dl-store-confirm-title svg { color: var(--dl-text-warning); flex-shrink: 0; }
+
+/* ---- end store --------------------------------------------------------------------------- */
+
+/* Discord's own inputs draw their focus border themselves: don't stack our outline on top.
+   Our fallback inputs (.dl-input / .dl-textarea) keep the outline above. */
+.dl-root :where(input, textarea):not(.dl-input, .dl-textarea):focus-visible {
+    outline: none;
 }

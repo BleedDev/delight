@@ -3,6 +3,7 @@ import { Settings } from "../settings";
 import { QuickCss } from "../styles";
 import { React } from "../webpack/common";
 import { Button, CodeArea, Section, SwitchRow, useStore } from "./components";
+import { SafeModeHint } from "./SafeModeNotice";
 
 export function QuickCssTab() {
     const { quickCss: applied } = useStore(Settings.subscribe, () => Settings.data);
@@ -15,6 +16,7 @@ export function QuickCssTab() {
 
     return (
         <div className="dl-tab">
+            <SafeModeHint what="Quick CSS edits" />
             <SwitchRow
                 id="dl-quickcss-toggle"
                 label="Apply Quick CSS"

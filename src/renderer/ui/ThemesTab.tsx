@@ -5,6 +5,7 @@ import { Settings } from "../settings";
 import { Themes } from "../themes";
 import { React } from "../webpack/common";
 import { Button, EmptyState, List, Section, Status, Switch, Text, TextField, useStore } from "./components";
+import { SafeModeHint } from "./SafeModeNotice";
 
 type AddState =
     | { type: "idle"; }
@@ -104,6 +105,7 @@ export function ThemesTab() {
 
     return (
         <div className="dl-tab">
+            <SafeModeHint what="themes" />
             <Section
                 id="dl-themes-add"
                 title="Add a theme"
