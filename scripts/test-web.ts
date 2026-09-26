@@ -79,6 +79,37 @@ function fakeNative(bootData: BootData) {
         },
         callNative: async (...args: unknown[]) => ((window as any).__test.nativeCalls.push(args), 42),
         setNativeRunning: async () => { },
+        // Backup: main's dialogs and file IO, answered with a fixed backup that turns the test theme on
+        exportBackup: async () => ({ ok: true, path: "C:\\Users\\you\\Documents\\delight-backup-2026-09-26.json" }),
+        openBackup: async () => {
+            const preview = (mode: string) => ({
+                mode,
+                pluginsEnabled: ["Toolkit Demo"],
+                pluginsDisabled: mode === "replace" ? ["Clear URLs"] : [],
+                pluginSettingsChanged: ["Smooth Typing"],
+                missingPlugins: [{ id: "spotify-controls", name: "Spotify Controls", source: "user", enabled: true }],
+                themesAdded: ["midnight.css"],
+                themesOverwritten: ["web-test.css"],
+                themesEnabled: ["web-test.css"],
+                themesDisabled: [],
+                quickCss: mode === "replace" ? "replaced" : "kept",
+                changes: 7,
+            });
+            return {
+                ok: true,
+                token: "test-token",
+                fileName: "delight-backup-2026-09-20.json",
+                createdAt: "2026-09-20T18:42:00.000Z",
+                delightVersion: "0.1.0",
+                previews: { merge: preview("merge"), replace: preview("replace") },
+            };
+        },
+        applyBackup: async (token: string, mode: string) => {
+            const current = (window as any).Delight.settings.data;
+            const settings = { ...structuredClone(current), enabledThemes: [...current.enabledThemes, "web-test.css"] };
+            (window as any).__test.applied = { token, mode };
+            return { ok: true, settings, preview: { changes: 7 } };
+        },
         openPath: async () => "",
         relaunch: async () => { },
     };
@@ -569,6 +600,35 @@ const added = {
 };
 check("Add from URL lists the theme and turns it on", added.value === "on" && added.listed && /Remote Theme/.test(added.status ?? ""), added);
 await page.screenshot({ path: join(OUT, "ui-themes-added.png") });
+
+// ---- backup -------------------------------------------------------------------------------------
+
+await page.click("#dl-tab-backup");
+await page.getByRole("button", { name: "Export backup" }).click();
+await page.waitForTimeout(200);
+const exportStatus = await page.evaluate(() => document.querySelector("#dl-tabpanel [role=status]")?.textContent);
+check("Backup: export reports where it saved", exportStatus === "Saved to C:\\Users\\you\\Documents\\delight-backup-2026-09-26.json", exportStatus);
+
+await page.getByRole("button", { name: "Choose backup file" }).click();
+await page.waitForSelector(".dl-backup-preview", { timeout: 5000 });
+await page.waitForTimeout(200);
+const backupPreview = await page.evaluate(() => document.querySelector(".dl-backup-preview")?.textContent ?? "");
+check("Backup: preview shows the file and what changes", [
+    "delight-backup-2026-09-20.json", "with Delight v0.1.0", "Turns on 1 plugin: Toolkit Demo", "Overwrites 1 theme",
+    "Keeps your Quick CSS", "Spotify Controls", "plugins/spotify-controls", "Merge backup",
+].every(t => backupPreview.includes(t)), backupPreview.slice(0, 300));
+await page.screenshot({ path: join(OUT, "ui-backup.png") });
+
+await page.getByRole("button", { name: "Merge backup" }).click();
+await page.waitForTimeout(300);
+const restored = {
+    applied: await page.evaluate(() => (window as any).__test.applied),
+    status: await page.evaluate(() => [...document.querySelectorAll("#dl-tabpanel [role=status]")].map(e => e.textContent).join(" | ")),
+    theme: await themeVar("--dl-test-theme"),
+    previewGone: !(await page.$(".dl-backup-preview")),
+};
+check("Backup: restoring applies the new settings live", restored.applied?.mode === "merge" && restored.theme === "edited" && restored.previewGone && restored.status.includes("Restored delight-backup-2026-09-20.json, 7 changes applied"), restored);
+await page.screenshot({ path: join(OUT, "ui-backup-restored.png") });
 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(300);

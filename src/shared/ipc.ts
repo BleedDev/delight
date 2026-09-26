@@ -1,3 +1,5 @@
+import type { ImportMode, ImportPreview } from "./backup";
+
 /** IPC channel names shared by main, preload and renderer. */
 export const IPC = {
     /** sync: renderer bundle source */
@@ -21,6 +23,11 @@ export const IPC = {
     THEME_CHANGED: "delight:theme-changed",
     /** download a theme from an https URL into the themes folder */
     THEME_ADD_URL: "delight:theme-add-url",
+    /** save a backup file, see shared/backup.ts */
+    BACKUP_EXPORT: "delight:backup-export",
+    /** pick and validate a backup file, answers with what importing it would change */
+    BACKUP_OPEN: "delight:backup-open",
+    BACKUP_APPLY: "delight:backup-apply",
     OPEN_PATH: "delight:open-path",
     RELAUNCH: "delight:relaunch",
 } as const;
@@ -104,6 +111,22 @@ export interface BootData {
 }
 
 export type OpenPathTarget = "data" | "plugins" | "themes" | "quickCss";
+
+type Failed = { ok: false; canceled?: false; error: string; } | { ok: false; canceled: true; };
+
+export type BackupExportResult = { ok: true; path: string; } | Failed;
+
+export type BackupOpenResult = {
+    ok: true;
+    /** Pass to applyBackup, the validated backup stays in main until then */
+    token: string;
+    fileName: string;
+    createdAt: string;
+    delightVersion: string;
+    previews: Record<ImportMode, ImportPreview>;
+} | Failed;
+
+export type BackupApplyResult = { ok: true; settings: DelightSettings; preview: ImportPreview; } | Failed;
 
 export function isPluginEnabled(settings: DelightSettings, manifest: PluginManifest) {
     return settings.plugins[manifest.id]?.enabled ?? manifest.enabledByDefault ?? false;

@@ -25,7 +25,7 @@ function broadcast(change: ThemeChange) {
     }
 }
 
-function reloadTheme(file: string) {
+export function reloadTheme(file: string) {
     const previous = themes.get(file);
     const next = readTheme(file);
     // Editors touch files on save without changing them, don't restyle Discord for that

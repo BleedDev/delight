@@ -4,6 +4,7 @@ import { app, ipcMain, Session, session, shell } from "electron";
 import { existsSync, readFileSync, watch, writeFileSync } from "fs";
 import { dirname, join } from "path";
 
+import { initBackup } from "./backup";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
 import { applyChromiumSwitches, getPluginPayloads, initPlugins } from "./plugins";
@@ -126,6 +127,7 @@ function setup() {
     app.on("session-created", addPreload);
     app.whenReady().then(() => addPreload(session.defaultSession));
     app.whenReady().then(initPlugins);
+    initBackup();
     // Themes need nothing from Electron to load, have them ready for the first window's boot
     initThemes();
     watchQuickCss();

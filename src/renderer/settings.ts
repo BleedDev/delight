@@ -35,6 +35,14 @@ export const Settings = {
         }, 250);
     },
 
+    /** Swap in settings main already saved (a restored backup) and notify subscribers, without saving again */
+    replace(next: DelightSettings) {
+        clearTimeout(saveTimer);
+        saveTimer = undefined;
+        data = { ...structuredClone(DEFAULT_SETTINGS), ...next };
+        for (const listener of listeners) listener();
+    },
+
     /** Write pending changes now, synchronously */
     flush() {
         if (saveTimer === undefined) return;

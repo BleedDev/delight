@@ -13,6 +13,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 
+import { parseBackup } from "../src/shared/backup";
 import { createShimAsar, ORIGINAL_ASAR } from "../src/shared/shim";
 
 const ROOT = resolve(import.meta.dir, "..");
@@ -39,6 +40,7 @@ app.whenReady().then(() => {
         webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true },
     });
     win.loadURL("https://discord.com/login");
+    if (process.env.DELIGHT_TEST_PHASE === "import") return importPhase(win);
 
     // Install a plugin while running, it should appear without a reload
     setTimeout(() => {
@@ -78,12 +80,50 @@ app.whenReady().then(() => {
                 addHtml: await D.themes.addFromUrl("https://discord.com/login"),
                 addCss: sheet ? await D.themes.addFromUrl(sheet) : "no stylesheet on the page",
                 addedStyles: [...document.head.querySelectorAll("style[id^=delight-theme-]")].length,
+                // Last, so the backup holds everything above. The dialog is bypassed by DELIGHT_TEST_BACKUP_PATH.
+                exported: await D.backup.export(),
             };
         })()${"`"});
         console.log("RESULT " + JSON.stringify(result));
         app.exit(0);
     }, 16000);
 });
+
+// Second run, on a different data folder: restore the backup the first run exported
+function importPhase(win) {
+    setTimeout(async () => {
+        const result = await win.webContents.executeJavaScript(${"`"}(async () => {
+            const D = window.Delight;
+            if (!D) return { delight: false };
+            const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+            const running = () => D.plugins.getSnapshot().filter(p => p.running).map(p => p.manifest.id);
+            const before = { running: running(), bootTheme: css("--delight-boot-theme"), order: css("--delight-order"), mine: css("--delight-mine") };
+            const opened = await D.backup.open();
+            const applied = opened.ok ? await D.backup.apply(opened.token, "replace") : null;
+            // Quick CSS and theme changes arrive as IPC events, give them a moment
+            await new Promise(r => setTimeout(r, 500));
+            const again = await D.backup.open();
+            return {
+                delight: true,
+                before,
+                opened: opened.ok ? { fileName: opened.fileName, delightVersion: opened.delightVersion, previews: opened.previews } : opened,
+                applied: applied && (applied.ok ? { ok: true, changes: applied.preview.changes } : applied),
+                after: {
+                    running: running(),
+                    settings: D.settings.data,
+                    themes: D.themes.getSnapshot().map(t => t.file),
+                    bootTheme: css("--delight-boot-theme"),
+                    lateTheme: css("--delight-late-theme"),
+                    order: css("--delight-order"),
+                    mine: css("--delight-mine"),
+                },
+                again: again.ok ? { merge: again.previews.merge.changes, replace: again.previews.replace.changes } : again,
+            };
+        })()${"`"});
+        console.log("RESULT " + JSON.stringify(result));
+        app.exit(0);
+    }, 12000);
+}
 `;
 
 const fakeDiscordPreload = `
@@ -114,7 +154,7 @@ writeFileSync(shimAsar, createShimAsar({ corePath: join(ROOT, "dist", "core", "m
 mkdirSync(DATA, { recursive: true });
 writeFileSync(join(DATA, "settings.json"), JSON.stringify({
     quickCss: true,
-    plugins: { experiments: { enabled: true }, "gpu-boost": { enabled: true } },
+    plugins: { experiments: { enabled: true, settings: { marker: "from-a" } }, "gpu-boost": { enabled: true } },
     enabledThemes: ["boot.css", "late.css"],
 }));
 mkdirSync(join(DATA, "themes"));
@@ -128,27 +168,40 @@ writeFileSync(join(DATA, "themes", "off.css"), ":root { --delight-off-theme: app
 // Quick CSS sets the same property as the theme and must win
 writeFileSync(join(DATA, "quick.css"), ":root { --delight-order: quick; }");
 
-const proc = Bun.spawn([join(INSTALL, "app-1.0.0", "electron.exe")], {
-    env: { ...process.env, DELIGHT_DATA_DIR: DATA, ELECTRON_ENABLE_LOGGING: "1" },
-    stdout: "pipe",
-    stderr: "pipe",
-});
-const timeout = setTimeout(() => proc.kill(), 60_000);
-const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
-clearTimeout(timeout);
-
-const line = stdout.split("\n").find(l => l.startsWith("RESULT "));
-if (!line) {
-    console.error("No result from Electron.\n--- stdout ---\n" + stdout.slice(-3000) + "\n--- stderr ---\n" + stderr.slice(-3000));
-    process.exit(1);
-}
-const r = JSON.parse(line.slice(7));
+// The first run exports a backup here, the second restores it. Both dialogs answer with this path.
+const BACKUP_FILE = join(BASE, "backup.json");
 
 let failed = 0;
 function check(name: string, ok: boolean, detail?: unknown) {
     if (!ok) failed++;
     console.log(`${ok ? "\x1b[32m✓" : "\x1b[31m✗"} ${name}\x1b[0m${detail !== undefined ? `  \x1b[2m${JSON.stringify(detail)}\x1b[0m` : ""}`);
 }
+
+async function launch(dataDir: string, env: Record<string, string> = {}) {
+    const proc = Bun.spawn([join(INSTALL, "app-1.0.0", "electron.exe")], {
+        env: { ...process.env, DELIGHT_DATA_DIR: dataDir, DELIGHT_TEST_BACKUP_PATH: BACKUP_FILE, ELECTRON_ENABLE_LOGGING: "1", ...env },
+        stdout: "pipe",
+        stderr: "pipe",
+    });
+    const timeout = setTimeout(() => proc.kill(), 60_000);
+    const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+    clearTimeout(timeout);
+
+    const line = stdout.split("\n").find(l => l.startsWith("RESULT "));
+    if (!line) {
+        console.error("No result from Electron.\n--- stdout ---\n" + stdout.slice(-3000) + "\n--- stderr ---\n" + stderr.slice(-3000));
+        rmSync(join(process.env.APPDATA!, APP_NAME), { recursive: true, force: true });
+        process.exit(1);
+    }
+    return { stdout, stderr, r: JSON.parse(line.slice(7)) };
+}
+
+function printLogs(stdout: string, stderr: string) {
+    const delightLines = stderr.split("\n").filter(l => /delight/i.test(l)).join("\n");
+    console.log(`--- stdout ---\n${stdout.slice(-2500)}\n--- stderr (Delight lines) ---\n${delightLines.slice(-4000)}`);
+}
+
+const { stdout, stderr, r } = await launch(DATA);
 
 check("main process loaded, then handed over to Discord", stdout.includes("[Delight] v"));
 check("session preload booted the renderer", r.delight === true);
@@ -168,10 +221,52 @@ check("remote theme downloaded into the themes folder and turned on", r.addCss?.
 check("settings were read from the data folder", existsSync(join(DATA, "settings.json")));
 check("enabled plugin's chromium switches applied at startup", stdout.includes("gpu-boost: --enable-zero-copy"));
 
-if (failed) {
-    const delightLines = stderr.split("\n").filter(l => /delight/i.test(l)).join("\n");
-    console.log(`--- stdout ---\n${stdout.slice(-2500)}\n--- stderr (Delight lines) ---\n${delightLines.slice(-4000)}`);
-}
+if (failed) printLogs(stdout, stderr);
+
+// ---- backup: export from the first data folder, restore into a second one ------------------------
+
+const parsed = existsSync(BACKUP_FILE) ? parseBackup(readFileSync(BACKUP_FILE, "utf8")) : null;
+const backup = parsed?.ok ? parsed.backup : null;
+check("backup exported through the save dialog path", r.exported?.ok === true && r.exported.path === BACKUP_FILE && !!backup, parsed && !parsed.ok ? parsed.error : r.exported);
+check("backup holds settings, Quick CSS, themes and the plugin list, no plugin code", !!backup
+    && backup.settings.plugins.experiments?.settings?.marker === "from-a"
+    && backup.quickCss === readFileSync(join(DATA, "quick.css"), "utf8")
+    && ["boot.css", "off.css", "late.css"].every(f => backup.themes.some(t => t.file === f))
+    && backup.plugins.some(p => p.id === "late-plugin" && p.source === "user" && p.enabled)
+    && !readFileSync(BACKUP_FILE, "utf8").includes("__late"),
+{ plugins: backup?.plugins.map(p => `${p.id}:${p.source}`), themes: backup?.themes.map(t => t.file) });
+
+const DATA_B = join(BASE, "data-restore");
+mkdirSync(join(DATA_B, "themes"), { recursive: true });
+writeFileSync(join(DATA_B, "settings.json"), JSON.stringify({ quickCss: true, plugins: { experiments: { enabled: false } }, enabledThemes: ["mine.css"] }));
+writeFileSync(join(DATA_B, "themes", "mine.css"), ":root { --delight-mine: on; }");
+// Same file name as a theme in the backup, different contents: gets overwritten
+writeFileSync(join(DATA_B, "themes", "boot.css"), ":root { --delight-boot-theme: old; }");
+writeFileSync(join(DATA_B, "quick.css"), ":root { --delight-order: b-quick; }");
+
+const b = await launch(DATA_B, { DELIGHT_TEST_PHASE: "import" });
+const rb = b.r;
+const preview = rb.opened?.previews?.replace;
+const failedBefore = failed;
+check("restore: second profile starts with its own state", rb.before?.mine === "on" && rb.before.order === "b-quick" && !rb.before.running.includes("experiments"), rb.before);
+check("restore: preview lists what replace changes", !!preview
+    && preview.pluginsEnabled.includes("Experiments")
+    && preview.themesOverwritten.includes("boot.css") && preview.themesAdded.includes("late.css")
+    && preview.themesDisabled.includes("mine.css") && preview.quickCss === "replaced"
+    && preview.missingPlugins.some((p: any) => p.id === "late-plugin"), preview ?? rb.opened);
+check("restore: applied", rb.applied?.ok === true && rb.applied.changes > 0, rb.applied);
+check("restore: settings round-trip, in memory and on disk", !!backup
+    && Bun.deepEquals(rb.after?.settings, backup.settings)
+    && Bun.deepEquals(JSON.parse(readFileSync(join(DATA_B, "settings.json"), "utf8")), backup.settings), rb.after?.settings);
+check("restore: theme files and Quick CSS round-trip on disk", !!backup
+    && backup.themes.every(t => readFileSync(join(DATA_B, "themes", t.file), "utf8") === t.css)
+    && readFileSync(join(DATA_B, "quick.css"), "utf8") === backup.quickCss
+    && existsSync(join(DATA_B, "themes", "mine.css")));
+check("restore: applies live, no reload (plugins, themes, Quick CSS)", rb.after?.running.includes("experiments")
+    && rb.after.bootTheme === "applied" && rb.after.lateTheme === "live" && rb.after.order === "quick" && rb.after.mine === "", rb.after && { ...rb.after, settings: undefined });
+check("restore: opening the same backup again changes nothing", rb.again?.merge === 0 && rb.again.replace === 0, rb.again);
+if (failed > failedBefore) printLogs(b.stdout, b.stderr);
+
 // The test app's own profile folder, created by Electron from APP_NAME
 rmSync(join(process.env.APPDATA!, APP_NAME), { recursive: true, force: true });
 

@@ -75,6 +75,17 @@ A theme is a `.css` file in `%APPDATA%\Delight\themes`. Turn it on in the Themes
 
 Without a header, the file name is used. **Add from URL** downloads an `https://` link to a CSS file (up to 2 MB) into the themes folder and turns it on. For GitHub, use the Raw link. Enabled themes apply before Discord first paints, and Quick CSS always goes on top of them.
 
+## Backup and restore
+
+The Backup tab saves everything to one JSON file (`delight-backup-YYYY-MM-DD.json`): settings, which plugins are on and their settings, themes and Quick CSS. Plugin code isn't included; the file lists the plugins you had, and restoring shows which ones aren't installed so you know what to reinstall.
+
+**Choose backup file** validates the file (format `delight-backup`, version 1, up to 16 MB) and shows what would change before anything is written. Pick how to restore:
+
+- **Merge**: the backup's plugin choices and settings win, everything else stays, enabled themes are combined, and your Quick CSS is kept unless it's empty.
+- **Replace**: settings and Quick CSS become exactly the backup's, and themes that aren't in the backup are turned off.
+
+Both write the backup's themes (new files, or changed ones overwritten) and never delete anything. All files are written together or not at all, and Discord updates live, no reload.
+
 ## Writing a plugin
 
 A plugin is a folder in `plugins/` (official) or `userplugins/` (yours, gitignored):
