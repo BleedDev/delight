@@ -36,6 +36,10 @@ export const IPC = {
     STORE_PROGRESS: "delight:store-progress",
     OPEN_PATH: "delight:open-path",
     RELAUNCH: "delight:relaunch",
+    /** renderer -> main: plugins started and the page stayed up, this start counts as healthy */
+    BOOT_OK: "delight:boot-ok",
+    /** leave safe mode: forget the crash history and restart Discord normally */
+    SAFE_MODE_EXIT: "delight:safe-mode-exit",
 } as const;
 
 export interface PluginManifest {
@@ -118,6 +122,32 @@ export interface BootData {
     plugins: PluginPayload[];
     quickCss: string;
     themes: ThemePayload[];
+    /** Set when this start is in safe mode: no plugins, themes or Quick CSS */
+    safeMode?: SafeModeInfo;
+}
+
+/**
+ * Why safe mode is on. `crash-loop`: Discord failed to finish starting twice in a row. `renderer-crash`:
+ * Discord's window crashed twice within a short time. `flag`: launched with --delight-safe.
+ */
+export type SafeModeReason = "crash-loop" | "renderer-crash" | "flag";
+
+/** Something the user turned on or changed, a suspect when Discord starts crashing */
+export interface RecentChange {
+    kind: "plugin" | "theme" | "quickCss";
+    /** Plugin id, theme file name, or "quick.css" */
+    id: string;
+    action: "enabled" | "settings" | "installed" | "updated" | "edited";
+    /** Epoch ms */
+    at: number;
+}
+
+export interface SafeModeInfo {
+    reason: SafeModeReason;
+    /** Starts that never reached a healthy boot, or crashes in a row for renderer-crash */
+    failures: number;
+    /** Newest first */
+    changes: RecentChange[];
 }
 
 export type OpenPathTarget = "data" | "plugins" | "themes" | "quickCss";

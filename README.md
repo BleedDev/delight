@@ -28,7 +28,7 @@ delight status
 delight update    [--check] [--flavor ...] [--restart]
 ```
 
-Launch `Discord.exe --vanilla` to start once without Delight.
+Launch `Discord.exe --vanilla` to start once without Delight, or `Discord.exe --delight-safe` to start once in [safe mode](#safe-mode).
 
 ### Updating
 
@@ -144,6 +144,18 @@ bun scripts/registry.ts
 ```
 
 This copies the built official plugins into `store/plugins/<id>/` and writes `registry.json` with their hashes, pointing at `https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins`. Commit both together: the registry only matches the files from the same run. The same build always gives the same files and hashes. Name, description, authors, version and `tags` come from each plugin's `manifest.json`; `minDelightVersion` too, defaulting to the current Delight version. Options: `--base <https url>` to serve the files from somewhere else, `--files <dir>` for where to copy them, `--out <file>` for the registry, `--only id,id` to publish a subset. The script checks its output with the app's own validation before writing it.
+## Safe mode
+
+A plugin, theme or Quick CSS that breaks Discord can't lock you out of it. In safe mode Delight still loads, with its settings, but nothing you added runs: no plugins (not even their top-level code, their native side or their Chromium switches), no themes and no Quick CSS. Discord itself works normally.
+
+- **Crash loops.** Each start is counted in `%APPDATA%\Delight\safe-mode.json`. Once plugins have started and Discord has stayed up for 5 seconds, the start counts as healthy and the counter goes back to 0. A start that crashes, hangs or gets closed before that leaves it up. After 2 of those in a row, the next start is in safe mode.
+- **Crashes while Discord runs.** If Discord's window crashes twice within 2 minutes, Discord switches to safe mode on the spot: native plugin code is stopped and the window reloads without plugins.
+- **Staying safe.** Safe mode caused by crashes stays on across restarts until you leave it. If Discord still fails to start twice in safe mode, the next start skips Delight entirely, then it's back to safe mode.
+- **On demand.** `Discord.exe --delight-safe` starts in safe mode once.
+
+A notice in Discord (and at the top of the Plugins tab) says why safe mode is on and names the most recent change that's still on: a plugin turned on, added or updated, its settings changed, a theme turned on or edited, or a Quick CSS edit. It offers **Disable &lt;it&gt; and restart** and **Exit safe mode and restart**. Turning a plugin on is written to disk before any of its code runs, so a plugin that crashes Discord the moment you enable it is still named. In safe mode you can still turn plugins and themes on and off; the changes apply once you leave it.
+
+All plugins are off, official ones included. They're installed into the same folder as yours and there's no telling them apart on disk, and a Discord update can break an official plugin's source patch as easily as yours. The notice and the settings are part of Delight's core, so they still work.
 
 ## Writing a plugin
 
@@ -274,13 +286,11 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 
 | Suite | What it proves |
 |---|---|
-| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation. Theme header parsing and remote theme checks. The menu props patch: what gets rewritten and what must not be. Quick Actions' link, image search and translate URLs |
-| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, toasts, menu items, slash commands, Silent Typing (typing blocked and restored, chat bar patch) and Quick Actions (items in Discord's message menu, clipboard, browser links), UI including the Patch Helper and Themes tabs. It runs on Node because Playwright's transports hang under Bun on Windows. |
-| `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (applied at startup, live from the folder, ordered under Quick CSS, downloaded from a URL), auto-injection after an update |
-| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation. Theme header parsing and remote theme checks. The menu props patch: what gets rewritten and what must not be. Store registry validation, version ordering and sha256 checks |
-| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, toasts, menu items, slash commands, UI including the Patch Helper, Themes and Store tabs (native-plugin confirmation included). It runs on Node because Playwright's transports hang under Bun on Windows. |
-| `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (applied at startup, live from the folder, ordered under Quick CSS, downloaded from a URL), auto-injection after an update. The plugin store against a local https fake registry (`DELIGHT_STORE_URL`): live install, tampered file rejected with nothing written, native install refused until confirmed, live update and uninstall |
-| `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `delight update` against a local fake of GitHub's API (`DELIGHT_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection, self-replacement on a copy of the exe, and that updates only refresh Discords that already have Delight |
+| `test:unit` | Hook engine (ordering, error isolation, exact restore, getters, construct, rebasing), finders through hooks, Patch Helper evaluation, theme parsing and remote checks, the menu props patch, backup validation/merge/replace, store registry validation and hashing, safe mode start thresholds and suspects, Quick Actions URLs |
+| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome (WebAuthn disabled so no passkey prompts): runtime capture, finders, source patches, hooks, hot reload, live module replacement, toasts, menu items, slash commands, Silent Typing, Quick Actions, and every UI tab (Plugins, Store, Themes, Quick CSS, Backup, Patches, Patch Helper, safe mode notice). Runs on Node because Playwright's transports hang under Bun on Windows. |
+| `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (startup, live, ordering, remote), backup export and restore into a second profile, store install/update/uninstall against a local fake registry (tampered files rejected, native needs confirmation), safe mode (crash loops, `--delight-safe`, mid-session crashes), auto-injection after an update. `DELIGHT_TEST_APP_NAME` gives parallel runs their own profile. |
+| `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `delight update` against a local fake of GitHub's API: up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection, self-replacement, and that updates only refresh Discords that already have Delight |
+| `test:plugins` | Fast Lists on a synthetic 185-server sidebar and chat: no visible row ever hidden, never writes the scroll position, never gets stuck scrolling up through loading history |
 
 None of the tests touch your real Discord install or profile.
 

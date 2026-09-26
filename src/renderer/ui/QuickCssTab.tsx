@@ -3,6 +3,7 @@ import { Settings } from "../settings";
 import { QuickCss } from "../styles";
 import { React } from "../webpack/common";
 import { Button, CodeArea, Icon, Switch, useStore } from "./components";
+import { SafeModeHint } from "./SafeModeNotice";
 
 export function QuickCssTab() {
     const { quickCss: applied } = useStore(Settings.subscribe, () => Settings.data);
@@ -15,6 +16,7 @@ export function QuickCssTab() {
 
     return (
         <div className="dl-stack" style={{ gap: 16 }}>
+            <SafeModeHint what="Quick CSS edits" />
             <div className="dl-field-row">
                 <div className="dl-field-text">
                     <div className="dl-label" id="dl-quickcss-toggle">Apply Quick CSS</div>

@@ -3,9 +3,11 @@ import { isPluginEnabled } from "@shared/ipc";
 import { Native } from "../native";
 import { getPatchRecords } from "../patching/source";
 import { PluginManager, PluginState } from "../plugins/manager";
+import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
 import { React } from "../webpack/common";
 import { Button, Icon, SettingField, Status, Switch, TextField, useStore } from "./components";
+import { SafeModeNotice } from "./SafeModeNotice";
 
 function PatchSummary({ id }: { id: string; }) {
     const records = getPatchRecords(id);
@@ -66,6 +68,7 @@ function PluginCard({ state }: { state: PluginState; }) {
                     {manifest.description && <p className="dl-card-desc">{manifest.description}</p>}
                     <div className="dl-toolbar" style={{ margin: "8px 0 0" }}>
                         {state.running && <Status tone="success">Running</Status>}
+                        {SafeMode.active && enabled && <Status tone="muted">Paused in safe mode</Status>}
                         {state.error && <Status tone="danger">Failed</Status>}
                         {state.needsReload && <Status tone="warning">Reload to apply</Status>}
                         {enabled && <PatchSummary id={manifest.id} />}
@@ -109,6 +112,7 @@ export function PluginsTab() {
 
     return (
         <>
+            {SafeMode.active && <div className="dl-safe-inline"><SafeModeNotice /></div>}
             {needsReload && (
                 <div className="dl-banner" role="status">
                     <Icon name="warning" />
