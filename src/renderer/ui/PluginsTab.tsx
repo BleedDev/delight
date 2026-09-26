@@ -50,7 +50,8 @@ function PluginCard({ state }: { state: PluginState; }) {
     const [expanded, setExpanded] = React.useState(false);
     const enabled = isPluginEnabled(Settings.data, manifest);
     const titleId = `dl-plugin-${manifest.id}`;
-    const hasSettings = !!definition && (Object.keys(definition.settings ?? {}).length > 0 || !!definition.settingsPanel);
+    // A custom settings panel needs the running plugin's ctx, so it only counts while the plugin runs
+    const hasSettings = !!definition && (Object.keys(definition.settings ?? {}).length > 0 || (!!definition.settingsPanel && !!state.ctx));
 
     return (
         <article className="dl-card" aria-labelledby={titleId}>
