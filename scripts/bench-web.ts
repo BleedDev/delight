@@ -21,7 +21,7 @@ const boot = { version: "bench", dataDir: "", settings: { quickCss: true, plugin
 const renderer = readFileSync(join(DIST, "core", "renderer.js"), "utf8");
 
 const browser = await chromium.launch({
-    executablePath: ["C:/Program Files/Google/Chrome/Application/chrome.exe"].find(existsSync),
+    executablePath: [process.env.CHROME_PATH, "C:/Program Files/Google/Chrome/Application/chrome.exe"].find(p => !!p && existsSync(p)),
     headless: true,
 });
 
