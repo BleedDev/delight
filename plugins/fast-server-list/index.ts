@@ -45,6 +45,49 @@ function findScroller(nav: Element): HTMLElement | null {
     return null;
 }
 
+/**
+ * Discord puts `translateZ(0)` on every server's unread pill, an old "force a GPU layer" hack. With
+ * 185 servers that is 184 compositor layers, plus every icon overlapping one gets promoted too:
+ * 132 layers on the page, 93 of them in the server list. The same transform in 2D looks identical
+ * and keeps every animation, but needs no layer (132 -> 39 measured). Rules are found by what they
+ * do, not by Discord's hashed class names, so this survives Discord updates.
+ */
+function flattenRules(nav: Element) {
+    const inNav = [...nav.querySelectorAll("*")];
+    const flatten = (value: string) => value
+        .replace(/translate3d\(\s*([^,]+),\s*([^,]+),\s*0(?:px)?\s*\)/g, "translate($1, $2)")
+        .replace(/\s*translateZ\(\s*0(?:px)?\s*\)/g, "")
+        .trim() || "none";
+
+    const css: string[] = [];
+    const visit = (list: CSSRuleList) => {
+        for (const rule of list) {
+            if (rule instanceof CSSStyleRule) {
+                const transform = rule.style.getPropertyValue("transform");
+                if (!transform || !/translateZ\(\s*0|translate3d\([^)]*,\s*0(?:px)?\s*\)/.test(transform)) continue;
+                let applies = false;
+                try {
+                    applies = inNav.some(el => el.matches(rule.selectorText));
+                } catch { }
+                if (!applies) continue;
+                // Scoped to the server list and one step more specific, so it wins without !important
+                const selector = rule.selectorText.split(",").map(part => `[data-list-id="guildsnav"] ${part.trim()}`).join(", ");
+                css.push(`${selector} { transform: ${flatten(transform)}; }`);
+            } else if ("cssRules" in rule) {
+                visit((rule as CSSGroupingRule).cssRules);
+            }
+        }
+    };
+    for (const sheet of document.styleSheets) {
+        try {
+            visit(sheet.cssRules);
+        } catch {
+            // Cross-origin sheets can't be read, Discord's own are same-origin
+        }
+    }
+    return css.join("\n");
+}
+
 /** Removes our classes from every element carrying them, whoever added them */
 function sweep() {
     for (const el of document.querySelectorAll(`.${ROW}, .${FAR}`)) el.classList.remove(ROW, FAR);
@@ -131,6 +174,11 @@ function createSession(nav: Element, marginScreens: number) {
     };
     scroller?.addEventListener("scroll", onScroll, { passive: true });
 
+    const flat = document.createElement("style");
+    flat.id = "delight-fsl-flatten";
+    flat.textContent = flattenRules(nav);
+    document.head.append(flat);
+
     sync();
 
     return {
@@ -140,6 +188,7 @@ function createSession(nav: Element, marginScreens: number) {
             visibility?.disconnect();
             mutations.disconnect();
             scroller?.removeEventListener("scroll", onScroll);
+            flat.remove();
             rows.clear();
             sweep();
         },
