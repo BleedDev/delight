@@ -8,11 +8,13 @@ import { Logger } from "./logger";
 import { Native } from "./native";
 import { diagnosePatches } from "./patching/diagnose";
 import { PluginManager } from "./plugins/manager";
+import { SafeMode } from "./safeMode";
 import { Settings } from "./settings";
 import { QuickCss } from "./styles";
 import { Themes } from "./themes";
 import { registerToolkitPatches, Toolkit } from "./toolkit";
 import { installHotkey, SettingsUI } from "./ui";
+import { showSafeModeNotice } from "./ui/SafeModeNotice";
 import { installSettingsEntry } from "./ui/settingsEntry";
 import { onCommonReady } from "./webpack/common";
 import { pendingWaiters } from "./webpack/find";
@@ -37,6 +39,7 @@ const Delight = {
     stats,
     pendingWaiters,
     toolkit: Toolkit,
+    safeMode: SafeMode,
     get wreq() {
         return wreq;
     },
@@ -54,21 +57,25 @@ function boot() {
     interceptWebpack();
 
     const data = Native.boot();
+    // Before anything that applies plugins or CSS, they all check it
+    SafeMode.init(data.safeMode);
     Settings.init(data.settings);
     // Themes first: Quick CSS goes after them in <head>, so it wins
     Themes.init(data.themes);
     QuickCss.init(data.quickCss);
-    registerToolkitPatches(data.plugins.filter(p => isPluginEnabled(data.settings, p.manifest)).map(p => p.code));
+    if (!SafeMode.active) registerToolkitPatches(data.plugins.filter(p => isPluginEnabled(data.settings, p.manifest)).map(p => p.code));
     PluginManager.boot(data.plugins);
     installHotkey();
     installSettingsEntry();
 
     onCommonReady(() => {
-        logger.info("Discord core modules ready, starting plugins");
-        PluginManager.startAll();
+        if (!SafeMode.active) logger.info("Discord core modules ready, starting plugins");
+        PluginManager.startAll().then(() => SafeMode.scheduleBootOk());
+        if (SafeMode.active) showSafeModeNotice();
     });
 
-    logger.info(`v${DELIGHT_VERSION} loaded, ${data.plugins.length} plugins. Ctrl+Shift+D opens settings.`);
+    if (SafeMode.active) logger.warn(`Safe mode (${data.safeMode!.reason}): ${data.plugins.length} plugins, themes and Quick CSS are off.`);
+    else logger.info(`v${DELIGHT_VERSION} loaded, ${data.plugins.length} plugins. Ctrl+Shift+D opens settings.`);
 }
 
 try {

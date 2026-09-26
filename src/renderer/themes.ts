@@ -2,6 +2,7 @@ import type { AddThemeResult, ThemeChange, ThemePayload } from "@shared/ipc";
 
 import { Logger } from "./logger";
 import { Native } from "./native";
+import { SafeMode } from "./safeMode";
 import { Settings } from "./settings";
 import { createStyle, ManagedStyle, QUICK_CSS_ID } from "./styles";
 
@@ -42,16 +43,17 @@ export const Themes = {
 
     isEnabled: (file: string) => Settings.data.enabledThemes.includes(file),
 
-    /** Syncs the <style> elements with the enabled, existing themes */
+    /** Syncs the <style> elements with the enabled, existing themes. None in safe mode. */
     apply() {
+        const applies = (file: string) => !SafeMode.active && Themes.isEnabled(file);
         for (const [file, style] of styles) {
-            if (!themes.has(file) || !Themes.isEnabled(file)) {
+            if (!themes.has(file) || !applies(file)) {
                 style.remove();
                 styles.delete(file);
             }
         }
         for (const theme of themes.values()) {
-            if (!Themes.isEnabled(theme.file)) continue;
+            if (!applies(theme.file)) continue;
             const style = styles.get(theme.file);
             if (style) style.update(theme.css);
             else styles.set(theme.file, createStyle(theme.css, styleId(theme.file), QUICK_CSS_ID));

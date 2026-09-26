@@ -5,6 +5,7 @@ import { Settings } from "../settings";
 import { Themes } from "../themes";
 import { React } from "../webpack/common";
 import { Button, Icon, Status, Switch, TextField, useStore } from "./components";
+import { SafeModeHint } from "./SafeModeNotice";
 
 type AddState =
     | { type: "idle"; }
@@ -98,6 +99,7 @@ export function ThemesTab() {
 
     return (
         <div className="dl-stack" style={{ gap: 16 }}>
+            <SafeModeHint what="themes" />
             <div className="dl-field-row">
                 <div className="dl-field-text">
                     <div className="dl-label">Themes</div>
