@@ -135,7 +135,8 @@ function reloadFolder(root: string, source: Source, folder: string) {
 
     if (!next) return;
     plugins.set(next.manifest.id, next);
-    if (restartNative) startNative(next.manifest.id);
+    // Plugins added or re-enabled while Discord runs need their native side started too
+    if (restartNative || isPluginEnabled(settings, next.manifest)) startNative(next.manifest.id);
     broadcast({ type: "upsert", plugin: toPayload(next) });
 }
 

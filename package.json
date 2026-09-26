@@ -15,10 +15,10 @@
         "test:web": "node scripts/test-web.ts",
         "test:electron": "bun scripts/test-electron.ts",
         "test:cli": "bun scripts/test-cli.ts",
-        "test": "bun scripts/build.ts --cli && tsc --noEmit && bun test && node scripts/test-web.ts && node scripts/test-fast-server-list.ts && bun scripts/test-electron.ts && bun scripts/test-cli.ts && bun scripts/test-cli.ts --exe",
+        "test": "bun scripts/build.ts --cli && tsc --noEmit && bun test && node scripts/test-web.ts && node scripts/test-fast-lists.ts && bun scripts/test-electron.ts && bun scripts/test-cli.ts && bun scripts/test-cli.ts --exe",
         "test:unit": "bun test",
         "bench": "node scripts/bench-web.ts",
-        "test:plugins": "node scripts/test-fast-server-list.ts"
+        "test:plugins": "node scripts/test-fast-lists.ts"
     },
     "devDependencies": {
         "@types/bun": "^1.4.2",
