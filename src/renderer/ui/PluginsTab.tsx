@@ -5,7 +5,7 @@ import { getPatchRecords } from "../patching/source";
 import { PluginManager, PluginState } from "../plugins/manager";
 import { Settings } from "../settings";
 import { React } from "../webpack/common";
-import { Button, Icon, SettingField, Status, Switch, useStore } from "./components";
+import { Button, Icon, SettingField, Status, Switch, TextField, useStore } from "./components";
 
 function PatchSummary({ id }: { id: string; }) {
     const records = getPatchRecords(id);
@@ -116,16 +116,9 @@ export function PluginsTab() {
                 </div>
             )}
             <div className="dl-toolbar">
-                <label className="dl-sr-only" htmlFor="dl-plugin-search">Search plugins</label>
-                <input
-                    id="dl-plugin-search"
-                    className="dl-input dl-search"
-                    type="search"
-                    inputMode="search"
-                    placeholder="Search plugins"
-                    value={query}
-                    onChange={e => setQuery(e.currentTarget.value)}
-                />
+                <div className="dl-search">
+                    <TextField id="dl-plugin-search" label="Search plugins" hideLabel placeholder="Search plugins" value={query} onChange={setQuery} />
+                </div>
                 <Button onClick={() => Native.openPath("plugins")}><Icon name="folder" />Open plugins folder</Button>
             </div>
             {visible.length ? (

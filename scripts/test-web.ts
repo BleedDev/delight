@@ -261,12 +261,14 @@ await page.screenshot({ path: join(OUT, "ui-plugins.png") });
 check("Ctrl+Shift+D opens the panel", true);
 
 const toggled = await page.evaluate(async () => {
+    // Discord's switch is a real checkbox input (checked), ours a button (aria-checked)
+    const checkedOf = (el: any) => el.getAttribute("aria-checked") ?? String(el.checked);
     const sw = document.querySelector('[aria-labelledby="dl-plugin-experiments"][role="switch"]') as HTMLButtonElement;
-    const before = sw.getAttribute("aria-checked");
+    const before = checkedOf(sw);
     sw.click();
     await new Promise(r => setTimeout(r, 400));
     const state = (window as any).Delight.plugins.get("experiments");
-    const after = document.querySelector('[aria-labelledby="dl-plugin-experiments"][role="switch"]')!.getAttribute("aria-checked");
+    const after = checkedOf(document.querySelector('[aria-labelledby="dl-plugin-experiments"][role="switch"]'));
     return { before, after, needsReload: state.needsReload, reason: state.reloadReason, saved: (window as any).__test.savedSettings?.plugins?.experiments };
 });
 check("switch disables plugin and persists", toggled.before === "true" && toggled.after === "false" && toggled.saved?.enabled === false, toggled);

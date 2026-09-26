@@ -15,13 +15,27 @@ export { createRoot, Dispatcher, getStore, React, ReactDOM } from "../renderer/w
 export type { FluxAction, FluxDispatcher } from "../renderer/webpack/common";
 export {
     filters, find, findAll, findAllExports, findByCode, findByCodeLazy, findByProps, findByPropsLazy, findComponent,
-    findComponentLazy, findExport, findLazy, findModuleIds, findStore, findStoreLazy, requireModule, waitFor,
+    findComponentLazy, findExport, findLazy, findModuleIds, findStore, findStoreLazy, functionSource, requireModule, waitFor,
     waitForExport,
 } from "../renderer/webpack/find";
 export type { CodeMatcher, Filter, FoundExport } from "../renderer/webpack/find";
 export type { Module, ModuleFactory, WebpackRequire } from "../renderer/webpack/runtime";
 
 import { wreq } from "../renderer/webpack/runtime";
+import { DiscordUI } from "../renderer/ui/discord";
+
+/**
+ * Discord's own form controls for plugin settings panels (Switch, TextField, TextArea, Select,
+ * Slider, Button). Each is undefined if Discord renamed it, so check before rendering.
+ */
+export const Components = {
+    get Switch() { return DiscordUI.Switch.get; },
+    get TextField() { return DiscordUI.TextField.get; },
+    get TextArea() { return DiscordUI.TextArea.get; },
+    get Select() { return DiscordUI.Select.get; },
+    get Slider() { return DiscordUI.Slider.get; },
+    get Button() { return DiscordUI.Button.get; },
+};
 
 /** Discord's __webpack_require__, undefined until the runtime has loaded */
 export function getWreq() {
