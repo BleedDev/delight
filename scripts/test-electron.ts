@@ -21,7 +21,9 @@ const INSTALL = join(BASE, "fake-discord");
 const DATA = join(BASE, "data");
 const ELECTRON_DIST = join(ROOT, "node_modules", "electron", "dist");
 // Electron derives the userData folder from the app name. Never "discord": that is the real Discord profile.
-const APP_NAME = "delight-integration-test";
+// Overridable so parallel runs (e.g. several worktrees) never share a profile. Never "discord".
+const APP_NAME = process.env.DELIGHT_TEST_APP_NAME ?? "delight-integration-test";
+if (APP_NAME.toLowerCase().startsWith("discord")) throw new Error("Refusing to run as a Discord app name: that is the real Discord profile");
 
 rmSync(BASE, { recursive: true, force: true });
 
