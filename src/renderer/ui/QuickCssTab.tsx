@@ -2,7 +2,7 @@ import { Native } from "../native";
 import { Settings } from "../settings";
 import { QuickCss } from "../styles";
 import { React } from "../webpack/common";
-import { Button, Icon, Switch, useStore } from "./components";
+import { Button, CodeArea, Icon, Switch, useStore } from "./components";
 
 export function QuickCssTab() {
     const { quickCss: applied } = useStore(Settings.subscribe, () => Settings.data);
@@ -32,14 +32,7 @@ export function QuickCssTab() {
             </div>
             <div className="dl-field">
                 <label className="dl-label" htmlFor="dl-quickcss">Quick CSS</label>
-                <textarea
-                    id="dl-quickcss"
-                    className="dl-textarea dl-code-editor"
-                    spellCheck={false}
-                    placeholder={"/* Anything here is applied on top of Discord */"}
-                    value={css}
-                    onChange={e => onInput(e.currentTarget.value)}
-                />
+                <CodeArea id="dl-quickcss" placeholder="/* Anything here is applied on top of Discord */" value={css} onChange={onInput} />
             </div>
         </div>
     );

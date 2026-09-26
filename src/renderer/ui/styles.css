@@ -430,3 +430,17 @@
 .dl-embedded {
     padding-block-end: 24px;
 }
+
+/* Discord's button wraps its children; keep our icon + label on one line */
+.dl-button-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dl-code-native textarea {
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 13px;
+    line-height: 1.5;
+    tab-size: 4;
+}
