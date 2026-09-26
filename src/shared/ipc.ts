@@ -17,6 +17,10 @@ export const IPC = {
     PLUGIN_NATIVE_CALL: "delight:plugin-native-call",
     /** start / stop a plugin's native module */
     PLUGIN_NATIVE_STATE: "delight:plugin-native-state",
+    /** main -> renderer: a theme file was added, changed or removed on disk */
+    THEME_CHANGED: "delight:theme-changed",
+    /** download a theme from an https URL into the themes folder */
+    THEME_ADD_URL: "delight:theme-add-url",
     OPEN_PATH: "delight:open-path",
     RELAUNCH: "delight:relaunch",
 } as const;
@@ -52,6 +56,26 @@ export type PluginChange =
     | { type: "upsert"; plugin: PluginPayload; }
     | { type: "remove"; id: string; };
 
+export interface ThemeMeta {
+    /** File name inside the themes folder, e.g. "midnight.css". Also the settings key. */
+    file: string;
+    /** From the header's @name, or the file name without .css */
+    name: string;
+    description?: string;
+    author?: string;
+    version?: string;
+}
+
+export interface ThemePayload extends ThemeMeta {
+    css: string;
+}
+
+export type ThemeChange =
+    | { type: "upsert"; theme: ThemePayload; }
+    | { type: "remove"; file: string; };
+
+export type AddThemeResult = { ok: true; file: string; } | { ok: false; error: string; };
+
 export interface PluginSettingsEntry {
     enabled?: boolean;
     settings?: Record<string, unknown>;
@@ -60,11 +84,14 @@ export interface PluginSettingsEntry {
 export interface DelightSettings {
     plugins: Record<string, PluginSettingsEntry>;
     quickCss: boolean;
+    /** File names of enabled themes */
+    enabledThemes: string[];
 }
 
 export const DEFAULT_SETTINGS: DelightSettings = {
     plugins: {},
     quickCss: true,
+    enabledThemes: [],
 };
 
 export interface BootData {
@@ -73,9 +100,10 @@ export interface BootData {
     settings: DelightSettings;
     plugins: PluginPayload[];
     quickCss: string;
+    themes: ThemePayload[];
 }
 
-export type OpenPathTarget = "data" | "plugins" | "quickCss";
+export type OpenPathTarget = "data" | "plugins" | "themes" | "quickCss";
 
 export function isPluginEnabled(settings: DelightSettings, manifest: PluginManifest) {
     return settings.plugins[manifest.id]?.enabled ?? manifest.enabledByDefault ?? false;

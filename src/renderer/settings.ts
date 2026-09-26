@@ -1,4 +1,4 @@
-import type { DelightSettings, PluginSettingsEntry } from "@shared/ipc";
+import { DEFAULT_SETTINGS, DelightSettings, PluginSettingsEntry } from "@shared/ipc";
 
 import { Native } from "./native";
 
@@ -13,7 +13,8 @@ addEventListener("pagehide", () => Settings.flush());
 
 export const Settings = {
     init(initial: DelightSettings) {
-        data = initial;
+        // Main fills in defaults too, this covers a main process older than the renderer
+        data = { ...structuredClone(DEFAULT_SETTINGS), ...initial };
     },
 
     get data(): Readonly<DelightSettings> {
