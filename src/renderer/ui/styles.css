@@ -444,3 +444,107 @@
     line-height: 1.5;
     tab-size: 4;
 }
+
+/* ---- patch helper ------------------------------------------------------------------------ */
+
+.dl-ph-fields input {
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 13px;
+}
+
+.dl-code-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-inline-size: 0;
+    margin: 0;
+}
+
+.dl-code-label {
+    color: var(--dl-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.dl-code {
+    margin: 0;
+    padding: 8px 10px;
+    max-block-size: 240px;
+    overflow-y: auto;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-input);
+    border: 1px solid var(--dl-border);
+    color: var(--dl-text-secondary);
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.dl-code mark {
+    border-radius: 2px;
+    background: color-mix(in oklab, var(--dl-accent-solid) 30%, transparent);
+    color: var(--dl-text-primary);
+    font-weight: 600;
+}
+
+.dl-code mark[data-kind="removed"] { background: color-mix(in oklab, var(--dl-status-danger) 30%, transparent); }
+.dl-code mark[data-kind="added"] { background: color-mix(in oklab, var(--dl-status-success) 30%, transparent); }
+
+/* Zero-length matches (lookarounds, insertions) still show where they are */
+.dl-code mark[data-empty] {
+    padding-inline-start: 2px;
+    background: var(--dl-accent-solid);
+}
+
+.dl-diff {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.dl-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 0;
+}
+
+.dl-groups > div { display: flex; gap: 6px; }
+.dl-groups dt { color: var(--dl-text-secondary); }
+.dl-groups dd { margin: 0; }
+
+.dl-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.dl-chip {
+    all: unset;
+    min-block-size: 24px;
+    padding-inline: 8px;
+    border-radius: var(--dl-radius-control);
+    border: 1px solid var(--dl-border);
+    background: var(--dl-bg-input);
+    color: var(--dl-text-secondary);
+    line-height: 24px;
+    cursor: pointer;
+}
+
+.dl-chip[aria-pressed="true"] {
+    border-color: var(--dl-accent-solid);
+    color: var(--dl-text-primary);
+    box-shadow: inset 0 0 0 1px var(--dl-accent-solid);
+}
+
+@media (hover: hover) {
+    .dl-chip:hover { color: var(--dl-text-primary); }
+}
+
+.dl-root [data-checking] {
+    opacity: 0.6;
+    transition: opacity var(--dl-duration-fast) ease-out;
+}

@@ -318,6 +318,41 @@ const quickCss = await page.evaluate(() => getComputedStyle(document.body).outli
 check("Quick CSS applies live", quickCss === "rgb(255, 0, 128)", quickCss);
 await page.screenshot({ path: join(OUT, "ui-quickcss.png") });
 
+// Patch Helper: develop the experiments plugin's own patch live against Discord's code
+await page.click("#dl-tab-patchhelper");
+await page.fill("#dl-ph-find", "Object.defineProperties(this,{isDeveloper");
+await page.fill("#dl-ph-match", String.raw`/(?<=isDeveloper:\{[^}]*?get:\(\)=>)\i/`);
+await page.fill("#dl-ph-replace", "true");
+await page.waitForFunction(() => {
+    const status = document.querySelector("#dl-tabpanel [role=status]")?.textContent ?? "";
+    return status.startsWith("Checked") && document.querySelector("#dl-ph-result") && !document.querySelector("[data-checking]");
+}, null, { timeout: 5000 }).catch(() => { });
+const helper = await page.evaluate(() => {
+    const status = (id: string) => {
+        const el = document.querySelector(`#${id} .dl-card-head .dl-status`);
+        return { tone: el?.getAttribute("data-tone"), text: el?.textContent };
+    };
+    return {
+        modules: status("dl-ph-modules"),
+        match: status("dl-ph-match"),
+        result: status("dl-ph-result"),
+        after: document.querySelector("#dl-ph-result mark[data-kind=added]")?.textContent,
+        snippet: document.querySelector("#dl-ph-snippet pre")?.textContent,
+    };
+});
+check("Patch Helper: find matches exactly 1 module", helper.modules.tone === "success" && helper.modules.text === "1 module", helper.modules);
+check("Patch Helper: match succeeds", helper.match.tone === "success" && /^Matched/.test(helper.match.text ?? ""), helper.match);
+check("Patch Helper: patched module compiles", helper.result.tone === "success" && helper.result.text === "Compiles" && helper.after === "true", helper.result);
+check("Patch Helper: copyable snippet in plugin format", !!helper.snippet?.includes(String.raw`match: /(?<=isDeveloper:\{[^}]*?get:\(\)=>)\i/,`) && !!helper.snippet?.includes('with: "true"'), helper.snippet);
+await page.screenshot({ path: join(OUT, "ui-patch-helper.png") });
+await page.evaluate(() => { const body = document.querySelector("#dl-tabpanel")!; body.scrollTop = body.scrollHeight; });
+await page.screenshot({ path: join(OUT, "ui-patch-helper-result.png") });
+
+await page.fill("#dl-ph-replace", "true)");
+await page.waitForFunction(() => document.querySelector("#dl-ph-result .dl-status")?.textContent === "Doesn’t compile", null, { timeout: 5000 }).catch(() => { });
+const broken = await page.evaluate(() => document.querySelector("#dl-ph-result .dl-error")?.textContent ?? null);
+check("Patch Helper: reports a patch that breaks compilation", !!broken?.includes("SyntaxError"), broken?.slice(0, 120));
+
 await page.keyboard.press("Escape");
 await page.waitForTimeout(300);
 check("Escape closes the panel", !(await page.$(".dl-panel")));
