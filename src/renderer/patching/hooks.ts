@@ -7,6 +7,7 @@
  * or filters them, and a call allocates one context object (plus one per `instead` hook).
  */
 import { Logger } from "../logger";
+import { unlazy } from "../utils/lazy";
 
 export interface HookContext<Args extends any[] = any[], Result = any> {
     /** `this` of the call */
@@ -171,6 +172,9 @@ export function hook<T extends object, K extends keyof T>(
     callback: HookCallback,
     owner = "unknown",
 ): () => void {
+    // Hooking a lazy proxy (Dispatcher, React...) would define the property on the proxy's stand-in
+    // target and silently never run. Always hook the real object.
+    target = unlazy(target);
     let byKey = hooked.get(target);
     if (!byKey) hooked.set(target, byKey = new Map());
 
