@@ -18,8 +18,11 @@ const DIST = join(ROOT, "dist");
 const OUT = join(ROOT, "test-results");
 mkdirSync(OUT, { recursive: true });
 
+// CHROME_PATH overrides (CI sets it); otherwise the usual Windows install locations
 const CHROME_PATHS = [
+    process.env.CHROME_PATH,
     "C:/Program Files/Google/Chrome/Application/chrome.exe",
+    "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
     "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
 ];
 
@@ -64,7 +67,7 @@ function check(name: string, ok: boolean, detail?: unknown) {
 }
 
 const browser = await chromium.launch({
-    executablePath: CHROME_PATHS.find(existsSync),
+    executablePath: CHROME_PATHS.find(p => !!p && existsSync(p)),
     headless: !process.argv.includes("--headed"),
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });

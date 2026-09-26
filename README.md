@@ -144,3 +144,9 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 | `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `--exe` runs it against the compiled binary |
 
 None of the tests touch your real Discord install or profile.
+
+## CI
+
+[![CI](https://github.com/BleedDev/delight/actions/workflows/ci.yml/badge.svg)](https://github.com/BleedDev/delight/actions/workflows/ci.yml)
+
+Every push and pull request to `main` runs the build, typecheck and all the suites above on `windows-latest` (`.github/workflows/ci.yml`). The web and Electron suites load the live discord.com, so an outage or a change on Discord's side can fail a run. Everything in `test-results/` (screenshots, logs) is uploaded as an artifact on every run. The browser suites look for Chrome in its usual install folders; set `CHROME_PATH` to use another Chromium browser.
