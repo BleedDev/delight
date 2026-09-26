@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
 import { join, resolve } from "path";
 import { chromium } from "playwright-core";
 
-import type { BootData, PluginPayload } from "../src/shared/ipc";
+import type { BootData, PluginPayload, ThemePayload } from "../src/shared/ipc";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const DIST = join(ROOT, "dist");
@@ -35,9 +35,17 @@ const plugins: PluginPayload[] = readdirSync(join(DIST, "plugins")).map(id => {
 const boot: BootData = {
     version: "test",
     dataDir: "C:/fake",
-    settings: { quickCss: true, plugins: { experiments: { enabled: true } } },
+    settings: { quickCss: true, plugins: { experiments: { enabled: true } }, enabledThemes: [] },
     plugins,
     quickCss: "",
+    themes: [{
+        file: "web-test.css",
+        name: "Web Test",
+        description: "Paints a marker property so the test can see it",
+        author: "Delight",
+        version: "1.0.0",
+        css: ":root { --dl-test-theme: on; }",
+    } satisfies ThemePayload],
 };
 
 const renderer = readFileSync(join(DIST, "core", "renderer.js"), "utf8");
@@ -46,13 +54,22 @@ const renderer = readFileSync(join(DIST, "core", "renderer.js"), "utf8");
 function fakeNative(bootData: BootData) {
     if (window !== window.top) return;
     const pluginListeners: ((change: unknown) => void)[] = [];
-    (window as any).__test = { pluginListeners, savedSettings: null, nativeCalls: [] as unknown[] };
+    const themeListeners: ((change: unknown) => void)[] = [];
+    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[] };
     (window as any).DelightNative = {
         boot: () => structuredClone(bootData),
         saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
         saveQuickCss: async () => { },
         onQuickCssChange: () => { },
         onPluginChange: (cb: (c: unknown) => void) => void pluginListeners.push(cb),
+        onThemeChange: (cb: (c: unknown) => void) => void themeListeners.push(cb),
+        // Like main: refuse non-https, otherwise "download" a theme and announce it before resolving
+        addThemeFromUrl: async (url: string) => {
+            if (!url.startsWith("https://")) return { ok: false, error: "Only https:// links are allowed" };
+            const theme = { file: "remote.css", name: "Remote Theme", css: ":root { --dl-remote-theme: on; }" };
+            themeListeners.forEach(cb => cb({ type: "upsert", theme }));
+            return { ok: true, file: theme.file };
+        },
         callNative: async (...args: unknown[]) => ((window as any).__test.nativeCalls.push(args), 42),
         setNativeRunning: async () => { },
         openPath: async () => "",
@@ -352,6 +369,58 @@ await page.fill("#dl-ph-replace", "true)");
 await page.waitForFunction(() => document.querySelector("#dl-ph-result .dl-status")?.textContent === "Doesn’t compile", null, { timeout: 5000 }).catch(() => { });
 const broken = await page.evaluate(() => document.querySelector("#dl-ph-result .dl-error")?.textContent ?? null);
 check("Patch Helper: reports a patch that breaks compilation", !!broken?.includes("SyntaxError"), broken?.slice(0, 120));
+
+// ---- themes -------------------------------------------------------------------------------------
+
+await page.click("#dl-tab-themes");
+await page.waitForSelector("#dl-theme-web-test_css", { timeout: 5000 });
+await page.waitForTimeout(200);
+await page.screenshot({ path: join(OUT, "ui-themes.png") });
+
+// Discord's switch is a transparent checkbox under its styled track, click it the way the plugin test does
+const clickThemeSwitch = () => page.evaluate(() => (document.querySelector('[aria-labelledby="dl-theme-web-test_css"][role="switch"]') as HTMLElement).click());
+const themeVar = (name: string) => page.evaluate(n => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
+const themeCard = await page.evaluate(() => document.querySelector("#dl-tabpanel")!.textContent);
+check("Themes tab lists the theme with its metadata", ["Web Test", "Paints a marker", "By Delight", "web-test.css"].every(t => themeCard!.includes(t)));
+check("disabled theme isn't applied", (await themeVar("--dl-test-theme")) === "");
+
+await clickThemeSwitch();
+await page.waitForTimeout(300);
+const themeOn = {
+    value: await themeVar("--dl-test-theme"),
+    saved: await page.evaluate(() => (window as any).__test.savedSettings?.enabledThemes),
+    beforeQuickCss: await page.evaluate(() => document.getElementById("delight-theme-web-test.css")?.nextElementSibling?.id),
+};
+check("switch applies the theme and persists it", themeOn.value === "on" && themeOn.saved?.includes("web-test.css"), themeOn);
+check("theme is inserted before Quick CSS", themeOn.beforeQuickCss === "delight-quickcss", themeOn.beforeQuickCss);
+
+await page.evaluate(() => (window as any).__test.themeListeners.forEach((cb: any) => cb({
+    type: "upsert",
+    theme: { file: "web-test.css", name: "Web Test", css: ":root { --dl-test-theme: edited; }" },
+})));
+await page.waitForTimeout(100);
+check("editing the theme file restyles live", (await themeVar("--dl-test-theme")) === "edited");
+
+await clickThemeSwitch();
+await page.waitForTimeout(300);
+check("switching it off removes the theme", (await themeVar("--dl-test-theme")) === "" && !(await page.$('[id="delight-theme-web-test.css"]')));
+
+await page.fill("#dl-theme-url", "http://example.com/theme.css");
+await page.getByRole("button", { name: "Add from URL" }).click();
+await page.waitForTimeout(200);
+const refused = await page.evaluate(() => document.querySelector(".dl-add-status")?.textContent);
+check("Add from URL shows why a link was refused", refused === "Only https:// links are allowed", refused);
+
+await page.fill("#dl-theme-url", "https://example.com/theme.css");
+await page.keyboard.press("Enter");
+await page.waitForTimeout(300);
+const added = {
+    status: await page.evaluate(() => document.querySelector(".dl-add-status")?.textContent),
+    value: await themeVar("--dl-remote-theme"),
+    listed: !!(await page.$("#dl-theme-remote_css")),
+};
+check("Add from URL lists the theme and turns it on", added.value === "on" && added.listed && /Remote Theme/.test(added.status ?? ""), added);
+await page.screenshot({ path: join(OUT, "ui-themes-added.png") });
 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(300);
