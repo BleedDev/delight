@@ -557,3 +557,52 @@
     opacity: 0.6;
     transition: opacity var(--dl-duration-fast) ease-out;
 }
+
+/* ---- store (StoreTab.tsx) ---------------------------------------------------------------- */
+
+.dl-store-status:empty,
+.dl-store-registry:empty { display: none; }
+
+.dl-store-status { margin: 8px 0 0; }
+
+.dl-store-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--dl-space-inner);
+    flex-shrink: 0;
+}
+
+.dl-badge[data-tone="warning"] {
+    color: var(--dl-status-warning);
+    border-color: color-mix(in oklab, var(--dl-status-warning) 40%, transparent);
+}
+
+.dl-store-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dl-space-inner);
+    padding: 12px;
+    border-radius: var(--dl-radius-control);
+    border: 1px solid color-mix(in oklab, var(--dl-status-warning) 45%, transparent);
+    background: color-mix(in oklab, var(--dl-status-warning) 8%, transparent);
+}
+
+.dl-store-confirm:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+.dl-store-confirm-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: var(--dl-text-primary);
+    font-weight: 600;
+}
+
+.dl-store-confirm-title svg { color: var(--dl-status-warning); flex-shrink: 0; }
+
+/* ---- end store --------------------------------------------------------------------------- */

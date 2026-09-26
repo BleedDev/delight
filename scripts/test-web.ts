@@ -62,7 +62,7 @@ function fakeNative(bootData: BootData) {
     if (window !== window.top) return;
     const pluginListeners: ((change: unknown) => void)[] = [];
     const themeListeners: ((change: unknown) => void)[] = [];
-    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[] };
+    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[] };
     (window as any).DelightNative = {
         boot: () => structuredClone(bootData),
         saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
@@ -77,6 +77,35 @@ function fakeNative(bootData: BootData) {
             themeListeners.forEach(cb => cb({ type: "upsert", theme }));
             return { ok: true, file: theme.file };
         },
+        // Plugin store: a small registry, one plugin installed, one with an update, one native
+        storeList: async () => {
+            const file = (id: string, name: string) => ({ url: `https://example.com/${id}/${name}`, sha256: "0".repeat(64) });
+            const entry = (id: string, name: string, description: string, version: string, native = false, tags: string[] = []) => ({
+                id, name, description, authors: ["Delight"], version, tags, native, minDelightVersion: "0.1.0",
+                files: { "manifest.json": file(id, "manifest.json"), "index.js": file(id, "index.js"), ...(native ? { "native.js": file(id, "native.js") } : {}) },
+            });
+            return {
+                ok: true,
+                registryUrl: "https://raw.githubusercontent.com/BleedDev/delight/main/registry.json",
+                problems: [],
+                plugins: [
+                    entry("store-clock", "Message Clock", "Shows the exact send time next to every message.", "1.0.0", false, ["messages"]),
+                    entry("store-quiet", "Quiet Mode", "Hides typing indicators and read states until you ask for them.", "1.3.0", false, ["privacy"]),
+                    entry("store-rpc", "Local RPC", "Exposes a local API so other apps can read your current channel.", "0.4.0", true, ["integration"]),
+                    entry("store-theme-sync", "Theme Sync", "Follows your system's light and dark mode.", "2.1.0"),
+                ],
+                installed: [{ id: "store-quiet", version: "1.2.0", fromStore: true }, { id: "store-theme-sync", version: "2.1.0", fromStore: true }],
+            };
+        },
+        storeInstall: async (id: string, options?: { allowNative?: boolean; }) => {
+            (window as any).__test.storeInstalls.push({ id, options });
+            if (id === "store-rpc" && !options?.allowNative) return { ok: false, error: "Needs confirmation" };
+            const plugin = { source: "user", manifest: { id, name: id, version: "9.9.9" }, code: "module.exports = { default: {} };" };
+            pluginListeners.forEach(cb => cb({ type: "upsert", plugin }));
+            return { ok: true, id, version: id === "store-quiet" ? "1.3.0" : "1.0.0" };
+        },
+        storeUninstall: async (id: string) => ({ ok: true, id, version: "1.0.0" }),
+        onStoreProgress: () => { },
         callNative: async (...args: unknown[]) => ((window as any).__test.nativeCalls.push(args), 42),
         setNativeRunning: async () => { },
         openPath: async () => "",
@@ -569,6 +598,50 @@ const added = {
 };
 check("Add from URL lists the theme and turns it on", added.value === "on" && added.listed && /Remote Theme/.test(added.status ?? ""), added);
 await page.screenshot({ path: join(OUT, "ui-themes-added.png") });
+
+// ---- store --------------------------------------------------------------------------------------
+
+await page.click("#dl-tab-store");
+await page.waitForSelector('[data-store-id="store-rpc"]', { timeout: 5000 });
+await page.waitForTimeout(200);
+await page.screenshot({ path: join(OUT, "ui-store.png") });
+const storeCard = (id: string) => page.evaluate(i => document.querySelector(`[data-store-id="${i}"]`)?.textContent ?? "", id);
+const storeList = {
+    clock: await storeCard("store-clock"),
+    quiet: await storeCard("store-quiet"),
+    rpc: await storeCard("store-rpc"),
+    sync: await storeCard("store-theme-sync"),
+};
+check("Store tab lists plugins with description, authors and version", storeList.clock.includes("Message Clock") && storeList.clock.includes("exact send time") && storeList.clock.includes("By Delight") && storeList.clock.includes("v1.0.0"), storeList.clock);
+check("Store shows Install, Update + Uninstall, and Installed states", /Install$/.test(storeList.clock) && storeList.quiet.includes("Update available, you have v1.2.0") && storeList.quiet.includes("Uninstall") && storeList.sync.includes("Installed v2.1.0"), storeList);
+check("native plugins carry a badge", storeList.rpc.includes("Native") && !storeList.clock.includes("Native"));
+
+await page.fill("#dl-store-search", "privacy");
+await page.waitForTimeout(150);
+const searched = await page.evaluate(() => [...document.querySelectorAll("[data-store-id]")].map(e => e.getAttribute("data-store-id")));
+check("Store search matches tags", JSON.stringify(searched) === '["store-quiet"]', searched);
+await page.fill("#dl-store-search", "");
+
+const storeButton = (id: string, name: string) => page.locator(`[data-store-id="${id}"]`).getByRole("button", { name, exact: true });
+await storeButton("store-rpc", "Install").click();
+await page.waitForSelector('[data-store-id="store-rpc"] .dl-store-confirm', { timeout: 2000 });
+await page.screenshot({ path: join(OUT, "ui-store-native-confirm.png") });
+const confirmText = await page.evaluate(() => document.querySelector(".dl-store-confirm")?.textContent ?? "");
+const installsBeforeConfirm = await page.evaluate(() => (window as any).__test.storeInstalls.length);
+check("installing a native plugin asks first, explaining full access", /full access to your computer/.test(confirmText) && installsBeforeConfirm === 0, confirmText.slice(0, 120));
+await storeButton("store-rpc", "Install with full access").click();
+await page.waitForTimeout(300);
+const nativeInstall = {
+    calls: await page.evaluate(() => (window as any).__test.storeInstalls),
+    card: await storeCard("store-rpc"),
+};
+check("confirming installs with allowNative and shows the result", nativeInstall.calls.at(-1)?.options?.allowNative === true && nativeInstall.card.includes("Installed and turned on"), nativeInstall);
+
+await storeButton("store-quiet", "Update").click();
+await page.waitForTimeout(300);
+const updated = await storeCard("store-quiet");
+check("Update installs the new version", updated.includes("Updated to v1.3.0") && !updated.includes("Update available"), updated);
+await page.screenshot({ path: join(OUT, "ui-store-after.png") });
 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(300);

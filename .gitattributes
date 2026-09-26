@@ -1,3 +1,5 @@
 * text=auto eol=lf
 *.png binary
 *.exe binary
+# Published store files: registry.json pins their sha256, so they must be served byte for byte
+store/** -text

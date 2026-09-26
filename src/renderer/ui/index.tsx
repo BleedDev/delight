@@ -6,6 +6,7 @@ import { PatchesTab } from "./PatchesTab";
 import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
+import { StoreTab } from "./StoreTab";
 import { ThemesTab } from "./ThemesTab";
 import css from "./styles.css" with { type: "text" };
 
@@ -34,6 +35,7 @@ function close() {
 
 const tabs = [
     { id: "plugins", label: "Plugins", Component: PluginsTab },
+    { id: "store", label: "Store", Component: StoreTab },
     { id: "themes", label: "Themes", Component: ThemesTab },
     { id: "quickcss", label: "Quick CSS", Component: QuickCssTab },
     { id: "patches", label: "Patches", Component: PatchesTab },

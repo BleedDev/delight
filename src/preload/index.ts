@@ -1,4 +1,5 @@
 import { AddThemeResult, BootData, DelightSettings, IPC, OpenPathTarget, PluginChange, ThemeChange } from "@shared/ipc";
+import type { StoreListing, StoreProgress, StoreResult } from "@shared/store";
 import { contextBridge, ipcRenderer, webFrame } from "electron";
 
 /** The bridge the renderer uses to reach the main process. Mirrored by src/renderer/native.ts */
@@ -18,6 +19,12 @@ const DelightNative = {
         ipcRenderer.on(IPC.THEME_CHANGED, (_, change) => cb(change));
     },
     addThemeFromUrl: (url: string): Promise<AddThemeResult> => ipcRenderer.invoke(IPC.THEME_ADD_URL, url),
+    storeList: (): Promise<StoreListing> => ipcRenderer.invoke(IPC.STORE_LIST),
+    storeInstall: (id: string, options?: { allowNative?: boolean; }): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_INSTALL, id, options),
+    storeUninstall: (id: string): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_UNINSTALL, id),
+    onStoreProgress(cb: (progress: StoreProgress) => void) {
+        ipcRenderer.on(IPC.STORE_PROGRESS, (_, progress) => cb(progress));
+    },
     callNative: (id: string, method: string, args: unknown[]) => ipcRenderer.invoke(IPC.PLUGIN_NATIVE_CALL, id, method, args),
     setNativeRunning: (id: string, running: boolean) => ipcRenderer.invoke(IPC.PLUGIN_NATIVE_STATE, id, running),
     openPath: (target: OpenPathTarget) => ipcRenderer.invoke(IPC.OPEN_PATH, target),
