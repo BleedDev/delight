@@ -95,7 +95,7 @@ const shimAsar = join(resources, "app.asar");
 writeFileSync(shimAsar, createShimAsar({ corePath: join(ROOT, "dist", "core", "main.js"), devPluginsDir: join(ROOT, "dist", "plugins") }, { name: APP_NAME }));
 
 mkdirSync(DATA, { recursive: true });
-writeFileSync(join(DATA, "settings.json"), JSON.stringify({ quickCss: true, plugins: { experiments: { enabled: true } } }));
+writeFileSync(join(DATA, "settings.json"), JSON.stringify({ quickCss: true, plugins: { experiments: { enabled: true }, "gpu-boost": { enabled: true } } }));
 
 const proc = Bun.spawn([join(INSTALL, "app-1.0.0", "electron.exe")], {
     env: { ...process.env, DELIGHT_DATA_DIR: DATA, ELECTRON_ENABLE_LOGGING: "1" },
@@ -129,6 +129,7 @@ check("plugin dropped into the folder loads live", r.latePlugin === true);
 check("auto-injected into the updated app-1.0.1", existsSync(join(updated, ORIGINAL_ASAR, "index.js"))
     && readFileSync(join(updated, "app.asar")).equals(readFileSync(shimAsar)));
 check("settings were read from the data folder", existsSync(join(DATA, "settings.json")));
+check("enabled plugin's chromium switches applied at startup", stdout.includes("gpu-boost: --enable-zero-copy"));
 
 if (failed) {
     const delightLines = stderr.split("\n").filter(l => /delight/i.test(l)).join("\n");

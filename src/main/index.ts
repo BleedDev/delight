@@ -6,7 +6,7 @@ import { dirname, join } from "path";
 
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE } from "./paths";
 import { persistAcrossUpdates } from "./persist";
-import { getPluginPayloads, initPlugins } from "./plugins";
+import { applyChromiumSwitches, getPluginPayloads, initPlugins } from "./plugins";
 import { saveSettings, settings } from "./settings";
 
 declare global {
@@ -120,6 +120,7 @@ function setup() {
 
     registerIpc();
     enableDevTools();
+    applyChromiumSwitches();
     app.on("session-created", addPreload);
     app.whenReady().then(() => addPreload(session.defaultSession));
     app.whenReady().then(initPlugins);

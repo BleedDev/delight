@@ -34,6 +34,11 @@ export interface PluginManifest {
     native?: string;
     /** Enabled on first install */
     enabledByDefault?: boolean;
+    /**
+     * Chromium command line switches applied when Discord starts, while the plugin is enabled.
+     * `true` for flags without a value. Changes take effect after restarting Discord.
+     */
+    chromiumSwitches?: Record<string, string | true>;
 }
 
 export interface PluginPayload {
