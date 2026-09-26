@@ -1,11 +1,12 @@
 import * as api from "@delight/api";
-import { isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import { DelightSettings, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
 
 import { Logger } from "../logger";
 import { Native } from "../native";
 import { loadedModulesMatching, replaceLive } from "../patching/live";
 import { getPatchRecords, registerPatches, SourcePatch, unregisterPatches } from "../patching/source";
 import * as JsxRuntime from "../react/jsx-runtime";
+import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
 import { React, ReactDOM } from "../webpack/common";
 import { wreq } from "../webpack/runtime";
@@ -148,6 +149,12 @@ function load(payload: PluginPayload): PluginState {
         patchesRegistered: false,
     };
 
+    // Safe mode lists plugins so they can be turned off, but never runs their code, not even top-level
+    if (SafeMode.active) {
+        plugins.set(payload.manifest.id, state);
+        return state;
+    }
+
     try {
         state.definition = evaluate(payload);
     } catch (err) {
@@ -164,6 +171,12 @@ function upsert(payload: PluginPayload) {
     const { id } = payload.manifest;
     const previous = plugins.get(id);
     const enabled = isPluginEnabled(Settings.data, payload.manifest);
+
+    if (SafeMode.active) {
+        if (previous) previous.manifest = payload.manifest;
+        else load(payload);
+        return emit();
+    }
 
     if (!previous) {
         const state = load(payload);
@@ -207,6 +220,20 @@ function remove(id: string) {
     emit();
 }
 
+async function applyEnabled(state: PluginState, enabled: boolean) {
+    if (state.manifest.native) Native.setNativeRunning(state.manifest.id, enabled);
+
+    if (enabled) {
+        // On disk before any of its code runs: if it crashes Discord, safe mode can name it
+        Settings.flush();
+        enablePatches(state);
+        if (ready) await start(state);
+    } else {
+        stop(state);
+        disablePatches(state);
+    }
+}
+
 // ---- public -----------------------------------------------------------------------------------
 
 export const PluginManager = {
@@ -223,6 +250,7 @@ export const PluginManager = {
     /** Start enabled plugins, once Discord's core modules exist */
     async startAll() {
         ready = true;
+        if (SafeMode.active) return emit();
         for (const state of plugins.values()) {
             if (isPluginEnabled(Settings.data, state.manifest)) await start(state);
         }
@@ -234,14 +262,18 @@ export const PluginManager = {
         if (!state) return;
 
         Settings.update(d => void ((d.plugins[id] ??= {}).enabled = enabled));
-        if (state.manifest.native) Native.setNativeRunning(id, enabled);
+        // Only remembered in safe mode, it applies once the user leaves it
+        if (SafeMode.active) return emit();
+        await applyEnabled(state, enabled);
+        emit();
+    },
 
-        if (enabled) {
-            enablePatches(state);
-            if (ready) await start(state);
-        } else {
-            stop(state);
-            disablePatches(state);
+    /** Starts and stops plugins to match settings that were replaced wholesale (a restored backup) */
+    async syncEnabled(previous: DelightSettings) {
+        if (SafeMode.active) return emit();
+        for (const state of plugins.values()) {
+            const enabled = isPluginEnabled(Settings.data, state.manifest);
+            if (enabled !== isPluginEnabled(previous, state.manifest)) await applyEnabled(state, enabled);
         }
         emit();
     },

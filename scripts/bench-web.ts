@@ -6,6 +6,8 @@ import { existsSync, readdirSync, readFileSync } from "fs";
 import { join, resolve } from "path";
 import { chromium } from "playwright-core";
 
+import { disablePasskeys } from "./no-passkeys.ts";
+
 const ROOT = resolve(import.meta.dirname, "..");
 const DIST = join(ROOT, "dist");
 const runs = Number(process.argv.find(a => /^d+$/.test(a)) ?? 3);
@@ -28,6 +30,7 @@ const browser = await chromium.launch({
 const results: Record<string, number>[] = [];
 for (let i = 0; i < runs; i++) {
     const page = await browser.newPage();
+    await page.addInitScript(disablePasskeys);
     await page.addInitScript(b => {
         if (window !== window.top) return;
         (window as any).DelightNative = {

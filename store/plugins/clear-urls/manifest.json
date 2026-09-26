@@ -1,0 +1,11 @@
+{
+    "id": "clear-urls",
+    "name": "Clear URLs",
+    "description": "Removes tracking parameters like utm_source and si from links before you send them.",
+    "version": "1.0.0",
+    "authors": [
+        "Delight"
+    ],
+    "enabledByDefault": true,
+    "main": "index.js"
+}

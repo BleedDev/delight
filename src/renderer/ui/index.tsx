@@ -3,11 +3,13 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { Native } from "../native";
 import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
+import { BackupTab } from "./BackupTab";
 import { Button, Icon, IconName, Text, useStore } from "./components";
 import { PatchesTab } from "./PatchesTab";
 import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
+import { StoreTab } from "./StoreTab";
 import { ThemesTab } from "./ThemesTab";
 import css from "./styles.css" with { type: "text" };
 
@@ -37,8 +39,10 @@ function close() {
 // `icon` is optional so a section added without one still fits; its label stays aligned with the rest
 const tabs: readonly { id: string; label: string; icon?: IconName; Component: () => ReactNode; }[] = [
     { id: "plugins", label: "Plugins", icon: "puzzle", Component: PluginsTab },
+    { id: "store", label: "Store", icon: "store", Component: StoreTab },
     { id: "themes", label: "Themes", icon: "palette", Component: ThemesTab },
     { id: "quickcss", label: "Quick CSS", icon: "code", Component: QuickCssTab },
+    { id: "backup", label: "Backup", icon: "download", Component: BackupTab },
     { id: "patches", label: "Patches", icon: "wrench", Component: PatchesTab },
     { id: "patchhelper", label: "Patch Helper", icon: "beaker", Component: PatchHelperTab },
 ];

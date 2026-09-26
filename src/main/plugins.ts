@@ -6,6 +6,7 @@ import { join, resolve, sep } from "path";
 
 import { DATA_DIR, PLUGINS_DIR } from "./paths";
 import { addRequestFilter } from "./requests";
+import { SafeMode } from "./safeMode";
 import { settings } from "./settings";
 
 interface LoadedPlugin extends PluginPayload {
@@ -68,6 +69,8 @@ function loadNative(plugin: LoadedPlugin) {
 }
 
 function startNative(id: string) {
+    // Plugins are listed in safe mode, but none of their code runs
+    if (SafeMode.active) return;
     const plugin = plugins.get(id);
     const native = plugin && loadNative(plugin);
     if (!plugin || !native || native.running) return;
@@ -135,6 +138,7 @@ function reloadFolder(root: string, source: Source, folder: string) {
 
     if (!next) return;
     plugins.set(next.manifest.id, next);
+    SafeMode.recordChange({ kind: "plugin", id: next.manifest.id, action: previous ? "updated" : "installed" });
     // Plugins added or re-enabled while Discord runs need their native side started too
     if (restartNative || isPluginEnabled(settings, next.manifest)) startNative(next.manifest.id);
     broadcast({ type: "upsert", plugin: toPayload(next) });
@@ -191,6 +195,7 @@ function watchRoot(root: string, source: Source) {
  * Reads manifests directly since the plugin host starts later.
  */
 export function applyChromiumSwitches() {
+    if (SafeMode.active) return;
     const { app } = require("electron") as typeof import("electron");
     for (const { dir } of roots) {
         if (!existsSync(dir)) continue;
@@ -210,6 +215,11 @@ export function applyChromiumSwitches() {
 }
 
 // ---- setup ------------------------------------------------------------------------------------
+
+/** Picks up a change to a folder in the user plugins dir now, without waiting for the watcher */
+export function refreshUserPlugin(folder: string) {
+    reloadFolder(PLUGINS_DIR, "user", folder);
+}
 
 export function getPluginPayloads() {
     return [...plugins.values()].map(toPayload);
@@ -231,6 +241,10 @@ export function initPlugins() {
     for (const plugin of plugins.values()) {
         if (isPluginEnabled(settings, plugin.manifest)) startNative(plugin.manifest.id);
     }
+    // Discord crashed repeatedly while running: whatever native code is running goes too
+    SafeMode.onEnter(() => {
+        for (const id of natives.keys()) stopNative(id);
+    });
 
     ipcMain.handle(IPC.PLUGIN_NATIVE_STATE, (_, id: string, running: boolean) => {
         running ? startNative(id) : stopNative(id);
@@ -238,6 +252,7 @@ export function initPlugins() {
 
     ipcMain.handle(IPC.PLUGIN_NATIVE_CALL, (_, id: string, method: string, args: unknown[]) => {
         const plugin = plugins.get(id);
+        if (SafeMode.active) throw new Error(`Plugin ${id} can't run in safe mode`);
         const native = plugin && loadNative(plugin);
         const fn = native?.module[method];
         if (!native || typeof fn !== "function" || method === "start" || method === "stop") {

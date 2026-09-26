@@ -3,9 +3,11 @@ import { isPluginEnabled } from "@shared/ipc";
 import { Native } from "../native";
 import { getPatchRecords } from "../patching/source";
 import { PluginManager, PluginState } from "../plugins/manager";
+import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
 import { React } from "../webpack/common";
 import { Badge, Button, Collapse, EmptyState, FilterChips, IconButton, List, Notice, SearchField, SettingField, Status, Switch, Text, useStore } from "./components";
+import { SafeModeNotice } from "./SafeModeNotice";
 
 type Filter = "all" | "enabled" | "disabled" | "settings" | "dev";
 
@@ -73,6 +75,7 @@ function PluginRow({ state }: { state: PluginState; }) {
     const titleId = `dl-plugin-${manifest.id}`;
     const settingsId = `dl-plugin-${manifest.id}-settings`;
     const withSettings = hasSettings(state);
+    const paused = SafeMode.active && enabled;
     const statuses = state.error || state.needsReload || state.running || enabled;
 
     return (
@@ -91,6 +94,7 @@ function PluginRow({ state }: { state: PluginState; }) {
                             {state.error && <Status tone="danger">Failed to start</Status>}
                             {state.needsReload && <Status tone="warning">Reload to apply</Status>}
                             {state.running && !state.error && <Status tone="success" quiet>Running</Status>}
+                            {paused && <Status tone="muted">Paused in safe mode</Status>}
                             {enabled && <PatchSummary id={manifest.id} />}
                         </div>
                     )}
@@ -146,6 +150,7 @@ export function PluginsTab() {
 
     return (
         <div className="dl-tab">
+            {SafeMode.active && <SafeModeNotice />}
             {needsReload && (
                 <Notice tone="warning" action={<Button variant="accent" onClick={() => location.reload()}>Reload Discord</Button>}>
                     Some plugin changes couldn’t be applied live. Reload Discord to finish applying them.

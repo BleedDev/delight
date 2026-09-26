@@ -1,0 +1,11 @@
+{
+    "id": "smooth-typing",
+    "name": "Smooth Typing",
+    "description": "Halves the worst frame drops while typing. Discord updates its saved draft on every keystroke, re-rendering everything that shows drafts; this batches those updates until you pause. What you type is never delayed or lost.",
+    "version": "1.0.0",
+    "authors": [
+        "Delight"
+    ],
+    "enabledByDefault": true,
+    "main": "index.js"
+}
