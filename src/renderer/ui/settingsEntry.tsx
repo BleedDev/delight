@@ -12,6 +12,7 @@ import { hook } from "../patching/hooks";
 import { findExport, filters, waitFor } from "../webpack/find";
 import { ensureStyles } from "./index";
 import { PatchesTab } from "./PatchesTab";
+import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
 
@@ -33,6 +34,8 @@ const SYM_WRAPPED = Symbol("delight.rootWrapped");
 const iconPaths = {
     plugins: "M10 3a2 2 0 0 1 4 0v2h3a2 2 0 0 1 2 2v3h-2a2 2 0 0 0 0 4h2v3a2 2 0 0 1-2 2h-3v-2a2 2 0 0 0-4 0v2H7a2 2 0 0 1-2-2v-3h2a2 2 0 0 0 0-4H5V7a2 2 0 0 1 2-2h3z",
     css: "M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.4 1.5-1.4H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zM7.5 12a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z",
+    // Code brackets
+    patchHelper: "M8.7 6.3a1 1 0 0 1 0 1.4L4.4 12l4.3 4.3a1 1 0 1 1-1.4 1.4l-5-5a1 1 0 0 1 0-1.4l5-5a1 1 0 0 1 1.4 0zm6.6 0a1 1 0 0 1 1.4 0l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4l4.3-4.3-4.3-4.3a1 1 0 0 1 0-1.4z",
     patches: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z",
 };
 
@@ -70,6 +73,7 @@ function buildSection(types: NodeTypes): LayoutNode {
         entry("plugins", "Plugins", iconPaths.plugins, PluginsTab),
         entry("quickcss", "Quick CSS", iconPaths.css, QuickCssTab),
         entry("patches", "Patches", iconPaths.patches, PatchesTab),
+        entry("patchhelper", "Patch Helper", iconPaths.patchHelper, PatchHelperTab),
     ];
 
     return { key: SECTION_KEY, type: types.SECTION, useTitle: () => "Delight", buildLayout: () => items };
