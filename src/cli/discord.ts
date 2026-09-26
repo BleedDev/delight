@@ -22,7 +22,7 @@ export interface DiscordInstall {
     versions: { version: string; resources: string; }[];
 }
 
-function compareVersions(a: string, b: string) {
+export function compareVersions(a: string, b: string) {
     const pa = a.split(".").map(Number);
     const pb = b.split(".").map(Number);
     for (let i = 0; i < Math.max(pa.length, pb.length); i++) {

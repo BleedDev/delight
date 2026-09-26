@@ -2,14 +2,17 @@
  * delight install    [--flavor stable|ptb|canary|development|all] [--dev] [--restart]
  * delight uninstall  [--flavor ...] [--restart]
  * delight status
+ * delight update     [--check] [--flavor ...] [--restart]
  */
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 import { parseArgs } from "util";
 
+import pkg from "../../package.json";
 import { readAsarFile } from "../shared/asar";
 import { createShimAsar, ORIGINAL_ASAR } from "../shared/shim";
 import { DiscordInstall, findInstalls, FLAVORS, injectionState, isDiscordRunning, killDiscord, startDiscord } from "./discord";
+import { cleanupPreviousUpdate, COMPILED, downloadVerified, fetchLatestRelease, isNewer, replaceExecutable, UpdateError } from "./update";
 
 interface Embed {
     version: string;
@@ -26,6 +29,7 @@ const { values: flags, positionals } = parseArgs({
         flavor: { type: "string", default: "stable" },
         dev: { type: "boolean", default: false },
         restart: { type: "boolean", default: false },
+        check: { type: "boolean", default: false },
         help: { type: "boolean", short: "h", default: false },
     },
 });
@@ -167,22 +171,68 @@ function status() {
     console.log(c.dim(`\nData folder: ${DATA_DIR}`));
 }
 
+/** Replaces this exe with the latest published release, then lets the new exe run `install` */
+async function update() {
+    const current = pkg.version;
+    const sourceHint = "This is a source checkout. Update it with `git pull` and `bun run build`.";
+
+    let release;
+    try {
+        release = await fetchLatestRelease();
+    } catch (e) {
+        fail(e instanceof UpdateError ? e.message : String(e));
+    }
+
+    if (!release) {
+        console.log(`No Delight release has been published yet. You have ${current}.`);
+        if (!COMPILED) console.log(c.dim(sourceHint));
+        return;
+    }
+    if (!isNewer(release.tag, current)) {
+        console.log(c.ok(`✓ Delight ${current} is up to date`) + c.dim(` (latest release: ${release.tag})`));
+        return;
+    }
+
+    console.log(`Delight ${release.version} is available, you have ${current}.`);
+    if (!COMPILED) return console.log(c.dim(sourceHint));
+    if (flags.check) return console.log(c.dim(`Run \`delight update\` to install it. ${release.url}`));
+
+    const exe = process.execPath;
+    try {
+        console.log(c.dim(`Downloading ${release.tag}…`));
+        const bytes = await downloadVerified(release);
+        replaceExecutable(exe, bytes);
+    } catch (e) {
+        fail(e instanceof UpdateError ? e.message : String(e));
+    }
+    console.log(c.ok(`✓ Updated ${exe} to ${release.version}`));
+
+    // The new exe carries the new core and official plugins, so it does the install
+    const args = [exe, "install", "--flavor", flags.flavor!, ...(flags.restart ? ["--restart"] : [])];
+    const code = await Bun.spawn(args, { stdio: ["inherit", "inherit", "inherit"] }).exited;
+    if (code !== 0) fail(`The new version is in place, but installing it into Discord failed. Run \`delight install\` to retry.`);
+}
+
 function help() {
-    console.log(`${c.bold("delight")} — Discord client mod installer
+    console.log(`${c.bold("delight")} ${pkg.version} — Discord client mod installer
 
   install     Install or update Delight
   uninstall   Remove Delight, Discord goes back to vanilla
   status      Show every Discord install and whether Delight is in it
+  update      Download the latest release of delight.exe and install it
 
 Options
   --flavor <stable|ptb|canary|development|all>   Which Discord (default: stable)
   --restart                                      Quit and reopen Discord for you
   --dev                                          Point Discord at this repo's dist/ (hot reload)
+  --check                                        With update: only report whether a newer release exists
 
 Launch Discord with --vanilla to start it once without Delight.`);
 }
 
-const commands: Record<string, () => unknown> = { install, repair: install, uninstall, status, help };
+if (COMPILED) cleanupPreviousUpdate(process.execPath);
+
+const commands: Record<string, () => unknown> = { install, repair: install, uninstall, status, update, help };
 const command = flags.help ? "help" : positionals[0] ?? "help";
 if (!(command in commands)) fail(`Unknown command "${command}". Run \`delight help\`.`);
 await commands[command]();
