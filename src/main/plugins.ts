@@ -211,6 +211,11 @@ export function applyChromiumSwitches() {
 
 // ---- setup ------------------------------------------------------------------------------------
 
+/** Picks up a change to a folder in the user plugins dir now, without waiting for the watcher */
+export function refreshUserPlugin(folder: string) {
+    reloadFolder(PLUGINS_DIR, "user", folder);
+}
+
 export function getPluginPayloads() {
     return [...plugins.values()].map(toPayload);
 }

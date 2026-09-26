@@ -21,6 +21,12 @@ export const IPC = {
     THEME_CHANGED: "delight:theme-changed",
     /** download a theme from an https URL into the themes folder */
     THEME_ADD_URL: "delight:theme-add-url",
+    /** plugin store: fetch the registry, install / update / uninstall from it */
+    STORE_LIST: "delight:store-list",
+    STORE_INSTALL: "delight:store-install",
+    STORE_UNINSTALL: "delight:store-uninstall",
+    /** main -> renderer: download / install progress of a store operation */
+    STORE_PROGRESS: "delight:store-progress",
     OPEN_PATH: "delight:open-path",
     RELAUNCH: "delight:relaunch",
 } as const;
@@ -32,6 +38,10 @@ export interface PluginManifest {
     description?: string;
     version?: string;
     authors?: string[];
+    /** Store search keywords */
+    tags?: string[];
+    /** Oldest Delight the plugin works with, published to the store registry */
+    minDelightVersion?: string;
     /** Renderer entry, relative to the plugin folder. Defaults to index.js */
     main?: string;
     /** Optional main-process entry, relative to the plugin folder */

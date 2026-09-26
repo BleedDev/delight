@@ -75,6 +75,51 @@ A theme is a `.css` file in `%APPDATA%\Delight\themes`. Turn it on in the Themes
 
 Without a header, the file name is used. **Add from URL** downloads an `https://` link to a CSS file (up to 2 MB) into the themes folder and turns it on. For GitHub, use the Raw link. Enabled themes apply before Discord first paints, and Quick CSS always goes on top of them.
 
+## Plugin store
+
+The **Store** tab (also under Delight in Discord's settings) lists the plugins in a registry, a JSON file at `https://raw.githubusercontent.com/BleedDev/delight/main/registry.json`. Search by name, description, author or tag, then **Install**, **Update** or **Uninstall**. An installed plugin appears and starts right away, no restart: the store writes it into `%APPDATA%\Delight\plugins\<id>` and the plugin watcher picks it up like any other folder.
+
+- **Every file is verified.** The registry lists a sha256 for each file. Delight downloads all of them (https only, redirects included, 5 MB per file, 1 MB for the registry), checks each hash and the manifest (same id, standard file names), and only then writes anything. A mismatch is rejected and nothing is written.
+- **Installs are atomic.** Files are staged in `%APPDATA%\Delight\store-staging`, outside the plugins folder, and moved into place with one rename. An update moves the old folder aside first and puts it back if the swap fails.
+- **Native plugins ask first.** A plugin with a `native.js`, or with `chromiumSwitches`, runs outside Discord's page with full access to your computer. The registry must mark it `"native": true`, and installing it (or updating it) takes an explicit confirmation that says so. Main refuses the install without it.
+- **Only its own plugins.** Store installs carry a `.delight-store.json` marker. The store never overwrites, updates or removes a plugin folder without one, so plugins you put there yourself are safe.
+- **Updates** are offered when the registry's version is newer than the installed one (`1.10.0` > `1.9.0`, `1.0.0` > `1.0.0-beta`). Plugins whose `minDelightVersion` is newer than your Delight can't be installed.
+- **Another registry.** Put `{ "registryUrl": "https://…/registry.json" }` in `%APPDATA%\Delight\store.json`. The renderer can't change it: Discord's page only ever asks for a plugin id, main decides where the files come from. `DELIGHT_STORE_URL` overrides both (the tests use it).
+
+### Registry format
+
+```json
+{
+    "schema": 1,
+    "plugins": [{
+        "id": "no-track",
+        "name": "No Track",
+        "description": "Blocks Discord's analytics requests.",
+        "authors": ["Delight"],
+        "version": "1.0.0",
+        "tags": ["privacy"],
+        "native": true,
+        "minDelightVersion": "0.1.0",
+        "files": {
+            "manifest.json": { "url": "https://…/no-track/manifest.json", "sha256": "…" },
+            "index.js": { "url": "https://…/no-track/index.js", "sha256": "…" },
+            "native.js": { "url": "https://…/no-track/native.js", "sha256": "…" }
+        }
+    }]
+}
+```
+
+`id` is lowercase letters, digits and dashes (it becomes the folder name). `manifest.json` and `index.js` are required, `native.js` only on native entries, and no other files are allowed. URLs must be `https://`, hashes 64 lowercase hex digits. An invalid entry is skipped and the rest still load; a malformed document is rejected. The rules live in `src/shared/store.ts`.
+
+### Publishing to the registry
+
+```sh
+bun run build
+bun scripts/registry.ts
+```
+
+This copies the built official plugins into `store/plugins/<id>/` and writes `registry.json` with their hashes, pointing at `https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins`. Commit both together: the registry only matches the files from the same run. The same build always gives the same files and hashes. Name, description, authors, version and `tags` come from each plugin's `manifest.json`; `minDelightVersion` too, defaulting to the current Delight version. Options: `--base <https url>` to serve the files from somewhere else, `--files <dir>` for where to copy them, `--out <file>` for the registry, `--only id,id` to publish a subset. The script checks its output with the app's own validation before writing it.
+
 ## Writing a plugin
 
 A plugin is a folder in `plugins/` (official) or `userplugins/` (yours, gitignored):
@@ -204,9 +249,9 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 
 | Suite | What it proves |
 |---|---|
-| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation. Theme header parsing and remote theme checks. The menu props patch: what gets rewritten and what must not be |
-| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, toasts, menu items, slash commands, UI including the Patch Helper and Themes tabs. It runs on Node because Playwright's transports hang under Bun on Windows. |
-| `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (applied at startup, live from the folder, ordered under Quick CSS, downloaded from a URL), auto-injection after an update |
+| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation. Theme header parsing and remote theme checks. The menu props patch: what gets rewritten and what must not be. Store registry validation, version ordering and sha256 checks |
+| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, toasts, menu items, slash commands, UI including the Patch Helper, Themes and Store tabs (native-plugin confirmation included). It runs on Node because Playwright's transports hang under Bun on Windows. |
+| `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (applied at startup, live from the folder, ordered under Quick CSS, downloaded from a URL), auto-injection after an update. The plugin store against a local https fake registry (`DELIGHT_STORE_URL`): live install, tampered file rejected with nothing written, native install refused until confirmed, live update and uninstall |
 | `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `delight update` against a local fake of GitHub's API (`DELIGHT_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection, self-replacement on a copy of the exe, and that updates only refresh Discords that already have Delight |
 
 None of the tests touch your real Discord install or profile.

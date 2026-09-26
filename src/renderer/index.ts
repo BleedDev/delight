@@ -9,6 +9,7 @@ import { Native } from "./native";
 import { diagnosePatches } from "./patching/diagnose";
 import { PluginManager } from "./plugins/manager";
 import { Settings } from "./settings";
+import { Store } from "./store";
 import { QuickCss } from "./styles";
 import { Themes } from "./themes";
 import { registerToolkitPatches, Toolkit } from "./toolkit";
@@ -32,6 +33,7 @@ const Delight = {
     plugins: PluginManager,
     settings: Settings,
     themes: Themes,
+    store: Store,
     ui: SettingsUI,
     diagnosePatches,
     stats,
