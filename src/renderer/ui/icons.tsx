@@ -59,7 +59,7 @@ const defs = {
     download: { discord: "DownloadIcon", paths: ["M12 2a1 1 0 0 1 1 1v10.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V3a1 1 0 0 1 1-1ZM3 20a1 1 0 1 0 0 2h18a1 1 0 1 0 0-2H3Z"] },
 } satisfies Record<string, IconDef>;
 
-/** Names Delight used before switching to Discord's set, kept so existing callers keep working */
+/** Names Evi used before switching to Discord's set, kept so existing callers keep working */
 const aliases = {
     check: "circleCheck",
     cross: "close",
@@ -75,7 +75,7 @@ const resolve = (name: IconName): keyof typeof defs => (name in aliases ? aliase
 const namedSizes: Record<string, number> = { xxs: 12, xs: 16, sm: 18, refresh_sm: 20, md: 24, lg: 32 };
 
 function fallback(def: IconDef) {
-    return function DelightIcon({ size, width, height, className, style }: { size?: string | number; width?: number; height?: number; className?: string; style?: React.CSSProperties; }) {
+    return function EviIcon({ size, width, height, className, style }: { size?: string | number; width?: number; height?: number; className?: string; style?: React.CSSProperties; }) {
         const px = width ?? height ?? (typeof size === "number" ? size : namedSizes[size ?? "md"] ?? 24);
         return (
             <svg className={className} style={style} width={px} height={px} viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -87,7 +87,7 @@ function fallback(def: IconDef) {
 
 const cache = new Map<string, ComponentType<any>>();
 
-/** Discord's component for an icon, found by its path data, or Delight's copy of the same icon */
+/** Discord's component for an icon, found by its path data, or Evi's copy of the same icon */
 export function iconComponent(name: IconName): ComponentType<any> {
     const key = resolve(name);
     const cached = cache.get(key);

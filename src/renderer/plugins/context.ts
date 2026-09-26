@@ -160,7 +160,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     };
 
     addStyle(css: string): ManagedStyle {
-        const style = createStyle(css, `delight-plugin-${this.id}`);
+        const style = createStyle(css, `evi-plugin-${this.id}`);
         this.onDispose(style.remove);
         return style;
     }
@@ -173,7 +173,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     /**
      * Adds items to Discord's menus: `callback(children, props)` runs each time the menu with this
      * navId renders ("message", "user-context", "guild-context", "channel-context"... or "*").
-     * Push Menu.Item / Menu.Group elements (from @delight/api) into `children`. Removed on stop.
+     * Push Menu.Item / Menu.Group elements (from @evi/api) into `children`. Removed on stop.
      */
     contextMenu(navId: string | string[], callback: ContextMenuCallback) {
         return this.onDispose(addContextMenuPatch(navId, callback));

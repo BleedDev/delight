@@ -68,7 +68,7 @@ export const filters = {
 };
 
 // Some Discord exports are Proxies that answer every property access; they'd match any byProps filter
-const CANARY = "__delightCanary__";
+const CANARY = "__eviCanary__";
 
 function isSearchable(value: any) {
     if (value == null) return false;
@@ -193,7 +193,7 @@ moduleListeners.add((exports, id, source) => {
             try {
                 waiter.callback(value, { id, exports, key, value });
             } catch (err) {
-                console.error("[Delight] waitFor callback threw", err);
+                console.error("[Evi] waitFor callback threw", err);
             }
             // Callback work (plugin startup, hooking) isn't per-module overhead, account for it separately
             stats.callbackMs += performance.now() - t;
@@ -226,7 +226,7 @@ export function waitForExport<T = any>(filter: Filter): Promise<FoundExport<T>> 
 export function findLazy<T = any>(filter: Filter, description = "export"): T {
     return lazy(() => {
         const value = wreq && find<T>(filter);
-        if (value == null) throw new Error(`Delight: could not find ${description}`);
+        if (value == null) throw new Error(`Evi: could not find ${description}`);
         return value;
     });
 }

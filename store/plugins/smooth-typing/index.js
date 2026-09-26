@@ -42,7 +42,7 @@ __export(exports_smooth_typing, {
   default: () => smooth_typing_default
 });
 module.exports = __toCommonJS(exports_smooth_typing);
-var import_api = require("@delight/api");
+var import_api = require("@evi/api");
 var DELAY = 250;
 var smooth_typing_default = import_api.definePlugin({
   start(ctx) {

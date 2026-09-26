@@ -109,7 +109,7 @@ export function ThemesTab() {
             <Section
                 id="dl-themes-add"
                 title="Add a theme"
-                description="Paste a link to a .css file. Delight downloads it into your themes folder and turns it on."
+                description="Paste a link to a .css file. Evi downloads it into your themes folder and turns it on."
             >
                 <AddFromUrl />
             </Section>

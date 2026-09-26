@@ -1,6 +1,6 @@
 /**
  * Plugin toolkit: toasts, context menu items and slash commands, built on Discord's own systems.
- * Plugins use them through ctx (auto-removed on stop) or @delight/api.
+ * Plugins use them through ctx (auto-removed on stop) or @evi/api.
  */
 import { builtInCommandsFilter, getRegisteredCommands, isCommandsHooked } from "./commands";
 import { ensureMenuArgsPatch, isMenuHooked, menuFilter, resolveMenuComponents } from "./contextMenu";

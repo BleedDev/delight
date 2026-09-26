@@ -110,7 +110,7 @@ function toDiscordCommand(def: CommandDefinition, owner: string) {
         applicationId: BUILT_IN_APPLICATION_ID,
         options: def.options?.map(option),
         predicate: def.predicate,
-        delightOwner: owner,
+        eviOwner: owner,
         execute: async (rawOptions: CommandContext["rawOptions"], context: { channel: any; guild?: any; }) => {
             const args: Record<string, any> = {};
             for (const o of rawOptions ?? []) args[o.name] = o.value;
@@ -158,7 +158,7 @@ export function registerCommand(def: CommandDefinition, owner = "unknown"): () =
         throw new Error(`Invalid command name "${def.name}": lowercase letters, numbers, - and _ only`);
     }
     for (const existing of commands.values()) {
-        if (existing.untranslatedName === def.name) logger.warn(`/${def.name} is registered twice (${existing.delightOwner}, ${owner})`);
+        if (existing.untranslatedName === def.name) logger.warn(`/${def.name} is registered twice (${existing.eviOwner}, ${owner})`);
     }
 
     const command = toDiscordCommand(def, owner);

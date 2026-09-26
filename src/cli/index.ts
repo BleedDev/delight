@@ -1,8 +1,8 @@
 /**
- * delight install    [--flavor stable|ptb|canary|development|all] [--dev] [--restart]
- * delight uninstall  [--flavor ...] [--restart]
- * delight status
- * delight update     [--check] [--flavor ...] [--restart]
+ * evi install    [--flavor stable|ptb|canary|development|all] [--dev] [--restart]
+ * evi uninstall  [--flavor ...] [--restart]
+ * evi status
+ * evi update     [--check] [--flavor ...] [--restart]
  */
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
@@ -20,7 +20,15 @@ interface Embed {
     plugins: Record<string, Record<string, string>>;
 }
 
-const DATA_DIR = join(process.env.APPDATA ?? "", "Delight");
+const DATA_DIR = join(process.env.APPDATA ?? "", "Evi");
+
+// Before the rename to Evi the data folder was %APPDATA%/Delight: move it over once
+const LEGACY_DATA_DIR = join(process.env.APPDATA ?? "", "Delight");
+if (process.env.APPDATA && !existsSync(DATA_DIR) && existsSync(LEGACY_DATA_DIR)) {
+    try {
+        renameSync(LEGACY_DATA_DIR, DATA_DIR);
+    } catch { }
+}
 
 const { values: flags, positionals } = parseArgs({
     args: Bun.argv.slice(2),
@@ -135,7 +143,7 @@ async function install() {
         });
         if (!done) continue;
 
-        console.log(c.ok(`✓ ${state === "delight" ? "Updated" : "Installed"} Delight in Discord ${discord.flavor} ${version}`) + c.dim(flags.dev ? " (dev build)" : ""));
+        console.log(c.ok(`✓ ${state === "evi" ? "Updated" : "Installed"} Evi in Discord ${discord.flavor} ${version}`) + c.dim(flags.dev ? " (dev build)" : ""));
     }
 }
 
@@ -145,7 +153,7 @@ async function uninstall() {
         const done = await withDiscordClosed(discord, () => {
             // Every version folder, the auto-repair may have injected older ones too
             for (const { resources } of discord.versions) {
-                if (injectionState(resources) !== "delight") continue;
+                if (injectionState(resources) !== "evi") continue;
                 const asar = join(resources, "app.asar");
                 rmSync(asar);
                 renameSync(join(resources, ORIGINAL_ASAR), asar);
@@ -153,7 +161,7 @@ async function uninstall() {
             }
         });
         if (!done) continue;
-        console.log(removed ? c.ok(`✓ Removed Delight from Discord ${discord.flavor}`) : c.dim(`  Delight wasn't installed in Discord ${discord.flavor}`));
+        console.log(removed ? c.ok(`✓ Removed Evi from Discord ${discord.flavor}`) : c.dim(`  Evi wasn't installed in Discord ${discord.flavor}`));
     }
 }
 
@@ -164,7 +172,7 @@ function status() {
     for (const discord of installs) {
         const { version, resources } = discord.versions[0];
         const state = injectionState(resources);
-        const label = { clean: c.dim("not installed"), delight: c.ok("installed"), "other-mod": c.warn("another mod is installed") }[state];
+        const label = { clean: c.dim("not installed"), evi: c.ok("installed"), "other-mod": c.warn("another mod is installed") }[state];
         const running = isDiscordRunning(discord) ? c.dim(" · running") : "";
         console.log(`${c.bold(discord.flavor.padEnd(12))} ${version.padEnd(10)} ${label}${running}`);
     }
@@ -184,18 +192,18 @@ async function update() {
     }
 
     if (!release) {
-        console.log(`No Delight release has been published yet. You have ${current}.`);
+        console.log(`No Evi release has been published yet. You have ${current}.`);
         if (!COMPILED) console.log(c.dim(sourceHint));
         return;
     }
     if (!isNewer(release.tag, current)) {
-        console.log(c.ok(`✓ Delight ${current} is up to date`) + c.dim(` (latest release: ${release.tag})`));
+        console.log(c.ok(`✓ Evi ${current} is up to date`) + c.dim(` (latest release: ${release.tag})`));
         return;
     }
 
-    console.log(`Delight ${release.version} is available, you have ${current}.`);
+    console.log(`Evi ${release.version} is available, you have ${current}.`);
     if (!COMPILED) return console.log(c.dim(sourceHint));
-    if (flags.check) return console.log(c.dim(`Run \`delight update\` to install it. ${release.url}`));
+    if (flags.check) return console.log(c.dim(`Run \`evi update\` to install it. ${release.url}`));
 
     const exe = process.execPath;
     try {
@@ -207,27 +215,27 @@ async function update() {
     }
     console.log(c.ok(`✓ Updated ${exe} to ${release.version}`));
 
-    // Refresh only Discords that already have Delight: updating must never inject into one you didn't choose.
+    // Refresh only Discords that already have Evi: updating must never inject into one you didn't choose.
     // The new exe carries the new core and official plugins, so it does the install.
-    const installed = findInstalls().filter(d => injectionState(d.versions[0].resources) === "delight");
+    const installed = findInstalls().filter(d => injectionState(d.versions[0].resources) === "evi");
     if (!installed.length) {
-        console.log(c.dim("Delight isn't installed in any Discord yet. Run `delight install` to add it."));
+        console.log(c.dim("Evi isn't installed in any Discord yet. Run `evi install` to add it."));
         return;
     }
     for (const discord of installed) {
         const args = [exe, "install", "--flavor", discord.flavor, ...(flags.restart ? ["--restart"] : [])];
         const code = await Bun.spawn(args, { stdio: ["inherit", "inherit", "inherit"] }).exited;
-        if (code !== 0) fail(`The new version is in place, but refreshing Discord ${discord.flavor} failed. Run \`delight install --flavor ${discord.flavor}\` to retry.`);
+        if (code !== 0) fail(`The new version is in place, but refreshing Discord ${discord.flavor} failed. Run \`evi install --flavor ${discord.flavor}\` to retry.`);
     }
 }
 
 function help() {
-    console.log(`${c.bold("delight")} ${pkg.version} — Discord client mod installer
+    console.log(`${c.bold("evi")} ${pkg.version} — Discord client mod installer
 
-  install     Install or update Delight
-  uninstall   Remove Delight, Discord goes back to vanilla
-  status      Show every Discord install and whether Delight is in it
-  update      Download the latest delight.exe and refresh every Discord that has Delight
+  install     Install or update Evi
+  uninstall   Remove Evi, Discord goes back to vanilla
+  status      Show every Discord install and whether Evi is in it
+  update      Download the latest evi.exe and refresh every Discord that has Evi
 
 Options
   --flavor <stable|ptb|canary|development|all>   Which Discord (default: stable)
@@ -235,12 +243,12 @@ Options
   --dev                                          Point Discord at this repo's dist/ (hot reload)
   --check                                        With update: only report whether a newer release exists
 
-Launch Discord with --vanilla to start it once without Delight.`);
+Launch Discord with --vanilla to start it once without Evi.`);
 }
 
 if (COMPILED) cleanupPreviousUpdate(process.execPath);
 
 const commands: Record<string, () => unknown> = { install, repair: install, uninstall, status, update, help };
 const command = flags.help ? "help" : positionals[0] ?? "help";
-if (!(command in commands)) fail(`Unknown command "${command}". Run \`delight help\`.`);
+if (!(command in commands)) fail(`Unknown command "${command}". Run \`evi help\`.`);
 await commands[command]();

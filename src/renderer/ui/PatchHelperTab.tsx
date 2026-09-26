@@ -106,7 +106,7 @@ function ResultChangeCard({ result }: { result: PatchHelperResult; }) {
     if (!result.changed) {
         return (
             <ResultCard id="dl-ph-result" title="Result" status={<Status tone="danger">No change</Status>}>
-                <p className="dl-hint">The replacement produces the same code. Delight reports this as a failed replacement.</p>
+                <p className="dl-hint">The replacement produces the same code. Evi reports this as a failed replacement.</p>
             </ResultCard>
         );
     }
@@ -121,7 +121,7 @@ function ResultChangeCard({ result }: { result: PatchHelperResult; }) {
                 {result.after && <Code label="After" excerpt={result.after} kind="added" />}
             </div>
             {compile && !compile.ok && (
-                <pre className="dl-error">{compile.error}{"\n"}Delight would revert this patch.</pre>
+                <pre className="dl-error">{compile.error}{"\n"}Evi would revert this patch.</pre>
             )}
         </ResultCard>
     );

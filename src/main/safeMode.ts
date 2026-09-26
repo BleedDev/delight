@@ -11,7 +11,7 @@
  * switch the running process into safe mode, and the reloaded window boots without plugins.
  *
  * Safe mode caused by crashes is sticky across restarts until the user leaves it from the notice.
- * `--delight-safe` is for one start only.
+ * `--evi-safe` is for one start only.
  */
 import { RecentChange, SafeModeInfo, SafeModeReason } from "@shared/ipc";
 import { addChange, CRASH_LOOP_STARTS, CRASH_WINDOW_MS, EMPTY_STATE, RENDERER_CRASHES, StartupMode, startupMode, StartupState } from "@shared/safeMode";
@@ -21,7 +21,7 @@ import { join } from "path";
 
 import { DATA_DIR } from "./paths";
 
-export const SAFE_FLAG = "--delight-safe";
+export const SAFE_FLAG = "--evi-safe";
 const STATE_FILE = join(DATA_DIR, "safe-mode.json");
 
 function load(): StartupState {
@@ -43,7 +43,7 @@ function save() {
         writeFileSync(tmp, JSON.stringify(state, null, 4));
         renameSync(tmp, STATE_FILE);
     } catch (err) {
-        console.error("[Delight] Couldn't save safe mode state", err);
+        console.error("[Evi] Couldn't save safe mode state", err);
     }
 }
 
@@ -58,7 +58,7 @@ function isDiscordApp(wc: WebContents) {
 function enter(reason: SafeModeReason, failures: number) {
     info = { reason, failures };
     if (reason !== "flag") state.forceSafe = reason;
-    console.warn(`[Delight] Safe mode (${reason}): plugins, themes and Quick CSS are off`);
+    console.warn(`[Evi] Safe mode (${reason}): plugins, themes and Quick CSS are off`);
     for (const listener of enterListeners) listener();
 }
 
@@ -79,7 +79,7 @@ export const SafeMode = {
         const mode = startupMode(state, flag);
 
         if (mode === "vanilla") {
-            console.warn(`[Delight] Discord failed to start ${failures} times in a row, even in safe mode. Starting it without Delight once.`);
+            console.warn(`[Evi] Discord failed to start ${failures} times in a row, even in safe mode. Starting it without Evi once.`);
             // Next start is safe mode again, with two more tries before the next vanilla one
             state.pendingStarts = CRASH_LOOP_STARTS;
             state.forceSafe ??= "crash-loop";
@@ -101,10 +101,10 @@ export const SafeMode = {
         if (state.pendingStarts === 0) return;
         state.pendingStarts = 0;
         save();
-        console.log("[Delight] Healthy start, crash counter reset");
+        console.log("[Evi] Healthy start, crash counter reset");
     },
 
-    /** Forget the crash history and restart normally. The --delight-safe flag isn't passed on. */
+    /** Forget the crash history and restart normally. The --evi-safe flag isn't passed on. */
     exit() {
         state.pendingStarts = 0;
         delete state.forceSafe;
@@ -130,7 +130,7 @@ export const SafeMode = {
 
             const now = Date.now();
             crashes = [...crashes.filter(t => now - t < CRASH_WINDOW_MS), now];
-            console.error(`[Delight] Discord's window crashed (${details.reason}), ${crashes.length} time(s) within ${CRASH_WINDOW_MS / 1000}s`);
+            console.error(`[Evi] Discord's window crashed (${details.reason}), ${crashes.length} time(s) within ${CRASH_WINDOW_MS / 1000}s`);
             if (crashes.length >= RENDERER_CRASHES && !info) {
                 enter("renderer-crash", crashes.length);
                 save();

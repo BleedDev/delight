@@ -1,4 +1,4 @@
-import { definePlugin, Menu } from "@delight/api";
+import { definePlugin, Menu } from "@evi/api";
 
 async function copy(text: string) {
     const native = (window as any).DiscordNative?.clipboard;
@@ -10,11 +10,11 @@ export default definePlugin({
     start(ctx) {
         // Runs locally and replies with an "Only you can see this" message. Returning { content } instead would send a real message.
         ctx.command({
-            name: "delight",
-            description: "Say hi from Delight",
+            name: "evi",
+            description: "Say hi from Evi",
             options: [{ name: "text", description: "What the toast says", type: "string" }],
             execute(args) {
-                return { ephemeral: args.text || `Delight ${(window as any).Delight?.version ?? ""} is running` };
+                return { ephemeral: args.text || `Evi ${(window as any).Evi?.version ?? ""} is running` };
             },
         });
 
@@ -24,8 +24,8 @@ export default definePlugin({
             children.push(
                 <Menu.Group>
                     <Menu.Item
-                        id="delight-copy-message-id"
-                        label="Copy Message ID (Delight)"
+                        id="evi-copy-message-id"
+                        label="Copy Message ID (Evi)"
                         action={async () => {
                             try {
                                 await copy(message.id);

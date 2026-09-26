@@ -23,9 +23,9 @@ const ACTIONS: Record<RecentChange["action"], string> = {
 };
 
 const reasons: Record<SafeModeInfo["reason"], (info: SafeModeInfo) => string> = {
-    "crash-loop": info => `Discord didn’t finish starting the last ${info.failures} times, so Delight started it without plugins, themes or Quick CSS.`,
-    "renderer-crash": () => "Discord crashed several times in a row, so Delight turned off plugins, themes and Quick CSS.",
-    "flag": () => "Discord was started with --delight-safe, so plugins, themes and Quick CSS are off for this session.",
+    "crash-loop": info => `Discord didn’t finish starting the last ${info.failures} times, so Evi started it without plugins, themes or Quick CSS.`,
+    "renderer-crash": () => "Discord crashed several times in a row, so Evi turned off plugins, themes and Quick CSS.",
+    "flag": () => "Discord was started with --evi-safe, so plugins, themes and Quick CSS are off for this session.",
 };
 
 const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
@@ -76,7 +76,7 @@ export function SafeModeNotice({ onDismiss }: { onDismiss?(): void; }) {
         <section className="dl-safe" aria-labelledby="dl-safe-title" data-reason={info.reason}>
             <div className="dl-safe-head">
                 <span className="dl-safe-icon"><Icon name="warning" size={18} /></span>
-                <h2 className="dl-safe-title" id="dl-safe-title">Delight is in safe mode</h2>
+                <h2 className="dl-safe-title" id="dl-safe-title">Evi is in safe mode</h2>
                 {onDismiss && <IconButton icon="close" label="Hide safe mode notice" onClick={onDismiss} />}
             </div>
             <p className="dl-safe-text">{reasons[info.reason](info)} Discord itself works normally.</p>

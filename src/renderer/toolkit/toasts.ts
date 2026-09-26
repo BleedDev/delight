@@ -11,7 +11,7 @@ import { filters, find } from "../webpack/find";
 
 const logger = new Logger("Toasts", "#5865f2");
 
-/** Discord's toast types. "info" is Delight's name for Discord's plain "message" toast. */
+/** Discord's toast types. "info" is Evi's name for Discord's plain "message" toast. */
 export type ToastType = "info" | "success" | "failure" | "message" | "link" | "clock" | "bookmark" | "favorite";
 
 export interface ToastOptions {
@@ -37,7 +37,7 @@ export function showToast(message: ReactNode, options: ToastOptions = {}): boole
     const type = options.type === "info" || !options.type ? "message" : options.type;
     show({
         message,
-        id: `delight-toast-${++counter}`,
+        id: `evi-toast-${++counter}`,
         type,
         options: {
             position: options.position === "bottom" ? 1 : 0,

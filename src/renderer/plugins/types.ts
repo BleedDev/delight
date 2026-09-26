@@ -51,7 +51,7 @@ export interface PluginDefinition<S extends SettingsSchema = SettingsSchema> {
     settings?: S;
     /**
      * Source patches. Registered before Discord's code runs, so enabling or changing them at
-     * runtime may require a reload (Delight tells the user when).
+     * runtime may require a reload (Evi tells the user when).
      */
     patches?: SourcePatch[];
     /** Stylesheet applied while the plugin runs */

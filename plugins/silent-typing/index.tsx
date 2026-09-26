@@ -1,5 +1,5 @@
-import { definePlugin, filters, find, getStore } from "@delight/api";
-import type { PluginContext } from "@delight/api";
+import { definePlugin, filters, find, getStore } from "@evi/api";
+import type { PluginContext } from "@evi/api";
 import type { ComponentType } from "react";
 
 /**
@@ -69,7 +69,7 @@ function SilentTypingButton() {
     const icon = <KeyboardIcon off={enabled} />;
 
     return (
-        <div className={getContainerClass()} data-delight-silent-typing={enabled ? "on" : "off"}>
+        <div className={getContainerClass()} data-evi-silent-typing={enabled ? "on" : "off"}>
             {ChatButton
                 ? <ChatButton onClick={toggle} isActive={enabled} aria-label={label} sparkle={false}>{icon}</ChatButton>
                 : <button type="button" className="dl-silent-typing-fallback" onClick={toggle} aria-label={label} aria-pressed={enabled}>{icon}</button>}
@@ -92,7 +92,7 @@ export default definePlugin({
     injectButton(buttons: unknown[], props: any) {
         try {
             if (!context?.settings.get("showButton") || !Array.isArray(buttons) || props?.channel?.id == null) return;
-            const button = <SilentTypingButton key="delight-silent-typing" />;
+            const button = <SilentTypingButton key="evi-silent-typing" />;
             // Before the send button when there is one, so that one stays last
             const submit = buttons.findIndex((b: any) => b?.key === "submit");
             if (submit < 0) buttons.push(button);

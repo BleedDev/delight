@@ -1,4 +1,4 @@
-declare const DELIGHT_VERSION: string;
+declare const EVI_VERSION: string;
 
 declare module "*.css" {
     const css: string;

@@ -3,10 +3,10 @@
  * and planning an import (what changes, merge vs replace). Main does the file IO, the UI shows
  * the preview. No Node or DOM APIs here, so it's unit tested directly.
  */
-import { DelightSettings, isPluginEnabled, PluginManifest, PluginPayload, PluginSettingsEntry } from "./ipc";
+import { EviSettings, isPluginEnabled, PluginManifest, PluginPayload, PluginSettingsEntry } from "./ipc";
 import { isThemeFile, MAX_THEME_BYTES } from "./themes";
 
-export const BACKUP_FORMAT = "delight-backup";
+export const BACKUP_FORMAT = "evi-backup";
 export const BACKUP_VERSION = 1;
 /** Largest backup we read. Themes are capped at 2 MB each, real backups are a few KB */
 export const MAX_BACKUP_BYTES = 16 * 1024 * 1024;
@@ -23,13 +23,13 @@ export interface BackupPlugin {
     enabled: boolean;
 }
 
-export interface DelightBackup {
+export interface EviBackup {
     format: typeof BACKUP_FORMAT;
     version: typeof BACKUP_VERSION;
     /** ISO timestamp */
     createdAt: string;
-    delightVersion: string;
-    settings: DelightSettings;
+    eviVersion: string;
+    settings: EviSettings;
     quickCss: string;
     themes: BackupTheme[];
     /** Which plugins were installed. Their code isn't included, only their settings (in `settings`). */
@@ -39,18 +39,18 @@ export interface DelightBackup {
 export type ImportMode = "merge" | "replace";
 
 export interface BackupSource {
-    settings: DelightSettings;
+    settings: EviSettings;
     quickCss: string;
     themes: BackupTheme[];
     plugins: { manifest: PluginManifest; source: PluginPayload["source"]; }[];
 }
 
-export function buildBackup(state: BackupSource, delightVersion: string, now = new Date()): DelightBackup {
+export function buildBackup(state: BackupSource, eviVersion: string, now = new Date()): EviBackup {
     return {
         format: BACKUP_FORMAT,
         version: BACKUP_VERSION,
         createdAt: now.toISOString(),
-        delightVersion,
+        eviVersion,
         settings: structuredClone(state.settings),
         quickCss: state.quickCss,
         themes: state.themes
@@ -62,15 +62,15 @@ export function buildBackup(state: BackupSource, delightVersion: string, now = n
     };
 }
 
-/** delight-backup-2026-09-26.json, in local time */
+/** evi-backup-2026-09-26.json, in local time */
 export function backupFileName(now = new Date()) {
     const pad = (n: number) => String(n).padStart(2, "0");
-    return `delight-backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`;
+    return `evi-backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`;
 }
 
 // ---- validation -------------------------------------------------------------------------------
 
-export type ParseResult = { ok: true; backup: DelightBackup; } | { ok: false; error: string; };
+export type ParseResult = { ok: true; backup: EviBackup; } | { ok: false; error: string; };
 
 class Invalid extends Error { }
 
@@ -105,7 +105,7 @@ export function isSafeThemeFile(file: string) {
         && !UNSAFE_KEYS.has(file);
 }
 
-function parseSettings(value: unknown): DelightSettings {
+function parseSettings(value: unknown): EviSettings {
     if (!isObject(value)) fail("settings must be an object");
     if (!isObject(value.plugins)) fail("settings.plugins must be an object");
 
@@ -171,9 +171,9 @@ export function parseBackup(text: string): ParseResult {
     }
 
     try {
-        if (!isObject(raw) || raw.format !== BACKUP_FORMAT) fail("That file isn't a Delight backup");
+        if (!isObject(raw) || raw.format !== BACKUP_FORMAT) fail("That file isn't a Evi backup");
         if (typeof raw.version !== "number" || !Number.isInteger(raw.version)) fail("The backup has no valid version");
-        if (raw.version > BACKUP_VERSION) fail(`The backup was made by a newer Delight (format ${raw.version}), update Delight to restore it`);
+        if (raw.version > BACKUP_VERSION) fail(`The backup was made by a newer Evi (format ${raw.version}), update Evi to restore it`);
         if (raw.version !== BACKUP_VERSION) fail(`Unsupported backup format ${raw.version}`);
 
         const createdAt = str(raw.createdAt, "createdAt", 64);
@@ -185,7 +185,7 @@ export function parseBackup(text: string): ParseResult {
                 format: BACKUP_FORMAT,
                 version: BACKUP_VERSION,
                 createdAt,
-                delightVersion: str(raw.delightVersion, "delightVersion", 64),
+                eviVersion: str(raw.eviVersion, "eviVersion", 64),
                 settings: parseSettings(raw.settings),
                 quickCss: str(raw.quickCss, "quickCss", MAX_BACKUP_BYTES),
                 themes: parseThemes(raw.themes),
@@ -222,7 +222,7 @@ export interface ImportPreview {
 }
 
 export interface ImportPlan {
-    settings: DelightSettings;
+    settings: EviSettings;
     /** null leaves quick.css alone */
     quickCss: string | null;
     /** Files to write, with names already matched to existing files of different case */
@@ -242,7 +242,7 @@ const sameJson = (a: unknown, b: unknown) => JSON.stringify(a ?? {}) === JSON.st
  *
  * Both write every theme from the backup that's new or different. Nothing is ever deleted.
  */
-export function planImport(current: BackupSource, backup: DelightBackup, mode: ImportMode): ImportPlan {
+export function planImport(current: BackupSource, backup: EviBackup, mode: ImportMode): ImportPlan {
     // Theme names as they exist on disk, case-insensitively (Windows)
     const existing = new Map(current.themes.map(t => [t.file.toLowerCase(), t]));
     const onDisk = (file: string) => existing.get(file.toLowerCase())?.file ?? file;
@@ -260,7 +260,7 @@ export function planImport(current: BackupSource, backup: DelightBackup, mode: I
 
     const incoming = backup.settings;
     const enabledFromBackup = incoming.enabledThemes.map(onDisk);
-    let settings: DelightSettings;
+    let settings: EviSettings;
     if (mode === "replace") {
         settings = { ...structuredClone(incoming), enabledThemes: [...new Set(enabledFromBackup)] };
     } else {

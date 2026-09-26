@@ -37,7 +37,7 @@ export function createStyle(css: string, id?: string, beforeId?: string): Manage
 }
 
 /** Themes are inserted before this element, so Quick CSS wins over them */
-export const QUICK_CSS_ID = "delight-quickcss";
+export const QUICK_CSS_ID = "evi-quickcss";
 
 let quickCss: ManagedStyle | undefined;
 let quickCssSource = "";

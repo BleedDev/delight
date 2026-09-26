@@ -3,7 +3,7 @@ export class Logger {
 
     private print(level: "log" | "info" | "warn" | "error" | "debug", args: unknown[]) {
         console[level](
-            `%c Delight %c ${this.name} `,
+            `%c Evi %c ${this.name} `,
             "background:#ff6fae;color:#1b0b14;font-weight:700;border-radius:4px 0 0 4px",
             `background:${this.color};color:#1b0b14;border-radius:0 4px 4px 0`,
             ...args,

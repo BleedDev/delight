@@ -3,6 +3,9 @@
     "name": "Silent Typing",
     "description": "Others don't see \"is typing…\" while you type. Toggle it with /silenttyping or the keyboard button in the chat bar.",
     "version": "1.0.0",
-    "authors": ["Evi"],
-    "enabledByDefault": false
+    "authors": [
+        "Evi"
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
 }

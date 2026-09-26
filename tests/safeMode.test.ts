@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { DEFAULT_SETTINGS, DelightSettings, PluginManifest, RecentChange } from "../src/shared/ipc";
+import { DEFAULT_SETTINGS, EviSettings, PluginManifest, RecentChange } from "../src/shared/ipc";
 import { addChange, diffSettings, MAX_CHANGES, pickSuspect, startupMode } from "../src/shared/safeMode";
 
-const settings = (patch: Partial<DelightSettings> = {}): DelightSettings => ({ ...structuredClone(DEFAULT_SETTINGS), ...patch });
+const settings = (patch: Partial<EviSettings> = {}): EviSettings => ({ ...structuredClone(DEFAULT_SETTINGS), ...patch });
 const change = (c: Partial<RecentChange>): RecentChange => ({ kind: "plugin", id: "a", action: "enabled", at: 1, ...c });
 
 describe("startup mode", () => {

@@ -39,8 +39,8 @@ export interface WebpackRequire {
 }
 
 const CHUNK_GLOBAL = "webpackChunkdiscord_app";
-const SYM_WRAPPED = Symbol("delight.wrappedFactory");
-const SYM_ORIGINAL = Symbol("delight.originalFactory");
+const SYM_WRAPPED = Symbol("evi.wrappedFactory");
+const SYM_ORIGINAL = Symbol("evi.originalFactory");
 
 const logger = new Logger("Webpack", "#8ab4f8");
 
@@ -59,7 +59,7 @@ function countExecution(require: WebpackRequire) {
     }
 }
 
-/** Time Delight adds to module loading, see Delight.stats */
+/** Time Evi adds to module loading, see Evi.stats */
 export const stats = { modules: 0, patchMs: 0, listenerMs: 0, callbackMs: 0, patchedModules: 0 };
 
 /** `source` returns the module factory's source, computed once per module and shared by all consumers */
@@ -165,7 +165,7 @@ function hookChunkArray(chunks: unknown[]) {
                 return runtimePush.apply(this, items);
             };
             // Unique chunk id, a runtime only runs the callback of chunks it hasn't installed yet
-            runtimePush.call(chunks, [[Symbol("delight")], {}, captureRequire]);
+            runtimePush.call(chunks, [[Symbol("evi")], {}, captureRequire]);
         },
     });
 }

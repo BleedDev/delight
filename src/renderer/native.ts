@@ -1,9 +1,9 @@
-import type { DelightNativeApi } from "../preload";
+import type { EviNativeApi } from "../preload";
 
 declare global {
     interface Window {
-        DelightNative: DelightNativeApi;
+        EviNative: EviNativeApi;
     }
 }
 
-export const Native = window.DelightNative;
+export const Native = window.EviNative;

@@ -1,6 +1,6 @@
 /**
  * End-to-end check against the real, current Discord web client (logged out, headless Chrome).
- * Injects the built renderer with a fake DelightNative, then verifies the core works on Discord's
+ * Injects the built renderer with a fake EviNative, then verifies the core works on Discord's
  * actual bundle: runtime capture, finders, source patches, export hooks, hot reload, and the UI.
  *
  *   node scripts/test-web.ts [--headed]
@@ -51,7 +51,7 @@ const boot: BootData = {
         file: "web-test.css",
         name: "Web Test",
         description: "Paints a marker property so the test can see it",
-        author: "Delight",
+        author: "Evi",
         version: "1.0.0",
         css: ":root { --dl-test-theme: on; }",
     } satisfies ThemePayload],
@@ -65,7 +65,7 @@ function fakeNative(bootData: BootData) {
     const pluginListeners: ((change: unknown) => void)[] = [];
     const themeListeners: ((change: unknown) => void)[] = [];
     (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[], bootOk: 0, exitedSafeMode: 0 };
-    (window as any).DelightNative = {
+    (window as any).EviNative = {
         boot: () => structuredClone(bootData),
         saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
         saveSettingsSync: (s: unknown) => void ((window as any).__test.savedSettings = structuredClone(s)),
@@ -87,7 +87,7 @@ function fakeNative(bootData: BootData) {
         storeList: async () => {
             const file = (id: string, name: string) => ({ url: `https://example.com/${id}/${name}`, sha256: "0".repeat(64) });
             const entry = (id: string, name: string, description: string, version: string, native = false, tags: string[] = []) => ({
-                id, name, description, authors: ["Delight"], version, tags, native, minDelightVersion: "0.1.0",
+                id, name, description, authors: ["Evi"], version, tags, native, minEviVersion: "0.1.0",
                 files: { "manifest.json": file(id, "manifest.json"), "index.js": file(id, "index.js"), ...(native ? { "native.js": file(id, "native.js") } : {}) },
             });
             return {
@@ -115,7 +115,7 @@ function fakeNative(bootData: BootData) {
         callNative: async (...args: unknown[]) => ((window as any).__test.nativeCalls.push(args), 42),
         setNativeRunning: async () => { },
         // Backup: main's dialogs and file IO, answered with a fixed backup that turns the test theme on
-        exportBackup: async () => ({ ok: true, path: "C:\\Users\\you\\Documents\\delight-backup-2026-09-26.json" }),
+        exportBackup: async () => ({ ok: true, path: "C:\\Users\\you\\Documents\\evi-backup-2026-09-26.json" }),
         openBackup: async () => {
             const preview = (mode: string) => ({
                 mode,
@@ -133,14 +133,14 @@ function fakeNative(bootData: BootData) {
             return {
                 ok: true,
                 token: "test-token",
-                fileName: "delight-backup-2026-09-20.json",
+                fileName: "evi-backup-2026-09-20.json",
                 createdAt: "2026-09-20T18:42:00.000Z",
-                delightVersion: "0.1.0",
+                eviVersion: "0.1.0",
                 previews: { merge: preview("merge"), replace: preview("replace") },
             };
         },
         applyBackup: async (token: string, mode: string) => {
-            const current = (window as any).Delight.settings.data;
+            const current = (window as any).Evi.settings.data;
             const settings = { ...structuredClone(current), enabledThemes: [...current.enabledThemes, "web-test.css"] };
             (window as any).__test.applied = { token, mode };
             return { ok: true, settings, preview: { changes: 7 } };
@@ -163,15 +163,15 @@ const browser = await chromium.launch({
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 
-const delightErrors: string[] = [];
+const eviErrors: string[] = [];
 page.on("console", msg => {
     const text = msg.text();
-    if (text.includes("Delight")) {
-        if (msg.type() === "error") delightErrors.push(text);
+    if (text.includes("Evi")) {
+        if (msg.type() === "error") eviErrors.push(text);
         if (process.argv.includes("--verbose") || msg.type() !== "log") console.log(`  [page ${msg.type()}] ${text.replace(/%c/g, "").slice(0, 300)}`);
     }
 });
-page.on("pageerror", err => delightErrors.push(`pageerror: ${err.message}`));
+page.on("pageerror", err => eviErrors.push(`pageerror: ${err.message}`));
 
 // Before anything else: discord.com would otherwise pop a Windows passkey dialog on the desktop
 await page.addInitScript(disablePasskeys);
@@ -181,10 +181,10 @@ await page.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });
 
 // ---- core ---------------------------------------------------------------------------------------
 
-await page.waitForFunction(() => (window as any).Delight?.plugins.getSnapshot().some((p: any) => p.running), null, { timeout: 60_000 });
+await page.waitForFunction(() => (window as any).Evi?.plugins.getSnapshot().some((p: any) => p.running), null, { timeout: 60_000 });
 
 const core = await page.evaluate(() => {
-    const D = (window as any).Delight;
+    const D = (window as any).Evi;
     const { api } = D;
     return {
         wreq: !!D.wreq,
@@ -207,12 +207,12 @@ check("enabled plugins started", ["clear-urls", "experiments", "no-track"].every
 // ---- flux ---------------------------------------------------------------------------------------
 
 const flux = await page.evaluate(async () => {
-    const { Dispatcher } = (window as any).Delight.api;
+    const { Dispatcher } = (window as any).Evi.api;
     let got: unknown = null;
     const handler = (a: any) => void (got = a.value);
-    Dispatcher.subscribe("DELIGHT_TEST", handler);
-    await Dispatcher.dispatch({ type: "DELIGHT_TEST", value: 7 });
-    Dispatcher.unsubscribe("DELIGHT_TEST", handler);
+    Dispatcher.subscribe("EVI_TEST", handler);
+    await Dispatcher.dispatch({ type: "EVI_TEST", value: 7 });
+    Dispatcher.unsubscribe("EVI_TEST", handler);
     return got;
 });
 check("flux subscribe + dispatch", flux === 7);
@@ -220,7 +220,7 @@ check("flux subscribe + dispatch", flux === 7);
 // ---- source patch -------------------------------------------------------------------------------
 
 const patch = await page.evaluate(() => {
-    const D = (window as any).Delight;
+    const D = (window as any).Evi;
     const diag = D.diagnosePatches().find((d: any) => d.plugin === "experiments");
     let isDeveloper: unknown;
     try {
@@ -236,7 +236,7 @@ check("DeveloperExperimentStore.isDeveloper is true", patch.isDeveloper === true
 // ---- export hooks -------------------------------------------------------------------------------
 
 const hooks = await page.evaluate(async () => {
-    const { api, plugins } = (window as any).Delight;
+    const { api, plugins } = (window as any).Evi;
     // MessageActions may be lazy on the login page, load it the way Discord would
     let actions = api.findByProps("sendMessage", "editMessage");
     if (!actions) {
@@ -272,7 +272,7 @@ check("re-enabling hooks again", !!hooks.rehooked);
 // ---- hot reload ---------------------------------------------------------------------------------
 
 const hot = await page.evaluate(async () => {
-    const { plugins } = (window as any).Delight;
+    const { plugins } = (window as any).Evi;
     const test = (window as any).__test;
     const payload = {
         source: "dev",
@@ -298,7 +298,7 @@ check("old instance disposed on reload and removal", hot.disposedOnReload === 1 
 // ---- live module replacement --------------------------------------------------------------------
 
 const live = await page.evaluate(async () => {
-    const { plugins, api, wreq } = (window as any).Delight;
+    const { plugins, api, wreq } = (window as any).Evi;
     const test = (window as any).__test;
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -319,7 +319,7 @@ const live = await page.evaluate(async () => {
     const payload = {
         source: "dev",
         manifest: { id: "live-test", name: "Live Test", enabledByDefault: true },
-        code: `module.exports = { default: { patches: [{ find: ${JSON.stringify(`"${target.url}"`)}, replace: { match: ${JSON.stringify(target.url)}, with: "https://delight.invalid/live" } }] } };`,
+        code: `module.exports = { default: { patches: [{ find: ${JSON.stringify(`"${target.url}"`)}, replace: { match: ${JSON.stringify(target.url)}, with: "https://evi.invalid/live" } }] } };`,
     };
 
     test.pluginListeners.forEach((cb: any) => cb({ type: "upsert", plugin: payload }));
@@ -337,14 +337,14 @@ const live = await page.evaluate(async () => {
     return { found: true, target, before, after, reverted, needsReload, sameObject, storeReason: experiments.reloadReason ?? null };
 });
 check("found a safe loaded module to live-patch", !!live.found, live.target);
-check("source patch applied live, no reload", live.after === "https://delight.invalid/live" && live.needsReload === false && !!live.sameObject, live);
+check("source patch applied live, no reload", live.after === "https://evi.invalid/live" && live.needsReload === false && !!live.sameObject, live);
 check("disabling reverts the module live", live.reverted === live.before);
 
 // ---- smooth typing ------------------------------------------------------------------------------
 
 // The draft store ignores drafts while logged out, so watch what reaches Discord's subscribers
 const drafts = await page.evaluate(async () => {
-    const { api } = (window as any).Delight;
+    const { api } = (window as any).Evi;
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
     const received: string[] = [];
     const onDraft = (a: any) => received.push(a.draft);
@@ -371,7 +371,7 @@ check("clearing a draft cancels pending updates (no stale draft after sending)",
 // ---- native bridge ------------------------------------------------------------------------------
 
 const native = await page.evaluate(async () => {
-    const state = (window as any).Delight.plugins.get("no-track");
+    const state = (window as any).Evi.plugins.get("no-track");
     return { result: await state.ctx.native.call("getBlockedCount"), calls: (window as any).__test.nativeCalls };
 });
 check("ctx.native.call reaches the bridge", native.result === 42 && native.calls[0]?.[0] === "no-track", native);
@@ -381,7 +381,7 @@ check("ctx.native.call reaches the bridge", native.result === 42 && native.calls
 await page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: "https://discord.com" });
 
 const toolkit = await page.evaluate(async () => {
-    const { api, plugins, toolkit, diagnosePatches } = (window as any).Delight;
+    const { api, plugins, toolkit, diagnosePatches } = (window as any).Evi;
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
     // Modules the login page may not have run yet: run them the way Discord would
     const load = (filter: any, ...code: string[]) => {
@@ -408,8 +408,8 @@ const toolkit = await page.evaluate(async () => {
 
     // Toasts
     const toastModule = load(toolkit.filters.showToast, ".currentToastMap.has(");
-    const shown = api.showToast("Delight toast test", { type: "success" });
-    const toast = await toastText("Delight toast test");
+    const shown = api.showToast("Evi toast test", { type: "success" });
+    const toast = await toastText("Evi toast test");
 
     // Context menus: Discord's Menu, its item components, and the core navId patch
     const menu = load(toolkit.filters.menu, "Menu API only allows Items");
@@ -418,23 +418,23 @@ const toolkit = await page.evaluate(async () => {
     // A menu module from the main bundle: loading it runs it through the navId patch
     const [menuUserId] = api.findModuleIds('navId:"clean-up-inactive-gdms"');
     if (menuUserId) api.requireModule(menuUserId);
-    const navPatch = diagnosePatches().find((d: any) => d.plugin === "delight");
+    const navPatch = diagnosePatches().find((d: any) => d.plugin === "evi");
     // The same rewrite over every registered factory with a navId, loaded or not: it must always compile
     const rewrite = { modules: 0, injected: 0, compileErrors: [] as string[], sample: "", menuDestructuringKept: false };
-    for (const id in (window as any).Delight.wreq.m) {
+    for (const id in (window as any).Evi.wreq.m) {
         const src = api.functionSource(api.getWreq().m[id]);
         if (!src.includes("navId:")) continue;
         rewrite.modules++;
         const code = src.replace(/^(?:[\w$]+|"(?:[^"\\]|\\.)*")(?=\s*\()/, "function");
         const next = toolkit.rewriteMenuArgs(code);
         if (next === code) continue;
-        rewrite.injected += next.split("delightMenuArgs:arguments[0],navId:").length - 1;
+        rewrite.injected += next.split("eviMenuArgs:arguments[0],navId:").length - 1;
         try {
             (0, eval)(`0,${next}`);
         } catch (err) {
             rewrite.compileErrors.push(`${id}: ${err}`);
         }
-        if (id === menuUserId) rewrite.sample = next.match(/.{30}delightMenuArgs.{50}/)?.[0] ?? "";
+        if (id === menuUserId) rewrite.sample = next.match(/.{30}eviMenuArgs.{50}/)?.[0] ?? "";
         if (id === menu?.id) rewrite.menuDestructuringKept = next.includes("let{navId:t,variant:");
     }
 
@@ -448,7 +448,7 @@ const toolkit = await page.evaluate(async () => {
     const commandsHooked = !!builtIns && api.getUnhooked(builtIns.exports[builtIns.key]) !== builtIns.exports[builtIns.key];
 
     const list = builtIns?.exports[builtIns.key]([1], true, false) ?? [];
-    const command = list.find((c: any) => c.untranslatedName === "delight");
+    const command = list.find((c: any) => c.untranslatedName === "evi");
     const shrug = list.find((c: any) => c.untranslatedName === "shrug");
     const nick = list.find((c: any) => c.untranslatedName === "nick");
     // Replies go through Discord's sendBotMessage ("Only you can see this"): capture them
@@ -475,7 +475,7 @@ const toolkit = await page.evaluate(async () => {
             navId: "message",
             onClose: () => { },
             "aria-label": "test",
-            delightMenuArgs: { message: { id: "123456789" } },
+            eviMenuArgs: { message: { id: "123456789" } },
         }, api.React.createElement(components.Item, { id: "native-item", label: "Native item", action: () => { } })));
         await sleep(300);
         rendered = [...root.querySelectorAll('[role="menuitem"]')].map(e => e.textContent ?? "");
@@ -514,20 +514,20 @@ check("toast renders with Discord's toast UI", !!toolkit.shown && toolkit.toast?
 check("Menu component found", !!toolkit.menu, toolkit.menu);
 check("Menu item components resolved", ["Item", "Group", "Separator", "CheckboxItem", "RadioItem", "ControlItem"].every(k => toolkit.componentKinds.includes(k)), toolkit.componentKinds);
 check("navId source patch applied, no errors", toolkit.navPatch?.health === "applied" && !!toolkit.navPatch.menuUserId && toolkit.navPatch.modules.includes(toolkit.navPatch.menuUserId) && !toolkit.navPatch.errors.length, toolkit.navPatch);
-check("navId rewrite hands menus their props and compiles on every navId module", toolkit.rewrite.modules >= 5 && !toolkit.rewrite.compileErrors.length && toolkit.rewrite.sample.includes('delightMenuArgs:arguments[0],navId:"clean-up-inactive-gdms"') && toolkit.rewrite.menuDestructuringKept, toolkit.rewrite);
-check("built-in commands module found", !!toolkit.builtIns && toolkit.listBefore.includes("shrug") && !toolkit.listBefore.includes("delight"), toolkit.builtIns);
+check("navId rewrite hands menus their props and compiles on every navId module", toolkit.rewrite.modules >= 5 && !toolkit.rewrite.compileErrors.length && toolkit.rewrite.sample.includes('eviMenuArgs:arguments[0],navId:"clean-up-inactive-gdms"') && toolkit.rewrite.menuDestructuringKept, toolkit.rewrite);
+check("built-in commands module found", !!toolkit.builtIns && toolkit.listBefore.includes("shrug") && !toolkit.listBefore.includes("evi"), toolkit.builtIns);
 check("toolkit-demo started, Menu and command list hooked", toolkit.running && toolkit.menuHooked && toolkit.commandsHooked);
-check("/delight listed as a non-text built-in like /nick (Discord never sends its result)", !!toolkit.command && toolkit.command.inputType === toolkit.nick?.inputType && toolkit.command.applicationId === toolkit.nick?.applicationId && toolkit.command.inputType !== toolkit.shrug?.inputType, { command: toolkit.command, nick: toolkit.nick, shrug: toolkit.shrug });
-check("/delight replies ephemerally (Only you can see this), returns nothing for Discord to send", toolkit.result == null && JSON.stringify(toolkit.commandToast) === '["1","Command reply test"]', toolkit.commandToast);
-check("message menu shows the plugin's item next to Discord's", toolkit.rendered.includes("Native item") && toolkit.rendered.some((t: string) => t.includes("Copy Message ID (Delight)")), toolkit.renderError ?? toolkit.rendered);
+check("/evi listed as a non-text built-in like /nick (Discord never sends its result)", !!toolkit.command && toolkit.command.inputType === toolkit.nick?.inputType && toolkit.command.applicationId === toolkit.nick?.applicationId && toolkit.command.inputType !== toolkit.shrug?.inputType, { command: toolkit.command, nick: toolkit.nick, shrug: toolkit.shrug });
+check("/evi replies ephemerally (Only you can see this), returns nothing for Discord to send", toolkit.result == null && JSON.stringify(toolkit.commandToast) === '["1","Command reply test"]', toolkit.commandToast);
+check("message menu shows the plugin's item next to Discord's", toolkit.rendered.includes("Native item") && toolkit.rendered.some((t: string) => t.includes("Copy Message ID (Evi)")), toolkit.renderError ?? toolkit.rendered);
 check("menu item gets the message from menu props and copies its id", toolkit.copied === "123456789" && toolkit.copyToast?.type === "success", { copied: toolkit.copied, toast: toolkit.copyToast });
-check("stopping the plugin removes its command and the command hook", !toolkit.listAfter.includes("delight") && toolkit.commandsRestored);
+check("stopping the plugin removes its command and the command hook", !toolkit.listAfter.includes("evi") && toolkit.commandsRestored);
 check("the shared Menu hook stays while another plugin still uses menus", !toolkit.menuRestored);
 await page.screenshot({ path: join(OUT, "toolkit-toast.png") });
 
 // Helpers for the plugin suites below, in the page
 await page.evaluate(() => {
-    const { api } = (window as any).Delight;
+    const { api } = (window as any).Evi;
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
     const popToast = api.find(api.filters.byCode("queuedToastsMap.get("));
     (window as any).__qa = {
@@ -558,7 +558,7 @@ await page.evaluate(() => {
 // ---- silent-typing ------------------------------------------------------------------------------
 
 const silent = await page.evaluate(async () => {
-    const { api, plugins, toolkit, diagnosePatches } = (window as any).Delight;
+    const { api, plugins, toolkit, diagnosePatches } = (window as any).Evi;
     const { sleep, toastText, load } = (window as any).__qa;
 
     // Discord's typing actions: startTyping dispatches TYPING_START_LOCAL, whose store handler sends the request
@@ -612,7 +612,7 @@ const silent = await page.evaluate(async () => {
         requireError = String(err);
     }
     const diag = diagnosePatches().find((d: any) => d.plugin === "silent-typing");
-    const self = (window as any).Delight.$("silent-typing");
+    const self = (window as any).Evi.$("silent-typing");
     const buttons: any[] = [{ key: "emoji" }, { key: "submit" }];
     self?.injectButton(buttons, { channel: { id: "1" } });
     const injectedKeys = buttons.map(b => b?.key);
@@ -657,7 +657,7 @@ check("silent-typing: startTyping hooked and blocked while enabled, stopTyping u
 check("silent-typing: the Enabled setting lets typing through when off", silent.sentWhenSettingOff);
 check("silent-typing: /silenttyping toggles it and replies only to you", silent.command && silent.afterCommand === false && silent.afterSecondCommand === true && /off/.test(silent.commandToast ?? "") && /on/.test(silent.commandToastOn ?? ""), { after: [silent.afterCommand, silent.afterSecondCommand], replies: [silent.commandToast, silent.commandToastOn] });
 check("silent-typing: chat bar patch applied to ChannelTextAreaButtons", !silent.requireError && silent.patch?.health === "applied" && silent.patch.modules.includes(silent.buttonsModule), { patch: silent.patch, module: silent.buttonsModule, error: silent.requireError });
-check("silent-typing: button goes before the send button", JSON.stringify(silent.injectedKeys) === '["emoji","delight-silent-typing","submit"]', silent.injectedKeys);
+check("silent-typing: button goes before the send button", JSON.stringify(silent.injectedKeys) === '["emoji","evi-silent-typing","submit"]', silent.injectedKeys);
 check("silent-typing: button renders with Discord's chat button and toggles", silent.discordButton && silent.wrapperClass.startsWith("buttonContainer_") && /on/.test(silent.labelOn ?? "") && /off/.test(silent.labelOff ?? "") && silent.settingAfterClick === false, { on: silent.labelOn, off: silent.labelOff, wrapper: silent.wrapperClass });
 check("silent-typing: disabling restores startTyping and removes the command", silent.restored && silent.sentAfterDisable && silent.commandRemoved);
 
@@ -668,7 +668,7 @@ const IMAGE_URL = "https://cdn.discordapp.com/attachments/1/2/cat.png?ex=1&is=2&
 /** Renders Discord's message menu with the props the navId patch gives it, returns the item labels */
 async function renderMessageMenu(args: unknown, nativeIds: string[]) {
     return page.evaluate(async ({ args, nativeIds }) => {
-        const { api, toolkit } = (window as any).Delight;
+        const { api, toolkit } = (window as any).Evi;
         const { sleep } = (window as any).__qa;
         const menu = api.findExport(toolkit.filters.menu);
         const Item = toolkit.resolveMenuComponents().Item;
@@ -681,7 +681,7 @@ async function renderMessageMenu(args: unknown, nativeIds: string[]) {
         const reactRoot = (window as any).__qaRoot = api.createRoot(root);
         const h = api.React.createElement;
         // Discord's own items, in one group like the real message menu's Copy Text group
-        reactRoot.render(h(menu.exports[menu.key], { navId: "message", onClose: () => { }, "aria-label": "test", delightMenuArgs: args },
+        reactRoot.render(h(menu.exports[menu.key], { navId: "message", onClose: () => { }, "aria-label": "test", eviMenuArgs: args },
             h(Group, null, nativeIds.map(id => h(Item, { key: id, id, label: `Native ${id}`, action: () => { } })))));
         await sleep(300);
         return [...root.querySelectorAll('[role="menuitem"]')].map(e => ({ id: e.id, text: e.textContent ?? "" }));
@@ -706,7 +706,7 @@ await page.evaluate(async () => {
     w.__opened = [];
     w.__realOpen = window.open;
     window.open = ((url: string) => void w.__opened.push(url)) as any;
-    await w.Delight.plugins.setEnabled("quick-actions", true);
+    await w.Evi.plugins.setEnabled("quick-actions", true);
 });
 
 const fullMessage = {
@@ -756,7 +756,7 @@ check("quick-actions: a DM message gets an @me link, in a group of its own", dm.
 
 const qaStopped = await page.evaluate(async () => {
     const w = window as any;
-    await w.Delight.plugins.setEnabled("quick-actions", false);
+    await w.Evi.plugins.setEnabled("quick-actions", false);
     window.open = w.__realOpen;
     return true;
 });
@@ -771,7 +771,7 @@ await page.evaluate(() => {
 // Logged out, MessageStore still works for a channel we "load" ourselves: dispatch Discord's own
 // actions for a fake channel and check what the plugin and the store make of them
 const logger = await page.evaluate(async () => {
-    const { api, plugins, wreq, diagnosePatches } = (window as any).Delight;
+    const { api, plugins, wreq, diagnosePatches } = (window as any).Evi;
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
     const { Dispatcher } = api;
     const store = api.getStore("MessageStore");
@@ -931,12 +931,12 @@ const logger = await page.evaluate(async () => {
     const stopped = {
         keptGone: rest.every(id => !store.getMessage(channelId, id)),
         unhooked: handlersNow.MESSAGE_DELETE === originals.del && handlersNow.MESSAGE_DELETE_BULK === originals.bulk && handlersNow.MESSAGE_UPDATE === originals.update,
-        purgeHandlerRemoved: !Object.keys(handlersNow).some(k => k.startsWith("DELIGHT_")),
+        purgeHandlerRemoved: !Object.keys(handlersNow).some(k => k.startsWith("EVI_")),
         accessoriesRestored: !!accessories && api.getUnhooked(accessories.exports[accessories.key]) === accessories.exports[accessories.key],
         logCleared: log.counts(),
         renderedGone: !host.querySelector(".dl-ml"),
         rowBackground: getComputedStyle(host.firstElementChild!).backgroundColor,
-        style: !!document.getElementById("delight-plugin-message-logger"),
+        style: !!document.getElementById("evi-plugin-message-logger"),
     };
     // With the plugin off, a delete removes the message like stock Discord
     await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: e, channelId });
@@ -985,7 +985,7 @@ const toggled = await page.evaluate(async () => {
     const before = checkedOf(sw);
     sw.click();
     await new Promise(r => setTimeout(r, 400));
-    const state = (window as any).Delight.plugins.get("experiments");
+    const state = (window as any).Evi.plugins.get("experiments");
     const after = checkedOf(document.querySelector('[aria-labelledby="dl-plugin-experiments"][role="switch"]'));
     return { before, after, needsReload: state.needsReload, reason: state.reloadReason, saved: (window as any).__test.savedSettings?.plugins?.experiments };
 });
@@ -1051,7 +1051,7 @@ await page.screenshot({ path: join(OUT, "ui-themes.png") });
 const clickThemeSwitch = () => page.evaluate(() => (document.querySelector('[aria-labelledby="dl-theme-web-test_css"][role="switch"]') as HTMLElement).click());
 const themeVar = (name: string) => page.evaluate(n => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
 const themeCard = await page.evaluate(() => document.querySelector("#dl-tabpanel")!.textContent);
-check("Themes tab lists the theme with its metadata", ["Web Test", "Paints a marker", "By Delight", "web-test.css"].every(t => themeCard!.includes(t)));
+check("Themes tab lists the theme with its metadata", ["Web Test", "Paints a marker", "By Evi", "web-test.css"].every(t => themeCard!.includes(t)));
 check("disabled theme isn't applied", (await themeVar("--dl-test-theme")) === "");
 
 await clickThemeSwitch();
@@ -1059,10 +1059,10 @@ await page.waitForTimeout(300);
 const themeOn = {
     value: await themeVar("--dl-test-theme"),
     saved: await page.evaluate(() => (window as any).__test.savedSettings?.enabledThemes),
-    beforeQuickCss: await page.evaluate(() => document.getElementById("delight-theme-web-test.css")?.nextElementSibling?.id),
+    beforeQuickCss: await page.evaluate(() => document.getElementById("evi-theme-web-test.css")?.nextElementSibling?.id),
 };
 check("switch applies the theme and persists it", themeOn.value === "on" && themeOn.saved?.includes("web-test.css"), themeOn);
-check("theme is inserted before Quick CSS", themeOn.beforeQuickCss === "delight-quickcss", themeOn.beforeQuickCss);
+check("theme is inserted before Quick CSS", themeOn.beforeQuickCss === "evi-quickcss", themeOn.beforeQuickCss);
 
 await page.evaluate(() => (window as any).__test.themeListeners.forEach((cb: any) => cb({
     type: "upsert",
@@ -1073,7 +1073,7 @@ check("editing the theme file restyles live", (await themeVar("--dl-test-theme")
 
 await clickThemeSwitch();
 await page.waitForTimeout(300);
-check("switching it off removes the theme", (await themeVar("--dl-test-theme")) === "" && !(await page.$('[id="delight-theme-web-test.css"]')));
+check("switching it off removes the theme", (await themeVar("--dl-test-theme")) === "" && !(await page.$('[id="evi-theme-web-test.css"]')));
 
 await page.fill("#dl-theme-url", "http://example.com/theme.css");
 await page.getByRole("button", { name: "Add from URL" }).click();
@@ -1098,14 +1098,14 @@ await page.click("#dl-tab-backup");
 await page.getByRole("button", { name: "Export backup" }).click();
 await page.waitForTimeout(200);
 const exportStatus = await page.evaluate(() => document.querySelector("#dl-tabpanel [role=status]")?.textContent);
-check("Backup: export reports where it saved", exportStatus === "Saved to C:\\Users\\you\\Documents\\delight-backup-2026-09-26.json", exportStatus);
+check("Backup: export reports where it saved", exportStatus === "Saved to C:\\Users\\you\\Documents\\evi-backup-2026-09-26.json", exportStatus);
 
 await page.getByRole("button", { name: "Choose backup file" }).click();
 await page.waitForSelector(".dl-backup-preview", { timeout: 5000 });
 await page.waitForTimeout(200);
 const backupPreview = await page.evaluate(() => document.querySelector(".dl-backup-preview")?.textContent ?? "");
 check("Backup: preview shows the file and what changes", [
-    "delight-backup-2026-09-20.json", "with Delight v0.1.0", "Turns on 1 plugin: Toolkit Demo", "Overwrites 1 theme",
+    "evi-backup-2026-09-20.json", "with Evi v0.1.0", "Turns on 1 plugin: Toolkit Demo", "Overwrites 1 theme",
     "Keeps your Quick CSS", "Spotify Controls", "plugins/spotify-controls", "Merge backup",
 ].every(t => backupPreview.includes(t)), backupPreview.slice(0, 300));
 await page.screenshot({ path: join(OUT, "ui-backup.png") });
@@ -1118,7 +1118,7 @@ const restored = {
     theme: await themeVar("--dl-test-theme"),
     previewGone: !(await page.$(".dl-backup-preview")),
 };
-check("Backup: restoring applies the new settings live", restored.applied?.mode === "merge" && restored.theme === "edited" && restored.previewGone && restored.status.includes("Restored delight-backup-2026-09-20.json, 7 changes applied"), restored);
+check("Backup: restoring applies the new settings live", restored.applied?.mode === "merge" && restored.theme === "edited" && restored.previewGone && restored.status.includes("Restored evi-backup-2026-09-20.json, 7 changes applied"), restored);
 await page.screenshot({ path: join(OUT, "ui-backup-restored.png") });
 // ---- store --------------------------------------------------------------------------------------
 
@@ -1133,7 +1133,7 @@ const storeList = {
     rpc: await storeCard("store-rpc"),
     sync: await storeCard("store-theme-sync"),
 };
-check("Store tab lists plugins with description, authors and version", storeList.clock.includes("Message Clock") && storeList.clock.includes("exact send time") && storeList.clock.includes("By Delight") && storeList.clock.includes("v1.0.0"), storeList.clock);
+check("Store tab lists plugins with description, authors and version", storeList.clock.includes("Message Clock") && storeList.clock.includes("exact send time") && storeList.clock.includes("By Evi") && storeList.clock.includes("v1.0.0"), storeList.clock);
 check("Store shows Install, Update + Uninstall, and Installed states", /Install$/.test(storeList.clock) && storeList.quiet.includes("Update available, you have v1.2.0") && storeList.quiet.includes("Uninstall") && storeList.sync.includes("Installed v2.1.0"), storeList);
 check("native plugins carry a badge", storeList.rpc.includes("Native") && !storeList.clock.includes("Native"));
 
@@ -1169,7 +1169,7 @@ await page.waitForTimeout(300);
 check("Escape closes the panel", !(await page.$(".dl-panel")));
 
 check("healthy start reported once plugins ran for a while", await page.evaluate(() => (window as any).__test.bootOk === 1));
-check("no Delight errors in console", delightErrors.length === 0, delightErrors.slice(0, 5));
+check("no Evi errors in console", eviErrors.length === 0, eviErrors.slice(0, 5));
 
 // ---- safe mode ----------------------------------------------------------------------------------
 
@@ -1190,18 +1190,18 @@ const safeBoot: BootData = {
     },
 };
 const safePage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-safePage.on("console", msg => msg.type() === "error" && msg.text().includes("Delight") && delightErrors.push(`safe mode: ${msg.text()}`));
-safePage.on("pageerror", err => delightErrors.push(`safe mode pageerror: ${err.message}`));
+safePage.on("console", msg => msg.type() === "error" && msg.text().includes("Evi") && eviErrors.push(`safe mode: ${msg.text()}`));
+safePage.on("pageerror", err => eviErrors.push(`safe mode pageerror: ${err.message}`));
 await safePage.addInitScript(disablePasskeys);
 await safePage.addInitScript(fakeNative, safeBoot);
 await safePage.addInitScript(renderer);
 await safePage.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });
-await safePage.waitForFunction(() => (window as any).Delight?.safeMode.reportedOk && document.querySelector(".dl-safe-float"), null, { timeout: 60_000 });
+await safePage.waitForFunction(() => (window as any).Evi?.safeMode.reportedOk && document.querySelector(".dl-safe-float"), null, { timeout: 60_000 });
 await safePage.waitForTimeout(300);
 await safePage.screenshot({ path: join(OUT, "safe-mode-notice.png") });
 
 const safe = await safePage.evaluate(() => {
-    const D = (window as any).Delight;
+    const D = (window as any).Evi;
     const css = (el: Element, prop: string) => getComputedStyle(el).getPropertyValue(prop).trim();
     const notice = document.querySelector(".dl-safe-float .dl-safe")!;
     return {
@@ -1209,7 +1209,7 @@ const safe = await safePage.evaluate(() => {
         running: D.plugins.getSnapshot().filter((p: any) => p.running).map((p: any) => p.manifest.id),
         evaluated: D.plugins.getSnapshot().filter((p: any) => p.definition).map((p: any) => p.manifest.id),
         listed: D.plugins.getSnapshot().length,
-        patches: D.diagnosePatches().filter((d: any) => d.plugin !== "delight").length,
+        patches: D.diagnosePatches().filter((d: any) => d.plugin !== "evi").length,
         theme: css(document.documentElement, "--dl-test-theme"),
         outline: css(document.body, "outline-color"),
         bootOk: (window as any).__test.bootOk,
@@ -1221,7 +1221,7 @@ const safe = await safePage.evaluate(() => {
 check("safe mode: no plugin evaluated, started or patching, all still listed", safe.active && !safe.running.length && !safe.evaluated.length && !safe.patches && safe.listed === plugins.length, safe);
 check("safe mode: enabled theme and Quick CSS not applied", safe.theme === "" && safe.outline !== "rgb(255, 0, 128)", { theme: safe.theme, outline: safe.outline });
 check("safe mode start is still reported healthy", safe.bootOk === 1);
-check("notice explains why and names the newest change that's still on", safe.labelled === "Delight is in safe mode" && safe.text.includes("last 2 times")
+check("notice explains why and names the newest change that's still on", safe.labelled === "Evi is in safe mode" && safe.text.includes("last 2 times")
     && /Most recent change: Experiments \(plugin, turned on 3 minutes ago\)/.test(safe.text) && /Also changed recently:Web Test \(theme, updated 2 hours ago\)Quick CSS \(edited 2 days ago\)/.test(safe.text), safe.text);
 check("notice offers disabling it and leaving safe mode", ["Disable Experiments and restart", "Exit safe mode and restart", "Hide safe mode notice"].every(b => safe.buttons.includes(b)), safe.buttons);
 
@@ -1247,7 +1247,7 @@ await safePage.evaluate(() => [...document.querySelectorAll(".dl-panel .dl-safe 
 await safePage.waitForTimeout(200);
 const disabled = await safePage.evaluate(() => ({ saved: (window as any).__test.savedSettings, exited: (window as any).__test.exitedSafeMode }));
 check("\"Disable Experiments and restart\" saves it off right away, then leaves safe mode", disabled.saved?.plugins?.experiments?.enabled === false && disabled.exited === 1, disabled);
-check("no Delight errors in safe mode", delightErrors.length === 0, delightErrors.slice(0, 5));
+check("no Evi errors in safe mode", eviErrors.length === 0, eviErrors.slice(0, 5));
 
 await browser.close();
 

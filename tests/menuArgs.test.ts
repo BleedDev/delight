@@ -20,13 +20,13 @@ describe("menu args patch", () => {
             t.open=function(e){return tP({message:e.message,channel:e.channel,navId:"message"})}}`);
         const props = exports.open({ message: { id: "1" }, channel: { id: "2" } });
         expect(props.navId).toBe("message");
-        expect(props.delightMenuArgs.message.id).toBe("1");
-        expect(props.delightMenuArgs.channel.id).toBe("2");
+        expect(props.eviMenuArgs.message.id).toBe("1");
+        expect(props.eviMenuArgs.channel.id).toBe("2");
     });
 
     test("an arrow inside a function uses the function's arguments", () => {
         const { exports } = run(`function(e,t){t.C=function(e){return [1].map(()=>({navId:"user-context"}))[0]}}`);
-        expect(exports.C({ user: 5 }).delightMenuArgs).toEqual({ user: 5 });
+        expect(exports.C({ user: 5 }).eviMenuArgs).toEqual({ user: 5 });
     });
 
     test("destructuring patterns stay untouched", () => {
@@ -41,7 +41,7 @@ describe("menu args patch", () => {
             class H{onMenu=e=>W({...e,navId:"favorites"});static s=W({navId:"static"})}
             const A=e=>W({navId:"module-arrow"});
             t.h=new H;t.A=A}`);
-        expect(code).not.toContain("delightMenuArgs");
+        expect(code).not.toContain("eviMenuArgs");
         expect(exports.h.onMenu({}).navId).toBe("favorites");
         expect(exports.A().navId).toBe("module-arrow");
     });
@@ -49,6 +49,6 @@ describe("menu args patch", () => {
     test("strings, templates and regexes with braces don't confuse the scanner", () => {
         const { exports } = run(`function(e,t){const W=p=>p;t.C=function(e){let s="{",r=/[{(]\\}/g,u=\`\${"}"}{\`;
             if(r.test("{}")){}return W({label:s+u,navId:"guild-context"})}}`);
-        expect(exports.C({ guild: 1 }).delightMenuArgs).toEqual({ guild: 1 });
+        expect(exports.C({ guild: 1 }).eviMenuArgs).toEqual({ guild: 1 });
     });
 });

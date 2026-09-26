@@ -81,7 +81,7 @@ const results = await page.evaluate(async (pluginCode) => {
     };
     const module = { exports: {} as any };
     new Function("module", "exports", "require", pluginCode)(module, module.exports, (n: string) => {
-        if (n === "@delight/api") return { definePlugin: (d: any) => d };
+        if (n === "@evi/api") return { definePlugin: (d: any) => d };
         throw new Error(n);
     });
     const plugin = module.exports.default;

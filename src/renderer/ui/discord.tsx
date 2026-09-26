@@ -1,7 +1,7 @@
 /**
  * Discord's own form controls, found by what their code does rather than by minified names, so the
  * settings UI looks and behaves exactly like Discord's. Each one resolves on first use; if Discord
- * ever renames or removes one, `get` returns undefined and callers fall back to Delight's own.
+ * ever renames or removes one, `get` returns undefined and callers fall back to Evi's own.
  */
 import type { ComponentType } from "react";
 
@@ -21,7 +21,7 @@ function native<P>(name: string, filter: () => any): { readonly get: ComponentTy
             // Discord loads some controls lazily: use ours until its chunk arrives, then switch over
             if (!resolved && !waiting) {
                 waiting = true;
-                logger.info(`${name} not loaded yet, using Delight's own until it is`);
+                logger.info(`${name} not loaded yet, using Evi's own until it is`);
                 waitFor(filter(), value => void (resolved = value));
             }
             return resolved;

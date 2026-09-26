@@ -1,4 +1,4 @@
-import { definePlugin, Dispatcher, FluxAction } from "@delight/api";
+import { definePlugin, Dispatcher, FluxAction } from "@evi/api";
 
 /**
  * Discord dispatches DRAFT_CHANGE on every keystroke, and everything subscribed to drafts

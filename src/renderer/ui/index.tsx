@@ -100,11 +100,11 @@ function Panel() {
     return (
         <div className="dl-scrim" data-closing={view === "closing" ? "" : undefined} onMouseDown={e => e.target === e.currentTarget && close()}>
             <div className="dl-panel" role="dialog" aria-modal="true" aria-labelledby="dl-title" tabIndex={-1} ref={panelRef} onKeyDown={onKeyDown}>
-                <nav className="dl-sidebar" aria-label="Delight">
+                <nav className="dl-sidebar" aria-label="Evi">
                     <div className="dl-sidebar-head">
-                        <Text tag="h2" variant="text-xs/semibold" color="text-muted" id="dl-title" className="dl-sidebar-title">Delight</Text>
+                        <Text tag="h2" variant="text-xs/semibold" color="text-muted" id="dl-title" className="dl-sidebar-title">Evi</Text>
                     </div>
-                    <div className="dl-nav" role="tablist" aria-label="Delight sections" aria-orientation="vertical" onKeyDown={onTabKey}>
+                    <div className="dl-nav" role="tablist" aria-label="Evi sections" aria-orientation="vertical" onKeyDown={onTabKey}>
                         {tabs.map(t => (
                             <button
                                 key={t.id}
@@ -124,14 +124,14 @@ function Panel() {
                     </div>
                     <div className="dl-sidebar-foot">
                         <Button icon="folder" onClick={() => Native.openPath("data")}>Open data folder</Button>
-                        <Text variant="text-xs/normal" color="text-muted" tabular>{`Delight ${DELIGHT_VERSION}`}</Text>
+                        <Text variant="text-xs/normal" color="text-muted" tabular>{`Evi ${EVI_VERSION}`}</Text>
                     </div>
                 </nav>
                 <div className="dl-content">
                     <header className="dl-content-head">
                         <Text tag="h1" variant="heading-xl/semibold" color="text-strong" className="dl-content-title">{current.label}</Text>
                         <div className="dl-close">
-                            <button type="button" className="dl-close-button" aria-label="Close Delight settings" onClick={close}>
+                            <button type="button" className="dl-close-button" aria-label="Close Evi settings" onClick={close}>
                                 <Icon name="closeLarge" size={18} />
                             </button>
                             <span className="dl-close-hint" aria-hidden="true">ESC</span>
@@ -156,7 +156,7 @@ let styled = false;
 export function ensureStyles() {
     if (styled) return;
     styled = true;
-    createStyle(css, "delight-ui");
+    createStyle(css, "evi-ui");
 }
 
 let mounted = false;

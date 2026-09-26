@@ -14,7 +14,7 @@ const styles = new Map<string, ManagedStyle>();
 const listeners = new Set<() => void>();
 let snapshot: ThemePayload[] = [];
 
-const styleId = (file: string) => `delight-theme-${file.replace(/[^\w.-]/g, "_")}`;
+const styleId = (file: string) => `evi-theme-${file.replace(/[^\w.-]/g, "_")}`;
 
 function notify() {
     snapshot = [...themes.values()].sort((a, b) => a.name.localeCompare(b.name));

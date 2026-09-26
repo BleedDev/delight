@@ -1,5 +1,5 @@
 /**
- * Adds a "Delight" section to Discord's own settings sidebar.
+ * Adds a "Evi" section to Discord's own settings sidebar.
  *
  * Discord describes its settings as a tree of layout nodes (ROOT > SECTION > SIDEBAR_ITEM > PANEL >
  * CATEGORY > CUSTOM), each with a lazy `buildLayout()`. We wrap the `$Root` node's buildLayout to
@@ -29,10 +29,10 @@ interface LayoutNode {
 type NodeTypes = Record<"SECTION" | "SIDEBAR_ITEM" | "PANEL" | "CATEGORY" | "CUSTOM", number>;
 
 const logger = new Logger("SettingsEntry", "#8ab4f8");
-const SECTION_KEY = "delight_section";
+const SECTION_KEY = "evi_section";
 /** Our section goes right above this one */
 const ANCHOR_KEY = "billing_section";
-const SYM_WRAPPED = Symbol("delight.rootWrapped");
+const SYM_WRAPPED = Symbol("evi.rootWrapped");
 
 const iconPaths = {
     plugins: "M10 3a2 2 0 0 1 4 0v2h3a2 2 0 0 1 2 2v3h-2a2 2 0 0 0 0 4h2v3a2 2 0 0 1-2 2h-3v-2a2 2 0 0 0-4 0v2H7a2 2 0 0 1-2-2v-3h2a2 2 0 0 0 0-4H5V7a2 2 0 0 1 2-2h3z",
@@ -48,7 +48,7 @@ const iconPaths = {
 };
 
 function makeIcon(path: string) {
-    return function DelightIcon({ className, width, height, size }: { className?: string; width?: number; height?: number; size?: unknown; }) {
+    return function EviIcon({ className, width, height, size }: { className?: string; width?: number; height?: number; size?: unknown; }) {
         const px = width ?? height ?? (typeof size === "number" ? size : 20);
         return (
             <svg className={className} width={px} height={px} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -65,11 +65,11 @@ function Embedded({ Tab }: { Tab: ComponentType; }) {
 function buildSection(types: NodeTypes): LayoutNode {
     const entry = (key: string, title: string, iconPath: string, Tab: ComponentType): LayoutNode => {
         const Component = () => <Embedded Tab={Tab} />;
-        const custom: LayoutNode = { key: `delight_${key}_custom`, type: types.CUSTOM, Component, useSearchTerms: () => ["Delight", title] };
-        const category: LayoutNode = { key: `delight_${key}_category`, type: types.CATEGORY, buildLayout: () => [custom] };
-        const panel: LayoutNode = { key: `delight_${key}_panel`, type: types.PANEL, useTitle: () => title, buildLayout: () => [category] };
+        const custom: LayoutNode = { key: `evi_${key}_custom`, type: types.CUSTOM, Component, useSearchTerms: () => ["Evi", title] };
+        const category: LayoutNode = { key: `evi_${key}_category`, type: types.CATEGORY, buildLayout: () => [custom] };
+        const panel: LayoutNode = { key: `evi_${key}_panel`, type: types.PANEL, useTitle: () => title, buildLayout: () => [category] };
         return {
-            key: `delight_${key}_sidebar_item`,
+            key: `evi_${key}_sidebar_item`,
             type: types.SIDEBAR_ITEM,
             useTitle: () => title,
             icon: makeIcon(iconPath),
@@ -87,7 +87,7 @@ function buildSection(types: NodeTypes): LayoutNode {
         entry("patchhelper", "Patch Helper", iconPaths.patchHelper, PatchHelperTab),
     ];
 
-    return { key: SECTION_KEY, type: types.SECTION, useTitle: () => "Delight", buildLayout: () => items };
+    return { key: SECTION_KEY, type: types.SECTION, useTitle: () => "Evi", buildLayout: () => items };
 }
 
 function wrapRoot(root: LayoutNode, types: NodeTypes) {
@@ -101,8 +101,8 @@ function wrapRoot(root: LayoutNode, types: NodeTypes) {
         const layout = [...result];
         layout.splice(anchor === -1 ? 1 : anchor, 0, section);
         return layout;
-    }, "delight-settings");
-    logger.info("Added Delight to Discord settings");
+    }, "evi-settings");
+    logger.info("Added Evi to Discord settings");
 }
 
 const isRoot = (v: any) => v?.key === "$Root" && typeof v.buildLayout === "function";
@@ -115,14 +115,14 @@ export function installSettingsEntry() {
             if (!found.key) return;
             hook(found.exports, found.key, "before", ({ args }) => {
                 if (isRoot(args[0])) wrapRoot(args[0], types);
-            }, "delight-settings");
+            }, "evi-settings");
         });
     });
 
     // Tell us if Discord reshaped its settings, instead of failing silently
     setTimeout(() => {
         if (!findExport(filters.byProps("SECTION", "SIDEBAR_ITEM", "PANEL", "CUSTOM"))) {
-            logger.warn("Settings layout types not found, Delight isn't in Discord settings. Ctrl+Shift+D still works.");
+            logger.warn("Settings layout types not found, Evi isn't in Discord settings. Ctrl+Shift+D still works.");
         }
     }, 30_000);
 }

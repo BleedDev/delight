@@ -1,7 +1,7 @@
 /**
  * Discord's context menus build their <Menu navId="..."> from closure variables (the message, the
  * user...) that the Menu itself never sees. To hand those to plugins, a source patch adds
- * `delightMenuArgs:arguments[0]` next to every `navId:` in an object literal: that is the props of
+ * `eviMenuArgs:arguments[0]` next to every `navId:` in an object literal: that is the props of
  * the component (or the argument of the helper) that renders the menu.
  *
  * Not every `navId:` can take it: destructuring patterns (`let{navId:t}=e`) must stay as they are,
@@ -9,7 +9,7 @@
  * This scans the module source once, tracking what each `{` opens, to decide per occurrence.
  */
 
-export const MENU_ARGS_KEY = "delightMenuArgs";
+export const MENU_ARGS_KEY = "eviMenuArgs";
 
 type Frame =
     | "function" // body of a non-arrow function or method: has its own `arguments`
@@ -81,7 +81,7 @@ function isDestructuring(code: string, braceContentStart: number) {
     return /^=(?![=>])/.test(next) || next.startsWith(")=>") || next.startsWith("){");
 }
 
-/** Offsets of `navId:` occurrences where `delightMenuArgs:arguments[0],` can be inserted */
+/** Offsets of `navId:` occurrences where `eviMenuArgs:arguments[0],` can be inserted */
 export function findMenuArgSites(code: string): Set<number> {
     const sites = new Set<number>();
     const stack: { kind: Frame; brace: boolean; start: number; }[] = [];

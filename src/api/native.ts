@@ -2,7 +2,7 @@
  * Types for a plugin's optional native module, which runs in Discord's main (Node/Electron) process.
  * Import with `import type` only; nothing here exists at runtime.
  *
- *     import type { NativePlugin } from "@delight/api/native";
+ *     import type { NativePlugin } from "@evi/api/native";
  *     export default { start(ctx) { ... }, async readThing(path: string) { ... } } satisfies NativePlugin;
  *
  * Every other exported function can be called from the renderer with `ctx.native.call("name", ...args)`.

@@ -1,7 +1,7 @@
 /**
  *   bun scripts/build.ts            build core + plugins into dist/
  *   bun scripts/build.ts --watch    rebuild on change; running Discord hot-reloads plugins, Ctrl+R picks up core
- *   bun scripts/build.ts --cli      also compile the installer into dist/delight.exe
+ *   bun scripts/build.ts --cli      also compile the installer into dist/evi.exe
  */
 import type { BunPlugin } from "bun";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, watch, writeFileSync } from "fs";
@@ -21,13 +21,13 @@ const WATCH = args.has("--watch");
 const CLI = args.has("--cli");
 
 const define = {
-    DELIGHT_VERSION: JSON.stringify(pkg.version),
+    EVI_VERSION: JSON.stringify(pkg.version),
     "process.env.NODE_ENV": JSON.stringify(WATCH ? "development" : "production"),
 };
 
 /** Our own JSX goes through the shim that forwards to Discord's React */
 const jsxShim: BunPlugin = {
-    name: "delight-jsx-shim",
+    name: "evi-jsx-shim",
     setup(build) {
         build.onResolve({ filter: /^react\/jsx-(dev-)?runtime$/ }, () => ({
             path: join(ROOT, "src/renderer/react/jsx-runtime.ts"),
@@ -99,8 +99,8 @@ async function buildPlugin(dir: string) {
         naming: "index.js",
         target: "browser",
         format: "cjs",
-        // Provided at runtime by Delight, see requireMap in src/renderer/plugins/manager.ts
-        external: ["@delight/api", "react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+        // Provided at runtime by Evi, see requireMap in src/renderer/plugins/manager.ts
+        external: ["@evi/api", "react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
         sourcemap: WATCH ? "inline" : "none",
     });
     if (!ok) return;
@@ -144,11 +144,11 @@ function writeEmbed() {
 
 async function compileCli() {
     writeEmbed();
-    const proc = Bun.spawnSync(["bun", "build", "--compile", "--minify", join(ROOT, "src/cli/index.ts"), "--outfile", join(DIST, "delight.exe")], {
+    const proc = Bun.spawnSync(["bun", "build", "--compile", "--minify", join(ROOT, "src/cli/index.ts"), "--outfile", join(DIST, "evi.exe")], {
         stdio: ["inherit", "inherit", "inherit"],
     });
     if (proc.exitCode !== 0) process.exit(proc.exitCode ?? 1);
-    console.log("✓ dist/delight.exe");
+    console.log("✓ dist/evi.exe");
 }
 
 function debounce(fn: () => void, ms = 100) {

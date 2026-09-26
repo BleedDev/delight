@@ -3,7 +3,7 @@
  *
  * Every menu is Discord's <Menu navId="..."> component, which reads its items from `children`. A
  * single export hook on Menu lets registered callbacks edit those children before it renders. The
- * menu's context (the message, user, guild...) comes from the `delightMenuArgs` prop that the core
+ * menu's context (the message, user, guild...) comes from the `eviMenuArgs` prop that the core
  * source patch in menuArgs.ts adds next to `navId`.
  *
  * Items must be Discord's own marker components (Menu.Item, Menu.Group...): Menu throws on anything
@@ -51,7 +51,7 @@ let menuArgsRegistered = false;
 export function ensureMenuArgsPatch() {
     if (menuArgsRegistered) return;
     menuArgsRegistered = true;
-    registerPatches("delight", [menuArgsPatch]);
+    registerPatches("evi", [menuArgsPatch]);
 }
 
 /**
@@ -211,7 +211,7 @@ export const Menu = new Proxy({} as MenuComponents, {
     get(_, name) {
         if (typeof name !== "string" || !Object.values(ITEM_KINDS).includes(name as keyof MenuComponents)) return undefined;
         const component = resolveMenuComponents()?.[name as keyof MenuComponents];
-        if (!component) throw new Error(`Delight: Discord's Menu.${name} is not available`);
+        if (!component) throw new Error(`Evi: Discord's Menu.${name} is not available`);
         return component;
     },
 });

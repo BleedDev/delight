@@ -1,4 +1,4 @@
-import { definePlugin } from "@delight/api";
+import { definePlugin } from "@evi/api";
 
 /**
  * Source patch example. DeveloperExperimentStore defines

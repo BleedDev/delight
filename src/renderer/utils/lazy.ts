@@ -1,4 +1,4 @@
-const SYM_LAZY_GET = Symbol("delight.lazyGet");
+const SYM_LAZY_GET = Symbol("evi.lazyGet");
 
 /**
  * A stand-in for a value that doesn't exist yet. The getter runs on first use and its result is

@@ -39,7 +39,7 @@ function StoreCard({ entry }: { entry: RegistryEntry; }) {
     const current = installed[entry.id];
     const op = ops[entry.id];
     const busy = op?.type === "busy";
-    const action = storeAction(entry, current, DELIGHT_VERSION);
+    const action = storeAction(entry, current, EVI_VERSION);
     const titleId = `dl-store-${entry.id}`;
 
     const install = () => {
@@ -66,7 +66,7 @@ function StoreCard({ entry }: { entry: RegistryEntry; }) {
                         {!op && action === "installed" && <Status tone="success" quiet>Installed{current?.version && ` v${current.version}`}</Status>}
                         {!op && action === "update" && <Status tone="warning">Update available, you have v{current?.version}</Status>}
                         {!op && action === "local" && <Status tone="muted">Installed outside the store{current?.version && `, v${current.version}`}</Status>}
-                        {!op && action === "incompatible" && <Status tone="danger">Needs Delight {entry.minDelightVersion} or newer</Status>}
+                        {!op && action === "incompatible" && <Status tone="danger">Needs Evi {entry.minEviVersion} or newer</Status>}
                         <OpStatus op={op} />
                     </div>
                 </div>

@@ -76,7 +76,7 @@ function watchThemes() {
         // Same failure mode as the plugin watcher: on Windows the watcher errors for good when the
         // folder is deleted or renamed. Restart it and catch up on whatever changed meanwhile.
         watcher.on("error", err => {
-            console.warn("[Delight] Theme watcher failed, restarting it", err);
+            console.warn("[Evi] Theme watcher failed, restarting it", err);
             watcher.close();
             setTimeout(() => {
                 rescan();
@@ -117,7 +117,7 @@ export async function addThemeFromUrl(input: string): Promise<AddThemeResult> {
     writeFileSync(join(THEMES_DIR, file), css);
     // Don't wait for the watcher, the renderer should have it by the time this resolves
     reloadTheme(file);
-    console.log(`[Delight] Added theme ${file} from ${url.href}`);
+    console.log(`[Evi] Added theme ${file} from ${url.href}`);
     return { ok: true, file };
 }
 

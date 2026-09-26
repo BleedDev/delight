@@ -1,4 +1,4 @@
-import { definePlugin } from "@delight/api";
+import { definePlugin } from "@evi/api";
 
 /**
  * Makes Discord's long lists cheap to render, with no patches to Discord's code: it works on the
@@ -227,7 +227,7 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
     let flat: HTMLStyleElement | undefined;
     if (kind.flattenPills) {
         flat = document.createElement("style");
-        flat.id = "delight-fl-flatten";
+        flat.id = "evi-fl-flatten";
         flat.textContent = flattenRules(list);
         document.head.append(flat);
     }

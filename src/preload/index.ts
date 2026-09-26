@@ -1,14 +1,14 @@
 import type { ImportMode } from "@shared/backup";
-import { AddThemeResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, DelightSettings, IPC, OpenPathTarget, PluginChange, ThemeChange } from "@shared/ipc";
+import { AddThemeResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, EviSettings, IPC, OpenPathTarget, PluginChange, ThemeChange } from "@shared/ipc";
 import type { StoreListing, StoreProgress, StoreResult } from "@shared/store";
 import { contextBridge, ipcRenderer, webFrame } from "electron";
 
 /** The bridge the renderer uses to reach the main process. Mirrored by src/renderer/native.ts */
-const DelightNative = {
+const EviNative = {
     boot: (): BootData => ipcRenderer.sendSync(IPC.GET_BOOT),
-    saveSettings: (settings: DelightSettings) => ipcRenderer.invoke(IPC.SETTINGS_SAVE, settings),
+    saveSettings: (settings: EviSettings) => ipcRenderer.invoke(IPC.SETTINGS_SAVE, settings),
     saveQuickCss: (css: string) => ipcRenderer.invoke(IPC.CSS_SAVE, css),
-    saveSettingsSync: (settings: DelightSettings) => void ipcRenderer.sendSync(IPC.SETTINGS_SAVE_SYNC, settings),
+    saveSettingsSync: (settings: EviSettings) => void ipcRenderer.sendSync(IPC.SETTINGS_SAVE_SYNC, settings),
     saveQuickCssSync: (css: string) => void ipcRenderer.sendSync(IPC.CSS_SAVE_SYNC, css),
     onQuickCssChange(cb: (css: string) => void) {
         ipcRenderer.on(IPC.CSS_CHANGED, (_, css) => cb(css));
@@ -37,7 +37,7 @@ const DelightNative = {
     exitSafeMode: () => ipcRenderer.invoke(IPC.SAFE_MODE_EXIT),
 };
 
-export type DelightNativeApi = typeof DelightNative;
+export type EviNativeApi = typeof EviNative;
 
 // Session preloads run in every frame of every window, only boot in Discord's app frame
 const isDiscordApp =
@@ -46,7 +46,7 @@ const isDiscordApp =
     && /(^|\.)discord\.com$/.test(location.hostname);
 
 if (isDiscordApp) {
-    contextBridge.exposeInMainWorld("DelightNative", DelightNative);
+    contextBridge.exposeInMainWorld("EviNative", EviNative);
     // Runs in the page's world, ahead of Discord's scripts
     webFrame.executeJavaScript(ipcRenderer.sendSync(IPC.GET_RENDERER));
 }

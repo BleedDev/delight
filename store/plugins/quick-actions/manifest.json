@@ -3,6 +3,9 @@
     "name": "Quick Actions",
     "description": "Adds Copy Message Link, Copy Raw Text, Copy Message ID, Search Image (Google Lens, Yandex, TinEye) and Translate with Google to the message menu.",
     "version": "1.0.0",
-    "authors": ["Evi"],
-    "enabledByDefault": false
+    "authors": [
+        "Evi"
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
 }

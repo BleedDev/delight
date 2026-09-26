@@ -2,7 +2,7 @@ import { existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 
 import { readAsarFile } from "../shared/asar";
-import { ORIGINAL_ASAR, SHIM_MARKER } from "../shared/shim";
+import { LEGACY_SHIM_MARKERS, ORIGINAL_ASAR, SHIM_MARKER } from "../shared/shim";
 
 export const FLAVORS = {
     stable: "Discord",
@@ -13,7 +13,7 @@ export const FLAVORS = {
 
 export type Flavor = keyof typeof FLAVORS;
 
-export type InjectionState = "clean" | "delight" | "other-mod";
+export type InjectionState = "clean" | "evi" | "other-mod";
 
 export interface DiscordInstall {
     flavor: Flavor;
@@ -53,7 +53,9 @@ export function findInstalls(): DiscordInstall[] {
 
 export function isOurShim(asar: string) {
     try {
-        return statSync(asar).isFile() && readAsarFile(asar, "index.js").startsWith(SHIM_MARKER);
+        if (!statSync(asar).isFile()) return false;
+        const code = readAsarFile(asar, "index.js");
+        return [SHIM_MARKER, ...LEGACY_SHIM_MARKERS].some(marker => code.startsWith(marker));
     } catch {
         return false;
     }
@@ -61,7 +63,7 @@ export function isOurShim(asar: string) {
 
 export function injectionState(resources: string): InjectionState {
     const asar = join(resources, "app.asar");
-    if (isOurShim(asar)) return "delight";
+    if (isOurShim(asar)) return "evi";
     // Vencord, Equicord and friends use the same _app.asar swap, or an app folder
     if (existsSync(join(resources, ORIGINAL_ASAR)) || existsSync(join(resources, "app"))) return "other-mod";
     return "clean";

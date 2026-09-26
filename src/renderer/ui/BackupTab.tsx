@@ -67,7 +67,7 @@ function Preview({ opened, onDone, onCancel }: { opened: Opened; onDone(note: No
             <div className="dl-card-head">
                 <div className="dl-grow dl-row-text">
                     <Text tag="h3" variant="heading-md/medium" color="text-strong" id="dl-backup-file" className="dl-mono">{opened.fileName}</Text>
-                    <Text tag="p" variant="text-sm/normal" color="text-subtle">Made {formatDate(opened.createdAt)} with Delight v{opened.delightVersion}</Text>
+                    <Text tag="p" variant="text-sm/normal" color="text-subtle">Made {formatDate(opened.createdAt)} with Evi v{opened.eviVersion}</Text>
                 </div>
             </div>
             <div className="dl-card-body">
