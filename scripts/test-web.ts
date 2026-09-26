@@ -92,7 +92,7 @@ function fakeNative(bootData: BootData) {
             });
             return {
                 ok: true,
-                registryUrl: "https://raw.githubusercontent.com/BleedDev/delight/main/registry.json",
+                registryUrl: "https://raw.githubusercontent.com/BleedDev/evi/main/registry.json",
                 problems: [],
                 plugins: [
                     entry("store-clock", "Message Clock", "Shows the exact send time next to every message.", "1.0.0", false, ["messages"]),

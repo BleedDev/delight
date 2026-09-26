@@ -32,7 +32,7 @@ Launch `Discord.exe --vanilla` to start once without Evi, or `Discord.exe --evi-
 
 ### Updating
 
-`evi update` asks GitHub for the latest published release of `BleedDev/delight`. If it's newer than the running exe, it downloads the new `evi.exe` next to the current one and checks it against the release's `evi.exe.sha256`. A mismatch is rejected and nothing changes. Windows can't overwrite a running exe, so the current one is renamed to `evi.exe.old`, the new one takes its name, and the `.old` is removed the next time Evi runs. Then the new exe runs `install` (with your `--flavor` / `--restart`), which refreshes the core and official plugins in `%APPDATA%\Evi`.
+`evi update` asks GitHub for the latest published release of `BleedDev/evi`. If it's newer than the running exe, it downloads the new `evi.exe` next to the current one and checks it against the release's `evi.exe.sha256`. A mismatch is rejected and nothing changes. Windows can't overwrite a running exe, so the current one is renamed to `evi.exe.old`, the new one takes its name, and the `.old` is removed the next time Evi runs. Then the new exe runs `install` (with your `--flavor` / `--restart`), which refreshes the core and official plugins in `%APPDATA%\Evi`.
 
 `evi update --check` only reports whether a newer release exists. Source checkouts (`bun src/cli/index.ts`) don't replace themselves: update them with `git pull` and `bun run build`.
 
@@ -102,7 +102,7 @@ The Backup tab saves everything to one JSON file (`evi-backup-YYYY-MM-DD.json`):
 Both write the backup's themes (new files, or changed ones overwritten) and never delete anything. All files are written together or not at all, and Discord updates live, no reload.
 ## Plugin store
 
-The **Store** tab (also under Evi in Discord's settings) lists the plugins in a registry, a JSON file at `https://raw.githubusercontent.com/BleedDev/delight/main/registry.json`. Search by name, description, author or tag, then **Install**, **Update** or **Uninstall**. An installed plugin appears and starts right away, no restart: the store writes it into `%APPDATA%\Evi\plugins\<id>` and the plugin watcher picks it up like any other folder.
+The **Store** tab (also under Evi in Discord's settings) lists the plugins in a registry, a JSON file at `https://raw.githubusercontent.com/BleedDev/evi/main/registry.json`. Search by name, description, author or tag, then **Install**, **Update** or **Uninstall**. An installed plugin appears and starts right away, no restart: the store writes it into `%APPDATA%\Evi\plugins\<id>` and the plugin watcher picks it up like any other folder.
 
 - **Every file is verified.** The registry lists a sha256 for each file. Evi downloads all of them (https only, redirects included, 5 MB per file, 1 MB for the registry), checks each hash and the manifest (same id, standard file names), and only then writes anything. A mismatch is rejected and nothing is written.
 - **Installs are atomic.** Files are staged in `%APPDATA%\Evi\store-staging`, outside the plugins folder, and moved into place with one rename. An update moves the old folder aside first and puts it back if the swap fails.
@@ -143,7 +143,7 @@ bun run build
 bun scripts/registry.ts
 ```
 
-This copies the built official plugins into `store/plugins/<id>/` and writes `registry.json` with their hashes, pointing at `https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins`. Commit both together: the registry only matches the files from the same run. The same build always gives the same files and hashes. Name, description, authors, version and `tags` come from each plugin's `manifest.json`; `minEviVersion` too, defaulting to the current Evi version. Options: `--base <https url>` to serve the files from somewhere else, `--files <dir>` for where to copy them, `--out <file>` for the registry, `--only id,id` to publish a subset. The script checks its output with the app's own validation before writing it.
+This copies the built official plugins into `store/plugins/<id>/` and writes `registry.json` with their hashes, pointing at `https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins`. Commit both together: the registry only matches the files from the same run. The same build always gives the same files and hashes. Name, description, authors, version and `tags` come from each plugin's `manifest.json`; `minEviVersion` too, defaulting to the current Evi version. Options: `--base <https url>` to serve the files from somewhere else, `--files <dir>` for where to copy them, `--out <file>` for the registry, `--only id,id` to publish a subset. The script checks its output with the app's own validation before writing it.
 ## Safe mode
 
 A plugin, theme or Quick CSS that breaks Discord can't lock you out of it. In safe mode Evi still loads, with its settings, but nothing you added runs: no plugins (not even their top-level code, their native side or their Chromium switches), no themes and no Quick CSS. Discord itself works normally.
@@ -301,6 +301,6 @@ None of the tests touch your real Discord install or profile.
 
 ## CI
 
-[![CI](https://github.com/BleedDev/delight/actions/workflows/ci.yml/badge.svg)](https://github.com/BleedDev/delight/actions/workflows/ci.yml)
+[![CI](https://github.com/BleedDev/evi/actions/workflows/ci.yml/badge.svg)](https://github.com/BleedDev/evi/actions/workflows/ci.yml)
 
 Every push and pull request to `main` runs the build, typecheck and all the suites above on `windows-latest` (`.github/workflows/ci.yml`). The web and Electron suites load the live discord.com, so an outage or a change on Discord's side can fail a run. Everything in `test-results/` (screenshots, logs) is uploaded as an artifact on every run. The browser suites look for Chrome in its usual install folders; set `CHROME_PATH` to use another Chromium browser.

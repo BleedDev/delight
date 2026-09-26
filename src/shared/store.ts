@@ -18,7 +18,7 @@
 import type { PluginManifest } from "./ipc";
 
 export const REGISTRY_SCHEMA = 1;
-export const DEFAULT_REGISTRY_URL = "https://raw.githubusercontent.com/BleedDev/delight/main/registry.json";
+export const DEFAULT_REGISTRY_URL = "https://raw.githubusercontent.com/BleedDev/evi/main/registry.json";
 
 export const MAX_REGISTRY_BYTES = 1024 * 1024;
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;

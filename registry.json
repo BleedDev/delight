@@ -14,11 +14,11 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/clear-urls/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/clear-urls/manifest.json",
                     "sha256": "a17018d3c7bf62bf2d450cd1e5d8c37609f07ef13d9d58020c6ea88c177d6355"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/clear-urls/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/clear-urls/index.js",
                     "sha256": "c41ea7dcf50a8cb658b6f49e1588e98cf467efefe5d4fb3bc9d58309ed73d9c6"
                 }
             }
@@ -36,11 +36,11 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/experiments/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/experiments/manifest.json",
                     "sha256": "ded813454ed1e52efc9871ac250e2dc394f9ac721f7710178797363a445a5ddd"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/experiments/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/experiments/index.js",
                     "sha256": "42113179b03641b507c8ad4d300cf75db5a343a701492191ee98356027caa1be"
                 }
             }
@@ -58,11 +58,11 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/fast-lists/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/fast-lists/manifest.json",
                     "sha256": "f6a53d3b1ec9ae774aed88bc0dd846dc91d999a6f7b76acab10a332de846e1fc"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/fast-lists/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/fast-lists/index.js",
                     "sha256": "8f56475a85f31f46ced5fcff8e0eba8345a0020993683c8a0a1edd54bb736749"
                 }
             }
@@ -80,11 +80,11 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/gpu-boost/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/gpu-boost/manifest.json",
                     "sha256": "47a59b0d218377c647a9ffb6fc2771220f39eff8e658f92ec972153f68c25605"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/gpu-boost/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/gpu-boost/index.js",
                     "sha256": "352ec04f0e14e33cc0e508ecd373b42258fdfc078ee22c08021dd64f530f5fef"
                 }
             }
@@ -102,11 +102,11 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/message-logger/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/message-logger/manifest.json",
                     "sha256": "a2d33b27437d1e096636bd9023007573de585250fb89154ca9e71e0f1946842a"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/message-logger/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/message-logger/index.js",
                     "sha256": "db44e2cf1cb56b8c484543df9f4575b9acf144b9ff425b39d83257381c5330de"
                 }
             }
@@ -124,15 +124,15 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/no-track/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/no-track/manifest.json",
                     "sha256": "93ace2ebc49582e6d19f2f7f50ebdb93acde3f4bceb12557c2719d06edad9c94"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/no-track/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/no-track/index.js",
                     "sha256": "99179b7f246c5a06262a691f73bec81cbf7fd6f13b030040f1110cdf091b7370"
                 },
                 "native.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/no-track/native.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/no-track/native.js",
                     "sha256": "e5bf3cb955ec5ecd34c43ac49a9678e3077cdda0338737ad12583680ebc17224"
                 }
             }
@@ -150,11 +150,11 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/quick-actions/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/quick-actions/manifest.json",
                     "sha256": "a28af4878cad8e1c2c09865526dbd2a3e3077370b27c320f604fd095ec858d4c"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/quick-actions/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/quick-actions/index.js",
                     "sha256": "59077c0a018f34aec1499fa699a135ee1f03eb7b434cd220999aaba3aaaaf8ef"
                 }
             }
@@ -172,11 +172,11 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/silent-typing/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/silent-typing/manifest.json",
                     "sha256": "ce6780b20316563b72abcd32a280a37a006617fc21792e841cd73a9fed627cf0"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/silent-typing/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/silent-typing/index.js",
                     "sha256": "7a02694d6986db9abaa495741bdde1a0e86f03a92a7efc165cf0c7c99cc111c0"
                 }
             }
@@ -194,11 +194,11 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/smooth-typing/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/smooth-typing/manifest.json",
                     "sha256": "4c595659ff5ac29b56ff69fc4614f0e582fe6db542610c893eae8fa521f6d951"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/smooth-typing/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/smooth-typing/index.js",
                     "sha256": "7fa6e010074f07b3f5d2d557e41755abdb2e6e000f13c915771f9376c379e62f"
                 }
             }
@@ -216,11 +216,11 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/toolkit-demo/manifest.json",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/toolkit-demo/manifest.json",
                     "sha256": "647c2e7e38192a276be12e981c97b5c38afe63b3d4d0e7187c74c18cecbd1841"
                 },
                 "index.js": {
-                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/toolkit-demo/index.js",
+                    "url": "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins/toolkit-demo/index.js",
                     "sha256": "9c719bcb3659cb3d9640262faf17ac44e99bf05dc9bc43af16c4047900903f70"
                 }
             }
