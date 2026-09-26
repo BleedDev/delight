@@ -4,10 +4,11 @@ import { app, ipcMain, Session, session, shell } from "electron";
 import { existsSync, readFileSync, watch, writeFileSync } from "fs";
 import { dirname, join } from "path";
 
-import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE } from "./paths";
+import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
 import { applyChromiumSwitches, getPluginPayloads, initPlugins } from "./plugins";
 import { saveSettings, settings } from "./settings";
+import { getThemePayloads, initThemes } from "./themes";
 
 declare global {
     // eslint-disable-next-line no-var
@@ -43,6 +44,7 @@ function registerIpc() {
             settings,
             plugins: getPluginPayloads(),
             quickCss: readQuickCss(),
+            themes: getThemePayloads(),
         };
         e.returnValue = boot;
     });
@@ -60,7 +62,7 @@ function registerIpc() {
 
     ipcMain.handle(IPC.OPEN_PATH, (_, target: OpenPathTarget) => {
         if (target === "quickCss" && !existsSync(QUICK_CSS_FILE)) writeFileSync(QUICK_CSS_FILE, "");
-        const path = { data: DATA_DIR, plugins: PLUGINS_DIR, quickCss: QUICK_CSS_FILE }[target];
+        const path = { data: DATA_DIR, plugins: PLUGINS_DIR, themes: THEMES_DIR, quickCss: QUICK_CSS_FILE }[target];
         return shell.openPath(path);
     });
 
@@ -124,6 +126,8 @@ function setup() {
     app.on("session-created", addPreload);
     app.whenReady().then(() => addPreload(session.defaultSession));
     app.whenReady().then(initPlugins);
+    // Themes need nothing from Electron to load, have them ready for the first window's boot
+    initThemes();
     watchQuickCss();
     persistAcrossUpdates(shimAsar);
 }

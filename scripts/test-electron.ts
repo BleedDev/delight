@@ -44,15 +44,20 @@ app.whenReady().then(() => {
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(path.join(dir, "index.js"), "module.exports = { default: { start() { window.__late = true; } } };");
         fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({ id: "late-plugin", name: "Late", enabledByDefault: true }));
+        // And a theme, enabled in settings before it existed
+        fs.writeFileSync(path.join(process.env.DELIGHT_DATA_DIR, "themes", "late.css"), "/** @name Late Theme */ :root { --delight-late-theme: live; }");
     }, 12000);
 
     setTimeout(async () => {
         const result = await win.webContents.executeJavaScript(${"`"}(async () => {
             const D = window.Delight;
+            const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
             if (!D) return { delight: false, discordNative: !!window.__fakeDiscordPreload };
             const blockedFetch = await fetch("https://discord.com/api/v9/science", { method: "POST", body: "{}" })
                 .then(r => "status " + r.status, e => "blocked: " + e.message);
             const noTrack = D.plugins.get("no-track");
+            // Discord's own stylesheet makes a real https CSS file to download
+            const sheet = [...document.querySelectorAll("link[rel=stylesheet]")].map(l => l.href).find(h => h.startsWith("https://discord.com/assets/"));
             return {
                 delight: true,
                 discordNative: window.__fakeDiscordPreload?.ran === true,
@@ -61,6 +66,16 @@ app.whenReady().then(() => {
                 blockedFetch,
                 blockedCount: await noTrack.ctx.native.call("getBlockedCount"),
                 latePlugin: window.__late === true,
+                themes: D.themes.getSnapshot().map(t => t.name),
+                bootTheme: css("--delight-boot-theme"),
+                offTheme: css("--delight-off-theme"),
+                lateTheme: css("--delight-late-theme"),
+                cssOrder: css("--delight-order"),
+                styleOrder: [...document.head.querySelectorAll("style[id^=delight-theme-], #delight-quickcss")].map(s => s.id),
+                addHttp: await D.themes.addFromUrl("http://example.com/theme.css"),
+                addHtml: await D.themes.addFromUrl("https://discord.com/login"),
+                addCss: sheet ? await D.themes.addFromUrl(sheet) : "no stylesheet on the page",
+                addedStyles: [...document.head.querySelectorAll("style[id^=delight-theme-]")].length,
             };
         })()${"`"});
         console.log("RESULT " + JSON.stringify(result));
@@ -95,7 +110,21 @@ const shimAsar = join(resources, "app.asar");
 writeFileSync(shimAsar, createShimAsar({ corePath: join(ROOT, "dist", "core", "main.js"), devPluginsDir: join(ROOT, "dist", "plugins") }, { name: APP_NAME }));
 
 mkdirSync(DATA, { recursive: true });
-writeFileSync(join(DATA, "settings.json"), JSON.stringify({ quickCss: true, plugins: { experiments: { enabled: true }, "gpu-boost": { enabled: true } } }));
+writeFileSync(join(DATA, "settings.json"), JSON.stringify({
+    quickCss: true,
+    plugins: { experiments: { enabled: true }, "gpu-boost": { enabled: true } },
+    enabledThemes: ["boot.css", "late.css"],
+}));
+mkdirSync(join(DATA, "themes"));
+writeFileSync(join(DATA, "themes", "boot.css"), `/**
+ * @name Boot Theme
+ * @author Tester
+ */
+:root { --delight-boot-theme: applied; --delight-order: theme; }
+`);
+writeFileSync(join(DATA, "themes", "off.css"), ":root { --delight-off-theme: applied; }");
+// Quick CSS sets the same property as the theme and must win
+writeFileSync(join(DATA, "quick.css"), ":root { --delight-order: quick; }");
 
 const proc = Bun.spawn([join(INSTALL, "app-1.0.0", "electron.exe")], {
     env: { ...process.env, DELIGHT_DATA_DIR: DATA, ELECTRON_ENABLE_LOGGING: "1" },
@@ -128,6 +157,12 @@ check("no-track native module blocks /science", String(r.blockedFetch).startsWit
 check("plugin dropped into the folder loads live", r.latePlugin === true);
 check("auto-injected into the updated app-1.0.1", existsSync(join(updated, ORIGINAL_ASAR, "index.js"))
     && readFileSync(join(updated, "app.asar")).equals(readFileSync(shimAsar)));
+check("enabled theme applied at startup", r.bootTheme === "applied", r.bootTheme);
+check("theme header parsed, disabled theme listed but not applied", ["Boot Theme", "off"].every(n => r.themes?.includes(n)) && r.offTheme === "", { themes: r.themes, off: r.offTheme });
+check("Quick CSS comes after themes and wins", r.cssOrder === "quick" && r.styleOrder?.at(-1) === "delight-quickcss", { value: r.cssOrder, order: r.styleOrder });
+check("theme dropped into the folder applies live", r.lateTheme === "live" && r.themes?.includes("Late Theme"), r.lateTheme);
+check("remote themes: http refused, web pages refused", r.addHttp?.ok === false && /https/.test(r.addHttp.error) && r.addHtml?.ok === false && /web page|html/i.test(r.addHtml.error), { http: r.addHttp, html: r.addHtml });
+check("remote theme downloaded into the themes folder and turned on", r.addCss?.ok === true && existsSync(join(DATA, "themes", r.addCss.file)) && r.addedStyles === 3, { result: r.addCss, styles: r.addedStyles });
 check("settings were read from the data folder", existsSync(join(DATA, "settings.json")));
 check("enabled plugin's chromium switches applied at startup", stdout.includes("gpu-boost: --enable-zero-copy"));
 
