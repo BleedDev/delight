@@ -6,6 +6,7 @@ import { join } from "path";
 
 import { downloadHttps } from "./download";
 import { THEMES_DIR } from "./paths";
+import { SafeMode } from "./safeMode";
 
 const themes = new Map<string, ThemePayload>();
 
@@ -40,6 +41,7 @@ export function reloadTheme(file: string) {
         return;
     }
     themes.set(file, next);
+    SafeMode.recordChange({ kind: "theme", id: file, action: previous ? "updated" : "installed" });
     broadcast({ type: "upsert", theme: next });
 }
 

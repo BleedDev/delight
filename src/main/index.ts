@@ -1,4 +1,5 @@
-import { BootData, IPC, OpenPathTarget } from "@shared/ipc";
+import { BootData, DelightSettings, IPC, OpenPathTarget } from "@shared/ipc";
+import { diffSettings } from "@shared/safeMode";
 import { ORIGINAL_ASAR } from "@shared/shim";
 import { app, ipcMain, Session, session, shell } from "electron";
 import { existsSync, readFileSync, watch, writeFileSync } from "fs";
@@ -8,6 +9,7 @@ import { initBackup } from "./backup";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
 import { applyChromiumSwitches, getPluginPayloads, initPlugins } from "./plugins";
+import { SafeMode } from "./safeMode";
 import { saveSettings, settings } from "./settings";
 import { initStore } from "./store";
 import { getThemePayloads, initThemes } from "./themes";
@@ -47,14 +49,15 @@ function registerIpc() {
             plugins: getPluginPayloads(),
             quickCss: readQuickCss(),
             themes: getThemePayloads(),
+            safeMode: SafeMode.info,
         };
         e.returnValue = boot;
     });
 
-    ipcMain.handle(IPC.SETTINGS_SAVE, (_, next) => saveSettings(next));
+    ipcMain.handle(IPC.SETTINGS_SAVE, (_, next) => saveAndRecord(next));
     ipcMain.handle(IPC.CSS_SAVE, (_, css: string) => writeFileSync(QUICK_CSS_FILE, css));
     ipcMain.on(IPC.SETTINGS_SAVE_SYNC, (e, next) => {
-        saveSettings(next);
+        saveAndRecord(next);
         e.returnValue = true;
     });
     ipcMain.on(IPC.CSS_SAVE_SYNC, (e, css: string) => {
@@ -72,6 +75,15 @@ function registerIpc() {
         app.relaunch();
         app.exit(0);
     });
+
+    ipcMain.on(IPC.BOOT_OK, () => SafeMode.bootOk());
+    ipcMain.handle(IPC.SAFE_MODE_EXIT, () => SafeMode.exit());
+}
+
+/** Remembers what the save turned on or changed, so safe mode can name a suspect */
+function saveAndRecord(next: DelightSettings) {
+    for (const change of diffSettings(settings, next)) SafeMode.recordChange(change);
+    saveSettings(next);
 }
 
 function watchQuickCss() {
@@ -82,6 +94,8 @@ function watchQuickCss() {
         clearTimeout(timer);
         timer = setTimeout(() => {
             const css = readQuickCss();
+            // Our own saves land here too: every edit is recorded, wherever it's made
+            SafeMode.recordChange({ kind: "quickCss", id: "quick.css", action: "edited" });
             for (const wc of require("electron").webContents.getAllWebContents()) wc.send(IPC.CSS_CHANGED, css);
         }, 50);
     });
@@ -123,6 +137,7 @@ function setup() {
     console.log(`[Delight] v${DELIGHT_VERSION} starting, data at ${DATA_DIR}`);
 
     registerIpc();
+    SafeMode.watchCrashes();
     enableDevTools();
     applyChromiumSwitches();
     app.on("session-created", addPreload);
@@ -140,7 +155,8 @@ if (vanilla) {
     console.log("[Delight] Vanilla mode, not loading.");
 } else {
     try {
-        setup();
+        // Counts this start, and decides whether it's safe mode (or, after repeated failures, vanilla)
+        if (SafeMode.begin() !== "vanilla") setup();
     } catch (err) {
         console.error("[Delight] Setup failed, continuing with Discord only", err);
     }

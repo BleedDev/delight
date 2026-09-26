@@ -33,6 +33,8 @@ const DelightNative = {
     applyBackup: (token: string, mode: ImportMode): Promise<BackupApplyResult> => ipcRenderer.invoke(IPC.BACKUP_APPLY, token, mode),
     openPath: (target: OpenPathTarget) => ipcRenderer.invoke(IPC.OPEN_PATH, target),
     relaunch: () => ipcRenderer.invoke(IPC.RELAUNCH),
+    reportBootOk: () => ipcRenderer.send(IPC.BOOT_OK),
+    exitSafeMode: () => ipcRenderer.invoke(IPC.SAFE_MODE_EXIT),
 };
 
 export type DelightNativeApi = typeof DelightNative;

@@ -64,11 +64,15 @@ function fakeNative(bootData: BootData) {
     if (window !== window.top) return;
     const pluginListeners: ((change: unknown) => void)[] = [];
     const themeListeners: ((change: unknown) => void)[] = [];
-    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[] };
+    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[], bootOk: 0, exitedSafeMode: 0 };
     (window as any).DelightNative = {
         boot: () => structuredClone(bootData),
         saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
+        saveSettingsSync: (s: unknown) => void ((window as any).__test.savedSettings = structuredClone(s)),
         saveQuickCss: async () => { },
+        saveQuickCssSync: () => { },
+        reportBootOk: () => void (window as any).__test.bootOk++,
+        exitSafeMode: async () => void (window as any).__test.exitedSafeMode++,
         onQuickCssChange: () => { },
         onPluginChange: (cb: (c: unknown) => void) => void pluginListeners.push(cb),
         onThemeChange: (cb: (c: unknown) => void) => void themeListeners.push(cb),
@@ -145,6 +149,7 @@ function fakeNative(bootData: BootData) {
         relaunch: async () => { },
     };
 }
+
 
 const results: { name: string; ok: boolean; detail?: unknown; }[] = [];
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -948,7 +953,86 @@ await page.keyboard.press("Escape");
 await page.waitForTimeout(300);
 check("Escape closes the panel", !(await page.$(".dl-panel")));
 
+check("healthy start reported once plugins ran for a while", await page.evaluate(() => (window as any).__test.bootOk === 1));
 check("no Delight errors in console", delightErrors.length === 0, delightErrors.slice(0, 5));
+
+// ---- safe mode ----------------------------------------------------------------------------------
+
+// A fresh page that main booted in safe mode, after a crash loop with a few recorded changes
+const now = Date.now();
+const safeBoot: BootData = {
+    ...boot,
+    settings: { quickCss: true, plugins: { experiments: { enabled: true } }, enabledThemes: ["web-test.css"] },
+    quickCss: "body { outline: 3px solid rgb(255, 0, 128) !important; }",
+    safeMode: {
+        reason: "crash-loop",
+        failures: 2,
+        changes: [
+            { kind: "plugin", id: "experiments", action: "enabled", at: now - 3 * 60_000 },
+            { kind: "theme", id: "web-test.css", action: "updated", at: now - 2 * 3600_000 },
+            { kind: "quickCss", id: "quick.css", action: "edited", at: now - 2 * 86400_000 },
+        ],
+    },
+};
+const safePage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+safePage.on("console", msg => msg.type() === "error" && msg.text().includes("Delight") && delightErrors.push(`safe mode: ${msg.text()}`));
+safePage.on("pageerror", err => delightErrors.push(`safe mode pageerror: ${err.message}`));
+await safePage.addInitScript(disablePasskeys);
+await safePage.addInitScript(fakeNative, safeBoot);
+await safePage.addInitScript(renderer);
+await safePage.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });
+await safePage.waitForFunction(() => (window as any).Delight?.safeMode.reportedOk && document.querySelector(".dl-safe-float"), null, { timeout: 60_000 });
+await safePage.waitForTimeout(300);
+await safePage.screenshot({ path: join(OUT, "safe-mode-notice.png") });
+
+const safe = await safePage.evaluate(() => {
+    const D = (window as any).Delight;
+    const css = (el: Element, prop: string) => getComputedStyle(el).getPropertyValue(prop).trim();
+    const notice = document.querySelector(".dl-safe-float .dl-safe")!;
+    return {
+        active: D.safeMode.active,
+        running: D.plugins.getSnapshot().filter((p: any) => p.running).map((p: any) => p.manifest.id),
+        evaluated: D.plugins.getSnapshot().filter((p: any) => p.definition).map((p: any) => p.manifest.id),
+        listed: D.plugins.getSnapshot().length,
+        patches: D.diagnosePatches().filter((d: any) => d.plugin !== "delight").length,
+        theme: css(document.documentElement, "--dl-test-theme"),
+        outline: css(document.body, "outline-color"),
+        bootOk: (window as any).__test.bootOk,
+        text: notice.textContent,
+        buttons: [...notice.querySelectorAll("button")].map(b => b.textContent || b.getAttribute("aria-label")),
+        labelled: document.getElementById(notice.getAttribute("aria-labelledby")!)?.textContent,
+    };
+});
+check("safe mode: no plugin evaluated, started or patching, all still listed", safe.active && !safe.running.length && !safe.evaluated.length && !safe.patches && safe.listed === plugins.length, safe);
+check("safe mode: enabled theme and Quick CSS not applied", safe.theme === "" && safe.outline !== "rgb(255, 0, 128)", { theme: safe.theme, outline: safe.outline });
+check("safe mode start is still reported healthy", safe.bootOk === 1);
+check("notice explains why and names the newest change that's still on", safe.labelled === "Delight is in safe mode" && safe.text.includes("last 2 times")
+    && /Most recent change: Experiments \(plugin, turned on 3 minutes ago\)/.test(safe.text) && /Also changed recently:Web Test \(theme, updated 2 hours ago\)Quick CSS \(edited 2 days ago\)/.test(safe.text), safe.text);
+check("notice offers disabling it and leaving safe mode", ["Disable Experiments and restart", "Exit safe mode and restart", "Hide safe mode notice"].every(b => safe.buttons.includes(b)), safe.buttons);
+
+await safePage.getByRole("button", { name: "Hide safe mode notice" }).click();
+await safePage.waitForTimeout(100);
+check("notice can be hidden", !(await safePage.$(".dl-safe-float")));
+
+await safePage.keyboard.press("Control+Shift+D");
+await safePage.waitForSelector(".dl-panel .dl-safe", { timeout: 5000 });
+await safePage.waitForTimeout(300);
+await safePage.screenshot({ path: join(OUT, "safe-mode-plugins.png") });
+const paused = await safePage.evaluate(() => document.querySelector('[aria-labelledby="dl-plugin-experiments"]')?.textContent ?? "");
+check("Plugins tab repeats the notice, enabled plugins show as paused", paused.includes("Paused in safe mode"), paused);
+
+await safePage.click("#dl-tab-themes");
+await safePage.waitForTimeout(200);
+const themesHint = await safePage.evaluate(() => document.querySelector("#dl-tabpanel .dl-banner")?.textContent ?? "");
+check("Themes tab says themes are off in safe mode", themesHint.includes("Safe mode is on: themes aren’t applied"), themesHint);
+await safePage.click("#dl-tab-plugins");
+await safePage.waitForTimeout(200);
+
+await safePage.evaluate(() => [...document.querySelectorAll(".dl-panel .dl-safe button")].find(b => b.textContent?.includes("Disable Experiments"))!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+await safePage.waitForTimeout(200);
+const disabled = await safePage.evaluate(() => ({ saved: (window as any).__test.savedSettings, exited: (window as any).__test.exitedSafeMode }));
+check("\"Disable Experiments and restart\" saves it off right away, then leaves safe mode", disabled.saved?.plugins?.experiments?.enabled === false && disabled.exited === 1, disabled);
+check("no Delight errors in safe mode", delightErrors.length === 0, delightErrors.slice(0, 5));
 
 await browser.close();
 
