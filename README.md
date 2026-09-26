@@ -60,6 +60,21 @@ Discord.exe
 - **Patch health.** The Patches tab checks every source patch against every module factory Discord has registered. Each patch is reported as `applied`, `waiting` (lazy chunk), `broken` (Discord changed) or `ambiguous`. After a Discord update, you see exactly which patch broke.
 - **Patch Helper.** Write a `find`, `match` and `replace` and see, as you type, which modules the find hits, what the match catches with context, the code before and after, and whether the patched module still compiles. It uses the patcher's own matching and compile steps, and gives you the finished patch to paste into your plugin.
 
+## Plugins
+
+Official plugins ship in `plugins/` and are turned on or off in the Plugins tab.
+
+| Plugin | Default | What it does |
+|---|---|---|
+| Clear URLs | on | Removes tracking parameters (utm_source, si...) from links you send |
+| Fast Lists | on | Skips rendering work for servers, messages and members far out of view |
+| No Track | on | Blocks Discord's analytics and metrics requests |
+| Smooth Typing | on | Batches draft saves while you type, halving the worst frame drops |
+| Experiments | off | Unlocks the Experiments and developer settings tabs |
+| GPU Boost | off | Turns on Chromium's zero-copy GPU uploads (after a restart) |
+| Silent Typing | off | Others don't see you typing. Toggle with `/silenttyping` or the keyboard button in the chat bar |
+| Quick Actions | off | Message menu: Copy Message Link, Copy Raw Text, Copy Message ID, Search Image (Google Lens, Yandex, TinEye) and Translate with Google, opened in your browser. Items only show when they apply, and not when Discord's menu already has them |
+
 ## Themes
 
 A theme is a `.css` file in `%APPDATA%\Delight\themes`. Turn it on in the Themes tab. Saving the file restyles Discord right away, and new files show up without a reload. BetterDiscord-style headers are read for the name, description, author and version:
@@ -169,7 +184,7 @@ export default definePlugin({
 ```
 
 - **Toasts** go through Discord's toast queue: one shows at a time, the rest wait their turn.
-- **Menus.** `navId` is Discord's name for the menu: `"message"`, `"user-context"`, `"guild-context"`, `"channel-context"`, `"gdm-context"`… or `"*"` for all of them. `children` is the menu's item list; push to it, splice into it, or use `findMenuGroup(children, itemId)` to add next to one of Discord's items. Items must be `Menu.Item`, `Menu.Group`, `Menu.Separator`, `Menu.CheckboxItem`, `Menu.RadioItem`, `Menu.SwitchItem` or `Menu.ControlItem`, Discord's own components (it rejects anything else). `props` holds what the menu was rendered with (the message and channel, the user, the guild...). It comes from a core source patch, shown as `delight` in the Patches tab, that adds the rendering component's props next to every `navId` in Discord's code. Where that isn't possible (class fields, module scope), `props` is `{}`.
+- **Menus.** `navId` is Discord's name for the menu: `"message"`, `"user-context"`, `"guild-context"`, `"channel-context"`, `"gdm-context"`… or `"*"` for all of them. `children` is the menu's item list; push to it, splice into it, or use `findMenuGroup(children, itemId)` to add next to one of Discord's items. It's a fresh copy on every render, groups included, so edits never touch Discord's own arrays. Items must be `Menu.Item`, `Menu.Group`, `Menu.Separator`, `Menu.CheckboxItem`, `Menu.RadioItem`, `Menu.SwitchItem` or `Menu.ControlItem`, Discord's own components (it rejects anything else). `props` holds what the menu was rendered with (the message and channel, the user, the guild...). It comes from a core source patch, shown as `delight` in the Patches tab, that adds the rendering component's props next to every `navId` in Discord's code. Where that isn't possible (class fields, module scope), `props` is `{}`.
 - **Commands** are listed with Discord's built-ins (`/shrug`, `/tableflip`) and run locally. `args` maps option names to values. Option `type` is `"string"` (default), `"integer"`, `"number"`, `"boolean"`, `"user"`, `"channel"`, `"role"`, `"mentionable"` or `"attachment"`. Returning `{ content }` makes Discord send it as a message from you. A thrown error shows a failure toast.
 
 The same functions exist outside `ctx` as `showToast`, `addContextMenuPatch` and `registerCommand`. The last two return a removal function you must call yourself.
@@ -215,8 +230,8 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 
 | Suite | What it proves |
 |---|---|
-| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation. Theme header parsing and remote theme checks. The menu props patch: what gets rewritten and what must not be |
-| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, toasts, menu items, slash commands, UI including the Patch Helper and Themes tabs. It runs on Node because Playwright's transports hang under Bun on Windows. |
+| `test:unit` | Hook engine: ordering, error isolation, exact restore, getters, construct, rebasing. Patch Helper evaluation. Theme header parsing and remote theme checks. The menu props patch: what gets rewritten and what must not be. Quick Actions' link, image search and translate URLs |
+| `test:web` | The renderer on the **live discord.com bundle** in headless Chrome: runtime capture, finders, source patch, hooks, hot reload, toasts, menu items, slash commands, Silent Typing (typing blocked and restored, chat bar patch) and Quick Actions (items in Discord's message menu, clipboard, browser links), UI including the Patch Helper and Themes tabs. It runs on Node because Playwright's transports hang under Bun on Windows. |
 | `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (applied at startup, live from the folder, ordered under Quick CSS, downloaded from a URL), auto-injection after an update |
 | `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `delight update` against a local fake of GitHub's API (`DELIGHT_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection, self-replacement on a copy of the exe, and that updates only refresh Discords that already have Delight |
 
