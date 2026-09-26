@@ -20,5 +20,5 @@
             "@shared/*": ["./src/shared/*"]
         }
     },
-    "include": ["src", "plugins", "userplugins", "scripts", "tests"]
+    "include": ["src", "plugins", "userplugins", "scripts", "tests", "server"]
 }
