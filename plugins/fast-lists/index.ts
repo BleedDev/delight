@@ -9,8 +9,7 @@ import { definePlugin } from "@delight/api";
  * style, layout and paint, but keeps their rendered state (decoded images included) and their
  * size. They are never unmounted or emptied, so nothing flickers or disappears. We decide when a
  * row renders again, a generous distance before it can scroll into view; a jump bigger than that
- * reveals every row before the frame paints; and revealing rows above the viewport keeps the first
- * visible row pinned, so a message that changed size while skipped can't make the chat jump.
+ * reveals every row before the frame paints. We never touch the scroll position ourselves.
  *
  * Measured on a 185-server account on a ~300Hz display: p95 frame gap 6.7ms -> 3.7ms (server list).
  * Measured and rejected: `contain: layout style` on every row made frames slower (p95 10ms).
@@ -153,39 +152,16 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
 
     const margin = () => (scroller?.clientHeight ?? 800) * marginScreens;
 
-    /** First row inside the viewport, to keep it pinned while rows above it change */
-    const firstVisible = () => {
-        const top = scroller!.getBoundingClientRect().top;
-        let best: HTMLElement | undefined, bestTop = Infinity;
-        for (const row of rows) {
-            if (row.classList.contains(FAR)) continue;
-            const t = row.getBoundingClientRect().top;
-            if (t >= top && t < bestTop) {
-                best = row;
-                bestTop = t;
-            }
-        }
-        return best && { row: best, top: bestTop };
-    };
-
-    // Without a scroller (short list) there is nothing far away to skip
+    // Without a scroller (short list) there is nothing far away to skip.
+    // We never write scrollTop: doing so to keep the view pinned fought fast scrolling and Discord
+    // loading older messages, and could hold the chat in place. The browser's scroll anchoring
+    // keeps the view stable when a revealed row turns out to have a different size.
     const visibility = scroller
         ? new IntersectionObserver(entries => {
             if (disposed) return;
-            // The real visible top, rootBounds is expanded by the margin
-            const viewTop = scroller.getBoundingClientRect().top;
-            // Revealing rows above the viewport can change their height (edited while skipped): pin the view
-            const revealsAbove = entries.some(e => e.isIntersecting && e.boundingClientRect.bottom < viewTop && (e.target as HTMLElement).classList.contains(FAR));
-            const anchor = revealsAbove ? firstVisible() : undefined;
-
             for (const entry of entries) {
                 const row = entry.target as HTMLElement;
                 if (rows.has(row)) row.classList.toggle(FAR, !entry.isIntersecting);
-            }
-
-            if (anchor) {
-                const shift = anchor.row.getBoundingClientRect().top - anchor.top;
-                if (Math.abs(shift) > 0.5) scroller.scrollTop += shift;
             }
         }, { root: scroller, rootMargin: `${Math.round(margin())}px 0px` })
         : undefined;
@@ -277,8 +253,8 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
 export default definePlugin({
     settings: {
         servers: { type: "boolean", label: "Server list", description: "Skip servers far out of view and remove the pills' GPU-layer hack.", default: true },
-        chat: { type: "boolean", label: "Chat", description: "Skip messages far above or below what you're reading.", default: true },
-        members: { type: "boolean", label: "Member list", description: "Skip members far out of view.", default: true },
+        chat: { type: "boolean", label: "Chat (experimental)", description: "Skip messages far above or below what you're reading. Not measured yet.", default: false },
+        members: { type: "boolean", label: "Member list (experimental)", description: "Skip members far out of view. Not measured yet.", default: false },
         margin: {
             type: "number",
             label: "Render distance (screens)",

@@ -50,6 +50,16 @@ const results = await page.evaluate(async (pluginCode) => {
 
     // Minimal plugin host
     const settings: Record<string, any> = { servers: true, chat: true, members: true, margin: 2 };
+    // Every scrollTop write the plugin makes is a bug: it fights the user's scrolling
+    let pluginScrollWrites = 0;
+    const desc = Object.getOwnPropertyDescriptor(Element.prototype, "scrollTop")!;
+    let writingFromTest = false;
+    Object.defineProperty(Element.prototype, "scrollTop", {
+        configurable: true,
+        get() { return desc.get!.call(this); },
+        set(v) { if (!writingFromTest) pluginScrollWrites++; desc.set!.call(this, v); },
+    });
+    (window as any).__setScroll = (el: Element, v: number) => { writingFromTest = true; el.scrollTop = v; writingFromTest = false; };
     const changeListeners: (() => void)[] = [];
     const disposers: (() => void)[] = [];
     const ctx = {
@@ -105,13 +115,13 @@ const results = await page.evaluate(async (pluginCode) => {
     out.visibleRowContain = visibleRow ? getComputedStyle(visibleRow).contain : "missing";
     let worst = 0;
     for (let i = 0; i < 120; i++) {
-        sc.scrollTop += 120;
+        (window as any).__setScroll(sc, sc.scrollTop + 120);
         await frame();
         worst = Math.max(worst, hiddenVisible());
     }
     // Jumps: bottom, top, middle
     for (const to of [sc.scrollHeight, 0, sc.scrollHeight / 2]) {
-        sc.scrollTop = to;
+        (window as any).__setScroll(sc, to);
         await new Promise(r => requestAnimationFrame(r));
         worst = Math.max(worst, hiddenVisible());
         await frame();
@@ -129,7 +139,7 @@ const results = await page.evaluate(async (pluginCode) => {
     out.folderChildrenHandled = [...group.children].every(ch => ch.classList.contains("dl-fl-row"));
 
     // A smaller render distance applies live and hides more
-    sc.scrollTop = 0;
+    (window as any).__setScroll(sc, 0);
     await frame();
     setSetting("margin", 1);
     await frame();
@@ -149,7 +159,7 @@ const results = await page.evaluate(async (pluginCode) => {
         chat.append(li);
     }
     await new Promise(r => setTimeout(r, 1200));
-    chatScroller.scrollTop = chatScroller.scrollHeight;
+    (window as any).__setScroll(chatScroller, chatScroller.scrollHeight);
     await frame();
     await new Promise(r => setTimeout(r, 100));
     out.chatFar = chat.querySelectorAll(".dl-fl-far").length;
@@ -162,7 +172,7 @@ const results = await page.evaluate(async (pluginCode) => {
     for (let i = 0; i < 200 && target.classList.contains("dl-fl-far"); i++) {
         const reading = [...chat.children].find(el => el.getBoundingClientRect().top >= chatScroller.getBoundingClientRect().top) as HTMLElement;
         const before = reading.getBoundingClientRect().top;
-        chatScroller.scrollTop -= 100;
+        (window as any).__setScroll(chatScroller, chatScroller.scrollTop - 100);
         const expected = before + 100;
         await frame();
         worstJump = Math.max(worstJump, Math.abs(reading.getBoundingClientRect().top - expected));
@@ -181,6 +191,33 @@ const results = await page.evaluate(async (pluginCode) => {
     out.resyncMsPerFrame = +((performance.now() - t0) / 20).toFixed(2);
     out.newMessagesMarked = [...chat.children].slice(-20).every(el => el.classList.contains("dl-fl-row"));
     out.chatWorstJump = +worstJump.toFixed(1);
+
+    // The reported bug: scrolling up fast through a chat while Discord loads older messages at the
+    // top (and restores the scroll position itself). The user must always be able to keep going up.
+    (window as any).__setScroll(chatScroller, chatScroller.scrollHeight);
+    await frame();
+    let loaded = 0, stuckSteps = 0, prevTop = chatScroller.scrollTop;
+    for (let i = 0; i < 400 && loaded < 5; i++) {
+        (window as any).__setScroll(chatScroller, chatScroller.scrollTop - 400);
+        if (chatScroller.scrollTop < 300) {
+            // Discord-like history load: prepend 30 messages, keep the view where it was
+            const before = chatScroller.scrollHeight;
+            for (let j = 0; j < 30; j++) {
+                const li = document.createElement("li");
+                li.setAttribute("data-list-item-id", `chat-messages___old${loaded}-${j}`);
+                li.style.height = `${40 + (j * 53) % 90}px`;
+                chat.prepend(li);
+            }
+            (window as any).__setScroll(chatScroller, chatScroller.scrollTop + (chatScroller.scrollHeight - before));
+            loaded++;
+        }
+        await frame();
+        if (chatScroller.scrollTop >= prevTop && chatScroller.scrollTop > 0) stuckSteps++;
+        prevTop = chatScroller.scrollTop;
+    }
+    out.historyLoads = loaded;
+    out.stuckSteps = stuckSteps;
+    out.pluginScrollWrites = pluginScrollWrites;
 
     // Rebuilt sidebar: plugin re-attaches within its polling interval
     const nav = document.querySelector("nav")!;
@@ -217,6 +254,8 @@ check("chat: far messages are skipped", r.chatFar > 50 && r.targetSkipped, { far
 check("chat: a message resized while skipped doesn't make the chat jump", r.chatRevealed && r.chatWorstJump <= 1, { revealed: r.chatRevealed, worstJumpPx: r.chatWorstJump });
 check("chat: new messages are picked up", r.newMessagesMarked);
 check("resync stays cheap (frame time with a new message every frame)", r.resyncMsPerFrame < 20, { msPerFrame: r.resyncMsPerFrame });
+check("fast scroll up through loading history never gets stuck", r.historyLoads === 5 && r.stuckSteps <= r.historyLoads, { loads: r.historyLoads, stuckSteps: r.stuckSteps });
+check("the plugin never writes the scroll position", r.pluginScrollWrites === 0, r.pluginScrollWrites);
 check("re-attaches when Discord rebuilds the sidebar", r.reattached);
 check("disabling leaves no trace", r.afterDisable.rows === 0 && r.afterDisable.far === 0 && r.styleRemoved, r.afterDisable);
 process.exit(failed ? 1 : 0);
