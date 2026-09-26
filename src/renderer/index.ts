@@ -9,6 +9,7 @@ import { diagnosePatches } from "./patching/diagnose";
 import { PluginManager } from "./plugins/manager";
 import { Settings } from "./settings";
 import { QuickCss } from "./styles";
+import { registerToolkitPatches, Toolkit } from "./toolkit";
 import { installHotkey, SettingsUI } from "./ui";
 import { installSettingsEntry } from "./ui/settingsEntry";
 import { onCommonReady } from "./webpack/common";
@@ -32,6 +33,7 @@ const Delight = {
     diagnosePatches,
     stats,
     pendingWaiters,
+    toolkit: Toolkit,
     get wreq() {
         return wreq;
     },
@@ -51,6 +53,7 @@ function boot() {
     const data = Native.boot();
     Settings.init(data.settings);
     QuickCss.init(data.quickCss);
+    registerToolkitPatches();
     PluginManager.boot(data.plugins);
     installHotkey();
     installSettingsEntry();

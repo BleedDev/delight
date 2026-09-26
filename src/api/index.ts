@@ -9,6 +9,12 @@ export type { PatchRecord, Replacement, SourcePatch } from "../renderer/patching
 export type { PluginContext, PluginSettings } from "../renderer/plugins/context";
 export { definePlugin } from "../renderer/plugins/types";
 export type * from "../renderer/plugins/types";
+export { CommandOptionType, registerCommand } from "../renderer/toolkit/commands";
+export type { CommandContext, CommandDefinition, CommandOption, CommandResult } from "../renderer/toolkit/commands";
+export { addContextMenuPatch, findMenuGroup, Menu } from "../renderer/toolkit/contextMenu";
+export type { ContextMenuCallback, MenuComponents, MenuItemProps } from "../renderer/toolkit/contextMenu";
+export { showToast } from "../renderer/toolkit/toasts";
+export type { ToastOptions, ToastType } from "../renderer/toolkit/toasts";
 export { lazy, unlazy } from "../renderer/utils/lazy";
 export { findInTree } from "../renderer/utils/tree";
 export { createRoot, Dispatcher, getStore, React, ReactDOM } from "../renderer/webpack/common";

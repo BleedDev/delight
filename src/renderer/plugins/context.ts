@@ -1,10 +1,14 @@
 import type { PluginManifest } from "@shared/ipc";
+import type { ReactNode } from "react";
 
 import { Logger } from "../logger";
 import { Native } from "../native";
 import { hook, HookCallback, HookKind } from "../patching/hooks";
 import { Settings } from "../settings";
 import { createStyle, ManagedStyle } from "../styles";
+import { CommandDefinition, registerCommand } from "../toolkit/commands";
+import { addContextMenuPatch, ContextMenuCallback } from "../toolkit/contextMenu";
+import { showToast, ToastOptions } from "../toolkit/toasts";
 import { Dispatcher, FluxAction, React } from "../webpack/common";
 import { Filter, FoundExport, waitFor } from "../webpack/find";
 import type { SettingsSchema, SettingsValues } from "./types";
@@ -159,6 +163,25 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
         const style = createStyle(css, `delight-plugin-${this.id}`);
         this.onDispose(style.remove);
         return style;
+    }
+
+    /** Shows one of Discord's toasts */
+    toast(message: ReactNode, options?: ToastOptions) {
+        return showToast(message, options);
+    }
+
+    /**
+     * Adds items to Discord's menus: `callback(children, props)` runs each time the menu with this
+     * navId renders ("message", "user-context", "guild-context", "channel-context"... or "*").
+     * Push Menu.Item / Menu.Group elements (from @delight/api) into `children`. Removed on stop.
+     */
+    contextMenu(navId: string | string[], callback: ContextMenuCallback) {
+        return this.onDispose(addContextMenuPatch(navId, callback));
+    }
+
+    /** Registers a slash command that runs locally, listed with Discord's built-ins. Removed on stop. */
+    command(definition: CommandDefinition) {
+        return this.onDispose(registerCommand(definition, this.id));
     }
 
     setInterval(fn: () => void, ms: number) {
