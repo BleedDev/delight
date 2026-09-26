@@ -106,6 +106,21 @@ page.on("console", msg => {
 });
 page.on("pageerror", err => delightErrors.push(`pageerror: ${err.message}`));
 
+// The login page calls WebAuthn, which pops a Windows Hello / passkey dialog on the desktop: refuse it
+await page.addInitScript(() => {
+    const refuse = () => Promise.reject(new DOMException("Disabled in tests", "NotAllowedError"));
+    try {
+        if (navigator.credentials) {
+            Object.defineProperty(navigator.credentials, "get", { value: refuse, configurable: true });
+            Object.defineProperty(navigator.credentials, "create", { value: refuse, configurable: true });
+        }
+        const p = (window as any).PublicKeyCredential;
+        if (p) {
+            p.isConditionalMediationAvailable = () => Promise.resolve(false);
+            p.isUserVerifyingPlatformAuthenticatorAvailable = () => Promise.resolve(false);
+        }
+    } catch { }
+});
 await page.addInitScript(fakeNative, boot);
 await page.addInitScript(renderer);
 await page.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });

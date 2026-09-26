@@ -1,56 +1,69 @@
 import { diagnosePatches, PatchDiagnosis, PatchHealth } from "../patching/diagnose";
 import { React } from "../webpack/common";
-import { Button, Icon, Status, Tone } from "./components";
+import { Button, EmptyState, List, Status, Text, Tone } from "./components";
 
-const health: Record<PatchHealth, { tone: Tone; label: string; hint: string; }> = {
-    applied: { tone: "success", label: "Applied", hint: "" },
-    partial: { tone: "danger", label: "Partly applied", hint: "Some replacements matched nothing." },
-    failed: { tone: "danger", label: "Failed", hint: "Found its module but couldn’t change it." },
-    waiting: { tone: "muted", label: "Waiting", hint: "Its module loads later, when you open the part of Discord that uses it." },
-    broken: { tone: "danger", label: "Broken", hint: "No module matches the find. Discord probably changed this code." },
-    ambiguous: { tone: "warning", label: "Ambiguous", hint: "The find matches several modules, make it more specific." },
+const health: Record<PatchHealth, { tone: Tone; label: string; hint: string; order: number; }> = {
+    broken: { tone: "danger", label: "Broken", hint: "No module matches the find. Discord probably changed this code.", order: 0 },
+    failed: { tone: "danger", label: "Failed", hint: "Found its module but couldn’t change it.", order: 0 },
+    partial: { tone: "danger", label: "Partly applied", hint: "Some replacements matched nothing.", order: 0 },
+    ambiguous: { tone: "warning", label: "Ambiguous", hint: "The find matches several modules. Make it more specific.", order: 1 },
+    waiting: { tone: "muted", label: "Waiting", hint: "Its module loads later, when you open the part of Discord that uses it.", order: 2 },
+    applied: { tone: "success", label: "Applied", hint: "", order: 3 },
 };
 
 function PatchRow({ d }: { d: PatchDiagnosis; }) {
     const info = health[d.health];
+    const titleId = `dl-patch-${d.plugin}-${d.index}`;
     return (
-        <article className="dl-card">
-            <div className="dl-card-head">
-                <div className="dl-card-main">
-                    <h3 className="dl-card-title">{d.plugin} <span className="dl-version">patch {d.index + 1}</span></h3>
-                    <p className="dl-card-desc dl-mono" title={String(d.patch.find)}>find: {String(d.patch.find)}</p>
-                    {info.hint && <p className="dl-hint">{info.hint}</p>}
-                    {d.modules.length > 0 && <p className="dl-hint dl-mono">modules: {d.modules.join(", ")}</p>}
-                    {d.errors.map((e, i) => <pre key={i} className="dl-error" style={{ marginBlockStart: 8 }}>{e}</pre>)}
+        <li className="dl-row" aria-labelledby={titleId}>
+            <div className="dl-row-head">
+                <div className="dl-row-text">
+                    <div className="dl-row-title">
+                        <Text tag="h3" variant="heading-md/medium" color="text-strong" id={titleId}>{d.plugin}</Text>
+                        <Text variant="text-xs/medium" color="text-muted" className="dl-version" tabular>{`Patch ${d.index + 1}`}</Text>
+                    </div>
+                    <p className="dl-code-inline"><span className="dl-code-key">find</span>{String(d.patch.find)}</p>
+                    {info.hint && <Text tag="p" variant="text-sm/normal" color="text-subtle">{info.hint}</Text>}
+                    {d.modules.length > 0 && (
+                        <Text tag="p" variant="text-xs/normal" color="text-muted" className="dl-mono">
+                            {`${d.modules.length === 1 ? "Module" : "Modules"} ${d.modules.join(", ")}`}
+                        </Text>
+                    )}
                 </div>
-                <Status tone={info.tone}>{info.label}</Status>
+                <div className="dl-row-controls">
+                    <Status tone={info.tone}>{info.label}</Status>
+                </div>
             </div>
-        </article>
+            {d.errors.map((e, i) => <pre key={i} className="dl-error">{e}</pre>)}
+        </li>
     );
 }
 
 export function PatchesTab() {
     const [results, setResults] = React.useState(() => diagnosePatches());
+    // What needs attention first; the sort is stable, so plugin order holds within each group
+    const sorted = [...results].sort((a, b) => health[a.health].order - health[b.health].order);
     const problems = results.filter(r => health[r.health].tone === "danger").length;
 
     return (
-        <>
+        <div className="dl-tab">
             <div className="dl-toolbar">
-                <span className="dl-hint" role="status" style={{ flex: 1 }}>
-                    {results.length
-                        ? `${results.length} source patches, ${problems ? `${problems} need attention` : "no problems found"}.`
-                        : ""}
-                </span>
-                <Button onClick={() => setResults(diagnosePatches())}><Icon name="reload" />Check again</Button>
+                <div className="dl-grow">
+                    <Text variant="text-sm/medium" color="text-subtle" role="status" tabular>
+                        {results.length
+                            ? `${results.length} source ${results.length === 1 ? "patch" : "patches"}, ${problems ? `${problems} ${problems === 1 ? "needs" : "need"} attention` : "no problems found"}`
+                            : "No source patches active"}
+                    </Text>
+                </div>
+                <Button icon="refresh" onClick={() => setResults(diagnosePatches())}>Check again</Button>
             </div>
             {results.length ? (
-                <div className="dl-stack">{results.map(d => <PatchRow key={`${d.plugin}-${d.index}`} d={d} />)}</div>
+                <List label="Source patches">{sorted.map(d => <PatchRow key={`${d.plugin}-${d.index}`} d={d} />)}</List>
             ) : (
-                <div className="dl-empty">
-                    <strong>No source patches active</strong>
+                <EmptyState icon="wrench" title="No source patches active">
                     Plugins that rewrite Discord’s code list their patches here, with a health check after every Discord update.
-                </div>
+                </EmptyState>
             )}
-        </>
+        </div>
     );
 }

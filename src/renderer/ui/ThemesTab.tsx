@@ -4,7 +4,7 @@ import { Native } from "../native";
 import { Settings } from "../settings";
 import { Themes } from "../themes";
 import { React } from "../webpack/common";
-import { Button, Icon, Status, Switch, TextField, useStore } from "./components";
+import { Button, EmptyState, List, Section, Status, Switch, Text, TextField, useStore } from "./components";
 
 type AddState =
     | { type: "idle"; }
@@ -12,32 +12,34 @@ type AddState =
     | { type: "done"; name: string; }
     | { type: "error"; error: string; };
 
-function ThemeCard({ theme }: { theme: ThemePayload; }) {
+function ThemeRow({ theme }: { theme: ThemePayload; }) {
     const titleId = `dl-theme-${theme.file.replace(/[^\w-]/g, "_")}`;
     return (
-        <article className="dl-card" aria-labelledby={titleId}>
-            <div className="dl-card-head">
-                <div className="dl-card-main">
-                    <h3 className="dl-card-title" id={titleId}>
-                        {theme.name}
-                        {theme.version && <span className="dl-version">v{theme.version}</span>}
-                    </h3>
-                    {theme.description && <p className="dl-card-desc">{theme.description}</p>}
-                    <p className="dl-card-desc">
-                        {theme.author && <>By {theme.author} · </>}
+        <li className="dl-row" aria-labelledby={titleId}>
+            <div className="dl-row-head">
+                <div className="dl-row-text">
+                    <div className="dl-row-title">
+                        <Text tag="h3" variant="heading-md/medium" color="text-strong" id={titleId}>{theme.name}</Text>
+                        {theme.version && <Text variant="text-xs/medium" color="text-muted" className="dl-version" tabular>v{theme.version}</Text>}
+                    </div>
+                    {theme.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-desc">{theme.description}</Text>}
+                    <Text variant="text-xs/normal" color="text-muted" className="dl-row-meta">
+                        {theme.author && <span>By {theme.author}</span>}
                         <span className="dl-mono">{theme.file}</span>
-                    </p>
+                    </Text>
                 </div>
-                <Switch checked={Themes.isEnabled(theme.file)} labelledBy={titleId} onChange={v => Themes.setEnabled(theme.file, v)} />
+                <div className="dl-row-controls">
+                    <Switch checked={Themes.isEnabled(theme.file)} labelledBy={titleId} onChange={v => Themes.setEnabled(theme.file, v)} />
+                </div>
             </div>
-        </article>
+        </li>
     );
 }
 
 function AddFromUrl() {
     const [url, setUrl] = React.useState("");
     const [state, setState] = React.useState<AddState>({ type: "idle" });
-    // Enter submits the form and Discord's button may be a submit button too, only run once
+    // Enter and the submit button both land in onSubmit; only run once at a time
     const busy = React.useRef(false);
 
     const submit = async () => {
@@ -59,19 +61,21 @@ function AddFromUrl() {
 
     return (
         <form
-            className="dl-field"
+            className="dl-stack"
             onSubmit={e => {
                 e.preventDefault();
                 submit();
             }}
         >
-            <div className="dl-toolbar dl-toolbar-flush">
-                <div className="dl-search">
+            <div className="dl-toolbar dl-toolbar-end">
+                <div className="dl-grow">
                     <TextField
                         id="dl-theme-url"
-                        label="Theme URL"
+                        label="Theme link"
                         hideLabel
                         type="url"
+                        inputMode="url"
+                        spellCheck={false}
                         placeholder="https://example.com/theme.css"
                         value={url}
                         onChange={v => {
@@ -80,7 +84,7 @@ function AddFromUrl() {
                         }}
                     />
                 </div>
-                <Button variant="accent" onClick={submit} disabled={state.type === "busy"}>Add from URL</Button>
+                <Button size="md" variant="accent" type="submit" icon="link" disabled={state.type === "busy"}>Add from URL</Button>
             </div>
             <div className="dl-add-status" role="status">
                 {state.type === "busy" && <Status tone="muted">Downloading…</Status>}
@@ -94,26 +98,37 @@ function AddFromUrl() {
 export function ThemesTab() {
     const themes = useStore(Themes.subscribe, Themes.getSnapshot);
     // Switch states come from settings
-    useStore(Settings.subscribe, () => Settings.data);
+    const settings = useStore(Settings.subscribe, () => Settings.data);
+    const enabled = themes.filter(t => settings.enabledThemes.includes(t.file)).length;
+    const openFolder = () => Native.openPath("themes");
 
     return (
-        <div className="dl-stack" style={{ gap: 16 }}>
-            <div className="dl-field-row">
-                <div className="dl-field-text">
-                    <div className="dl-label">Themes</div>
-                    <p className="dl-hint">Each theme is a .css file in your themes folder. Edits apply the moment you save. Quick CSS still goes on top.</p>
-                </div>
-                <Button onClick={() => Native.openPath("themes")}><Icon name="folder" />Open themes folder</Button>
-            </div>
-            <AddFromUrl />
-            {themes.length ? (
-                <div className="dl-stack">{themes.map(t => <ThemeCard key={t.file} theme={t} />)}</div>
-            ) : (
-                <div className="dl-empty">
-                    <strong>No themes yet</strong>
-                    Drop a .css file into your themes folder, or paste a link above. It shows up here instantly.
-                </div>
-            )}
+        <div className="dl-tab">
+            <Section
+                id="dl-themes-add"
+                title="Add a theme"
+                description="Paste a link to a .css file. Delight downloads it into your themes folder and turns it on."
+            >
+                <AddFromUrl />
+            </Section>
+
+            <Section
+                id="dl-themes-installed"
+                title="Installed themes"
+                description="Each theme is a .css file in your themes folder. Edits apply the moment you save, and Quick CSS still goes on top."
+                action={<Button icon="folder" onClick={openFolder}>Open themes folder</Button>}
+            >
+                {themes.length ? (
+                    <div className="dl-stack">
+                        <Text variant="text-sm/medium" color="text-subtle" tabular>{`${themes.length} ${themes.length === 1 ? "theme" : "themes"}, ${enabled} on`}</Text>
+                        <List label="Installed themes">{themes.map(t => <ThemeRow key={t.file} theme={t} />)}</List>
+                    </div>
+                ) : (
+                    <EmptyState icon="palette" title="No themes yet" action={<Button icon="folder" onClick={openFolder}>Open themes folder</Button>}>
+                        Drop a .css file into your themes folder or add one from a link above. It shows up here right away.
+                    </EmptyState>
+                )}
+            </Section>
         </div>
     );
 }

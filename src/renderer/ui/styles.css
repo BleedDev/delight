@@ -1,29 +1,59 @@
-/* Semantic tokens map onto Discord's theme variables, so the panel follows light, dark and custom themes */
+/*
+ * Semantic tokens map onto Discord's theme variables, so everything follows light, dark and custom
+ * themes. Sizes and spacing come from Discord's own settings layout (measured from its CSS):
+ * rows 16px apart inside a group, groups 24px+ apart, cards with a --border-muted edge and a
+ * --background-mod-subtle fill, 1px --border-subtle dividers between rows.
+ */
 .dl-root {
-    --dl-bg-scrim: rgb(0 0 0 / 0.6);
-    --dl-bg-panel: var(--background-base-lower, var(--background-primary, #1e1f22));
-    --dl-bg-surface: var(--background-base-low, var(--background-secondary, #2b2d31));
-    --dl-bg-surface-hover: var(--background-modifier-hover, rgb(255 255 255 / 0.04));
-    --dl-bg-input: var(--input-background, var(--background-tertiary, #1a1b1e));
-    --dl-border: var(--border-subtle, rgb(255 255 255 / 0.08));
-    --dl-text-primary: var(--text-default, var(--text-normal, #dbdee1));
-    --dl-text-secondary: var(--text-muted, #949ba4);
+    --dl-text-strong: var(--text-strong, var(--header-primary, #f2f3f5));
+    --dl-text-default: var(--text-default, var(--text-normal, #dbdee1));
+    --dl-text-subtle: var(--text-subtle, var(--header-secondary, #b5bac1));
+    --dl-text-muted: var(--text-muted, #949ba4);
+    --dl-text-positive: var(--text-feedback-positive, var(--text-positive, #23a55a));
+    --dl-text-warning: var(--text-feedback-warning, var(--text-warning, #f0b232));
+    --dl-text-critical: var(--text-feedback-critical, var(--text-danger, #f23f43));
     --dl-text-on-accent: #fff;
-    --dl-accent-solid: #e0508f;
-    --dl-accent-solid-hover: #c93f7c;
-    --dl-status-success: var(--status-positive, #23a55a);
-    --dl-status-warning: var(--status-warning, #f0b232);
-    --dl-status-danger: var(--status-danger, #f23f43);
-    --dl-focus-ring: var(--focus-primary, #00a8fc);
 
-    --dl-radius-panel: 16px;
+    --dl-interactive: var(--interactive-text-default, var(--interactive-normal, #b5bac1));
+    --dl-interactive-hover: var(--interactive-text-hover, var(--interactive-hover, #dbdee1));
+    --dl-interactive-active: var(--interactive-text-active, var(--interactive-active, #fff));
+
+    --dl-bg-scrim: var(--background-scrim, rgb(0 0 0 / 0.7));
+    --dl-bg-panel: var(--background-base-lower, var(--background-primary, #1e1f22));
+    --dl-bg-sidebar: var(--background-base-lowest, var(--background-secondary, #2b2d31));
+    --dl-bg-group: var(--background-mod-subtle, rgb(151 151 159 / 0.12));
+    --dl-bg-group-head: var(--background-mod-muted, rgb(151 151 159 / 0.08));
+    --dl-bg-emphasis: var(--background-mod-normal, rgb(151 151 159 / 0.16));
+    --dl-bg-hover: var(--interactive-background-hover, var(--background-modifier-hover, rgb(151 151 159 / 0.12)));
+    --dl-bg-selected: var(--interactive-background-selected, var(--background-modifier-selected, rgb(151 151 159 / 0.2)));
+    --dl-bg-input: var(--input-background-default, var(--input-background, rgb(0 0 0 / 0.12)));
+    --dl-bg-code: var(--background-base-lowest, var(--background-tertiary, #121214));
+    --dl-bg-critical: var(--background-feedback-critical, rgb(209 46 56 / 0.08));
+    --dl-bg-warning: var(--background-feedback-warning, rgb(247 163 0 / 0.08));
+
+    --dl-border-group: var(--border-muted, rgb(151 151 159 / 0.04));
+    --dl-border-divider: var(--border-subtle, rgb(151 151 159 / 0.12));
+    --dl-border-control: var(--border-normal, rgb(151 151 159 / 0.2));
+    --dl-badge-bg: var(--badge-background-default, rgb(151 151 159 / 0.2));
+    --dl-badge-text: var(--badge-text-default, var(--text-subtle, #b5bac1));
+    --dl-switch-on: var(--status-positive, #23a55a);
+    --dl-focus-ring: var(--border-focus, var(--focus-primary, #00a8fc));
+    /* Delight's brand color, only for marking matched code in Patch Helper */
+    --dl-accent-solid: #e0508f;
+
+    --dl-radius-panel: var(--radius-lg, 16px);
+    --dl-radius-group: var(--radius-md, 12px);
+    --dl-radius-control: var(--radius-sm, 8px);
+    --dl-radius-round: var(--radius-round, 999px);
+
     --dl-space-inner: 8px;
-    --dl-radius-card: 10px;
-    --dl-radius-control: 6px;
+    --dl-space-group: 24px;
     --dl-duration-fast: 150ms;
     --dl-duration-base: 200ms;
 
-    color: var(--dl-text-primary);
+    --dl-font-code: var(--font-code, ui-monospace, Consolas, monospace);
+
+    color: var(--dl-text-default);
     font-family: var(--font-primary, "gg sans", system-ui, sans-serif);
 }
 
@@ -32,6 +62,8 @@
 .dl-root *::after {
     box-sizing: border-box;
 }
+
+/* ---- floating panel ------------------------------------------------------------------------ */
 
 .dl-scrim {
     position: fixed;
@@ -44,22 +76,27 @@
 }
 
 .dl-panel {
-    display: flex;
-    flex-direction: column;
-    inline-size: min(880px, 100%);
-    block-size: min(720px, 100%);
+    display: grid;
+    grid-template-columns: minmax(184px, 224px) minmax(0, 1fr);
+    inline-size: min(1040px, 100%);
+    block-size: min(760px, 100%);
     border-radius: var(--dl-radius-panel);
     background: var(--dl-bg-panel);
-    border: 1px solid var(--dl-border);
-    box-shadow: 0 24px 64px rgb(0 0 0 / 0.45);
+    border: 1px solid var(--dl-border-divider);
+    box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
     overflow: hidden;
 }
 
+/* The dialog takes focus on open so screen readers land inside it; it isn't a control */
+.dl-panel:focus {
+    outline: none;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-    .dl-scrim { animation: dl-fade-in var(--dl-duration-base) ease-out; }
-    .dl-panel { animation: dl-panel-in var(--dl-duration-base) ease-out; }
-    .dl-scrim[data-closing] { animation: dl-fade-out var(--dl-duration-fast) ease-in forwards; }
-    .dl-scrim[data-closing] .dl-panel { animation: dl-panel-out var(--dl-duration-fast) ease-in forwards; }
+    :root:not(.reduce-motion) .dl-scrim { animation: dl-fade-in var(--dl-duration-base) ease-out; }
+    :root:not(.reduce-motion) .dl-panel { animation: dl-panel-in var(--dl-duration-base) ease-out; }
+    :root:not(.reduce-motion) .dl-scrim[data-closing] { animation: dl-fade-out var(--dl-duration-fast) ease-in forwards; }
+    :root:not(.reduce-motion) .dl-scrim[data-closing] .dl-panel { animation: dl-panel-out var(--dl-duration-fast) ease-in forwards; }
 }
 
 @keyframes dl-fade-in { from { opacity: 0; } }
@@ -67,73 +104,149 @@
 @keyframes dl-panel-in { from { opacity: 0; scale: 0.98; } }
 @keyframes dl-panel-out { to { opacity: 0; scale: 0.98; } }
 
-.dl-header {
+.dl-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dl-space-inner);
+    min-block-size: 0;
+    padding: 20px 8px 16px;
+    overflow-y: auto;
+    background: var(--dl-bg-sidebar);
+}
+
+.dl-sidebar-title {
+    margin: 0;
+    padding-inline: 12px;
+}
+
+.dl-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Like Discord's settings sidebar: icon + label, a filled row for the current page */
+.dl-nav-item {
+    all: unset;
     display: flex;
     align-items: center;
-    gap: var(--dl-space-inner);
-    padding: 16px 16px 0 20px;
-}
-
-.dl-title {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    text-wrap: balance;
-}
-
-.dl-version {
-    color: var(--dl-text-secondary);
-    font-size: 13px;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.dl-header-actions {
-    display: flex;
-    gap: var(--dl-space-inner);
-    margin-inline-start: auto;
-}
-
-.dl-tabs {
-    display: flex;
-    gap: 4px;
-    padding: 16px 20px 0;
-    border-block-end: 1px solid var(--dl-border);
-}
-
-.dl-tab {
-    all: unset;
-    position: relative;
-    padding: 8px 12px 12px;
-    color: var(--dl-text-secondary);
-    font-size: 14px;
-    font-weight: 600;
+    gap: 12px;
+    min-block-size: 40px;
+    padding-inline: 12px;
+    border-radius: var(--dl-radius-control);
+    color: var(--dl-interactive);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 20px;
     white-space: nowrap;
     cursor: pointer;
 }
 
-.dl-tab[aria-selected="true"] {
-    color: var(--dl-text-primary);
+.dl-nav-item > svg,
+.dl-nav-icon-space {
+    flex: none;
+    inline-size: 20px;
 }
 
-.dl-tab[aria-selected="true"]::after {
-    content: "";
-    position: absolute;
-    inset-inline: 12px;
-    inset-block-end: -1px;
-    block-size: 2px;
-    border-radius: 2px;
-    background: var(--dl-accent-solid);
+.dl-nav-item[aria-selected="true"] {
+    background: var(--dl-bg-selected);
+    color: var(--dl-interactive-active);
 }
 
 @media (hover: hover) {
-    .dl-tab:hover { color: var(--dl-text-primary); }
+    .dl-nav-item:hover:not([aria-selected="true"]) {
+        background: var(--dl-bg-hover);
+        color: var(--dl-interactive-hover);
+    }
+}
+
+.dl-sidebar-foot {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--dl-space-inner);
+    margin-block-start: auto;
+    padding-inline: 12px;
+}
+
+.dl-content {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    min-inline-size: 0;
+}
+
+.dl-content-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 20px 16px 32px;
+}
+
+.dl-content-title {
+    flex: 1;
+    margin: 0;
+    padding-block-start: 6px;
+    text-wrap: balance;
+}
+
+/* Discord's settings close button: a ringed X with its shortcut under it */
+.dl-close {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+}
+
+.dl-close-button {
+    all: unset;
+    display: grid;
+    place-items: center;
+    inline-size: 36px;
+    block-size: 36px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    color: var(--dl-interactive);
+    cursor: pointer;
+    transition: scale var(--dl-duration-base) ease-out;
+}
+
+.dl-close-button:active { scale: 0.96; }
+
+@media (hover: hover) {
+    .dl-close-button:hover {
+        background: var(--dl-bg-hover);
+        color: var(--dl-interactive-hover);
+    }
+}
+
+.dl-close-hint {
+    color: var(--dl-interactive);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
 }
 
 .dl-body {
     flex: 1;
+    min-block-size: 0;
     overflow-y: auto;
-    padding: 16px 20px 20px;
+    padding: 0 32px 32px;
+    scrollbar-gutter: stable;
+}
+
+/* Inside Discord's settings panel: Discord provides the title, chrome and padding */
+.dl-embedded {
+    padding-block-end: 24px;
+}
+
+/* ---- layout -------------------------------------------------------------------------------- */
+
+.dl-tab {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dl-space-group);
 }
 
 .dl-stack {
@@ -142,18 +255,327 @@
     gap: var(--dl-space-inner);
 }
 
-.dl-section + .dl-section {
-    margin-block-start: 24px;
+/* Form fields: each one is label + description + input 8px apart, so fields sit 20px apart */
+.dl-stack-loose {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dl-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .dl-toolbar {
     display: flex;
     align-items: center;
     gap: var(--dl-space-inner);
-    margin-block-end: 16px;
 }
 
-/* ---- controls ---------------------------------------------------------------------------- */
+.dl-toolbar-end {
+    align-items: flex-end;
+}
+
+.dl-grow {
+    flex: 1;
+    min-inline-size: 0;
+}
+
+.dl-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dl-section-head {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.dl-section-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-inline-size: 0;
+}
+
+.dl-section-text > * {
+    margin: 0;
+}
+
+.dl-section-text > h2 { text-wrap: balance; }
+.dl-section-text > p { max-inline-size: 72ch; text-wrap: pretty; }
+
+/* ---- lists and rows ------------------------------------------------------------------------ */
+
+/* A group of rows, like Discord's settings cards */
+.dl-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-row {
+    padding: 16px 20px;
+}
+
+.dl-row + .dl-row {
+    border-block-start: 1px solid var(--dl-border-divider);
+}
+
+.dl-row > * + * {
+    margin-block-start: 12px;
+}
+
+/* The collapsed settings panel takes no space; its own padding opens up with it */
+.dl-row > .dl-collapse {
+    margin-block-start: 0;
+}
+
+.dl-row-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-block-size: 40px;
+}
+
+.dl-row-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-inline-size: 0;
+}
+
+.dl-row-text > * {
+    margin: 0;
+}
+
+.dl-row-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+}
+
+.dl-row-title > h3 {
+    margin: 0;
+    overflow-wrap: break-word;
+}
+
+.dl-row-desc,
+.dl-row-note {
+    max-inline-size: 72ch;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+}
+
+.dl-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    margin-block-start: 2px;
+}
+
+.dl-row-controls {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 12px;
+}
+
+.dl-row-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-block-start: 16px;
+    padding: 16px;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-group-head);
+}
+
+.dl-version {
+    white-space: nowrap;
+}
+
+.dl-badge {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 16px;
+    padding-inline: 6px;
+    border-radius: var(--dl-radius-round);
+    background: var(--dl-badge-bg);
+    color: var(--dl-badge-text);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* ---- expanding ----------------------------------------------------------------------------- */
+
+.dl-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+}
+
+.dl-collapse[data-open] {
+    grid-template-rows: 1fr;
+    visibility: visible;
+}
+
+/* Room for focus rings, which overflow: hidden would otherwise cut */
+.dl-collapse-clip {
+    min-block-size: 0;
+    margin-inline: -4px;
+    padding-inline: 4px;
+    overflow: hidden;
+}
+
+.dl-expand svg {
+    rotate: 0deg;
+}
+
+.dl-expand[aria-expanded="true"] svg {
+    rotate: 180deg;
+}
+
+/* Height and the chevron follow the input, so a second click mid-way reverses from where it is */
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-collapse {
+        transition: grid-template-rows var(--dl-duration-base) ease-in, visibility var(--dl-duration-base);
+    }
+
+    :root:not(.reduce-motion) .dl-collapse[data-open] {
+        transition-timing-function: ease-out;
+    }
+
+    :root:not(.reduce-motion) .dl-expand svg {
+        transition: rotate var(--dl-duration-base) ease-out;
+    }
+}
+
+/* A swapped-in icon (Copy patch -> Copied) grows in from a blur */
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-icon-swap svg {
+        animation: dl-icon-in var(--dl-duration-base) ease-out;
+    }
+}
+
+@keyframes dl-icon-in {
+    from { opacity: 0; scale: 0.25; filter: blur(4px); }
+}
+
+/* ---- status and messages ------------------------------------------------------------------- */
+
+.dl-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+.dl-status > svg { flex: none; }
+
+.dl-status[data-tone="success"] { color: var(--dl-text-positive); }
+.dl-status[data-tone="warning"] { color: var(--dl-text-warning); }
+.dl-status[data-tone="danger"] { color: var(--dl-text-critical); }
+.dl-status[data-tone="muted"] { color: var(--dl-text-subtle); }
+
+/* The expected state: the icon carries the tone, the words stay quiet */
+.dl-status[data-quiet] { color: var(--dl-text-subtle); }
+.dl-status[data-quiet][data-tone="success"] > svg { color: var(--dl-text-positive); }
+
+.dl-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--dl-radius-control);
+    border: 1px solid var(--dl-text-warning);
+    background: var(--dl-bg-warning);
+    color: var(--dl-text-default);
+    font-size: 14px;
+    line-height: 18px;
+}
+
+.dl-banner > svg { flex: none; color: var(--dl-text-warning); }
+.dl-banner[data-tone="danger"] { border-color: var(--dl-text-critical); background: var(--dl-bg-critical); }
+.dl-banner[data-tone="danger"] > svg { color: var(--dl-text-critical); }
+.dl-banner-text { flex: 1; text-wrap: pretty; }
+
+.dl-error {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-critical);
+    border-inline-start: 2px solid var(--dl-text-critical);
+    color: var(--dl-text-default);
+    font-family: var(--dl-font-code);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.dl-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--dl-space-inner);
+    padding: 40px 24px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+    text-align: center;
+}
+
+.dl-empty > * {
+    margin: 0;
+}
+
+.dl-empty-icon {
+    display: grid;
+    place-items: center;
+    inline-size: 48px;
+    block-size: 48px;
+    margin-block-end: 4px;
+    border-radius: 50%;
+    background: var(--dl-bg-emphasis);
+    color: var(--dl-text-subtle);
+}
+
+.dl-empty > h3 { text-wrap: balance; }
+
+.dl-empty-text {
+    max-inline-size: 48ch;
+    text-wrap: pretty;
+}
+
+.dl-empty > :last-child:not(p, h3) {
+    margin-block-start: 8px;
+}
+
+/* Holds its line while empty so the list doesn't jump when a message appears */
+.dl-add-status {
+    min-block-size: 18px;
+}
+
+/* ---- controls (Delight's fallbacks for Discord's) ------------------------------------------ */
 
 .dl-button {
     all: unset;
@@ -164,9 +586,9 @@
     min-block-size: 32px;
     padding-inline: 12px;
     border-radius: var(--dl-radius-control);
-    background: var(--dl-bg-surface);
-    border: 1px solid var(--dl-border);
-    color: var(--dl-text-primary);
+    background: var(--dl-bg-emphasis);
+    border: 1px solid var(--dl-border-control);
+    color: var(--dl-text-strong);
     font-size: 14px;
     font-weight: 500;
     white-space: nowrap;
@@ -174,71 +596,78 @@
     transition: scale var(--dl-duration-base) ease-out;
 }
 
+.dl-button[data-size="md"] { min-block-size: 40px; }
+
 .dl-button[data-variant="accent"] {
-    background: var(--dl-accent-solid);
+    background: var(--brand-500, #5865f2);
     border-color: transparent;
     color: var(--dl-text-on-accent);
 }
 
+.dl-button[data-variant="danger"] { color: var(--dl-text-critical); }
+
 .dl-button[data-variant="icon"] {
     min-inline-size: 32px;
     padding: 0;
+    background: transparent;
+    border-color: transparent;
+    color: var(--dl-interactive);
 }
+
+.dl-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.dl-button:active:not(:disabled) { scale: 0.97; }
 
 @media (hover: hover) {
-    .dl-button:hover { background: var(--dl-bg-surface-hover); }
-    .dl-button[data-variant="accent"]:hover { background: var(--dl-accent-solid-hover); }
+    .dl-button:hover:not(:disabled) { background: var(--dl-bg-hover); }
 }
 
-.dl-button:active { scale: 0.97; }
-
-.dl-root :focus-visible {
-    outline: 2px solid var(--dl-focus-ring);
-    outline-offset: 2px;
+/* Discord's legacy button wraps its children; keep our icon + label on one line */
+.dl-button-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .dl-input,
 .dl-textarea,
 .dl-select {
     inline-size: 100%;
-    padding: 8px 10px;
+    min-block-size: 40px;
+    padding: 8px 12px;
     border-radius: var(--dl-radius-control);
     background: var(--dl-bg-input);
-    border: 1px solid var(--dl-border);
-    color: var(--dl-text-primary);
+    border: 1px solid var(--dl-border-control);
+    color: var(--dl-text-strong);
     font: inherit;
-    font-size: 14px;
-}
-
-.dl-input:focus-visible,
-.dl-textarea:focus-visible,
-.dl-select:focus-visible {
-    outline-offset: 0;
-}
-
-.dl-search {
-    flex: 1;
-}
-
-.dl-toolbar-flush {
-    margin-block-end: 0;
-}
-
-/* Holds its line while empty so the list doesn't jump when a message appears */
-.dl-add-status {
-    min-block-size: 18px;
+    font-size: 16px;
 }
 
 .dl-textarea {
     resize: vertical;
-    font-family: var(--font-code, ui-monospace, Consolas, monospace);
-    font-size: 13px;
+    font-family: var(--dl-font-code);
+    font-size: 14px;
     line-height: 1.5;
     tab-size: 4;
 }
 
 .dl-code-editor {
     min-block-size: 420px;
+}
+
+.dl-search-fallback {
+    position: relative;
+    color: var(--dl-text-muted);
+}
+
+.dl-search-fallback > svg {
+    position: absolute;
+    inset-block-start: 12px;
+    inset-inline-start: 12px;
+    pointer-events: none;
+}
+
+.dl-search-fallback > input {
+    padding-inline-start: 36px;
 }
 
 .dl-switch {
@@ -248,7 +677,7 @@
     inline-size: 40px;
     block-size: 24px;
     border-radius: 12px;
-    background: var(--dl-text-secondary);
+    background: var(--dl-text-muted);
     cursor: pointer;
     transition: background-color var(--dl-duration-fast) ease-out;
 }
@@ -265,160 +694,124 @@
     transition: translate var(--dl-duration-fast) ease-out;
 }
 
-.dl-switch[aria-checked="true"] { background: var(--dl-status-success); }
+.dl-switch[aria-checked="true"] { background: var(--dl-switch-on); }
 .dl-switch[aria-checked="true"]::after { translate: 16px 0; }
 
-/* ---- cards ------------------------------------------------------------------------------- */
-
-.dl-card {
-    border-radius: var(--dl-radius-card);
-    background: var(--dl-bg-surface);
-    border: 1px solid var(--dl-border);
-}
-
-.dl-card-head {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px 14px;
-}
-
-.dl-card-main {
-    flex: 1;
-    min-inline-size: 0;
-}
-
-.dl-card-title {
+.dl-switch-row {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-}
-
-.dl-card-desc {
-    margin: 4px 0 0;
-    color: var(--dl-text-secondary);
-    font-size: 13px;
-    line-height: 1.4;
-    text-wrap: pretty;
-    overflow-wrap: break-word;
-}
-
-.dl-card-body {
-    display: flex;
-    flex-direction: column;
     gap: 16px;
-    padding: 4px 14px 14px;
-    border-block-start: 1px solid var(--dl-border);
-    padding-block-start: 14px;
 }
 
-.dl-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: var(--dl-bg-surface-hover);
-    border: 1px solid var(--dl-border);
-    color: var(--dl-text-secondary);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-}
-
-.dl-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.dl-status[data-tone="success"] { color: var(--dl-status-success); }
-.dl-status[data-tone="warning"] { color: var(--dl-status-warning); }
-.dl-status[data-tone="danger"] { color: var(--dl-status-danger); }
-.dl-status[data-tone="muted"] { color: var(--dl-text-secondary); }
-
-.dl-banner {
+.dl-switch-row-text {
     display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dl-switch-row-text > * { margin: 0; }
+
+.dl-chips {
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
-    margin-block-end: 16px;
-    padding: 10px 14px;
-    border-radius: var(--dl-radius-card);
-    border: 1px solid var(--dl-status-warning);
-    background: color-mix(in oklab, var(--dl-status-warning) 12%, transparent);
+    gap: var(--dl-space-inner);
+}
+
+.dl-chip {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-block-size: 30px;
+    padding-inline: 12px;
+    border-radius: var(--dl-radius-round);
+    border: 1px solid var(--dl-border-control);
+    background: var(--dl-bg-emphasis);
+    color: var(--dl-text-default);
     font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
 }
 
-.dl-banner > span { flex: 1; }
+.dl-chip > span { color: var(--dl-text-muted); }
 
-.dl-error {
-    margin: 0;
-    padding: 8px 10px;
-    border-radius: var(--dl-radius-control);
-    background: color-mix(in oklab, var(--dl-status-danger) 12%, transparent);
-    color: var(--dl-text-primary);
-    font-family: var(--font-code, ui-monospace, Consolas, monospace);
-    font-size: 12px;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
+.dl-chip[aria-pressed="true"] {
+    border-color: var(--dl-text-strong);
+    background: var(--dl-bg-selected);
+    color: var(--dl-text-strong);
 }
 
-/* ---- fields ------------------------------------------------------------------------------ */
+@media (hover: hover) {
+    .dl-chip:hover { background: var(--dl-bg-hover); }
+}
+
+/* Discord's search input draws its own clear button; hide the browser's second one */
+.dl-root input[type="search"]::-webkit-search-cancel-button {
+    appearance: none;
+}
+
+/* Counts in Discord's filter chips change as you toggle; keep their width steady */
+.dl-chips-native [data-mana-component="tag"] {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Delight's own controls; Discord's draw their own focus ring */
+.dl-root :is(.dl-nav-item, .dl-close-button, .dl-button, .dl-chip, .dl-switch, .dl-input, .dl-textarea, .dl-select, .dl-code):focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+.dl-root :is(.dl-input, .dl-textarea, .dl-select):focus-visible {
+    outline-offset: -1px;
+}
+
+/* ---- typography fallbacks (Discord's Text component normally sets these) -------------------- */
+
+.dl-text[data-variant^="heading-xl"] { font-size: 24px; line-height: 1.25; }
+.dl-text[data-variant^="heading-lg"] { font-size: 20px; line-height: 1.2; }
+.dl-text[data-variant^="heading-md"],
+.dl-text[data-variant^="text-md"] { font-size: 16px; line-height: 1.25; }
+.dl-text[data-variant^="text-sm"] { font-size: 14px; line-height: 1.2857; }
+.dl-text[data-variant^="text-xs"] { font-size: 12px; line-height: 1.3333; }
+.dl-text[data-variant$="/normal"] { font-weight: 400; }
+.dl-text[data-variant$="/medium"] { font-weight: 500; }
+.dl-text[data-variant$="/semibold"] { font-weight: 600; }
+.dl-text[data-color="text-strong"] { color: var(--dl-text-strong); }
+.dl-text[data-color="text-subtle"] { color: var(--dl-text-subtle); }
+.dl-text[data-color="text-muted"] { color: var(--dl-text-muted); }
+
+.dl-tabular {
+    font-variant-numeric: tabular-nums;
+}
 
 .dl-field {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--dl-space-inner);
 }
 
-.dl-field-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.dl-field-row > .dl-field-text { flex: 1; }
+.dl-field > p { margin: 0; }
 
 .dl-label {
-    font-size: 14px;
-    font-weight: 600;
+    color: var(--dl-text-strong);
+    font-size: 16px;
+    font-weight: 500;
 }
 
 .dl-hint {
     margin: 0;
-    color: var(--dl-text-secondary);
-    font-size: 13px;
+    color: var(--dl-text-subtle);
+    font-size: 14px;
+    line-height: 1.2857;
     text-wrap: pretty;
 }
 
 .dl-mono {
-    font-family: var(--font-code, ui-monospace, Consolas, monospace);
-    font-size: 12px;
+    font-family: var(--dl-font-code);
     overflow-wrap: anywhere;
-}
-
-.dl-empty {
-    padding: 48px 16px;
-    text-align: center;
-    color: var(--dl-text-secondary);
-    font-size: 14px;
-    text-wrap: balance;
-}
-
-.dl-empty strong {
-    display: block;
-    margin-block-end: 4px;
-    color: var(--dl-text-primary);
-    font-size: 16px;
 }
 
 .dl-sr-only {
@@ -430,36 +823,70 @@
     white-space: nowrap;
 }
 
-/* The dialog container takes focus on open so screen readers land inside it, it isn't a control */
-.dl-panel:focus {
-    outline: none;
-}
+/* ---- code ---------------------------------------------------------------------------------- */
 
-/* Inside Discord's settings panel: Discord provides the chrome and padding */
-.dl-embedded {
-    padding-block-end: 24px;
-}
-
-/* Discord's button wraps its children; keep our icon + label on one line */
-.dl-button-content {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.dl-code-native textarea {
-    font-family: var(--font-code, ui-monospace, Consolas, monospace);
-    font-size: 13px;
+.dl-code-native textarea,
+.dl-code-native textarea::placeholder,
+.dl-ph-fields input {
+    font-family: var(--dl-font-code);
+    font-size: 14px;
     line-height: 1.5;
     tab-size: 4;
 }
 
-/* ---- patch helper ------------------------------------------------------------------------ */
-
-.dl-ph-fields input {
-    font-family: var(--font-code, ui-monospace, Consolas, monospace);
-    font-size: 13px;
+/* A patch's find, shown in full: it's the identity of the patch */
+.dl-code-inline {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--dl-bg-code);
+    color: var(--dl-text-default);
+    font-family: var(--dl-font-code);
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
 }
+
+.dl-code-key {
+    margin-inline-end: 8px;
+    color: var(--dl-text-muted);
+    user-select: none;
+}
+
+/* ---- cards (Patch Helper results) ---------------------------------------------------------- */
+
+.dl-card {
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+    overflow: hidden;
+}
+
+.dl-card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-block-size: 56px;
+    padding: 8px 16px;
+    background: var(--dl-bg-group-head);
+    border-block-end: 1px solid var(--dl-border-divider);
+}
+
+.dl-card-head:last-child {
+    border-block-end: 0;
+}
+
+.dl-card-head > h3 { margin: 0; }
+
+.dl-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+}
+
+.dl-card-body > p { margin: 0; }
+
+/* ---- patch helper -------------------------------------------------------------------------- */
 
 .dl-code-figure {
     display: flex;
@@ -470,21 +897,21 @@
 }
 
 .dl-code-label {
-    color: var(--dl-text-secondary);
+    color: var(--dl-text-subtle);
     font-size: 12px;
     font-weight: 600;
 }
 
 .dl-code {
     margin: 0;
-    padding: 8px 10px;
+    padding: 8px 12px;
     max-block-size: 240px;
     overflow-y: auto;
     border-radius: var(--dl-radius-control);
-    background: var(--dl-bg-input);
-    border: 1px solid var(--dl-border);
-    color: var(--dl-text-secondary);
-    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    background: var(--dl-bg-code);
+    border: 1px solid var(--dl-border-divider);
+    color: var(--dl-text-subtle);
+    font-family: var(--dl-font-code);
     font-size: 12px;
     line-height: 1.5;
     white-space: pre-wrap;
@@ -494,12 +921,12 @@
 .dl-code mark {
     border-radius: 2px;
     background: color-mix(in oklab, var(--dl-accent-solid) 30%, transparent);
-    color: var(--dl-text-primary);
+    color: var(--dl-text-strong);
     font-weight: 600;
 }
 
-.dl-code mark[data-kind="removed"] { background: color-mix(in oklab, var(--dl-status-danger) 30%, transparent); }
-.dl-code mark[data-kind="added"] { background: color-mix(in oklab, var(--dl-status-success) 30%, transparent); }
+.dl-code mark[data-kind="removed"] { background: color-mix(in oklab, var(--dl-text-critical) 30%, transparent); }
+.dl-code mark[data-kind="added"] { background: color-mix(in oklab, var(--dl-text-positive) 30%, transparent); }
 
 /* Zero-length matches (lookarounds, insertions) still show where they are */
 .dl-code mark[data-empty] {
@@ -518,40 +945,12 @@
     flex-wrap: wrap;
     gap: 4px 16px;
     margin: 0;
+    font-size: 12px;
 }
 
 .dl-groups > div { display: flex; gap: 6px; }
-.dl-groups dt { color: var(--dl-text-secondary); }
+.dl-groups dt { color: var(--dl-text-subtle); }
 .dl-groups dd { margin: 0; }
-
-.dl-chips {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-}
-
-.dl-chip {
-    all: unset;
-    min-block-size: 24px;
-    padding-inline: 8px;
-    border-radius: var(--dl-radius-control);
-    border: 1px solid var(--dl-border);
-    background: var(--dl-bg-input);
-    color: var(--dl-text-secondary);
-    line-height: 24px;
-    cursor: pointer;
-}
-
-.dl-chip[aria-pressed="true"] {
-    border-color: var(--dl-accent-solid);
-    color: var(--dl-text-primary);
-    box-shadow: inset 0 0 0 1px var(--dl-accent-solid);
-}
-
-@media (hover: hover) {
-    .dl-chip:hover { color: var(--dl-text-primary); }
-}
 
 .dl-root [data-checking] {
     opacity: 0.6;

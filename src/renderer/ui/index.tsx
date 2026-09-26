@@ -1,7 +1,9 @@
+import type { KeyboardEvent, ReactNode } from "react";
+
 import { Native } from "../native";
 import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
-import { Button, Icon, useStore } from "./components";
+import { Button, Icon, IconName, Text, useStore } from "./components";
 import { PatchesTab } from "./PatchesTab";
 import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
@@ -23,7 +25,7 @@ const subscribe = (l: () => void) => {
 };
 
 const CLOSE_MS = 150;
-const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("reduce-motion");
 
 function close() {
     if (view !== "open") return;
@@ -32,18 +34,31 @@ function close() {
     setTimeout(() => view === "closing" && setView("closed"), CLOSE_MS);
 }
 
-const tabs = [
-    { id: "plugins", label: "Plugins", Component: PluginsTab },
-    { id: "themes", label: "Themes", Component: ThemesTab },
-    { id: "quickcss", label: "Quick CSS", Component: QuickCssTab },
-    { id: "patches", label: "Patches", Component: PatchesTab },
-    { id: "patchhelper", label: "Patch Helper", Component: PatchHelperTab },
-] as const;
+// `icon` is optional so a section added without one still fits; its label stays aligned with the rest
+const tabs: readonly { id: string; label: string; icon?: IconName; Component: () => ReactNode; }[] = [
+    { id: "plugins", label: "Plugins", icon: "puzzle", Component: PluginsTab },
+    { id: "themes", label: "Themes", icon: "palette", Component: ThemesTab },
+    { id: "quickcss", label: "Quick CSS", icon: "code", Component: QuickCssTab },
+    { id: "patches", label: "Patches", icon: "wrench", Component: PatchesTab },
+    { id: "patchhelper", label: "Patch Helper", icon: "beaker", Component: PatchHelperTab },
+];
+
+// Remembered across closing and reopening, like Discord's settings remember their last page
+let lastTab = tabs[0].id;
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function Panel() {
-    const [tab, setTab] = React.useState<(typeof tabs)[number]["id"]>("plugins");
+    const [tab, setTabState] = React.useState(lastTab);
     const panelRef = React.useRef<HTMLDivElement>(null);
-    const current = tabs.find(t => t.id === tab)!;
+    const bodyRef = React.useRef<HTMLDivElement>(null);
+    const current = tabs.find(t => t.id === tab) ?? tabs[0];
+
+    const setTab = (id: string) => {
+        lastTab = id;
+        setTabState(id);
+        bodyRef.current?.scrollTo({ top: 0 });
+    };
 
     React.useEffect(() => {
         const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -51,35 +66,76 @@ function Panel() {
         return () => previouslyFocused?.focus?.();
     }, []);
 
+    // Vertical tablist: arrows move between sections, Home and End jump to the ends
+    const onTabKey = (e: KeyboardEvent) => {
+        const index = tabs.findIndex(t => t.id === tab);
+        const next = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: tabs.length - 1 }[e.key];
+        if (next === undefined) return;
+        e.preventDefault();
+        const target = tabs[(next + tabs.length) % tabs.length];
+        setTab(target.id);
+        document.getElementById(`dl-tab-${target.id}`)?.focus();
+    };
+
+    // Keep Tab inside the dialog while it's open
+    const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key !== "Tab" || !panelRef.current) return;
+        const focusable = [...panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => el.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || active === panelRef.current)) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && active === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    };
+
     return (
         <div className="dl-scrim" data-closing={view === "closing" ? "" : undefined} onMouseDown={e => e.target === e.currentTarget && close()}>
-            <div className="dl-panel" role="dialog" aria-modal="true" aria-labelledby="dl-title" tabIndex={-1} ref={panelRef}>
-                <header className="dl-header">
-                    <h2 className="dl-title" id="dl-title">Delight</h2>
-                    <span className="dl-version">v{DELIGHT_VERSION}</span>
-                    <div className="dl-header-actions">
-                        <Button onClick={() => Native.openPath("data")}><Icon name="folder" />Open data folder</Button>
-                        <Button variant="icon" aria-label="Close Delight settings" onClick={close}><Icon name="cross" /></Button>
+            <div className="dl-panel" role="dialog" aria-modal="true" aria-labelledby="dl-title" tabIndex={-1} ref={panelRef} onKeyDown={onKeyDown}>
+                <nav className="dl-sidebar" aria-label="Delight">
+                    <div className="dl-sidebar-head">
+                        <Text tag="h2" variant="text-xs/semibold" color="text-muted" id="dl-title" className="dl-sidebar-title">Delight</Text>
                     </div>
-                </header>
-                <div className="dl-tabs" role="tablist" aria-label="Delight sections">
-                    {tabs.map(t => (
-                        <button
-                            key={t.id}
-                            type="button"
-                            role="tab"
-                            className="dl-tab"
-                            id={`dl-tab-${t.id}`}
-                            aria-selected={t.id === tab}
-                            aria-controls="dl-tabpanel"
-                            onClick={() => setTab(t.id)}
-                        >
-                            {t.label}
-                        </button>
-                    ))}
-                </div>
-                <div className="dl-body" role="tabpanel" id="dl-tabpanel" aria-labelledby={`dl-tab-${tab}`}>
-                    <current.Component />
+                    <div className="dl-nav" role="tablist" aria-label="Delight sections" aria-orientation="vertical" onKeyDown={onTabKey}>
+                        {tabs.map(t => (
+                            <button
+                                key={t.id}
+                                type="button"
+                                role="tab"
+                                className="dl-nav-item"
+                                id={`dl-tab-${t.id}`}
+                                aria-selected={t.id === tab}
+                                aria-controls="dl-tabpanel"
+                                tabIndex={t.id === tab ? 0 : -1}
+                                onClick={() => setTab(t.id)}
+                            >
+                                {t.icon ? <Icon name={t.icon} size={20} /> : <span className="dl-nav-icon-space" />}
+                                <span>{t.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="dl-sidebar-foot">
+                        <Button icon="folder" onClick={() => Native.openPath("data")}>Open data folder</Button>
+                        <Text variant="text-xs/normal" color="text-muted" tabular>{`Delight ${DELIGHT_VERSION}`}</Text>
+                    </div>
+                </nav>
+                <div className="dl-content">
+                    <header className="dl-content-head">
+                        <Text tag="h1" variant="heading-xl/semibold" color="text-strong" className="dl-content-title">{current.label}</Text>
+                        <div className="dl-close">
+                            <button type="button" className="dl-close-button" aria-label="Close Delight settings" onClick={close}>
+                                <Icon name="closeLarge" size={18} />
+                            </button>
+                            <span className="dl-close-hint" aria-hidden="true">ESC</span>
+                        </div>
+                    </header>
+                    <div className="dl-body" role="tabpanel" id="dl-tabpanel" aria-labelledby={`dl-tab-${current.id}`} ref={bodyRef}>
+                        <current.Component />
+                    </div>
                 </div>
             </div>
         </div>
