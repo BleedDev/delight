@@ -96,3 +96,15 @@ test("hooking a lazy proxy hooks the real object", () => {
     expect(real.dispatch(1)).toBe(2);
     expect(proxy.dispatch(1)).toBe(2);
 });
+
+import { filters, functionSource } from "../src/renderer/webpack/find";
+
+test("finders see through hook wrappers (hooking an export must not make it unfindable by code)", () => {
+    function Menu() { return "Menu API only allows Items"; }
+    const mod = { Menu };
+    const unhook = hook(mod, "Menu", "before", () => { });
+    expect(functionSource(mod.Menu)).toContain("Menu API only allows Items");
+    expect(filters.byCode("Menu API only allows Items")(mod.Menu)).toBe(true);
+    expect(filters.componentByCode("Menu API only allows Items")(mod.Menu)).toBe(true);
+    unhook();
+});
