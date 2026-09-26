@@ -1508,6 +1508,51 @@
 
 .dl-crash { flex-wrap: wrap; }
 
+/* ---- what's new ---------------------------------------------------------------------------- */
+
+.dl-whats-new {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 20px 20px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-divider);
+    background: var(--dl-bg-panel);
+}
+
+.dl-whats-new-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dl-whats-new-head > h2 { flex: 1; margin: 0; }
+
+.dl-whats-new-body {
+    max-block-size: min(420px, 60vh);
+    overflow-y: auto;
+}
+
+/* Inside the Evi panel: over the content, closed by clicking beside it */
+.dl-panel { position: relative; }
+
+.dl-whats-new-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--dl-bg-scrim);
+}
+
+.dl-whats-new-overlay > .dl-whats-new {
+    inline-size: min(520px, 100%);
+    box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
+}
+
+.dl-version-link:hover { text-decoration-color: var(--dl-text-muted); }
+
 .dl-store-confirm {
     display: flex;
     flex-direction: column;

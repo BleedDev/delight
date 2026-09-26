@@ -10,6 +10,7 @@ import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
 import { ThemesTab } from "./ThemesTab";
+import { releasesSoFar, WhatsNewCard } from "./WhatsNew";
 import css from "./styles.css" with { type: "text" };
 
 type View = "closed" | "open" | "closing";
@@ -52,6 +53,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), texta
 
 function Panel() {
     const [tab, setTabState] = React.useState(lastTab);
+    const [whatsNew, setWhatsNew] = React.useState(false);
     const panelRef = React.useRef<HTMLDivElement>(null);
     const bodyRef = React.useRef<HTMLDivElement>(null);
     const current = tabs.find(t => t.id === tab) ?? tabs[0];
@@ -122,7 +124,9 @@ function Panel() {
                     </div>
                     <div className="dl-sidebar-foot">
                         <Button icon="folder" onClick={() => Native.openPath("data")}>Open data folder</Button>
-                        <Text variant="text-xs/normal" color="text-muted" tabular>{`Evi ${EVI_VERSION}`}</Text>
+                        <button type="button" className="dl-link-button dl-version-link" onClick={() => setWhatsNew(true)}>
+                            <Text variant="text-xs/normal" color="text-muted" tabular>{`Evi ${EVI_VERSION} · What’s new`}</Text>
+                        </button>
                     </div>
                 </nav>
                 <div className="dl-content">
@@ -139,6 +143,11 @@ function Panel() {
                         <ErrorBoundary resetKey={current.id}><current.Component /></ErrorBoundary>
                     </div>
                 </div>
+                {whatsNew && (
+                    <div className="dl-whats-new-overlay" onMouseDown={e => e.target === e.currentTarget && setWhatsNew(false)}>
+                        <WhatsNewCard releases={releasesSoFar()} onClose={() => setWhatsNew(false)} />
+                    </div>
+                )}
             </div>
         </div>
     );

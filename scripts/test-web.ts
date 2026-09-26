@@ -51,7 +51,8 @@ plugins.push({
 const boot: BootData = {
     version: "test",
     dataDir: "C:/fake",
-    settings: { quickCss: true, plugins: { experiments: { enabled: true } }, enabledThemes: [] },
+    // Last saw an older Evi: What's new shows once at startup
+    settings: { quickCss: true, plugins: { experiments: { enabled: true } }, enabledThemes: [], lastSeenVersion: "0.0.1" },
     plugins,
     quickCss: "",
     themes: [{
@@ -1013,6 +1014,18 @@ check("disabling deletes kept messages for real and restores MessageStore's hand
 check("disabling clears the log, unmounts tags and history, removes the tint", logger.beforeStop.rendered && logger.beforeStop.rowBackground !== "rgba(0, 0, 0, 0)" && logger.stopped.renderedGone && logger.stopped.logCleared.deleted + logger.stopped.logCleared.edited === 0
     && logger.stopped.rowBackground === "rgba(0, 0, 0, 0)" && !logger.stopped.style, { before: logger.beforeStop, after: logger.stopped });
 check("with the plugin off, deletes behave like stock Discord", logger.stockDelete);
+
+// ---- what's new -----------------------------------------------------------------------------------
+
+const whatsNew = await page.waitForSelector(".dl-safe-float .dl-whats-new", { timeout: 10_000 }).then(() => page.evaluate(() => ({
+    text: document.querySelector(".dl-whats-new")?.textContent ?? "",
+    seen: (window as any).Evi.settings.data.lastSeenVersion,
+    version: (window as any).Evi.version,
+})), () => null);
+check("What's new shows once after an update, and remembers the version", !!whatsNew && /What’s new in Evi/.test(whatsNew.text) && whatsNew.text.includes(`Evi ${whatsNew.version}`) && whatsNew.seen === whatsNew.version, whatsNew);
+await page.screenshot({ path: join(OUT, "ui-whats-new.png") });
+await page.locator(".dl-safe-float .dl-whats-new").getByRole("button", { name: "Got it" }).click();
+check("What's new closes", !(await page.$(".dl-safe-float .dl-whats-new")));
 
 // ---- UI -----------------------------------------------------------------------------------------
 

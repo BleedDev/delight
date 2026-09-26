@@ -18,6 +18,7 @@ import { registerToolkitPatches, Toolkit } from "./toolkit";
 import { installHotkey, SettingsUI } from "./ui";
 import { showSafeModeNotice } from "./ui/SafeModeNotice";
 import { installSettingsEntry } from "./ui/settingsEntry";
+import { showWhatsNewIfUpdated } from "./ui/WhatsNew";
 import { onCommonReady } from "./webpack/common";
 import { pendingWaiters } from "./webpack/find";
 import { interceptWebpack, stats, wreq } from "./webpack/runtime";
@@ -78,7 +79,8 @@ function boot() {
         if (SafeMode.active) {
             showSafeModeNotice();
         } else {
-            // Waits for a normal start: in safe mode nothing gets updated
+            // Waits for a normal start: safe mode has its own notice to show, and nothing to update
+            showWhatsNewIfUpdated();
             Store.scheduleAutoUpdate();
         }
     });
