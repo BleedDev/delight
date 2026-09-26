@@ -1,0 +1,62 @@
+/**
+ * Discord internals most plugins need, resolved lazily so they can be imported at any time.
+ */
+import type * as ReactTypes from "react";
+
+import { lazy } from "../utils/lazy";
+import { filters, find, findStore, waitFor } from "./find";
+
+// Every top-level React export across 18 and 19. Needed by CommonJS interop that copies keys at require time.
+const REACT_KEYS = [
+    "Children", "Component", "Fragment", "Profiler", "PureComponent", "StrictMode", "Suspense", "Activity",
+    "cloneElement", "createContext", "createElement", "createRef", "forwardRef", "isValidElement", "lazy", "memo",
+    "startTransition", "use", "useActionState", "useCallback", "useContext", "useDebugValue", "useDeferredValue",
+    "useEffect", "useId", "useImperativeHandle", "useInsertionEffect", "useLayoutEffect", "useMemo", "useOptimistic",
+    "useReducer", "useRef", "useState", "useSyncExternalStore", "useTransition", "version",
+];
+
+function required<T>(value: T | undefined, what: string): T {
+    if (value == null) throw new Error(`Delight: could not find ${what}`);
+    return value;
+}
+
+export const React: typeof ReactTypes = lazy(
+    () => required(find(filters.byProps("useState", "createElement", "Component")), "React"),
+    REACT_KEYS,
+);
+
+export const ReactDOM: typeof import("react-dom") = lazy(() => required(find(filters.byProps("createPortal", "flushSync")), "ReactDOM"));
+
+export const createRoot: typeof import("react-dom/client").createRoot = lazy(
+    () => required(find<typeof import("react-dom/client")>(filters.byProps("createRoot")), "react-dom/client").createRoot,
+);
+
+/** Discord's own react/jsx-runtime, used by our JSX shim */
+export const JsxRuntime: typeof import("react/jsx-runtime") = lazy(() => required(find(filters.byProps("jsx", "jsxs", "Fragment")), "jsx-runtime"));
+
+export interface FluxAction {
+    type: string;
+    [key: string]: any;
+}
+
+export interface FluxDispatcher {
+    dispatch(action: FluxAction): Promise<void>;
+    subscribe(type: string, handler: (action: FluxAction) => void): void;
+    unsubscribe(type: string, handler: (action: FluxAction) => void): void;
+}
+
+const dispatcherFilter = filters.byProps("dispatch", "subscribe", "_actionHandlers");
+export const Dispatcher: FluxDispatcher = lazy(() => required(find(dispatcherFilter), "FluxDispatcher"));
+
+/** A Flux store by name, e.g. getStore("UserStore") */
+export function getStore<T = any>(name: string): T {
+    return required(findStore<T>(name), `store ${name}`);
+}
+
+/** Calls back once React and the Flux dispatcher are available */
+export function onCommonReady(callback: () => void) {
+    let pending = 2;
+    const done = () => --pending === 0 && callback();
+    waitFor(filters.byProps("useState", "createElement", "Component"), done);
+    waitFor(dispatcherFilter, done);
+}

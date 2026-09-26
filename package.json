@@ -1,0 +1,31 @@
+{
+    "name": "delight",
+    "private": true,
+    "version": "0.1.0",
+    "description": "A Discord client mod with hot-reloadable runtime plugins",
+    "type": "module",
+    "scripts": {
+        "build": "bun scripts/build.ts",
+        "dev": "bun scripts/build.ts --watch",
+        "compile": "bun scripts/build.ts --cli",
+        "inject": "bun src/cli/index.ts install --dev",
+        "uninject": "bun src/cli/index.ts uninstall",
+        "status": "bun src/cli/index.ts status",
+        "typecheck": "tsc --noEmit",
+        "test:web": "node scripts/test-web.ts",
+        "test:electron": "bun scripts/test-electron.ts",
+        "test:cli": "bun scripts/test-cli.ts",
+        "test": "bun scripts/build.ts --cli && tsc --noEmit && bun test && node scripts/test-web.ts && bun scripts/test-electron.ts && bun scripts/test-cli.ts && bun scripts/test-cli.ts --exe",
+        "test:unit": "bun test",
+        "bench": "node scripts/bench-web.ts"
+    },
+    "devDependencies": {
+        "@types/bun": "^1.4.2",
+        "@types/node": "^26.6.3",
+        "@types/react": "19",
+        "@types/react-dom": "19",
+        "electron": "37",
+        "playwright-core": "^1.63.0",
+        "typescript": "^7.0.2"
+    }
+}

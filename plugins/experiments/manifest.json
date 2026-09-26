@@ -1,0 +1,7 @@
+{
+    "id": "experiments",
+    "name": "Experiments",
+    "description": "Unlocks Discord's Experiments and developer settings tabs.",
+    "version": "1.0.0",
+    "authors": ["Delight"]
+}
