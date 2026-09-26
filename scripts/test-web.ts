@@ -448,6 +448,244 @@ check("stopping the plugin removes its command and the command hook", !toolkit.l
 check("the shared Menu hook stays while another plugin still uses menus", !toolkit.menuRestored);
 await page.screenshot({ path: join(OUT, "toolkit-toast.png") });
 
+// Helpers for the plugin suites below, in the page
+await page.evaluate(() => {
+    const { api } = (window as any).Delight;
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+    const popToast = api.find(api.filters.byCode("queuedToastsMap.get("));
+    (window as any).__qa = {
+        sleep,
+        // Discord shows one toast at a time and queues the rest: dismiss each once seen
+        toastText: async (text: string) => {
+            for (let i = 0; i < 30; i++) {
+                const el = [...document.querySelectorAll('[role="status"]')].find(e => e.textContent?.includes(text));
+                if (el) {
+                    popToast?.();
+                    return { text: el.textContent, type: el.getAttribute("data-type") };
+                }
+                await sleep(100);
+            }
+            return null;
+        },
+        load: (filter: any, ...code: string[]) => {
+            let found = api.findExport(filter);
+            if (!found) {
+                for (const id of api.findModuleIds(...code)) api.requireModule(id);
+                found = api.findExport(filter);
+            }
+            return found;
+        },
+    };
+});
+
+// ---- silent-typing ------------------------------------------------------------------------------
+
+const silent = await page.evaluate(async () => {
+    const { api, plugins, toolkit, diagnosePatches } = (window as any).Delight;
+    const { sleep, toastText, load } = (window as any).__qa;
+
+    // Discord's typing actions: startTyping dispatches TYPING_START_LOCAL, whose store handler sends the request
+    const typing = load(api.filters.byProps("startTyping", "stopTyping"), "TYPING_START_LOCAL", "startTyping(");
+    const actions = typing?.value;
+    const dispatched: string[] = [];
+    const onStart = (a: any) => void dispatched.push(`start:${a.channelId}`);
+    const onStop = (a: any) => void dispatched.push(`stop:${a.channelId}`);
+    api.Dispatcher.subscribe("TYPING_START_LOCAL", onStart);
+    api.Dispatcher.subscribe("TYPING_STOP_LOCAL", onStop);
+
+    const untouchedBefore = !!actions && api.getUnhooked(actions.startTyping) === actions.startTyping;
+    actions?.startTyping("100");
+    const sentBefore = dispatched.includes("start:100");
+
+    await plugins.setEnabled("silent-typing", true);
+    const state = plugins.get("silent-typing");
+    const running = !!state?.running;
+    const hooked = !!actions && api.getUnhooked(actions.startTyping) !== actions.startTyping;
+    actions?.startTyping("101");
+    actions?.stopTyping("101");
+    const blocked = !dispatched.includes("start:101");
+    const stopStillSent = dispatched.includes("stop:101");
+
+    // The "Enabled" setting lets typing through without stopping the plugin
+    state?.ctx.settings.set("enabled", false);
+    actions?.startTyping("102");
+    const sentWhenSettingOff = dispatched.includes("start:102");
+    state?.ctx.settings.set("enabled", true);
+
+    // /silenttyping toggles the setting and says so
+    const builtIns = api.findExport(toolkit.filters.builtInCommands);
+    const command = builtIns?.exports[builtIns.key]([1], true, false).find((c: any) => c.untranslatedName === "silenttyping");
+    await command?.execute([], { channel: { id: "1" } });
+    const afterCommand = state?.ctx.settings.get("enabled");
+    const commandToast = await toastText("Silent typing off");
+    await command?.execute([], { channel: { id: "1" } });
+    const afterSecondCommand = state?.ctx.settings.get("enabled");
+    const commandToastOn = await toastText("Silent typing on");
+
+    // Chat bar button: the source patch lands in ChannelTextAreaButtons once that module runs
+    const [buttonsModule] = api.findModuleIds('"ChannelTextAreaButtons"');
+    let requireError: string | null = null;
+    try {
+        if (buttonsModule) api.requireModule(buttonsModule);
+    } catch (err) {
+        requireError = String(err);
+    }
+    const diag = diagnosePatches().find((d: any) => d.plugin === "silent-typing");
+    const self = (window as any).Delight.$("silent-typing");
+    const buttons: any[] = [{ key: "emoji" }, { key: "submit" }];
+    self?.injectButton(buttons, { channel: { id: "1" } });
+    const injectedKeys = buttons.map(b => b?.key);
+
+    // The button itself, with Discord's chat bar button component
+    const root = document.createElement("div");
+    document.body.appendChild(root);
+    const reactRoot = api.createRoot(root);
+    reactRoot.render(api.React.createElement(self.SilentTypingButton));
+    await sleep(200);
+    const button = root.querySelector('[aria-label^="Silent typing"]') as HTMLElement | null;
+    const labelOn = button?.getAttribute("aria-label") ?? null;
+    const discordButton = !!button && !button.classList.contains("dl-silent-typing-fallback");
+    const wrapperClass = root.firstElementChild?.className ?? "";
+    button?.click();
+    await sleep(200);
+    const labelOff = root.querySelector('[aria-label^="Silent typing"]')?.getAttribute("aria-label") ?? null;
+    const settingAfterClick = state?.ctx.settings.get("enabled");
+    await toastText("Silent typing");
+    reactRoot.unmount();
+    root.remove();
+
+    await plugins.setEnabled("silent-typing", false);
+    const restored = !!actions && api.getUnhooked(actions.startTyping) === actions.startTyping;
+    actions?.startTyping("103");
+    const sentAfterDisable = dispatched.includes("start:103");
+    const commandRemoved = !builtIns?.exports[builtIns.key]([1], true, false).some((c: any) => c.untranslatedName === "silenttyping");
+    api.Dispatcher.unsubscribe("TYPING_START_LOCAL", onStart);
+    api.Dispatcher.unsubscribe("TYPING_STOP_LOCAL", onStop);
+
+    return {
+        typing: typing && { id: typing.id, key: typing.key }, untouchedBefore, sentBefore,
+        running, hooked, blocked, stopStillSent, sentWhenSettingOff,
+        command: !!command, afterCommand, afterSecondCommand, commandToast, commandToastOn,
+        buttonsModule, requireError, patch: diag && { health: diag.health, modules: diag.modules, errors: diag.errors.slice(0, 2) }, injectedKeys,
+        labelOn, labelOff, discordButton, wrapperClass, settingAfterClick,
+        restored, sentAfterDisable, commandRemoved,
+    };
+});
+check("silent-typing: Discord's typing actions found", !!silent.typing && silent.untouchedBefore && silent.sentBefore, silent.typing);
+check("silent-typing: startTyping hooked and blocked while enabled, stopTyping untouched", silent.running && silent.hooked && silent.blocked && silent.stopStillSent);
+check("silent-typing: the Enabled setting lets typing through when off", silent.sentWhenSettingOff);
+check("silent-typing: /silenttyping toggles it with a toast", silent.command && silent.afterCommand === false && silent.afterSecondCommand === true && !!silent.commandToast && silent.commandToastOn?.type === "success", { after: [silent.afterCommand, silent.afterSecondCommand], toasts: [silent.commandToast, silent.commandToastOn] });
+check("silent-typing: chat bar patch applied to ChannelTextAreaButtons", !silent.requireError && silent.patch?.health === "applied" && silent.patch.modules.includes(silent.buttonsModule), { patch: silent.patch, module: silent.buttonsModule, error: silent.requireError });
+check("silent-typing: button goes before the send button", JSON.stringify(silent.injectedKeys) === '["emoji","delight-silent-typing","submit"]', silent.injectedKeys);
+check("silent-typing: button renders with Discord's chat button and toggles", silent.discordButton && silent.wrapperClass.startsWith("buttonContainer_") && /on/.test(silent.labelOn ?? "") && /off/.test(silent.labelOff ?? "") && silent.settingAfterClick === false, { on: silent.labelOn, off: silent.labelOff, wrapper: silent.wrapperClass });
+check("silent-typing: disabling restores startTyping and removes the command", silent.restored && silent.sentAfterDisable && silent.commandRemoved);
+
+// ---- quick-actions ------------------------------------------------------------------------------
+
+const IMAGE_URL = "https://cdn.discordapp.com/attachments/1/2/cat.png?ex=1&is=2&hm=3";
+
+/** Renders Discord's message menu with the props the navId patch gives it, returns the item labels */
+async function renderMessageMenu(args: unknown, nativeIds: string[]) {
+    return page.evaluate(async ({ args, nativeIds }) => {
+        const { api, toolkit } = (window as any).Delight;
+        const { sleep } = (window as any).__qa;
+        const menu = api.findExport(toolkit.filters.menu);
+        const Item = toolkit.resolveMenuComponents().Item;
+        const Group = toolkit.resolveMenuComponents().Group;
+        (window as any).__qaRoot?.unmount();
+        document.getElementById("qa-root")?.remove();
+        const root = document.createElement("div");
+        root.id = "qa-root";
+        document.body.appendChild(root);
+        const reactRoot = (window as any).__qaRoot = api.createRoot(root);
+        const h = api.React.createElement;
+        // Discord's own items, in one group like the real message menu's Copy Text group
+        reactRoot.render(h(menu.exports[menu.key], { navId: "message", onClose: () => { }, "aria-label": "test", delightMenuArgs: args },
+            h(Group, null, nativeIds.map(id => h(Item, { key: id, id, label: `Native ${id}`, action: () => { } })))));
+        await sleep(300);
+        return [...root.querySelectorAll('[role="menuitem"]')].map(e => ({ id: e.id, text: e.textContent ?? "" }));
+    }, { args, nativeIds });
+}
+
+/** Clicks a rendered menu item by label, returns the clipboard and the toast it showed */
+async function clickMenuItem(label: string, toast?: string) {
+    return page.evaluate(async ({ label, toast }) => {
+        const { toastText } = (window as any).__qa;
+        const item = [...document.querySelectorAll('#qa-root [role="menuitem"], [role="menu"] [role="menuitem"]')]
+            .find(e => e.textContent === label) as HTMLElement | undefined;
+        if (!item) return { clicked: false, clipboard: null, toast: null };
+        item.click();
+        const shown = toast ? await toastText(toast) : null;
+        return { clicked: true, clipboard: await navigator.clipboard.readText().catch(e => `clipboard: ${e}`), toast: shown };
+    }, { label, toast });
+}
+
+await page.evaluate(async () => {
+    const w = window as any;
+    w.__opened = [];
+    w.__realOpen = window.open;
+    window.open = ((url: string) => void w.__opened.push(url)) as any;
+    await w.Delight.plugins.setEnabled("quick-actions", true);
+});
+
+const fullMessage = {
+    message: {
+        id: "987", channel_id: "555", content: "**hola** amigo `code`",
+        attachments: [{ url: IMAGE_URL, filename: "cat.png", content_type: "image/png" }], embeds: [],
+    },
+    channel: { id: "555", guild_id: "444" },
+};
+const qaItems = await renderMessageMenu(fullMessage, ["copy-text"]);
+const qaLabels = qaItems.map(i => i.text);
+check("quick-actions: message menu gets all items next to Copy Text",
+    ["Native copy-text", "Copy Message Link", "Copy Raw Text", "Copy Message ID", "Search Image", "Translate with Google"].every(l => qaLabels.includes(l)),
+    qaLabels);
+
+const copiedLink = await clickMenuItem("Copy Message Link", "Message link copied");
+check("quick-actions: Copy Message Link copies Discord's link format", copiedLink.clipboard === "https://discord.com/channels/444/555/987" && copiedLink.toast?.type === "success", copiedLink);
+const copiedRaw = await clickMenuItem("Copy Raw Text", "Raw text copied");
+check("quick-actions: Copy Raw Text copies the markdown source", copiedRaw.clipboard === "**hola** amigo `code`" && copiedRaw.toast?.type === "success", copiedRaw);
+const copiedId = await clickMenuItem("Copy Message ID", "Message ID copied");
+check("quick-actions: Copy Message ID copies the id", copiedId.clipboard === "987" && copiedId.toast?.type === "success", copiedId);
+
+// Search Image is a submenu: hover it to open, then pick an engine
+const searchItem = qaItems.find(i => i.text === "Search Image");
+await page.hover(`[id="${searchItem?.id}"]`).catch(() => { });
+await page.waitForTimeout(400);
+const engines = await page.evaluate(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map(e => e.textContent));
+await page.screenshot({ path: join(OUT, "quick-actions-menu.png") });
+// Menu re-rendered on every hover and click: items added to Discord's group must not pile up
+const rawCount = await page.evaluate(() => [...document.querySelectorAll('#qa-root [role="menuitem"]')].filter(e => e.textContent === "Copy Raw Text").length);
+check("quick-actions: re-renders don't duplicate items in Discord's group", rawCount === 1, rawCount);
+const lens = await clickMenuItem("Google Lens");
+await renderMessageMenu(fullMessage, ["copy-text"]);
+await clickMenuItem("Translate with Google");
+const opened: string[] = await page.evaluate(() => (window as any).__opened);
+check("quick-actions: Search Image lists Google Lens, Yandex and TinEye", ["Google Lens", "Yandex", "TinEye"].every(e => engines.includes(e)), engines);
+check("quick-actions: Google Lens opens the image in the browser", lens.clicked && opened[0] === `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(IMAGE_URL)}`, opened[0]);
+check("quick-actions: Translate opens Google Translate with the text", !!opened[1] && new URL(opened[1]).searchParams.get("text") === "**hola** amigo `code`" && new URL(opened[1]).searchParams.get("sl") === "auto", opened[1]);
+
+// Only what applies: no text means no raw text or translate, no image means no search, and
+// Discord's own Copy Message Link / developer mode Copy Message ID aren't duplicated
+const bare = (await renderMessageMenu({ message: { id: "988", channel_id: "555", content: "", attachments: [], embeds: [] }, channel: { id: "555" } }, ["copy-link", "devmode-copy-id-988"])).map(i => i.text);
+check("quick-actions: items only appear when they apply", !["Copy Raw Text", "Translate with Google", "Search Image", "Copy Message Link", "Copy Message ID"].some(l => bare.includes(l)), bare);
+const dm = await renderMessageMenu({ message: { id: "989", channel_id: "556", content: "", attachments: [], embeds: [] }, channel: { id: "556" } }, []);
+const dmLink = await clickMenuItem("Copy Message Link", "Message link copied");
+check("quick-actions: a DM message gets an @me link, in a group of its own", dm.map(i => i.text).includes("Copy Message ID") && dmLink.clipboard === "https://discord.com/channels/@me/556/989", { items: dm.map(i => i.text), link: dmLink.clipboard });
+
+const qaStopped = await page.evaluate(async () => {
+    const w = window as any;
+    await w.Delight.plugins.setEnabled("quick-actions", false);
+    window.open = w.__realOpen;
+    return true;
+});
+const afterStop = (await renderMessageMenu(fullMessage, ["copy-text"])).map(i => i.text);
+check("quick-actions: disabling removes its items", qaStopped && JSON.stringify(afterStop) === '["Native copy-text"]', afterStop);
+await page.evaluate(() => {
+    (window as any).__qaRoot?.unmount();
+    document.getElementById("qa-root")?.remove();
+});
+
 // ---- UI -----------------------------------------------------------------------------------------
 
 await page.keyboard.press("Control+Shift+D");

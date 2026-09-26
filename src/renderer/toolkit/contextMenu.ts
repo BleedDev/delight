@@ -13,6 +13,7 @@ import type { ComponentType, ReactElement, ReactNode } from "react";
 
 import { Logger } from "../logger";
 import { registerPatches, SourcePatch } from "../patching/source";
+import { React } from "../webpack/common";
 import { filters, findExport, functionSource, requireModule } from "../webpack/find";
 import { getOriginalFactory, wreq } from "../webpack/runtime";
 import { injectMenuArgs, MENU_ARGS_KEY } from "./menuArgs";
@@ -53,6 +54,18 @@ export function ensureMenuArgsPatch() {
     registerPatches("delight", [menuArgsPatch]);
 }
 
+/**
+ * Menu re-renders (focus, hover) with the same children, so callbacks must never edit Discord's
+ * arrays: an item pushed into a group would be added again on every render, until React gives up.
+ * Groups and submenus are copied down to their item arrays; leaf items are shared as they are.
+ */
+export function copyItemTree(node: ReactNode): ReactNode {
+    if (Array.isArray(node)) return node.map(copyItemTree);
+    const children = (node as ReactElement<any> | null)?.props?.children;
+    if (children == null || typeof children !== "object") return node;
+    return React.cloneElement(node as ReactElement<any>, undefined, copyItemTree(children));
+}
+
 const menuHook = new SharedHook(menuFilter, "before", ctx => {
     const props = ctx.args[0];
     if (!props || typeof props !== "object") return;
@@ -60,7 +73,8 @@ const menuHook = new SharedHook(menuFilter, "before", ctx => {
     const forAll = callbacks.get("*");
     if (!forMenu?.size && !forAll?.size) return;
 
-    const children: ReactNode[] = Array.isArray(props.children) ? [...props.children] : props.children == null ? [] : [props.children];
+    const copied = copyItemTree(props.children);
+    const children: ReactNode[] = Array.isArray(copied) ? copied : copied == null ? [] : [copied];
     const args = props[MENU_ARGS_KEY] ?? {};
     for (const cb of [...forMenu ?? [], ...forAll ?? []]) {
         try {
