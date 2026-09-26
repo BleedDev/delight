@@ -244,6 +244,34 @@ check("found a safe loaded module to live-patch", !!live.found, live.target);
 check("source patch applied live, no reload", live.after === "https://delight.invalid/live" && live.needsReload === false && !!live.sameObject, live);
 check("disabling reverts the module live", live.reverted === live.before);
 
+// ---- smooth typing ------------------------------------------------------------------------------
+
+// The draft store ignores drafts while logged out, so watch what reaches Discord's subscribers
+const drafts = await page.evaluate(async () => {
+    const { api } = (window as any).Delight;
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+    const received: string[] = [];
+    const onDraft = (a: any) => received.push(a.draft);
+    api.Dispatcher.subscribe("DRAFT_CHANGE", onDraft);
+    const change = (draft: string) => api.Dispatcher.dispatch({ type: "DRAFT_CHANGE", channelId: "424242", draftType: 0, draft });
+
+    change("a");
+    change("ab");
+    change("abc");
+    const immediately = [...received];
+    await sleep(400);
+    const afterPause = [...received];
+
+    change("abcd");
+    api.Dispatcher.dispatch({ type: "DRAFT_CLEAR", channelId: "424242", draftType: 0 });
+    await sleep(400);
+    const afterClear = [...received];
+    api.Dispatcher.unsubscribe("DRAFT_CHANGE", onDraft);
+    return { immediately, afterPause, afterClear };
+});
+check("smooth-typing batches draft updates until a pause", drafts.immediately.length === 0 && JSON.stringify(drafts.afterPause) === '["abc"]', drafts);
+check("clearing a draft cancels pending updates (no stale draft after sending)", JSON.stringify(drafts.afterClear) === '["abc"]', drafts.afterClear);
+
 // ---- native bridge ------------------------------------------------------------------------------
 
 const native = await page.evaluate(async () => {

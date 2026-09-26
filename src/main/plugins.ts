@@ -184,6 +184,31 @@ function watchRoot(root: string, source: Source) {
     start();
 }
 
+// ---- chromium switches ------------------------------------------------------------------------
+
+/**
+ * Runs before Electron is ready, the only time command line switches still apply.
+ * Reads manifests directly since the plugin host starts later.
+ */
+export function applyChromiumSwitches() {
+    const { app } = require("electron") as typeof import("electron");
+    for (const { dir } of roots) {
+        if (!existsSync(dir)) continue;
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue;
+            try {
+                const manifest: PluginManifest = JSON.parse(readFileSync(join(dir, entry.name, "manifest.json"), "utf8"));
+                if (!manifest.chromiumSwitches || !isPluginEnabled(settings, manifest)) continue;
+                for (const [name, value] of Object.entries(manifest.chromiumSwitches)) {
+                    if (value === true) app.commandLine.appendSwitch(name);
+                    else app.commandLine.appendSwitch(name, value);
+                    console.log(`[Delight] ${manifest.id}: --${name}${value === true ? "" : "=" + value}`);
+                }
+            } catch { }
+        }
+    }
+}
+
 // ---- setup ------------------------------------------------------------------------------------
 
 export function getPluginPayloads() {
