@@ -48,7 +48,7 @@ const results = await page.evaluate(async (pluginCode) => {
     }
 
     // Minimal plugin host
-    const settings: Record<string, any> = { strategy: "contain", margin: 2 };
+    const settings: Record<string, any> = { margin: 2 };
     const changeListeners: (() => void)[] = [];
     const disposers: (() => void)[] = [];
     const ctx = {
@@ -96,14 +96,12 @@ const results = await page.evaluate(async (pluginCode) => {
 
     plugin.start(ctx);
     await frame();
-    out.containRows = counts();
-    out.containKeepsLayout = renderedHeight() === heightBefore;
-
-    // Switch to skip, scroll through everything, record the worst frame
-    setSetting("strategy", "skip");
-    await frame();
     await new Promise(r => setTimeout(r, 50));
+    out.rowsMarked = counts().rows;
     out.skipFarAtTop = counts().far;
+    // Measured: containment on visible rows made frames slower, so they must stay plain
+    const visibleRow = [...document.querySelectorAll<HTMLElement>(".dl-fsl-row:not(.dl-fsl-far)")][0];
+    out.visibleRowContain = visibleRow ? getComputedStyle(visibleRow).contain : "missing";
     let worst = 0;
     for (let i = 0; i < 120; i++) {
         sc.scrollTop += 120;
@@ -129,10 +127,14 @@ const results = await page.evaluate(async (pluginCode) => {
     await frame();
     out.folderChildrenHandled = [...group.children].every(ch => ch.classList.contains("dl-fsl-row"));
 
-    // Back to contain: no stale hidden rows allowed
-    setSetting("strategy", "contain");
+    // A smaller render distance applies live and hides more
+    sc.scrollTop = 0;
     await frame();
-    out.containAfterSkip = counts();
+    setSetting("margin", 1);
+    await frame();
+    await new Promise(r => setTimeout(r, 50));
+    out.farWithMargin1 = counts().far;
+    out.hiddenVisibleAfterSettingChange = hiddenVisible();
 
     // Rebuilt sidebar: plugin re-attaches within its polling interval
     const nav = document.querySelector("nav")!;
@@ -158,13 +160,13 @@ function check(name: string, ok: boolean, detail?: unknown) {
     console.log(`${ok ? "\x1b[32m✓" : "\x1b[31m✗"} ${name}\x1b[0m${detail !== undefined ? `  \x1b[2m${JSON.stringify(detail)}\x1b[0m` : ""}`);
 }
 const r = results as any;
-check("containment marks every server and folder row", r.containRows.rows === 185 && r.containRows.far === 0, r.containRows);
-check("containment doesn't change the list's size", r.containKeepsLayout);
-check("skip hides far rows", r.skipFarAtTop > 50, r.skipFarAtTop);
+check("marks every server and folder row", r.rowsMarked === 185, r.rowsMarked);
+check("hides rows far out of view", r.skipFarAtTop > 50, r.skipFarAtTop);
+check("visible rows get no containment (measured slower)", r.visibleRowContain === "none", r.visibleRowContain);
 check("no visible row is ever hidden, scrolling or jumping", r.skipWorstHiddenVisible === 0, r.skipWorstHiddenVisible);
 check("skipping doesn't change the list's size", r.skipKeepsLayout);
 check("opened folder's servers are picked up", r.folderChildrenHandled);
-check("switching back to containment leaves nothing hidden", r.containAfterSkip.far === 0, r.containAfterSkip);
+check("smaller render distance applies live", r.farWithMargin1 > r.skipFarAtTop && r.hiddenVisibleAfterSettingChange === 0, { margin2: r.skipFarAtTop, margin1: r.farWithMargin1 });
 check("re-attaches when Discord rebuilds the sidebar", r.reattached);
 check("disabling leaves no trace", r.afterDisable.rows === 0 && r.afterDisable.far === 0 && r.styleRemoved, r.afterDisable);
 process.exit(failed ? 1 : 0);

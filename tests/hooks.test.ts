@@ -86,3 +86,13 @@ describe("hooks", () => {
         expect(exports.actions.send("hi")).toBe("new:hi");
     });
 });
+
+import { lazy } from "../src/renderer/utils/lazy";
+
+test("hooking a lazy proxy hooks the real object", () => {
+    const real = { dispatch: (x: number) => x };
+    const proxy = lazy(() => real);
+    hook(proxy, "dispatch", "after", ctx => ctx.result + 1);
+    expect(real.dispatch(1)).toBe(2);
+    expect(proxy.dispatch(1)).toBe(2);
+});

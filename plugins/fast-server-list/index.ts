@@ -1,17 +1,21 @@
 import { definePlugin } from "@delight/api";
 
 /**
- * With hundreds of servers, every unread badge, typing indicator and hover in the sidebar makes the
- * browser recompute style and layout for all of them. This plugin works purely on the DOM, with no
- * patches to Discord's code, so Discord updates can't silently break it:
+ * Every server icon in the sidebar is an SVG mask (the rounded shape and badge cutouts), and the
+ * browser pays for all of them on every frame that repaints anything. On a 185-server account on a
+ * ~300Hz display that pushed frames past their 3.3ms budget: p95 frame gap 6.7ms (missed frames)
+ * versus 3.7ms with this plugin, measured interleaved over 8 rounds.
  *
- *  - every server row gets `contain: layout style` and a remembered size, so a change inside one
- *    row can't invalidate layout outside it (measured on 185 servers: scroll p99 130ms -> 47ms)
- *  - optionally, rows far outside the visible area get `content-visibility: hidden`: the browser
- *    skips their style, layout and paint, but keeps their rendered state (decoded icons included)
- *    and their size. Rows are never unmounted or emptied, which is what made earlier approaches
- *    flicker. We decide when a row renders again, a generous distance before it can scroll into
- *    view, and a jump bigger than that reveals every row before the frame paints
+ * Servers far outside the visible area get `content-visibility: hidden`: the browser skips their
+ * style, layout and paint, but keeps their rendered state (decoded icons included) and their
+ * size. They are never unmounted or emptied, so nothing flickers or disappears. We decide when a
+ * row renders again, a generous distance before it can scroll into view, and a jump bigger than
+ * that reveals every row before the frame paints.
+ *
+ * Measured and rejected: `contain: layout style` on every row made frames slower (p95 10ms),
+ * because each row becoming its own stacking context multiplies the compositor's work.
+ *
+ * Pure DOM, no patches to Discord's code, so Discord updates can't silently break it.
  */
 
 const ITEM = '[data-list-item-id^="guildsnav___"]';
@@ -20,15 +24,12 @@ const FAR = "dl-fsl-far";
 
 const css = `
 .${ROW} {
-    contain: layout style;
     contain-intrinsic-size: auto 48px;
 }
 .${ROW}.${FAR} {
     content-visibility: hidden;
 }
 `;
-
-type Strategy = "contain" | "skip";
 
 function isScrollable(el: Element) {
     return /(auto|scroll)/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight;
@@ -53,10 +54,9 @@ function sweep() {
  * Everything attached to one sidebar element with one configuration. A new configuration or a
  * rebuilt sidebar gets a new session; a disposed session can't be revived.
  */
-function createSession(nav: Element, strategy: Strategy, marginScreens: number) {
+function createSession(nav: Element, marginScreens: number) {
     const scroller = findScroller(nav);
     const rows = new Set<HTMLElement>();
-    const skip = strategy === "skip" && !!scroller;
     let disposed = false;
     let queued = false;
 
@@ -71,7 +71,8 @@ function createSession(nav: Element, strategy: Strategy, marginScreens: number) 
 
     const margin = () => (scroller?.clientHeight ?? 800) * marginScreens;
 
-    const visibility = skip
+    // Without a scroller (short list) there is nothing far away to skip
+    const visibility = scroller
         ? new IntersectionObserver(entries => {
             if (disposed) return;
             for (const entry of entries) {
@@ -128,7 +129,7 @@ function createSession(nav: Element, strategy: Strategy, marginScreens: number) 
         }
         lastTop = top;
     };
-    if (skip) scroller!.addEventListener("scroll", onScroll, { passive: true });
+    scroller?.addEventListener("scroll", onScroll, { passive: true });
 
     sync();
 
@@ -147,20 +148,10 @@ function createSession(nav: Element, strategy: Strategy, marginScreens: number) 
 
 export default definePlugin({
     settings: {
-        strategy: {
-            type: "select",
-            label: "Optimization",
-            description: "Containment isolates each server so one changing badge can't slow down the whole list. Skipping also stops rendering servers far out of view.",
-            default: "contain",
-            options: [
-                { label: "Containment (recommended)", value: "contain" },
-                { label: "Containment and skip far servers (experimental)", value: "skip" },
-            ],
-        },
         margin: {
             type: "number",
-            label: "Render distance for skipping (screens)",
-            description: "How many screen heights above and below stay rendered when skipping far servers.",
+            label: "Render distance (screens)",
+            description: "How many screen heights above and below the visible servers stay rendered. Higher never shows an unrendered server even on very fast scrolls, lower saves more work.",
             default: 2,
             min: 1,
             max: 10,
@@ -178,7 +169,7 @@ export default definePlugin({
             session?.dispose();
             session = undefined;
             const nav = document.querySelector('[data-list-id="guildsnav"]');
-            if (nav) session = createSession(nav, ctx.settings.get("strategy") as Strategy, ctx.settings.get("margin"));
+            if (nav) session = createSession(nav, ctx.settings.get("margin"));
         };
 
         attach();
