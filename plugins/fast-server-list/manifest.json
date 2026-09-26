@@ -1,8 +1,0 @@
-{
-    "id": "fast-server-list",
-    "name": "Fast Server List",
-    "description": "Keeps Discord smooth with hundreds of servers. Servers far out of view skip rendering work, without ever being removed, so nothing flickers or disappears.",
-    "version": "1.0.0",
-    "authors": ["Delight"],
-    "enabledByDefault": true
-}

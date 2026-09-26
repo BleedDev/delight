@@ -3,14 +3,14 @@
  * checks the guarantees that matter: no visible server is ever hidden, no stale state survives a
  * strategy switch or disabling, and rows added later (opened folders) are handled.
  *
- *   node scripts/test-fast-server-list.ts
+ *   node scripts/test-fast-lists.ts
  */
 import { existsSync, readFileSync } from "fs";
 import { join, resolve } from "path";
 import { chromium } from "playwright-core";
 
 const ROOT = resolve(import.meta.dirname, "..");
-const code = readFileSync(join(ROOT, "dist", "plugins", "fast-server-list", "index.js"), "utf8");
+const code = readFileSync(join(ROOT, "dist", "plugins", "fast-lists", "index.js"), "utf8");
 
 const browser = await chromium.launch({
     executablePath: ["C:/Program Files/Google/Chrome/Application/chrome.exe"].find(existsSync),
@@ -25,7 +25,8 @@ await page.setContent(`<!doctype html><style>
     .pill { position: absolute; left: 0; width: 4px; height: 8px; background: white; }
     img { width: 48px; height: 48px; display: block; }
 </style>
-<nav><ul data-list-id="guildsnav" class="scroller"><div class="list"></div></ul></nav>`);
+<nav><ul data-list-id="guildsnav" class="scroller"><div class="list"></div></ul></nav>
+<main><div class="chatScroller" style="height:500px;overflow-y:auto;width:300px"><ol data-list-id="chat-messages" class="chatList"></ol></div></main>`);
 
 const results = await page.evaluate(async (pluginCode) => {
     const list = document.querySelector(".list")!;
@@ -48,7 +49,7 @@ const results = await page.evaluate(async (pluginCode) => {
     }
 
     // Minimal plugin host
-    const settings: Record<string, any> = { margin: 2 };
+    const settings: Record<string, any> = { servers: true, chat: true, members: true, margin: 2 };
     const changeListeners: (() => void)[] = [];
     const disposers: (() => void)[] = [];
     const ctx = {
@@ -81,10 +82,10 @@ const results = await page.evaluate(async (pluginCode) => {
     const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     const sc = document.querySelector<HTMLElement>(".scroller")!;
-    const counts = () => ({ rows: document.querySelectorAll(".dl-fsl-row").length, far: document.querySelectorAll(".dl-fsl-far").length });
+    const counts = () => ({ rows: document.querySelectorAll(".dl-fl-row").length, far: document.querySelectorAll(".dl-fl-far").length });
     const hiddenVisible = () => {
         const view = sc.getBoundingClientRect();
-        return [...sc.querySelectorAll(".dl-fsl-far")].filter(r => {
+        return [...sc.querySelectorAll(".dl-fl-far")].filter(r => {
             const b = r.getBoundingClientRect();
             return b.bottom > view.top && b.top < view.bottom;
         }).length;
@@ -100,7 +101,7 @@ const results = await page.evaluate(async (pluginCode) => {
     out.rowsMarked = counts().rows;
     out.skipFarAtTop = counts().far;
     // Measured: containment on visible rows made frames slower, so they must stay plain
-    const visibleRow = [...document.querySelectorAll<HTMLElement>(".dl-fsl-row:not(.dl-fsl-far)")][0];
+    const visibleRow = [...document.querySelectorAll<HTMLElement>(".dl-fl-row:not(.dl-fl-far)")][0];
     out.visibleRowContain = visibleRow ? getComputedStyle(visibleRow).contain : "missing";
     let worst = 0;
     for (let i = 0; i < 120; i++) {
@@ -125,7 +126,7 @@ const results = await page.evaluate(async (pluginCode) => {
     folders[0].append(group);
     await frame();
     await frame();
-    out.folderChildrenHandled = [...group.children].every(ch => ch.classList.contains("dl-fsl-row"));
+    out.folderChildrenHandled = [...group.children].every(ch => ch.classList.contains("dl-fl-row"));
 
     // A smaller render distance applies live and hides more
     sc.scrollTop = 0;
@@ -136,19 +137,64 @@ const results = await page.evaluate(async (pluginCode) => {
     out.farWithMargin1 = counts().far;
     out.hiddenVisibleAfterSettingChange = hiddenVisible();
 
+    // Chat: a message far above changes size while skipped, then scrolls back into range.
+    // The message you are reading must not move.
+    const chat = document.querySelector<HTMLElement>(".chatList")!;
+    const chatScroller = document.querySelector<HTMLElement>(".chatScroller")!;
+    for (let i = 0; i < 200; i++) {
+        const li = document.createElement("li");
+        li.setAttribute("data-list-item-id", `chat-messages___m${i}`);
+        li.style.height = `${40 + (i * 37) % 120}px`;
+        li.textContent = `message ${i}`;
+        chat.append(li);
+    }
+    await new Promise(r => setTimeout(r, 1200));
+    chatScroller.scrollTop = chatScroller.scrollHeight;
+    await frame();
+    await new Promise(r => setTimeout(r, 100));
+    out.chatFar = chat.querySelectorAll(".dl-fl-far").length;
+    out.chatDebug = { rows: chat.querySelectorAll(".dl-fl-row").length, sh: chatScroller.scrollHeight, ch: chatScroller.clientHeight, top: chatScroller.scrollTop };
+    const target = chat.children[20] as HTMLElement;
+    out.targetSkipped = target.classList.contains("dl-fl-far");
+    target.style.height = "400px"; // edited while skipped
+    // Scroll up in wheel-sized steps until the edited message gets revealed, watching the reading position
+    let worstJump = 0;
+    for (let i = 0; i < 200 && target.classList.contains("dl-fl-far"); i++) {
+        const reading = [...chat.children].find(el => el.getBoundingClientRect().top >= chatScroller.getBoundingClientRect().top) as HTMLElement;
+        const before = reading.getBoundingClientRect().top;
+        chatScroller.scrollTop -= 100;
+        const expected = before + 100;
+        await frame();
+        worstJump = Math.max(worstJump, Math.abs(reading.getBoundingClientRect().top - expected));
+    }
+    out.chatRevealed = !target.classList.contains("dl-fl-far");
+
+    // Cost of a resync on a 200-message chat (Discord adds/removes rows all the time)
+    const t0 = performance.now();
+    for (let i = 0; i < 20; i++) {
+        const li = document.createElement("li");
+        li.setAttribute("data-list-item-id", `chat-messages___extra${i}`);
+        li.style.height = "40px";
+        chat.append(li);
+        await new Promise(r => requestAnimationFrame(r));
+    }
+    out.resyncMsPerFrame = +((performance.now() - t0) / 20).toFixed(2);
+    out.newMessagesMarked = [...chat.children].slice(-20).every(el => el.classList.contains("dl-fl-row"));
+    out.chatWorstJump = +worstJump.toFixed(1);
+
     // Rebuilt sidebar: plugin re-attaches within its polling interval
     const nav = document.querySelector("nav")!;
     const clone = nav.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll(".dl-fsl-row, .dl-fsl-far").forEach(e => e.classList.remove("dl-fsl-row", "dl-fsl-far"));
+    clone.querySelectorAll(".dl-fl-row, .dl-fl-far").forEach(e => e.classList.remove("dl-fl-row", "dl-fl-far"));
     nav.replaceWith(clone);
     await new Promise(r => setTimeout(r, 2300));
-    out.reattached = document.querySelectorAll(".dl-fsl-row").length > 150;
+    out.reattached = document.querySelectorAll(".dl-fl-row").length > 150;
 
     // Disable: nothing may be left
     disposers.splice(0).reverse().forEach(fn => fn());
     await frame();
     out.afterDisable = counts();
-    out.styleRemoved = ![...document.querySelectorAll("style")].some(s => s.textContent?.includes("dl-fsl"));
+    out.styleRemoved = ![...document.querySelectorAll("style")].some(s => s.textContent?.includes("dl-fl"));
     return out;
 }, code);
 
@@ -167,6 +213,10 @@ check("no visible row is ever hidden, scrolling or jumping", r.skipWorstHiddenVi
 check("skipping doesn't change the list's size", r.skipKeepsLayout);
 check("opened folder's servers are picked up", r.folderChildrenHandled);
 check("smaller render distance applies live", r.farWithMargin1 > r.skipFarAtTop && r.hiddenVisibleAfterSettingChange === 0, { margin2: r.skipFarAtTop, margin1: r.farWithMargin1 });
+check("chat: far messages are skipped", r.chatFar > 50 && r.targetSkipped, { far: r.chatFar, ...r.chatDebug });
+check("chat: a message resized while skipped doesn't make the chat jump", r.chatRevealed && r.chatWorstJump <= 1, { revealed: r.chatRevealed, worstJumpPx: r.chatWorstJump });
+check("chat: new messages are picked up", r.newMessagesMarked);
+check("resync stays cheap (frame time with a new message every frame)", r.resyncMsPerFrame < 20, { msPerFrame: r.resyncMsPerFrame });
 check("re-attaches when Discord rebuilds the sidebar", r.reattached);
 check("disabling leaves no trace", r.afterDisable.rows === 0 && r.afterDisable.far === 0 && r.styleRemoved, r.afterDisable);
 process.exit(failed ? 1 : 0);
