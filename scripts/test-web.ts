@@ -106,6 +106,21 @@ page.on("console", msg => {
 });
 page.on("pageerror", err => delightErrors.push(`pageerror: ${err.message}`));
 
+// The login page calls WebAuthn, which pops a Windows Hello / passkey dialog on the desktop
+await page.addInitScript(() => {
+    const refuse = () => Promise.reject(new DOMException("Disabled in tests", "NotAllowedError"));
+    try {
+        if (navigator.credentials) {
+            Object.defineProperty(navigator.credentials, "get", { value: refuse, configurable: true });
+            Object.defineProperty(navigator.credentials, "create", { value: refuse, configurable: true });
+        }
+        const p = (window as any).PublicKeyCredential;
+        if (p) {
+            p.isConditionalMediationAvailable = () => Promise.resolve(false);
+            p.isUserVerifyingPlatformAuthenticatorAvailable = () => Promise.resolve(false);
+        }
+    } catch { }
+});
 await page.addInitScript(fakeNative, boot);
 await page.addInitScript(renderer);
 await page.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });
@@ -447,6 +462,210 @@ check("menu item gets the message from menu props and copies its id", toolkit.co
 check("stopping the plugin removes its command and the command hook", !toolkit.listAfter.includes("delight") && toolkit.commandsRestored);
 check("the shared Menu hook stays while another plugin still uses menus", !toolkit.menuRestored);
 await page.screenshot({ path: join(OUT, "toolkit-toast.png") });
+
+// ---- message logger -----------------------------------------------------------------------------
+
+// Logged out, MessageStore still works for a channel we "load" ourselves: dispatch Discord's own
+// actions for a fake channel and check what the plugin and the store make of them
+const logger = await page.evaluate(async () => {
+    const { api, plugins, wreq, diagnosePatches } = (window as any).Delight;
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+    const { Dispatcher } = api;
+    const store = api.getStore("MessageStore");
+    const handlersOf = () => Dispatcher._actionHandlers._dependencyGraph.getNodeData(store.getDispatchToken()).actionHandler;
+    const handlers = handlersOf();
+    const originals = { del: handlers.MESSAGE_DELETE, bulk: handlers.MESSAGE_DELETE_BULK, update: handlers.MESSAGE_UPDATE };
+
+    // The accessories renderer and Discord's content renderer live in lazy chunks: load chunks until
+    // both are registered, then run them the way opening a chat would: Discord's lazy "Channel"
+    // route component declares the chunks it needs next to its name
+    const wanted = [["channelMessageProps:{message:", "isAutomodBlockedMessage:"], ['"useMessageRenderedContent"', "hideSimpleEmbedContent"]];
+    const route = /createPromise:\(\)=>Promise\.all\(\[((?:\w\.e\("\d+"\),?)+)\]\)\.then\(\w\.bind\(\w,(\d+)\)\),webpackId:\d+,name:"Channel"[,}]/;
+    let chunkIds: string[] = [];
+    let channelModule: string | undefined;
+    for (const id of api.findModuleIds('name:"Channel"')) {
+        const m = api.functionSource(wreq.m[id]).match(route);
+        if (m) {
+            chunkIds = [...m[1].matchAll(/"(\d+)"/g)].map((x: RegExpMatchArray) => x[1]);
+            channelModule = m[2];
+            break;
+        }
+    }
+    const loadStart = performance.now();
+    let chunksLoaded = 0;
+    await Promise.all(chunkIds.map(id => wreq.e(id).then(() => chunksLoaded++, () => { })));
+    const loadMs = Math.round(performance.now() - loadStart);
+    const moduleIds = wanted.map(code => api.findModuleIds(...code)[0]);
+    const requireErrors: string[] = [];
+    for (const id of moduleIds) {
+        try {
+            if (id) api.requireModule(id);
+        } catch (err) {
+            requireErrors.push(String(err).slice(0, 200));
+        }
+    }
+    const accessories = moduleIds[0] && api.findExport(api.filters.byCode(...wanted[0]));
+
+    await plugins.setEnabled("message-logger", true);
+    const state = plugins.get("message-logger");
+    const log = state.definition.getLog();
+    const running = !!state.running && !!log;
+    const hooked = {
+        del: api.getUnhooked(handlers.MESSAGE_DELETE) !== handlers.MESSAGE_DELETE,
+        bulk: api.getUnhooked(handlers.MESSAGE_DELETE_BULK) !== handlers.MESSAGE_DELETE_BULK,
+        update: api.getUnhooked(handlers.MESSAGE_UPDATE) !== handlers.MESSAGE_UPDATE,
+        accessories: !!accessories && api.getUnhooked(accessories.exports[accessories.key]) !== accessories.exports[accessories.key],
+    };
+
+    const channelId = "777000000000000001";
+    const raw = (id: string, content: string) => ({
+        id, channel_id: channelId, author: { id: "555", username: "someone", discriminator: "0", avatar: null }, content,
+        timestamp: new Date(Date.UTC(2026, 0, 1, 12, Number(id.slice(-2)))).toISOString(),
+        edited_timestamp: null, type: 0, flags: 0, attachments: [], embeds: [], mentions: [], mention_roles: [], pinned: false, tts: false,
+    });
+    const ids = Array.from({ length: 15 }, (_, i) => `88800000000000${i + 10}`);
+    await Dispatcher.dispatch({
+        type: "LOAD_MESSAGES_SUCCESS", channelId, messages: ids.map(id => raw(id, `message ${id}`)).reverse(),
+        isBefore: false, isAfter: false, hasMoreBefore: false, hasMoreAfter: false, isStale: false,
+    });
+    const loaded = ids.filter(id => store.getMessage(channelId, id)).length;
+    const [a, b, c, d] = ids;
+    const e = ids[14];
+
+    // Other stores must still see deletes: only MessageStore keeps the message
+    const seenBySubscribers: string[] = [];
+    const onDelete = (x: any) => seenBySubscribers.push(x.id);
+    Dispatcher.subscribe("MESSAGE_DELETE", onDelete);
+
+    // Edit twice, then delete the same message
+    await Dispatcher.dispatch({ type: "MESSAGE_UPDATE", message: { id: a, channel_id: channelId, content: "edited **once**", edited_timestamp: new Date().toISOString() } });
+    await Dispatcher.dispatch({ type: "MESSAGE_UPDATE", message: { id: a, channel_id: channelId, content: "edited twice", edited_timestamp: new Date().toISOString() } });
+    // An embed-only update is not an edit
+    await Dispatcher.dispatch({ type: "MESSAGE_UPDATE", message: { id: a, channel_id: channelId, embeds: [] } });
+    const edits = log.get(channelId, a)?.edits.map((x: any) => x.content);
+    const storeContent = store.getMessage(channelId, a)?.content;
+
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: a, channelId });
+    const keptA = { inStore: !!store.getMessage(channelId, a), deleted: log.isDeleted(channelId, a) };
+
+    // Local deletes (ephemeral dismissals, failed sends) always go through
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: b, channelId, local: true });
+    const localB = !!store.getMessage(channelId, b);
+
+    // Bulk: the known one is kept, an unknown id passes through untouched
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE_BULK", ids: [c, "1"], channelId });
+    const keptC = !!store.getMessage(channelId, c) && log.isDeleted(channelId, c);
+
+    // A delete you start yourself vanishes as usual ("Ignore my own deletes" is on by default).
+    // The test's instead-hook keeps the request off the network; the plugin's before-hook still runs.
+    let actions = api.findByProps("deleteMessage", "editMessage", "sendMessage");
+    if (!actions) {
+        for (const id of api.findModuleIds("sendMessage(", "editMessage(")) api.requireModule(id);
+        actions = api.findByProps("deleteMessage", "editMessage", "sendMessage");
+    }
+    const unhookDelete = actions && api.hook(actions, "deleteMessage", "instead", () => Promise.resolve(), "test");
+    await actions?.deleteMessage(channelId, d);
+    unhookDelete?.();
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: d, channelId });
+    const selfD = { inStore: !!store.getMessage(channelId, d), logged: !!log.get(channelId, d) };
+    Dispatcher.unsubscribe("MESSAGE_DELETE", onDelete);
+
+    // Render what the accessories hook adds, inside a chat row like Discord's
+    const host = document.createElement("ul");
+    host.innerHTML = `<li data-list-item-id="chat-messages___chat-messages-${channelId}-${a}" id="chat-messages-${channelId}-${a}"></li>`;
+    document.body.appendChild(host);
+    const root = api.createRoot(host.firstElementChild);
+    const render: Record<string, any> = { error: null };
+    try {
+        const hookedFn = accessories?.exports[accessories.key];
+        const message = store.getMessage(channelId, a);
+        const result = hookedFn?.({ channelMessageProps: { message, channel: { id: channelId } }, hasSpoilerEmbeds: false, hasBailedAst: false, isInteracting: false });
+        const snapshot = hookedFn?.({ channelMessageProps: { message, channel: { id: channelId } }, isMessageSnapshot: true });
+        const ours = result?.props?.children?.[1];
+        render.appended = !!ours && result.props.children.length === 2;
+        render.snapshotUntouched = !Array.isArray(snapshot?.props?.children);
+        if (ours) root.render(ours);
+        await sleep(300);
+        const li = host.firstElementChild as HTMLElement;
+        const tag = li.querySelector(".dl-ml-deleted");
+        render.text = li.textContent;
+        render.bold = li.querySelector(".dl-ml-version strong")?.textContent ?? null;
+        render.markup = li.querySelector(".dl-ml-content")?.className ?? null;
+        render.tagColor = tag && getComputedStyle(tag).color;
+        render.rowBackground = getComputedStyle(li).backgroundColor;
+        render.rowShadow = getComputedStyle(li).boxShadow;
+    } catch (err) {
+        render.error = String(err);
+    }
+
+    // Caps: 10 per channel. Deleting 10 more evicts the oldest deleted ones, which then really go
+    state.ctx.settings.set("limit", 10);
+    await sleep(50);
+    const rest = ids.slice(4, 14);
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE_BULK", ids: rest, channelId });
+    await sleep(50);
+    const caps = {
+        logged: log.counts(),
+        evictedGoneFromStore: [a, c].map(id => !store.getMessage(channelId, id)),
+        newestKept: rest.every(id => !!store.getMessage(channelId, id) && log.isDeleted(channelId, id)),
+    };
+    state.ctx.settings.set("limit", 50);
+    // One more edit so disabling has history to hide too
+    await Dispatcher.dispatch({ type: "MESSAGE_UPDATE", message: { id: rest[0], channel_id: channelId, content: "changed" } });
+    // The first message was evicted by the cap: show a surviving one in the row instead
+    const surviving = accessories?.exports[accessories.key]({ channelMessageProps: { message: store.getMessage(channelId, rest[0]), channel: { id: channelId } } });
+    if (surviving) root.render(surviving.props.children[1]);
+    await sleep(100);
+    const beforeStop = {
+        counts: log.counts(),
+        rendered: !!host.querySelector(".dl-ml-deleted") && !!host.querySelector(".dl-ml-history"),
+        rowBackground: getComputedStyle(host.firstElementChild!).backgroundColor,
+    };
+
+    await plugins.setEnabled("message-logger", false);
+    await sleep(100);
+    const handlersNow = handlersOf();
+    const stopped = {
+        keptGone: rest.every(id => !store.getMessage(channelId, id)),
+        unhooked: handlersNow.MESSAGE_DELETE === originals.del && handlersNow.MESSAGE_DELETE_BULK === originals.bulk && handlersNow.MESSAGE_UPDATE === originals.update,
+        purgeHandlerRemoved: !Object.keys(handlersNow).some(k => k.startsWith("DELIGHT_")),
+        accessoriesRestored: !!accessories && api.getUnhooked(accessories.exports[accessories.key]) === accessories.exports[accessories.key],
+        logCleared: log.counts(),
+        renderedGone: !host.querySelector(".dl-ml"),
+        rowBackground: getComputedStyle(host.firstElementChild!).backgroundColor,
+        style: !!document.getElementById("delight-plugin-message-logger"),
+    };
+    // With the plugin off, a delete removes the message like stock Discord
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: e, channelId });
+    const stockDelete = !store.getMessage(channelId, e);
+    root.unmount();
+    host.remove();
+
+    return {
+        chunks: { total: chunkIds.length, loaded: chunksLoaded, loadMs, channelModule, moduleIds, requireErrors },
+        running, hooked, loaded, first: a, edits, storeContent, keptA, localB, keptC, seenBySubscribers, selfD, render, caps, beforeStop, stopped, stockDelete,
+        patches: diagnosePatches().filter((p: any) => p.plugin === "message-logger").length,
+    };
+});
+check("message-logger: loaded the lazy accessories and content renderers", logger.chunks.moduleIds.every(Boolean) && !logger.chunks.requireErrors.length, logger.chunks);
+check("message-logger: hooks MessageStore's delete/update handlers and the accessories renderer", logger.running && Object.values(logger.hooked).every(Boolean), logger.hooked);
+check("message-logger: no source patches to break", logger.patches === 0);
+check("MessageStore accepts a synthetic channel logged out", logger.loaded === 15, logger.loaded);
+check("edits record previous versions, embed-only updates don't", JSON.stringify(logger.edits) === JSON.stringify([`message ${logger.first}`, "edited **once**"]) && logger.storeContent === "edited twice", { edits: logger.edits, store: logger.storeContent });
+check("a deleted message stays in MessageStore, marked deleted", logger.keptA.inStore && logger.keptA.deleted, logger.keptA);
+check("other stores and subscribers still get MESSAGE_DELETE", logger.seenBySubscribers.includes(logger.first), logger.seenBySubscribers);
+check("local deletes pass through", !logger.localB);
+check("bulk deletes are kept per message", logger.keptC);
+check("a delete you started yourself isn't kept (Ignore my own deletes)", !logger.selfD.inStore && !logger.selfD.logged, logger.selfD);
+check("accessories hook appends the log view, leaves forwarded snapshots alone", !!logger.render.appended && !!logger.render.snapshotUntouched && !logger.render.error, logger.render.error ?? undefined);
+check("deleted message renders its tag, row tint and edit history", /Edited from/.test(logger.render.text ?? "") && /Deleted/.test(logger.render.text ?? "")
+    && logger.render.rowBackground !== "rgba(0, 0, 0, 0)" && logger.render.rowShadow !== "none", logger.render);
+check("old versions go through Discord's markdown renderer and markup class", logger.render.bold === "once" && /markup_/.test(logger.render.markup ?? ""), { bold: logger.render.bold, markup: logger.render.markup });
+check("per-channel cap evicts the oldest, evicted deleted messages really go", logger.caps.logged.deleted === 10 && logger.caps.evictedGoneFromStore.every(Boolean) && logger.caps.newestKept, logger.caps);
+check("disabling deletes kept messages for real and restores MessageStore's handlers", logger.stopped.keptGone && logger.stopped.unhooked && logger.stopped.purgeHandlerRemoved && logger.stopped.accessoriesRestored, logger.stopped);
+check("disabling clears the log, unmounts tags and history, removes the tint", logger.beforeStop.rendered && logger.beforeStop.rowBackground !== "rgba(0, 0, 0, 0)" && logger.stopped.renderedGone && logger.stopped.logCleared.deleted + logger.stopped.logCleared.edited === 0
+    && logger.stopped.rowBackground === "rgba(0, 0, 0, 0)" && !logger.stopped.style, { before: logger.beforeStop, after: logger.stopped });
+check("with the plugin off, deletes behave like stock Discord", logger.stockDelete);
 
 // ---- UI -----------------------------------------------------------------------------------------
 
