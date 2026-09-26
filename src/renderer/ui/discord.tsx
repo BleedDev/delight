@@ -98,7 +98,9 @@ export interface ButtonProps {
 
 export const DiscordUI = {
     Switch: native<SwitchProps>("Switch", () => filters.componentByCode("SWITCH_BACKGROUND_SELECTED_DEFAULT", "labelledBy")),
-    TextField: native<TextFieldProps>("TextField", () => filters.componentByCode("helperText", "onCommit", "multiline")),
+    // Discord's standard settings input. Not the component with "preview"/"onCommit": that one is an
+    // inline-edit field that only turns into an input on hover.
+    TextField: native<TextFieldProps>("TextField", () => filters.componentByCode("validateOn", "showCharacterCount", "clearable")),
     TextArea: native<TextAreaProps>("TextArea", () => filters.componentByCode("showCharacterCount", "autosize", "rows")),
     Select: native<SelectProps<any>>("Select", () => filters.componentByCode("renderOptionLabel", "isSelected", "serialize")),
     Slider: native<SliderProps>("Slider", () => filters.componentByCode("stickToMarkers", "grabberRef")),

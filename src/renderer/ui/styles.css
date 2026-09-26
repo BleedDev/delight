@@ -704,3 +704,9 @@
 .dl-store-confirm-title svg { color: var(--dl-status-warning); flex-shrink: 0; }
 
 /* ---- end store --------------------------------------------------------------------------- */
+
+/* Discord's own inputs draw their focus border themselves: don't stack our outline on top.
+   Our fallback inputs (.dl-input / .dl-textarea) keep the outline above. */
+.dl-root :where(input, textarea):not(.dl-input, .dl-textarea):focus-visible {
+    outline: none;
+}
