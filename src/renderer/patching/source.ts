@@ -23,7 +23,10 @@ export interface SourcePatch {
     all?: boolean;
     /** If one replacement fails, apply none of them */
     group?: boolean;
-    /** Don't report this patch as broken when nothing matches */
+    /**
+     * Don't report this patch as broken when nothing matches. With `all`, a module whose
+     * replacements change nothing is also skipped quietly instead of counting as a failure.
+     */
     optional?: boolean;
     /** Skip the patch when this returns false. Evaluated when a matching module loads. */
     predicate?: () => boolean;
@@ -137,8 +140,6 @@ export function applySourcePatches(
             continue;
         }
 
-        if (!appliedHere) record.modules.push(moduleId);
-
         const replacements = Array.isArray(patch.replace) ? patch.replace : [patch.replace];
         const errors: string[] = [];
         let next = code;
@@ -156,6 +157,10 @@ export function applySourcePatches(
                 errors.push(`module ${moduleId}, replacement ${i} matched nothing: ${String(r.match)}`);
             }
         });
+
+        // A broad optional patch with nothing to do in this module: neither applied nor failed here
+        if (patch.all && patch.optional && next === code && !appliedHere) continue;
+        if (!appliedHere) record.modules.push(moduleId);
 
         if (patch.group && failed) next = code;
 

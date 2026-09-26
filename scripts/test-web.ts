@@ -280,6 +280,146 @@ const native = await page.evaluate(async () => {
 });
 check("ctx.native.call reaches the bridge", native.result === 42 && native.calls[0]?.[0] === "no-track", native);
 
+// ---- toolkit: toasts, context menus, slash commands ---------------------------------------------
+
+await page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: "https://discord.com" });
+
+const toolkit = await page.evaluate(async () => {
+    const { api, plugins, toolkit, diagnosePatches } = (window as any).Delight;
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+    // Modules the login page may not have run yet: run them the way Discord would
+    const load = (filter: any, ...code: string[]) => {
+        let found = api.findExport(filter);
+        if (!found) {
+            for (const id of api.findModuleIds(...code)) api.requireModule(id);
+            found = api.findExport(filter);
+        }
+        return found;
+    };
+    // Discord shows one toast at a time and queues the rest: dismiss each once seen
+    const popToast = api.find(api.filters.byCode("queuedToastsMap.get("));
+    const toastText = async (text: string) => {
+        for (let i = 0; i < 30; i++) {
+            const el = [...document.querySelectorAll('[role="status"]')].find(e => e.textContent?.includes(text));
+            if (el) {
+                popToast?.();
+                return { text: el.textContent, type: el.getAttribute("data-type") };
+            }
+            await sleep(100);
+        }
+        return null;
+    };
+
+    // Toasts
+    const toastModule = load(toolkit.filters.showToast, ".currentToastMap.has(");
+    const shown = api.showToast("Delight toast test", { type: "success" });
+    const toast = await toastText("Delight toast test");
+
+    // Context menus: Discord's Menu, its item components, and the core navId patch
+    const menu = load(toolkit.filters.menu, "Menu API only allows Items");
+    const components = toolkit.resolveMenuComponents() ?? {};
+    const componentKinds = Object.entries(components).filter(([, v]) => typeof v === "function").map(([k]) => k);
+    // A menu module from the main bundle: loading it runs it through the navId patch
+    const [menuUserId] = api.findModuleIds('navId:"clean-up-inactive-gdms"');
+    if (menuUserId) api.requireModule(menuUserId);
+    const navPatch = diagnosePatches().find((d: any) => d.plugin === "delight");
+    // The same rewrite over every registered factory with a navId, loaded or not: it must always compile
+    const rewrite = { modules: 0, injected: 0, compileErrors: [] as string[], sample: "", menuDestructuringKept: false };
+    for (const id in (window as any).Delight.wreq.m) {
+        const src = api.functionSource(api.getWreq().m[id]);
+        if (!src.includes("navId:")) continue;
+        rewrite.modules++;
+        const code = src.replace(/^(?:[\w$]+|"(?:[^"\\]|\\.)*")(?=\s*\()/, "function");
+        const next = toolkit.rewriteMenuArgs(code);
+        if (next === code) continue;
+        rewrite.injected += next.split("delightMenuArgs:arguments[0],navId:").length - 1;
+        try {
+            (0, eval)(`0,${next}`);
+        } catch (err) {
+            rewrite.compileErrors.push(`${id}: ${err}`);
+        }
+        if (id === menuUserId) rewrite.sample = next.match(/.{30}delightMenuArgs.{50}/)?.[0] ?? "";
+        if (id === menu?.id) rewrite.menuDestructuringKept = next.includes("let{navId:t,variant:");
+    }
+
+    // Slash commands: Discord's built-in command list
+    const builtIns = load(toolkit.filters.builtInCommands, '"tableflip"', '"unflip"');
+    const listBefore = builtIns?.value([1], true, false).map((c: any) => c.untranslatedName) ?? [];
+
+    await plugins.setEnabled("toolkit-demo", true);
+    const running = !!plugins.get("toolkit-demo")?.running;
+    const menuHooked = !!menu && api.getUnhooked(menu.exports[menu.key]) !== menu.exports[menu.key];
+    const commandsHooked = !!builtIns && api.getUnhooked(builtIns.exports[builtIns.key]) !== builtIns.exports[builtIns.key];
+
+    const list = builtIns?.exports[builtIns.key]([1], true, false) ?? [];
+    const command = list.find((c: any) => c.untranslatedName === "delight");
+    const shrug = list.find((c: any) => c.untranslatedName === "shrug");
+    // Discord runs it as execute(options, context)
+    const result = await command?.execute([{ name: "text", type: 3, value: "Command toast test" }], { channel: { id: "1" } });
+    const commandToast = await toastText("Command toast test");
+
+    // Render Discord's real Menu with the context a message menu gets from the navId patch
+    const root = document.createElement("div");
+    document.body.appendChild(root);
+    const reactRoot = api.createRoot(root);
+    const Menu = menu?.exports[menu.key];
+    let rendered: string[] = [];
+    let copied: string | null = null;
+    let copyToast = null;
+    let renderError: string | null = null;
+    try {
+        reactRoot.render(api.React.createElement(Menu, {
+            navId: "message",
+            onClose: () => { },
+            "aria-label": "test",
+            delightMenuArgs: { message: { id: "123456789" } },
+        }, api.React.createElement(components.Item, { id: "native-item", label: "Native item", action: () => { } })));
+        await sleep(300);
+        rendered = [...root.querySelectorAll('[role="menuitem"]')].map(e => e.textContent ?? "");
+        const item = [...root.querySelectorAll('[role="menuitem"]')].find(e => e.textContent?.includes("Copy Message ID")) as HTMLElement | undefined;
+        item?.click();
+        copyToast = await toastText("Message ID");
+        copied = await navigator.clipboard.readText().catch(e => `clipboard: ${e}`);
+    } catch (err) {
+        renderError = String(err);
+    }
+    reactRoot.unmount();
+    root.remove();
+
+    await plugins.setEnabled("toolkit-demo", false);
+    const listAfter = builtIns?.exports[builtIns.key]([1], true, false).map((c: any) => c.untranslatedName) ?? [];
+    const menuRestored = !!menu && api.getUnhooked(menu.exports[menu.key]) === menu.exports[menu.key];
+    const commandsRestored = !!builtIns && api.getUnhooked(builtIns.exports[builtIns.key]) === builtIns.exports[builtIns.key];
+
+    return {
+        toastModule: toastModule && { id: toastModule.id, key: toastModule.key }, shown, toast,
+        menu: menu && { id: menu.id, key: menu.key }, componentKinds,
+        navPatch: navPatch && { health: navPatch.health, modules: navPatch.modules, errors: navPatch.errors.slice(0, 3), menuUserId },
+        rewrite,
+        builtIns: builtIns && { id: builtIns.id, key: builtIns.key }, listBefore,
+        running, menuHooked, commandsHooked,
+        command: command && { id: command.id, inputType: command.inputType, applicationId: command.applicationId, options: command.options?.length },
+        shrug: shrug && { inputType: shrug.inputType, applicationId: shrug.applicationId },
+        result: result ?? null, commandToast,
+        rendered, copyToast, copied, renderError,
+        listAfter, menuRestored, commandsRestored,
+    };
+});
+check("toast module found", !!toolkit.toastModule, toolkit.toastModule);
+check("toast renders with Discord's toast UI", !!toolkit.shown && toolkit.toast?.type === "success", toolkit.toast);
+check("Menu component found", !!toolkit.menu, toolkit.menu);
+check("Menu item components resolved", ["Item", "Group", "Separator", "CheckboxItem", "RadioItem", "ControlItem"].every(k => toolkit.componentKinds.includes(k)), toolkit.componentKinds);
+check("navId source patch applied, no errors", toolkit.navPatch?.health === "applied" && !!toolkit.navPatch.menuUserId && toolkit.navPatch.modules.includes(toolkit.navPatch.menuUserId) && !toolkit.navPatch.errors.length, toolkit.navPatch);
+check("navId rewrite hands menus their props and compiles on every navId module", toolkit.rewrite.modules > 20 && !toolkit.rewrite.compileErrors.length && toolkit.rewrite.sample.includes('delightMenuArgs:arguments[0],navId:"clean-up-inactive-gdms"') && toolkit.rewrite.menuDestructuringKept, toolkit.rewrite);
+check("built-in commands module found", !!toolkit.builtIns && toolkit.listBefore.includes("shrug") && !toolkit.listBefore.includes("delight"), toolkit.builtIns);
+check("toolkit-demo started, Menu and command list hooked", toolkit.running && toolkit.menuHooked && toolkit.commandsHooked);
+check("/delight listed with Discord's built-ins", !!toolkit.command && toolkit.command.inputType === toolkit.shrug?.inputType && toolkit.command.applicationId === toolkit.shrug?.applicationId, toolkit.command);
+check("/delight runs locally and shows a toast", toolkit.result === null && toolkit.commandToast?.type === "success", toolkit.commandToast);
+check("message menu shows the plugin's item next to Discord's", toolkit.rendered.includes("Native item") && toolkit.rendered.some((t: string) => t.includes("Copy Message ID (Delight)")), toolkit.renderError ?? toolkit.rendered);
+check("menu item gets the message from menu props and copies its id", toolkit.copied === "123456789" && toolkit.copyToast?.type === "success", { copied: toolkit.copied, toast: toolkit.copyToast });
+check("stopping the plugin removes the command and both hooks", !toolkit.listAfter.includes("delight") && toolkit.menuRestored && toolkit.commandsRestored);
+await page.screenshot({ path: join(OUT, "toolkit-toast.png") });
+
 // ---- UI -----------------------------------------------------------------------------------------
 
 await page.keyboard.press("Control+Shift+D");
