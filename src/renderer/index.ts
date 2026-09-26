@@ -4,6 +4,7 @@
 import * as api from "@delight/api";
 import { isPluginEnabled } from "@shared/ipc";
 
+import { Backup } from "./backup";
 import { Logger } from "./logger";
 import { Native } from "./native";
 import { diagnosePatches } from "./patching/diagnose";
@@ -32,6 +33,7 @@ const Delight = {
     plugins: PluginManager,
     settings: Settings,
     themes: Themes,
+    backup: Backup,
     ui: SettingsUI,
     diagnosePatches,
     stats,

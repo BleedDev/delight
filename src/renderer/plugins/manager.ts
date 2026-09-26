@@ -1,5 +1,5 @@
 import * as api from "@delight/api";
-import { isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import { DelightSettings, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
 
 import { Logger } from "../logger";
 import { Native } from "../native";
@@ -207,6 +207,18 @@ function remove(id: string) {
     emit();
 }
 
+async function applyEnabled(state: PluginState, enabled: boolean) {
+    if (state.manifest.native) Native.setNativeRunning(state.manifest.id, enabled);
+
+    if (enabled) {
+        enablePatches(state);
+        if (ready) await start(state);
+    } else {
+        stop(state);
+        disablePatches(state);
+    }
+}
+
 // ---- public -----------------------------------------------------------------------------------
 
 export const PluginManager = {
@@ -234,14 +246,15 @@ export const PluginManager = {
         if (!state) return;
 
         Settings.update(d => void ((d.plugins[id] ??= {}).enabled = enabled));
-        if (state.manifest.native) Native.setNativeRunning(id, enabled);
+        await applyEnabled(state, enabled);
+        emit();
+    },
 
-        if (enabled) {
-            enablePatches(state);
-            if (ready) await start(state);
-        } else {
-            stop(state);
-            disablePatches(state);
+    /** Starts and stops plugins to match settings that were replaced wholesale (a restored backup) */
+    async syncEnabled(previous: DelightSettings) {
+        for (const state of plugins.values()) {
+            const enabled = isPluginEnabled(Settings.data, state.manifest);
+            if (enabled !== isPluginEnabled(previous, state.manifest)) await applyEnabled(state, enabled);
         }
         emit();
     },

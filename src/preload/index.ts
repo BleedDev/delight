@@ -1,4 +1,5 @@
-import { AddThemeResult, BootData, DelightSettings, IPC, OpenPathTarget, PluginChange, ThemeChange } from "@shared/ipc";
+import type { ImportMode } from "@shared/backup";
+import { AddThemeResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, DelightSettings, IPC, OpenPathTarget, PluginChange, ThemeChange } from "@shared/ipc";
 import { contextBridge, ipcRenderer, webFrame } from "electron";
 
 /** The bridge the renderer uses to reach the main process. Mirrored by src/renderer/native.ts */
@@ -20,6 +21,9 @@ const DelightNative = {
     addThemeFromUrl: (url: string): Promise<AddThemeResult> => ipcRenderer.invoke(IPC.THEME_ADD_URL, url),
     callNative: (id: string, method: string, args: unknown[]) => ipcRenderer.invoke(IPC.PLUGIN_NATIVE_CALL, id, method, args),
     setNativeRunning: (id: string, running: boolean) => ipcRenderer.invoke(IPC.PLUGIN_NATIVE_STATE, id, running),
+    exportBackup: (): Promise<BackupExportResult> => ipcRenderer.invoke(IPC.BACKUP_EXPORT),
+    openBackup: (): Promise<BackupOpenResult> => ipcRenderer.invoke(IPC.BACKUP_OPEN),
+    applyBackup: (token: string, mode: ImportMode): Promise<BackupApplyResult> => ipcRenderer.invoke(IPC.BACKUP_APPLY, token, mode),
     openPath: (target: OpenPathTarget) => ipcRenderer.invoke(IPC.OPEN_PATH, target),
     relaunch: () => ipcRenderer.invoke(IPC.RELAUNCH),
 };

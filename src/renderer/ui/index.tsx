@@ -1,6 +1,7 @@
 import { Native } from "../native";
 import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
+import { BackupTab } from "./BackupTab";
 import { Button, Icon, useStore } from "./components";
 import { PatchesTab } from "./PatchesTab";
 import { PatchHelperTab } from "./PatchHelperTab";
@@ -36,6 +37,7 @@ const tabs = [
     { id: "plugins", label: "Plugins", Component: PluginsTab },
     { id: "themes", label: "Themes", Component: ThemesTab },
     { id: "quickcss", label: "Quick CSS", Component: QuickCssTab },
+    { id: "backup", label: "Backup", Component: BackupTab },
     { id: "patches", label: "Patches", Component: PatchesTab },
     { id: "patchhelper", label: "Patch Helper", Component: PatchHelperTab },
 ] as const;

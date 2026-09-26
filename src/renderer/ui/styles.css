@@ -557,3 +557,28 @@
     opacity: 0.6;
     transition: opacity var(--dl-duration-fast) ease-out;
 }
+
+/* ==== Backup tab (BackupTab.tsx) ============================================================= */
+
+.dl-backup h3.dl-label { margin: 0; }
+
+.dl-backup-changes {
+    margin: 0;
+    padding-inline-start: 20px;
+    list-style: disc;
+    color: var(--dl-text-primary);
+    font-size: 14px;
+    line-height: 1.4;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+}
+
+.dl-backup-changes li + li { margin-block-start: 4px; }
+
+.dl-backup-changes .dl-mono,
+.dl-backup-changes .dl-badge {
+    margin-inline-start: 6px;
+    color: var(--dl-text-secondary);
+}
+
+/* ==== end Backup tab ========================================================================== */
