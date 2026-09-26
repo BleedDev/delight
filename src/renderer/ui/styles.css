@@ -359,6 +359,80 @@
 }
 
 .dl-banner > span { flex: 1; }
+.dl-stack > .dl-banner { margin-block-end: 0; }
+
+/* ---- safe mode ------------------------------------------------------------------------------- */
+
+.dl-safe {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px 16px;
+    border-radius: var(--dl-radius-card);
+    border: 1px solid var(--dl-status-warning);
+    background: color-mix(in oklab, var(--dl-status-warning) 10%, var(--dl-bg-surface));
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.dl-safe-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-block-size: 28px;
+}
+
+.dl-safe-icon {
+    display: inline-flex;
+    color: var(--dl-status-warning);
+}
+
+.dl-safe-title {
+    flex: 1;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    text-wrap: balance;
+}
+
+.dl-safe-text {
+    margin: 0;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+}
+
+.dl-safe-meta { color: var(--dl-text-secondary); }
+
+.dl-safe-changes {
+    margin: 4px 0 0;
+    padding-inline-start: 20px;
+}
+
+.dl-safe-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-block-start: 8px;
+}
+
+.dl-safe-inline { margin-block-end: 16px; }
+
+/* Floating over Discord, under the settings panel's scrim */
+.dl-safe-float {
+    position: fixed;
+    inset-block-end: 16px;
+    inset-inline-end: 16px;
+    z-index: 9999;
+    inline-size: min(420px, calc(100vw - 32px));
+    border-radius: var(--dl-radius-card);
+    box-shadow: 0 12px 40px rgb(0 0 0 / 0.45);
+}
+
+.dl-safe-float .dl-safe { background: color-mix(in oklab, var(--dl-status-warning) 10%, var(--dl-bg-panel)); }
+
+@media (prefers-reduced-motion: no-preference) {
+    .dl-safe-float { animation: dl-panel-in var(--dl-duration-base) ease-out; }
+}
 
 .dl-error {
     margin: 0;

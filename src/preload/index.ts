@@ -22,6 +22,8 @@ const DelightNative = {
     setNativeRunning: (id: string, running: boolean) => ipcRenderer.invoke(IPC.PLUGIN_NATIVE_STATE, id, running),
     openPath: (target: OpenPathTarget) => ipcRenderer.invoke(IPC.OPEN_PATH, target),
     relaunch: () => ipcRenderer.invoke(IPC.RELAUNCH),
+    reportBootOk: () => ipcRenderer.send(IPC.BOOT_OK),
+    exitSafeMode: () => ipcRenderer.invoke(IPC.SAFE_MODE_EXIT),
 };
 
 export type DelightNativeApi = typeof DelightNative;

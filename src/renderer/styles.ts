@@ -1,4 +1,5 @@
 import { Native } from "./native";
+import { SafeMode } from "./safeMode";
 import { Settings } from "./settings";
 
 function whenDomReady(cb: () => void) {
@@ -52,15 +53,18 @@ export const QuickCss = {
     init(initial: string) {
         quickCssSource = initial;
         // Last in <head> so it wins over plugin styles of equal specificity
-        quickCss = createStyle(Settings.data.quickCss ? initial : "", QUICK_CSS_ID);
+        quickCss = createStyle(QuickCss.applies() ? initial : "", QUICK_CSS_ID);
         Native.onQuickCssChange(css => {
             quickCssSource = css;
             QuickCss.apply();
         });
     },
 
+    /** On, and not in safe mode. Edits are still saved in safe mode, they apply after it. */
+    applies: () => Settings.data.quickCss && !SafeMode.active,
+
     apply() {
-        quickCss?.update(Settings.data.quickCss ? quickCssSource : "");
+        quickCss?.update(QuickCss.applies() ? quickCssSource : "");
     },
 
     /** Applies immediately, writes to disk debounced */
