@@ -28,7 +28,7 @@ const BUILT = join(ROOT, "dist", "plugins");
 const { values } = parseArgs({
     args: process.argv.slice(2),
     options: {
-        base: { type: "string", default: "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins" },
+        base: { type: "string", default: "https://raw.githubusercontent.com/BleedDev/evi/main/store/plugins" },
         files: { type: "string", default: join(ROOT, "store", "plugins") },
         out: { type: "string", default: join(ROOT, "registry.json") },
         only: { type: "string" },

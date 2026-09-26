@@ -2,7 +2,7 @@ import { renameSync, rmSync, writeFileSync } from "fs";
 
 import { compareVersions } from "./discord";
 
-export const REPO = "BleedDev/delight";
+export const REPO = "BleedDev/evi";
 export const EXE_ASSET = "evi.exe";
 export const CHECKSUM_ASSET = "evi.exe.sha256";
 

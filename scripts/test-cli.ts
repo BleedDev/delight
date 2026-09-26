@@ -90,7 +90,7 @@ const server = Bun.serve({
     hostname: "127.0.0.1",
     fetch(req) {
         const { pathname, origin } = new URL(req.url);
-        if (pathname === "/repos/BleedDev/delight/releases/latest") {
+        if (pathname === "/repos/BleedDev/evi/releases/latest") {
             if (!latest.tag) return new Response(JSON.stringify({ message: "Not Found" }), { status: latest.status });
             return Response.json({
                 tag_name: latest.tag,
