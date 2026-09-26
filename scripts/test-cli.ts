@@ -173,17 +173,25 @@ if (!EXE) {
     check("update: checksum mismatch rejected", r.code === 1 && r.out.includes("Checksum mismatch"), r.out);
     check("update: exe untouched after a bad checksum", readFileSync(exeCopy).equals(original) && !existsSync(`${exeCopy}.old`) && !existsSync(`${exeCopy}.new`));
 
-    // Clean Discord again (the last test left another mod in place) and drop the data folder, to see the new exe install
+    // Clean Discord again (the last test left another mod in place), install Delight into Stable with the
+    // current exe, and add a PTB without Delight: an update must refresh Stable and never inject into PTB
     rmSync(join(RESOURCES, ORIGINAL_ASAR), { force: true });
     writeFileSync(join(RESOURCES, "app.asar"), discordAsar);
     rmSync(join(ROAMING, "Delight"), { recursive: true, force: true });
+    r = await update(["install"]);
+    check("update setup: Delight installed into Stable", r.code === 0 && shim().startsWith(SHIM_MARKER), r.out);
+    const ptbResources = join(LOCAL, "DiscordPTB", "app-1.0.1000", "resources");
+    mkdirSync(ptbResources, { recursive: true });
+    writeFileSync(join(ptbResources, "app.asar"), discordAsar);
+    rmSync(join(ROAMING, "Delight", "core"), { recursive: true, force: true });
 
     checksum = new Bun.CryptoHasher("sha256").update(asset).digest("hex");
     r = await update(["update"]);
     check("update: succeeds with a valid checksum", r.code === 0 && r.out.includes("Updated") && r.out.includes("99.0.0"), r.out);
     check("update: exe replaced by the download", readFileSync(exeCopy).equals(asset));
     check("update: previous exe kept as .old", existsSync(`${exeCopy}.old`) && readFileSync(`${exeCopy}.old`).equals(original));
-    check("update: new exe ran install", r.out.includes("Installed Delight") && existsSync(join(ROAMING, "Delight", "core", "main.js")) && shim().startsWith(SHIM_MARKER), r.out);
+    check("update: refreshed the Discord that has Delight", r.out.includes("Updated Delight in Discord stable") && existsSync(join(ROAMING, "Delight", "core", "main.js")), r.out);
+    check("update: never injects into a Discord without Delight", readFileSync(join(ptbResources, "app.asar")).equals(discordAsar) && !existsSync(join(ptbResources, ORIGINAL_ASAR)));
 
     r = await update(["status"]);
     check("update: next run removes the .old", r.code === 0 && !existsSync(`${exeCopy}.old`), r.out);

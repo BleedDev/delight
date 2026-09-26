@@ -207,10 +207,18 @@ async function update() {
     }
     console.log(c.ok(`✓ Updated ${exe} to ${release.version}`));
 
-    // The new exe carries the new core and official plugins, so it does the install
-    const args = [exe, "install", "--flavor", flags.flavor!, ...(flags.restart ? ["--restart"] : [])];
-    const code = await Bun.spawn(args, { stdio: ["inherit", "inherit", "inherit"] }).exited;
-    if (code !== 0) fail(`The new version is in place, but installing it into Discord failed. Run \`delight install\` to retry.`);
+    // Refresh only Discords that already have Delight: updating must never inject into one you didn't choose.
+    // The new exe carries the new core and official plugins, so it does the install.
+    const installed = findInstalls().filter(d => injectionState(d.versions[0].resources) === "delight");
+    if (!installed.length) {
+        console.log(c.dim("Delight isn't installed in any Discord yet. Run `delight install` to add it."));
+        return;
+    }
+    for (const discord of installed) {
+        const args = [exe, "install", "--flavor", discord.flavor, ...(flags.restart ? ["--restart"] : [])];
+        const code = await Bun.spawn(args, { stdio: ["inherit", "inherit", "inherit"] }).exited;
+        if (code !== 0) fail(`The new version is in place, but refreshing Discord ${discord.flavor} failed. Run \`delight install --flavor ${discord.flavor}\` to retry.`);
+    }
 }
 
 function help() {
@@ -219,7 +227,7 @@ function help() {
   install     Install or update Delight
   uninstall   Remove Delight, Discord goes back to vanilla
   status      Show every Discord install and whether Delight is in it
-  update      Download the latest release of delight.exe and install it
+  update      Download the latest delight.exe and refresh every Discord that has Delight
 
 Options
   --flavor <stable|ptb|canary|development|all>   Which Discord (default: stable)
