@@ -42,7 +42,7 @@ __export(exports_clear_urls, {
   default: () => clear_urls_default
 });
 module.exports = __toCommonJS(exports_clear_urls);
-var import_api = require("@delight/api");
+var import_api = require("@evi/api");
 var DEFAULT_PARAMS = [
   "utm_source",
   "utm_medium",

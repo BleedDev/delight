@@ -1,5 +1,5 @@
-import { Components, definePlugin, Dispatcher, filters, React } from "@delight/api";
-import type { Filter, FluxAction, HookContext, PluginContext } from "@delight/api";
+import { Components, definePlugin, Dispatcher, filters, React } from "@evi/api";
+import type { Filter, FluxAction, HookContext, PluginContext } from "@evi/api";
 
 import { LoggedMessage, MessageLog, MessageRef, PreviousVersion, shouldLog } from "./log";
 
@@ -16,7 +16,7 @@ import { LoggedMessage, MessageLog, MessageRef, PreviousVersion, shouldLog } fro
  *   the log is cleared, so every tag and history unmounts, and the stylesheet goes.
  */
 
-const PURGE_ACTION = "DELIGHT_MESSAGE_LOGGER_PURGE";
+const PURGE_ACTION = "EVI_MESSAGE_LOGGER_PURGE";
 /** How long a delete you started waits for Discord's MESSAGE_DELETE */
 const SELF_DELETE_WINDOW = 60_000;
 
@@ -225,7 +225,7 @@ function install(ctx: Ctx, log: MessageLog, store: any) {
         return Promise.all([...byChannel].map(([channelId, ids]) => Dispatcher.dispatch({ type: PURGE_ACTION, channelId, ids })));
     };
     const purgeHandler = (action: FluxAction) =>
-        handlers.MESSAGE_DELETE_BULK({ type: "MESSAGE_DELETE_BULK", channelId: action.channelId, ids: action.ids, delightPurge: true });
+        handlers.MESSAGE_DELETE_BULK({ type: "MESSAGE_DELETE_BULK", channelId: action.channelId, ids: action.ids, eviPurge: true });
     handlers[PURGE_ACTION] = purgeHandler;
 
     const shouldKeep = (action: FluxAction, channelId: string, id: string) => {
@@ -240,7 +240,7 @@ function install(ctx: Ctx, log: MessageLog, store: any) {
 
     ctx.hook.instead(handlers, "MESSAGE_DELETE", (call: HookContext) => {
         const action = call.args[0] as FluxAction;
-        if (action.delightPurge || !shouldKeep(action, action.channelId, action.id)) return call.callOriginal(...call.args);
+        if (action.eviPurge || !shouldKeep(action, action.channelId, action.id)) return call.callOriginal(...call.args);
         void purge(log.markDeleted(action.channelId, action.id));
         // Nothing changed in the store; our tag re-renders from the log
         return false;
@@ -248,7 +248,7 @@ function install(ctx: Ctx, log: MessageLog, store: any) {
 
     ctx.hook.instead(handlers, "MESSAGE_DELETE_BULK", (call: HookContext) => {
         const action = call.args[0] as FluxAction;
-        if (action.delightPurge) return call.callOriginal(...call.args);
+        if (action.eviPurge) return call.callOriginal(...call.args);
         const keep: string[] = [];
         const drop: string[] = [];
         for (const id of action.ids ?? []) (shouldKeep(action, action.channelId, id) ? keep : drop).push(id);

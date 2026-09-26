@@ -64,7 +64,7 @@ export function canonicalizeMatch(match: string | RegExp) {
 
 /** Expands `$self` in a replacement into a reference to the plugin at runtime */
 export function canonicalizeReplace(replace: Replacement["with"], plugin: string): Replacement["with"] {
-    const self = `Delight.$(${JSON.stringify(plugin)})`;
+    const self = `Evi.$(${JSON.stringify(plugin)})`;
     if (typeof replace === "string") return replace.replaceAll("$self", self);
     return (...args) => replace(...args).replaceAll("$self", self);
 }
@@ -87,7 +87,7 @@ export type CompileResult = { ok: true; factory: ModuleFactory; } | { ok: false;
 export function tryCompile(code: string, moduleId: string): CompileResult {
     try {
         // Indirect eval: global scope, no access to our locals
-        return { ok: true, factory: (0, eval)(`0,${code}\n//# sourceURL=delight://modules/${moduleId}.js`) };
+        return { ok: true, factory: (0, eval)(`0,${code}\n//# sourceURL=evi://modules/${moduleId}.js`) };
     } catch (err) {
         return { ok: false, error: String(err) };
     }

@@ -44,7 +44,7 @@ let cache: { url: string; entries: Map<string, RegistryEntry>; } | undefined;
 const busy = new Set<string>();
 
 export function getRegistryUrl() {
-    if (process.env.DELIGHT_STORE_URL) return process.env.DELIGHT_STORE_URL;
+    if (process.env.EVI_STORE_URL) return process.env.EVI_STORE_URL;
     try {
         const { registryUrl } = JSON.parse(readFileSync(CONFIG_FILE, "utf8"));
         if (typeof registryUrl === "string" && registryUrl.trim()) return registryUrl.trim();
@@ -101,7 +101,7 @@ async function fetchRegistry(): Promise<StoreListing> {
     if ("error" in parsed) return fail(parsed.error);
 
     cache = { url: registryUrl, entries: new Map(parsed.registry.plugins.map(p => [p.id, p])) };
-    if (parsed.problems.length) console.warn(`[Delight] Store registry: skipped ${parsed.problems.length} entries`, parsed.problems);
+    if (parsed.problems.length) console.warn(`[Evi] Store registry: skipped ${parsed.problems.length} entries`, parsed.problems);
     return { ok: true, registryUrl, plugins: parsed.registry.plugins, problems: parsed.problems, installed };
 }
 
@@ -128,8 +128,8 @@ function decodeText(name: string, data: Uint8Array) {
 
 async function install(id: string, allowNative: boolean, report: (p: StoreProgress) => void): Promise<StoreResult> {
     const entry = await getEntry(id);
-    if (entry.minDelightVersion && compareVersions(DELIGHT_VERSION, entry.minDelightVersion) < 0) {
-        throw new Error(`${entry.name} needs Delight ${entry.minDelightVersion} or newer, this is ${DELIGHT_VERSION}`);
+    if (entry.minEviVersion && compareVersions(EVI_VERSION, entry.minEviVersion) < 0) {
+        throw new Error(`${entry.name} needs Evi ${entry.minEviVersion} or newer, this is ${EVI_VERSION}`);
     }
 
     const dir = join(PLUGINS_DIR, id);
@@ -193,7 +193,7 @@ async function install(id: string, allowNative: boolean, report: (p: StoreProgre
 
     // Don't wait for the watcher: the renderer has the plugin by the time this resolves
     refreshUserPlugin(id);
-    console.log(`[Delight] Store: ${existing ? "updated" : "installed"} ${id} ${entry.version}`);
+    console.log(`[Evi] Store: ${existing ? "updated" : "installed"} ${id} ${entry.version}`);
     return { ok: true, id, version: entry.version };
 }
 
@@ -210,7 +210,7 @@ function uninstall(id: string, report: (p: StoreProgress) => void): StoreResult 
     renameSync(dir, trash);
     refreshUserPlugin(id);
     rmSync(trash, { recursive: true, force: true });
-    console.log(`[Delight] Store: uninstalled ${id}`);
+    console.log(`[Evi] Store: uninstalled ${id}`);
     return { ok: true, id, version: marker.version };
 }
 
@@ -222,7 +222,7 @@ async function exclusive(id: unknown, run: (id: string) => Promise<StoreResult> 
     try {
         return await run(id);
     } catch (err) {
-        console.warn(`[Delight] Store: ${id} failed`, err);
+        console.warn(`[Evi] Store: ${id} failed`, err);
         return { ok: false, error: (err as Error)?.message ?? String(err) };
     } finally {
         busy.delete(id);

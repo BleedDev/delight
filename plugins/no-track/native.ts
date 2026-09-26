@@ -1,4 +1,4 @@
-import type { NativePlugin } from "@delight/api/native";
+import type { NativePlugin } from "@evi/api/native";
 
 const TRACKING = /^https:\/\/(?:[\w-]+\.)?discord(?:app)?\.com\/api\/v\d+\/(?:science|metrics)/;
 

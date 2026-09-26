@@ -1,4 +1,4 @@
-import type { NativeContext, NativePlugin } from "@delight/api/native";
+import type { NativeContext, NativePlugin } from "@evi/api/native";
 import { IPC, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
 import { ipcMain, session, webContents } from "electron";
 import { existsSync, FSWatcher, readdirSync, readFileSync, watch } from "fs";
@@ -24,7 +24,9 @@ interface NativeInstance {
 type Source = PluginPayload["source"];
 
 const roots: { dir: string; source: Source; }[] = [{ dir: PLUGINS_DIR, source: "user" }];
-if (process.env.DELIGHT_DEV_PLUGINS) roots.push({ dir: process.env.DELIGHT_DEV_PLUGINS, source: "dev" });
+// DELIGHT_DEV_PLUGINS: set by dev loaders installed before the rename to Evi
+const devPlugins = process.env.EVI_DEV_PLUGINS ?? process.env.DELIGHT_DEV_PLUGINS;
+if (devPlugins) roots.push({ dir: devPlugins, source: "dev" });
 
 const plugins = new Map<string, LoadedPlugin>();
 const natives = new Map<string, NativeInstance>();
@@ -39,7 +41,7 @@ function readPlugin(dir: string, source: Source): LoadedPlugin | null {
         const native = manifest.native ? readFileSync(join(dir, manifest.native), "utf8") : "";
         return { manifest, code, source, dir, signature: JSON.stringify(manifest) + code + native };
     } catch (err) {
-        console.error(`[Delight] Failed to read plugin at ${dir}`, err);
+        console.error(`[Evi] Failed to read plugin at ${dir}`, err);
         return null;
     }
 }
@@ -64,7 +66,7 @@ function loadNative(plugin: LoadedPlugin) {
         natives.set(plugin.manifest.id, instance);
         return instance;
     } catch (err) {
-        console.error(`[Delight] Failed to load native module of ${plugin.manifest.id}`, err);
+        console.error(`[Evi] Failed to load native module of ${plugin.manifest.id}`, err);
     }
 }
 
@@ -91,7 +93,7 @@ function startNative(id: string) {
     try {
         native.module.start?.(ctx);
     } catch (err) {
-        console.error(`[Delight] Native start of ${id} failed`, err);
+        console.error(`[Evi] Native start of ${id} failed`, err);
         stopNative(id);
     }
 }
@@ -104,7 +106,7 @@ function stopNative(id: string) {
     try {
         native.module.stop?.();
     } catch (err) {
-        console.error(`[Delight] Native stop of ${id} failed`, err);
+        console.error(`[Evi] Native stop of ${id} failed`, err);
     }
     for (const dispose of native.disposers.splice(0).reverse()) {
         try { dispose(); } catch { }
@@ -176,7 +178,7 @@ function watchRoot(root: string, source: Source) {
         // On Windows, deleting a watched subfolder errors the watcher and it stops for good.
         // Without this handler the error was swallowed and hot reload silently died.
         watcher.on("error", err => {
-            console.warn("[Delight] Plugin watcher failed, restarting it", err);
+            console.warn("[Evi] Plugin watcher failed, restarting it", err);
             watcher.close();
             setTimeout(() => {
                 rescanRoot(root, source);
@@ -207,7 +209,7 @@ export function applyChromiumSwitches() {
                 for (const [name, value] of Object.entries(manifest.chromiumSwitches)) {
                     if (value === true) app.commandLine.appendSwitch(name);
                     else app.commandLine.appendSwitch(name, value);
-                    console.log(`[Delight] ${manifest.id}: --${name}${value === true ? "" : "=" + value}`);
+                    console.log(`[Evi] ${manifest.id}: --${name}${value === true ? "" : "=" + value}`);
                 }
             } catch { }
         }

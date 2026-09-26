@@ -16,7 +16,7 @@ const REACT_KEYS = [
 ];
 
 function required<T>(value: T | undefined, what: string): T {
-    if (value == null) throw new Error(`Delight: could not find ${what}`);
+    if (value == null) throw new Error(`Evi: could not find ${what}`);
     return value;
 }
 

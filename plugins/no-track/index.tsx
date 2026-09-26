@@ -1,5 +1,5 @@
-import { definePlugin, React } from "@delight/api";
-import type { PluginContext } from "@delight/api";
+import { definePlugin, React } from "@evi/api";
+import type { PluginContext } from "@evi/api";
 
 function BlockedCounter({ ctx }: { ctx: PluginContext; }) {
     const [count, setCount] = React.useState<number | null>(null);

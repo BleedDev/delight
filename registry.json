@@ -6,20 +6,20 @@
             "name": "Clear URLs",
             "description": "Removes tracking parameters like utm_source and si from links before you send them.",
             "authors": [
-                "Delight"
+                "Evi"
             ],
             "version": "1.0.0",
             "tags": [],
             "native": false,
-            "minDelightVersion": "0.1.0",
+            "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/clear-urls/manifest.json",
-                    "sha256": "a1e633f5817d775d4c9512f8310e3aeb646bffe70736309dcb612901deb82632"
+                    "sha256": "a17018d3c7bf62bf2d450cd1e5d8c37609f07ef13d9d58020c6ea88c177d6355"
                 },
                 "index.js": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/clear-urls/index.js",
-                    "sha256": "c457569738211f00c7be08c9ed6008e9c83965c3e9d4c7f729b0bda1b173eb52"
+                    "sha256": "c41ea7dcf50a8cb658b6f49e1588e98cf467efefe5d4fb3bc9d58309ed73d9c6"
                 }
             }
         },
@@ -28,20 +28,20 @@
             "name": "Experiments",
             "description": "Unlocks Discord's Experiments and developer settings tabs.",
             "authors": [
-                "Delight"
+                "Evi"
             ],
             "version": "1.0.0",
             "tags": [],
             "native": false,
-            "minDelightVersion": "0.1.0",
+            "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/experiments/manifest.json",
-                    "sha256": "3e2e8076b9798e267fee5478f108ab8adb0668b4f8f57501961dcca4876f037b"
+                    "sha256": "ded813454ed1e52efc9871ac250e2dc394f9ac721f7710178797363a445a5ddd"
                 },
                 "index.js": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/experiments/index.js",
-                    "sha256": "bbdc1db12f7c4bd549cdab66272bf4eaeb78a1bcda3da07f2749840d6bb39a2b"
+                    "sha256": "42113179b03641b507c8ad4d300cf75db5a343a701492191ee98356027caa1be"
                 }
             }
         },
@@ -50,20 +50,20 @@
             "name": "Fast Lists",
             "description": "Keeps Discord smooth with hundreds of servers and long chats. Servers, messages and members far out of view skip rendering work, without ever being removed, so nothing flickers, disappears or jumps.",
             "authors": [
-                "Delight"
+                "Evi"
             ],
             "version": "2.0.0",
             "tags": [],
             "native": false,
-            "minDelightVersion": "0.1.0",
+            "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/fast-lists/manifest.json",
-                    "sha256": "bd3317e3874779b30c8fdc82f38a31b02dd2a618e0b143ee953fe7acc57c5bfe"
+                    "sha256": "f6a53d3b1ec9ae774aed88bc0dd846dc91d999a6f7b76acab10a332de846e1fc"
                 },
                 "index.js": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/fast-lists/index.js",
-                    "sha256": "9a3bb6f9dc41d0fbadfdc637b336903dbdacbc47b57c5d713a09f200f59fe5ff"
+                    "sha256": "8f56475a85f31f46ced5fcff8e0eba8345a0020993683c8a0a1edd54bb736749"
                 }
             }
         },
@@ -72,20 +72,42 @@
             "name": "GPU Zero-Copy",
             "description": "Lets the GPU read rendered tiles directly instead of copying them first (Chromium's zero-copy uploads), which can help high refresh rate displays. Discord already has GPU rendering on; this is the one extra switch it leaves off. Takes effect after restarting Discord.",
             "authors": [
-                "Delight"
+                "Evi"
             ],
             "version": "1.0.0",
             "tags": [],
             "native": true,
-            "minDelightVersion": "0.1.0",
+            "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/gpu-boost/manifest.json",
-                    "sha256": "8ba71db1626fa794befebf7b2986b69dc791bf213ca872db2dbc63691bef27df"
+                    "sha256": "47a59b0d218377c647a9ffb6fc2771220f39eff8e658f92ec972153f68c25605"
                 },
                 "index.js": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/gpu-boost/index.js",
-                    "sha256": "ed70ac8c313d11822a40c1668fdfb3d6a76a6012b8dfb2896a194d672139899d"
+                    "sha256": "352ec04f0e14e33cc0e508ecd373b42258fdfc078ee22c08021dd64f530f5fef"
+                }
+            }
+        },
+        {
+            "id": "message-logger",
+            "name": "Message Logger",
+            "description": "Deleted messages stay in the chat, marked as deleted, and edited messages show what they said before. Kept in memory only: nothing is saved, and it's all gone when Discord restarts.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [],
+            "native": false,
+            "minEviVersion": "0.1.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/message-logger/manifest.json",
+                    "sha256": "a2d33b27437d1e096636bd9023007573de585250fb89154ca9e71e0f1946842a"
+                },
+                "index.js": {
+                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/message-logger/index.js",
+                    "sha256": "db44e2cf1cb56b8c484543df9f4575b9acf144b9ff425b39d83257381c5330de"
                 }
             }
         },
@@ -94,20 +116,20 @@
             "name": "No Track",
             "description": "Blocks Discord's analytics and metrics requests before they leave your machine.",
             "authors": [
-                "Delight"
+                "Evi"
             ],
             "version": "1.0.0",
             "tags": [],
             "native": true,
-            "minDelightVersion": "0.1.0",
+            "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/no-track/manifest.json",
-                    "sha256": "fb75f6dc64fc0e220f8ffdf4fa15dc85b5f9894a2c99e84b99932083dcb7328c"
+                    "sha256": "93ace2ebc49582e6d19f2f7f50ebdb93acde3f4bceb12557c2719d06edad9c94"
                 },
                 "index.js": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/no-track/index.js",
-                    "sha256": "ee7f4ed7fb507c5d2bc6f79256e0d3e971e8a327f92827cee46192b08ffcf003"
+                    "sha256": "99179b7f246c5a06262a691f73bec81cbf7fd6f13b030040f1110cdf091b7370"
                 },
                 "native.js": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/no-track/native.js",
@@ -116,46 +138,90 @@
             }
         },
         {
-            "id": "smooth-typing",
-            "name": "Smooth Typing",
-            "description": "Halves the worst frame drops while typing. Discord updates its saved draft on every keystroke, re-rendering everything that shows drafts; this batches those updates until you pause. What you type is never delayed or lost.",
+            "id": "quick-actions",
+            "name": "Quick Actions",
+            "description": "Adds Copy Message Link, Copy Raw Text, Copy Message ID, Search Image (Google Lens, Yandex, TinEye) and Translate with Google to the message menu.",
             "authors": [
-                "Delight"
+                "Evi"
             ],
             "version": "1.0.0",
             "tags": [],
             "native": false,
-            "minDelightVersion": "0.1.0",
+            "minEviVersion": "0.1.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/quick-actions/manifest.json",
+                    "sha256": "a28af4878cad8e1c2c09865526dbd2a3e3077370b27c320f604fd095ec858d4c"
+                },
+                "index.js": {
+                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/quick-actions/index.js",
+                    "sha256": "59077c0a018f34aec1499fa699a135ee1f03eb7b434cd220999aaba3aaaaf8ef"
+                }
+            }
+        },
+        {
+            "id": "silent-typing",
+            "name": "Silent Typing",
+            "description": "Others don't see \"is typing…\" while you type. Toggle it with /silenttyping or the keyboard button in the chat bar.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [],
+            "native": false,
+            "minEviVersion": "0.1.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/silent-typing/manifest.json",
+                    "sha256": "ce6780b20316563b72abcd32a280a37a006617fc21792e841cd73a9fed627cf0"
+                },
+                "index.js": {
+                    "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/silent-typing/index.js",
+                    "sha256": "7a02694d6986db9abaa495741bdde1a0e86f03a92a7efc165cf0c7c99cc111c0"
+                }
+            }
+        },
+        {
+            "id": "smooth-typing",
+            "name": "Smooth Typing",
+            "description": "Halves the worst frame drops while typing. Discord updates its saved draft on every keystroke, re-rendering everything that shows drafts; this batches those updates until you pause. What you type is never delayed or lost.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [],
+            "native": false,
+            "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/smooth-typing/manifest.json",
-                    "sha256": "4048db4f195590b15dba88ecde0c56d2967c5ae897b59cb78a57a23798402752"
+                    "sha256": "4c595659ff5ac29b56ff69fc4614f0e582fe6db542610c893eae8fa521f6d951"
                 },
                 "index.js": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/smooth-typing/index.js",
-                    "sha256": "870b068f4938fa529b221376f09e9b5f55b099c9b82ca7ab2def5b59b2b2f776"
+                    "sha256": "7fa6e010074f07b3f5d2d557e41755abdb2e6e000f13c915771f9376c379e62f"
                 }
             }
         },
         {
             "id": "toolkit-demo",
             "name": "Toolkit Demo",
-            "description": "Example of the plugin toolkit: a /delight command, a toast, and a Copy Message ID item in the message menu.",
+            "description": "Example of the plugin toolkit: a /evi command, a toast, and a Copy Message ID item in the message menu.",
             "authors": [
-                "Delight"
+                "Evi"
             ],
             "version": "1.0.0",
             "tags": [],
             "native": false,
-            "minDelightVersion": "0.1.0",
+            "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/toolkit-demo/manifest.json",
-                    "sha256": "ec1bb32438b2533398e6778035fce643f60e8d2ac0a3a3800672b3ef61b0620a"
+                    "sha256": "647c2e7e38192a276be12e981c97b5c38afe63b3d4d0e7187c74c18cecbd1841"
                 },
                 "index.js": {
                     "url": "https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins/toolkit-demo/index.js",
-                    "sha256": "d4ebada4c7b73f31e12b1b2407b6eea88de6a749aa8a65dc8df7544a07599a5b"
+                    "sha256": "9c719bcb3659cb3d9640262faf17ac44e99bf05dc9bc43af16c4047900903f70"
                 }
             }
         }

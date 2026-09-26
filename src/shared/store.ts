@@ -5,8 +5,8 @@
  *   {
  *     "schema": 1,
  *     "plugins": [{
- *       "id": "no-track", "name": "No Track", "description": "…", "authors": ["Delight"],
- *       "version": "1.0.0", "tags": ["privacy"], "native": true, "minDelightVersion": "0.1.0",
+ *       "id": "no-track", "name": "No Track", "description": "…", "authors": ["Evi"],
+ *       "version": "1.0.0", "tags": ["privacy"], "native": true, "minEviVersion": "0.1.0",
  *       "files": {
  *         "manifest.json": { "url": "https://…/manifest.json", "sha256": "<64 hex>" },
  *         "index.js":      { "url": "https://…/index.js",      "sha256": "…" },
@@ -25,7 +25,7 @@ export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_PLUGINS = 2000;
 
 /** Marks a plugin folder as installed by the store, only those can be updated or uninstalled from it */
-export const STORE_MARKER = ".delight-store.json";
+export const STORE_MARKER = ".evi-store.json";
 
 export const STORE_FILES = ["manifest.json", "index.js", "native.js"] as const;
 export type StoreFileName = (typeof STORE_FILES)[number];
@@ -44,7 +44,7 @@ export interface RegistryEntry {
     tags: string[];
     /** Runs code in Discord's main process (native.js) or changes how Discord starts (chromiumSwitches) */
     native: boolean;
-    minDelightVersion?: string;
+    minEviVersion?: string;
     files: Partial<Record<StoreFileName, StoreFile>> & Record<"manifest.json" | "index.js", StoreFile>;
 }
 
@@ -165,7 +165,7 @@ export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error
     if (!isVersion(e.version)) return fail("version must look like 1.2.3");
     if (e.tags !== undefined && !strings(e.tags, 10, 32)) return fail("tags must be at most 10 short strings");
     if (typeof e.native !== "boolean") return fail("native must be true or false");
-    if (e.minDelightVersion !== undefined && !isVersion(e.minDelightVersion)) return fail("minDelightVersion must look like 1.2.3");
+    if (e.minEviVersion !== undefined && !isVersion(e.minEviVersion)) return fail("minEviVersion must look like 1.2.3");
 
     const files = e.files;
     if (!files || typeof files !== "object" || Array.isArray(files)) return fail("files is missing");
@@ -191,7 +191,7 @@ export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error
             version: e.version,
             tags: e.tags ? [...(e.tags as string[])] : [],
             native: e.native,
-            ...(e.minDelightVersion !== undefined && { minDelightVersion: e.minDelightVersion as string }),
+            ...(e.minEviVersion !== undefined && { minEviVersion: e.minEviVersion as string }),
             files: cleanFiles as RegistryEntry["files"],
         },
     };
@@ -204,7 +204,7 @@ export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error
 export function parseRegistry(json: unknown): { registry: Registry; problems: string[]; } | { error: string; } {
     if (!json || typeof json !== "object" || Array.isArray(json)) return { error: "The registry isn't a JSON object" };
     const { schema, plugins } = json as Record<string, unknown>;
-    if (schema !== REGISTRY_SCHEMA) return { error: `Unsupported registry schema ${JSON.stringify(schema)}, this Delight reads schema ${REGISTRY_SCHEMA}` };
+    if (schema !== REGISTRY_SCHEMA) return { error: `Unsupported registry schema ${JSON.stringify(schema)}, this Evi reads schema ${REGISTRY_SCHEMA}` };
     if (!Array.isArray(plugins)) return { error: "The registry has no plugins list" };
     if (plugins.length > MAX_PLUGINS) return { error: `The registry lists more than ${MAX_PLUGINS} plugins` };
 
@@ -256,10 +256,10 @@ export async function whyNotHash(name: string, data: Uint8Array, expected: strin
 }
 
 /** What the Store tab should offer for an entry */
-export function storeAction(entry: RegistryEntry, installed: InstalledPlugin | undefined, delightVersion: string):
+export function storeAction(entry: RegistryEntry, installed: InstalledPlugin | undefined, eviVersion: string):
     "install" | "update" | "installed" | "local" | "incompatible" {
     if (installed && !installed.fromStore) return "local";
-    if (entry.minDelightVersion && compareVersions(delightVersion, entry.minDelightVersion) < 0) return installed ? "installed" : "incompatible";
+    if (entry.minEviVersion && compareVersions(eviVersion, entry.minEviVersion) < 0) return installed ? "installed" : "incompatible";
     if (!installed) return "install";
     return compareVersions(entry.version, installed.version ?? "0") > 0 ? "update" : "installed";
 }

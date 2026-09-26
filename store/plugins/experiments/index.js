@@ -42,7 +42,7 @@ __export(exports_experiments, {
   default: () => experiments_default
 });
 module.exports = __toCommonJS(exports_experiments);
-var import_api = require("@delight/api");
+var import_api = require("@evi/api");
 var experiments_default = import_api.definePlugin({
   patches: [
     {

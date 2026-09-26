@@ -3,43 +3,43 @@ import type { ImportMode, ImportPreview } from "./backup";
 /** IPC channel names shared by main, preload and renderer. */
 export const IPC = {
     /** sync: renderer bundle source */
-    GET_RENDERER: "delight:get-renderer",
+    GET_RENDERER: "evi:get-renderer",
     /** sync: everything the renderer needs to boot, see BootData */
-    GET_BOOT: "delight:get-boot",
-    SETTINGS_SAVE: "delight:settings-save",
+    GET_BOOT: "evi:get-boot",
+    SETTINGS_SAVE: "evi:settings-save",
     /** sync: last-chance flush while the page unloads, async IPC may not make it */
-    SETTINGS_SAVE_SYNC: "delight:settings-save-sync",
-    CSS_SAVE_SYNC: "delight:css-save-sync",
-    CSS_SAVE: "delight:css-save",
+    SETTINGS_SAVE_SYNC: "evi:settings-save-sync",
+    CSS_SAVE_SYNC: "evi:css-save-sync",
+    CSS_SAVE: "evi:css-save",
     /** main -> renderer: quick css file changed on disk */
-    CSS_CHANGED: "delight:css-changed",
+    CSS_CHANGED: "evi:css-changed",
     /** main -> renderer: a plugin was added, changed or removed on disk */
-    PLUGIN_CHANGED: "delight:plugin-changed",
+    PLUGIN_CHANGED: "evi:plugin-changed",
     /** invoke a method exported by a plugin's native (main process) module */
-    PLUGIN_NATIVE_CALL: "delight:plugin-native-call",
+    PLUGIN_NATIVE_CALL: "evi:plugin-native-call",
     /** start / stop a plugin's native module */
-    PLUGIN_NATIVE_STATE: "delight:plugin-native-state",
+    PLUGIN_NATIVE_STATE: "evi:plugin-native-state",
     /** main -> renderer: a theme file was added, changed or removed on disk */
-    THEME_CHANGED: "delight:theme-changed",
+    THEME_CHANGED: "evi:theme-changed",
     /** download a theme from an https URL into the themes folder */
-    THEME_ADD_URL: "delight:theme-add-url",
+    THEME_ADD_URL: "evi:theme-add-url",
     /** save a backup file, see shared/backup.ts */
-    BACKUP_EXPORT: "delight:backup-export",
+    BACKUP_EXPORT: "evi:backup-export",
     /** pick and validate a backup file, answers with what importing it would change */
-    BACKUP_OPEN: "delight:backup-open",
-    BACKUP_APPLY: "delight:backup-apply",
+    BACKUP_OPEN: "evi:backup-open",
+    BACKUP_APPLY: "evi:backup-apply",
     /** plugin store: fetch the registry, install / update / uninstall from it */
-    STORE_LIST: "delight:store-list",
-    STORE_INSTALL: "delight:store-install",
-    STORE_UNINSTALL: "delight:store-uninstall",
+    STORE_LIST: "evi:store-list",
+    STORE_INSTALL: "evi:store-install",
+    STORE_UNINSTALL: "evi:store-uninstall",
     /** main -> renderer: download / install progress of a store operation */
-    STORE_PROGRESS: "delight:store-progress",
-    OPEN_PATH: "delight:open-path",
-    RELAUNCH: "delight:relaunch",
+    STORE_PROGRESS: "evi:store-progress",
+    OPEN_PATH: "evi:open-path",
+    RELAUNCH: "evi:relaunch",
     /** renderer -> main: plugins started and the page stayed up, this start counts as healthy */
-    BOOT_OK: "delight:boot-ok",
+    BOOT_OK: "evi:boot-ok",
     /** leave safe mode: forget the crash history and restart Discord normally */
-    SAFE_MODE_EXIT: "delight:safe-mode-exit",
+    SAFE_MODE_EXIT: "evi:safe-mode-exit",
 } as const;
 
 export interface PluginManifest {
@@ -51,8 +51,8 @@ export interface PluginManifest {
     authors?: string[];
     /** Store search keywords */
     tags?: string[];
-    /** Oldest Delight the plugin works with, published to the store registry */
-    minDelightVersion?: string;
+    /** Oldest Evi the plugin works with, published to the store registry */
+    minEviVersion?: string;
     /** Renderer entry, relative to the plugin folder. Defaults to index.js */
     main?: string;
     /** Optional main-process entry, relative to the plugin folder */
@@ -102,14 +102,14 @@ export interface PluginSettingsEntry {
     settings?: Record<string, unknown>;
 }
 
-export interface DelightSettings {
+export interface EviSettings {
     plugins: Record<string, PluginSettingsEntry>;
     quickCss: boolean;
     /** File names of enabled themes */
     enabledThemes: string[];
 }
 
-export const DEFAULT_SETTINGS: DelightSettings = {
+export const DEFAULT_SETTINGS: EviSettings = {
     plugins: {},
     quickCss: true,
     enabledThemes: [],
@@ -118,7 +118,7 @@ export const DEFAULT_SETTINGS: DelightSettings = {
 export interface BootData {
     version: string;
     dataDir: string;
-    settings: DelightSettings;
+    settings: EviSettings;
     plugins: PluginPayload[];
     quickCss: string;
     themes: ThemePayload[];
@@ -128,7 +128,7 @@ export interface BootData {
 
 /**
  * Why safe mode is on. `crash-loop`: Discord failed to finish starting twice in a row. `renderer-crash`:
- * Discord's window crashed twice within a short time. `flag`: launched with --delight-safe.
+ * Discord's window crashed twice within a short time. `flag`: launched with --evi-safe.
  */
 export type SafeModeReason = "crash-loop" | "renderer-crash" | "flag";
 
@@ -162,12 +162,12 @@ export type BackupOpenResult = {
     token: string;
     fileName: string;
     createdAt: string;
-    delightVersion: string;
+    eviVersion: string;
     previews: Record<ImportMode, ImportPreview>;
 } | Failed;
 
-export type BackupApplyResult = { ok: true; settings: DelightSettings; preview: ImportPreview; } | Failed;
+export type BackupApplyResult = { ok: true; settings: EviSettings; preview: ImportPreview; } | Failed;
 
-export function isPluginEnabled(settings: DelightSettings, manifest: PluginManifest) {
+export function isPluginEnabled(settings: EviSettings, manifest: PluginManifest) {
     return settings.plugins[manifest.id]?.enabled ?? manifest.enabledByDefault ?? false;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { backupFileName, BackupSource, buildBackup, DelightBackup, MAX_BACKUP_BYTES, parseBackup, planImport } from "../src/shared/backup";
+import { backupFileName, BackupSource, buildBackup, EviBackup, MAX_BACKUP_BYTES, parseBackup, planImport } from "../src/shared/backup";
 import type { PluginManifest } from "../src/shared/ipc";
 
 const manifest = (id: string, name: string, extra: Partial<PluginManifest> = {}): PluginManifest => ({ id, name, ...extra });
@@ -26,7 +26,7 @@ function source(): BackupSource {
 }
 
 const NOW = new Date("2026-09-26T10:20:30Z");
-const roundTrip = (backup: DelightBackup) => {
+const roundTrip = (backup: EviBackup) => {
     const parsed = parseBackup(JSON.stringify(backup));
     if (!parsed.ok) throw new Error(parsed.error);
     return parsed.backup;
@@ -35,7 +35,7 @@ const roundTrip = (backup: DelightBackup) => {
 describe("building a backup", () => {
     test("captures settings, quick css, themes and the plugin list without code", () => {
         const backup = buildBackup(source(), "1.2.3", NOW);
-        expect(backup).toMatchObject({ format: "delight-backup", version: 1, createdAt: "2026-09-26T10:20:30.000Z", delightVersion: "1.2.3" });
+        expect(backup).toMatchObject({ format: "evi-backup", version: 1, createdAt: "2026-09-26T10:20:30.000Z", eviVersion: "1.2.3" });
         expect(backup.quickCss).toBe("body { color: red; }");
         expect(backup.themes.map(t => t.file)).toEqual(["dark.css", "light.css"]);
         expect(backup.plugins).toEqual([
@@ -55,7 +55,7 @@ describe("building a backup", () => {
     });
 
     test("default file name uses the local date", () => {
-        expect(backupFileName(new Date(2026, 0, 5, 23, 59))).toBe("delight-backup-2026-01-05.json");
+        expect(backupFileName(new Date(2026, 0, 5, 23, 59))).toBe("evi-backup-2026-01-05.json");
     });
 
     test("survives a round trip through validation", () => {
@@ -75,12 +75,12 @@ describe("validation", () => {
 
     test("rejects files that aren't backups", () => {
         expect(errorOf("not json")).toMatch(/JSON/);
-        expect(errorOf([])).toMatch(/isn't a Delight backup/);
-        expect(errorOf({ ...valid(), format: "vencord" })).toMatch(/isn't a Delight backup/);
+        expect(errorOf([])).toMatch(/isn't a Evi backup/);
+        expect(errorOf({ ...valid(), format: "vencord" })).toMatch(/isn't a Evi backup/);
     });
 
     test("rejects other versions", () => {
-        expect(errorOf({ ...valid(), version: 2 })).toMatch(/newer Delight/);
+        expect(errorOf({ ...valid(), version: 2 })).toMatch(/newer Evi/);
         expect(errorOf({ ...valid(), version: 0 })).toMatch(/Unsupported/);
         expect(errorOf({ ...valid(), version: "1" })).toMatch(/version/);
     });
@@ -88,7 +88,7 @@ describe("validation", () => {
     test("checks every field's type", () => {
         const cases: [(b: any) => void, RegExp][] = [
             [b => b.createdAt = "yesterday", /date/],
-            [b => b.delightVersion = 1, /delightVersion/],
+            [b => b.eviVersion = 1, /eviVersion/],
             [b => b.quickCss = null, /quickCss/],
             [b => b.settings = [], /settings must be/],
             [b => b.settings.plugins = null, /settings.plugins/],
@@ -152,12 +152,12 @@ describe("validation", () => {
 
 describe("import planning", () => {
     /** A backup from another machine */
-    function other(): DelightBackup {
+    function other(): EviBackup {
         return roundTrip({
-            format: "delight-backup",
+            format: "evi-backup",
             version: 1,
             createdAt: NOW.toISOString(),
-            delightVersion: "1.0.0",
+            eviVersion: "1.0.0",
             settings: {
                 plugins: {
                     alpha: { enabled: false, settings: { volume: 7 } },

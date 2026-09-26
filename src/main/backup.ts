@@ -1,4 +1,4 @@
-import { backupFileName, BackupSource, buildBackup, DelightBackup, ImportMode, MAX_BACKUP_BYTES, parseBackup, planImport } from "@shared/backup";
+import { backupFileName, BackupSource, buildBackup, EviBackup, ImportMode, MAX_BACKUP_BYTES, parseBackup, planImport } from "@shared/backup";
 import { BackupApplyResult, BackupExportResult, BackupOpenResult, IPC } from "@shared/ipc";
 import { randomUUID } from "crypto";
 import { app, BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent, webContents } from "electron";
@@ -14,10 +14,10 @@ import { getThemePayloads, reloadTheme } from "./themes";
  * Tests can't click through native dialogs: with this set, both dialogs answer with this path.
  * Only scripts/test-electron.ts sets it.
  */
-const TEST_PATH = process.env.DELIGHT_TEST_BACKUP_PATH;
+const TEST_PATH = process.env.EVI_TEST_BACKUP_PATH;
 
 /** The last validated backup, applied by token so the renderer never sends file contents back */
-let pending: { token: string; backup: DelightBackup; } | undefined;
+let pending: { token: string; backup: EviBackup; } | undefined;
 
 function currentState(): BackupSource {
     let quickCss = "";
@@ -33,9 +33,9 @@ async function pickSavePath(e: IpcMainInvokeEvent) {
     if (TEST_PATH) return TEST_PATH;
     const win = BrowserWindow.fromWebContents(e.sender);
     const options: Electron.SaveDialogOptions = {
-        title: "Save Delight backup",
+        title: "Save Evi backup",
         defaultPath: join(app.getPath("documents"), backupFileName()),
-        filters: [{ name: "Delight backup", extensions: ["json"] }],
+        filters: [{ name: "Evi backup", extensions: ["json"] }],
     };
     const { canceled, filePath } = await (win ? dialog.showSaveDialog(win, options) : dialog.showSaveDialog(options));
     return canceled ? undefined : filePath;
@@ -45,16 +45,16 @@ async function pickOpenPath(e: IpcMainInvokeEvent) {
     if (TEST_PATH) return TEST_PATH;
     const win = BrowserWindow.fromWebContents(e.sender);
     const options: Electron.OpenDialogOptions = {
-        title: "Restore Delight backup",
+        title: "Restore Evi backup",
         properties: ["openFile"],
-        filters: [{ name: "Delight backup", extensions: ["json"] }, { name: "All files", extensions: ["*"] }],
+        filters: [{ name: "Evi backup", extensions: ["json"] }, { name: "All files", extensions: ["*"] }],
     };
     const { canceled, filePaths } = await (win ? dialog.showOpenDialog(win, options) : dialog.showOpenDialog(options));
     return canceled ? undefined : filePaths[0];
 }
 
 export function writeBackup(path: string) {
-    const backup = buildBackup(currentState(), DELIGHT_VERSION);
+    const backup = buildBackup(currentState(), EVI_VERSION);
     const tmp = path + ".tmp";
     writeFileSync(tmp, JSON.stringify(backup, null, 4));
     renameSync(tmp, path);
@@ -81,7 +81,7 @@ function commitFiles(writes: { path: string; data: string; }[]) {
     const staged: { path: string; tmp: string; previous: string | null; }[] = [];
     try {
         for (const { path, data } of writes) {
-            const tmp = path + ".delight-import";
+            const tmp = path + ".evi-import";
             writeFileSync(tmp, data);
             staged.push({ path, tmp, previous: existsSync(path) ? readFileSync(path, "utf8") : null });
         }
@@ -110,7 +110,7 @@ function commitFiles(writes: { path: string; data: string; }[]) {
     };
 }
 
-export function applyBackup(backup: DelightBackup, mode: ImportMode): BackupApplyResult {
+export function applyBackup(backup: EviBackup, mode: ImportMode): BackupApplyResult {
     const previousSettings = structuredClone(settings);
     const plan = planImport(currentState(), backup, mode);
 
@@ -138,7 +138,7 @@ export function applyBackup(backup: DelightBackup, mode: ImportMode): BackupAppl
     if (plan.quickCss !== null) {
         for (const wc of webContents.getAllWebContents()) if (!wc.isDestroyed()) wc.send(IPC.CSS_CHANGED, plan.quickCss);
     }
-    console.log(`[Delight] Restored a backup (${mode}), ${plan.preview.changes} changes`);
+    console.log(`[Evi] Restored a backup (${mode}), ${plan.preview.changes} changes`);
     return { ok: true, settings: plan.settings, preview: plan.preview };
 }
 
@@ -148,7 +148,7 @@ export function initBackup() {
             const path = await pickSavePath(e);
             if (!path) return { ok: false, canceled: true };
             writeBackup(path);
-            console.log(`[Delight] Saved a backup to ${path}`);
+            console.log(`[Evi] Saved a backup to ${path}`);
             return { ok: true, path };
         } catch (err) {
             return { ok: false, error: `Couldn't save the backup: ${errorOf(err)}` };
@@ -171,7 +171,7 @@ export function initBackup() {
                 token,
                 fileName: basename(path),
                 createdAt: backup.createdAt,
-                delightVersion: backup.delightVersion,
+                eviVersion: backup.eviVersion,
                 previews: {
                     merge: planImport(state, backup, "merge").preview,
                     replace: planImport(state, backup, "replace").preview,

@@ -20,7 +20,7 @@ export function addRequestFilter(session: Session, filter: RequestFilter) {
                     const res = f(details);
                     if (res && (res.cancel || res.redirectURL)) return callback(res);
                 } catch (err) {
-                    console.error("[Delight] Request filter threw", err);
+                    console.error("[Evi] Request filter threw", err);
                 }
             }
             callback({});

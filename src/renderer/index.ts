@@ -1,7 +1,7 @@
 /**
  * Renderer entry. Runs in Discord's page before any of Discord's scripts.
  */
-import * as api from "@delight/api";
+import * as api from "@evi/api";
 import { isPluginEnabled } from "@shared/ipc";
 
 import { Backup } from "./backup";
@@ -26,12 +26,12 @@ const logger = new Logger("Core");
 
 declare global {
     interface Window {
-        Delight: typeof Delight;
+        Evi: typeof Evi;
     }
 }
 
-const Delight = {
-    version: DELIGHT_VERSION,
+const Evi = {
+    version: EVI_VERSION,
     api,
     plugins: PluginManager,
     settings: Settings,
@@ -53,9 +53,9 @@ const Delight = {
 
 function boot() {
     // Only present where our preload decided to load us
-    if (!window.DelightNative) return;
-    if (window.Delight) return logger.warn("Already loaded, skipping");
-    Object.defineProperty(window, "Delight", { value: Delight, configurable: false, writable: false });
+    if (!window.EviNative) return;
+    if (window.Evi) return logger.warn("Already loaded, skipping");
+    Object.defineProperty(window, "Evi", { value: Evi, configurable: false, writable: false });
 
     // Must happen before Discord's runtime script executes
     interceptWebpack();
@@ -79,7 +79,7 @@ function boot() {
     });
 
     if (SafeMode.active) logger.warn(`Safe mode (${data.safeMode!.reason}): ${data.plugins.length} plugins, themes and Quick CSS are off.`);
-    else logger.info(`v${DELIGHT_VERSION} loaded, ${data.plugins.length} plugins. Ctrl+Shift+D opens settings.`);
+    else logger.info(`v${EVI_VERSION} loaded, ${data.plugins.length} plugins. Ctrl+Shift+D opens settings.`);
 }
 
 try {

@@ -1,4 +1,4 @@
-# Delight
+# Evi
 
 A Discord desktop client mod. Plugins are separate bundles loaded at runtime and hot-reload when their files change. They can rewrite Discord's source, hook any exported function, and run code in Electron's main process.
 
@@ -17,28 +17,28 @@ With `bun run dev` running:
 - **Renderer core edits** apply on `Ctrl+R` in Discord.
 - **Main process edits** need Discord restarted.
 
-Press `Ctrl+Shift+D` in Discord to open the settings panel, where you manage plugins, themes, Quick CSS and patch health, and try out new source patches in the Patch Helper. The same pages are also in Discord's own settings, under Delight.
+Press `Ctrl+Shift+D` in Discord to open the settings panel, where you manage plugins, themes, Quick CSS and patch health, and try out new source patches in the Patch Helper. The same pages are also in Discord's own settings, under Evi.
 
-To ship it: `bun run compile` builds `dist/delight.exe`, a single-file installer with the core and official plugins embedded.
+To ship it: `bun run compile` builds `dist/evi.exe`, a single-file installer with the core and official plugins embedded.
 
 ```
-delight install   [--flavor stable|ptb|canary|development|all] [--restart] [--dev]
-delight uninstall [--flavor ...] [--restart]
-delight status
-delight update    [--check] [--flavor ...] [--restart]
+evi install   [--flavor stable|ptb|canary|development|all] [--restart] [--dev]
+evi uninstall [--flavor ...] [--restart]
+evi status
+evi update    [--check] [--flavor ...] [--restart]
 ```
 
-Launch `Discord.exe --vanilla` to start once without Delight, or `Discord.exe --delight-safe` to start once in [safe mode](#safe-mode).
+Launch `Discord.exe --vanilla` to start once without Evi, or `Discord.exe --evi-safe` to start once in [safe mode](#safe-mode).
 
 ### Updating
 
-`delight update` asks GitHub for the latest published release of `BleedDev/delight`. If it's newer than the running exe, it downloads the new `delight.exe` next to the current one and checks it against the release's `delight.exe.sha256`. A mismatch is rejected and nothing changes. Windows can't overwrite a running exe, so the current one is renamed to `delight.exe.old`, the new one takes its name, and the `.old` is removed the next time Delight runs. Then the new exe runs `install` (with your `--flavor` / `--restart`), which refreshes the core and official plugins in `%APPDATA%\Delight`.
+`evi update` asks GitHub for the latest published release of `BleedDev/delight`. If it's newer than the running exe, it downloads the new `evi.exe` next to the current one and checks it against the release's `evi.exe.sha256`. A mismatch is rejected and nothing changes. Windows can't overwrite a running exe, so the current one is renamed to `evi.exe.old`, the new one takes its name, and the `.old` is removed the next time Evi runs. Then the new exe runs `install` (with your `--flavor` / `--restart`), which refreshes the core and official plugins in `%APPDATA%\Evi`.
 
-`delight update --check` only reports whether a newer release exists. Source checkouts (`bun src/cli/index.ts`) don't replace themselves: update them with `git pull` and `bun run build`.
+`evi update --check` only reports whether a newer release exists. Source checkouts (`bun src/cli/index.ts`) don't replace themselves: update them with `git pull` and `bun run build`.
 
 ### Releasing
 
-`.github/workflows/release.yml` never publishes anything. It runs only when started from the Actions tab (with a `version` input) or when a `v*` tag is pushed. The version must match `package.json`. It builds, typechecks, runs the unit and CLI tests, compiles `delight.exe`, and creates a **draft** release with `delight.exe` and `delight.exe.sha256` attached. A maintainer reviews the draft and publishes it; only then does `delight update` see it. Versions with a `-suffix` are marked as prereleases, which `delight update` ignores.
+`.github/workflows/release.yml` never publishes anything. It runs only when started from the Actions tab (with a `version` input) or when a `v*` tag is pushed. The version must match `package.json`. It builds, typechecks, runs the unit and CLI tests, compiles `evi.exe`, and creates a **draft** release with `evi.exe` and `evi.exe.sha256` attached. A maintainer reviews the draft and publishes it; only then does `evi update` see it. Versions with a `-suffix` are marked as prereleases, which `evi update` ignores.
 
 ## How it works
 
@@ -46,7 +46,7 @@ Launch `Discord.exe --vanilla` to start once without Delight, or `Discord.exe --
 Discord.exe
  └ resources/app.asar        our loader (src/shared/shim.ts). Falls back to vanilla if the core fails
     └ core/main.js           src/main: IPC, settings, plugin host + native modules, file watchers
-       ├ session preload     src/preload: exposes DelightNative, injects the renderer before Discord's scripts
+       ├ session preload     src/preload: exposes EviNative, injects the renderer before Discord's scripts
        │  └ renderer.js      src/renderer: webpack capture, patching, plugin manager, UI
        └ resources/_app.asar Discord's untouched original, loaded after setup
 ```
@@ -77,7 +77,7 @@ Official plugins ship in `plugins/` and are turned on or off in the Plugins tab.
 
 ## Themes
 
-A theme is a `.css` file in `%APPDATA%\Delight\themes`. Turn it on in the Themes tab. Saving the file restyles Discord right away, and new files show up without a reload. BetterDiscord-style headers are read for the name, description, author and version:
+A theme is a `.css` file in `%APPDATA%\Evi\themes`. Turn it on in the Themes tab. Saving the file restyles Discord right away, and new files show up without a reload. BetterDiscord-style headers are read for the name, description, author and version:
 
 ```css
 /**
@@ -92,9 +92,9 @@ Without a header, the file name is used. **Add from URL** downloads an `https://
 
 ## Backup and restore
 
-The Backup tab saves everything to one JSON file (`delight-backup-YYYY-MM-DD.json`): settings, which plugins are on and their settings, themes and Quick CSS. Plugin code isn't included; the file lists the plugins you had, and restoring shows which ones aren't installed so you know what to reinstall.
+The Backup tab saves everything to one JSON file (`evi-backup-YYYY-MM-DD.json`): settings, which plugins are on and their settings, themes and Quick CSS. Plugin code isn't included; the file lists the plugins you had, and restoring shows which ones aren't installed so you know what to reinstall.
 
-**Choose backup file** validates the file (format `delight-backup`, version 1, up to 16 MB) and shows what would change before anything is written. Pick how to restore:
+**Choose backup file** validates the file (format `evi-backup`, version 1, up to 16 MB) and shows what would change before anything is written. Pick how to restore:
 
 - **Merge**: the backup's plugin choices and settings win, everything else stays, enabled themes are combined, and your Quick CSS is kept unless it's empty.
 - **Replace**: settings and Quick CSS become exactly the backup's, and themes that aren't in the backup are turned off.
@@ -102,14 +102,14 @@ The Backup tab saves everything to one JSON file (`delight-backup-YYYY-MM-DD.jso
 Both write the backup's themes (new files, or changed ones overwritten) and never delete anything. All files are written together or not at all, and Discord updates live, no reload.
 ## Plugin store
 
-The **Store** tab (also under Delight in Discord's settings) lists the plugins in a registry, a JSON file at `https://raw.githubusercontent.com/BleedDev/delight/main/registry.json`. Search by name, description, author or tag, then **Install**, **Update** or **Uninstall**. An installed plugin appears and starts right away, no restart: the store writes it into `%APPDATA%\Delight\plugins\<id>` and the plugin watcher picks it up like any other folder.
+The **Store** tab (also under Evi in Discord's settings) lists the plugins in a registry, a JSON file at `https://raw.githubusercontent.com/BleedDev/delight/main/registry.json`. Search by name, description, author or tag, then **Install**, **Update** or **Uninstall**. An installed plugin appears and starts right away, no restart: the store writes it into `%APPDATA%\Evi\plugins\<id>` and the plugin watcher picks it up like any other folder.
 
-- **Every file is verified.** The registry lists a sha256 for each file. Delight downloads all of them (https only, redirects included, 5 MB per file, 1 MB for the registry), checks each hash and the manifest (same id, standard file names), and only then writes anything. A mismatch is rejected and nothing is written.
-- **Installs are atomic.** Files are staged in `%APPDATA%\Delight\store-staging`, outside the plugins folder, and moved into place with one rename. An update moves the old folder aside first and puts it back if the swap fails.
+- **Every file is verified.** The registry lists a sha256 for each file. Evi downloads all of them (https only, redirects included, 5 MB per file, 1 MB for the registry), checks each hash and the manifest (same id, standard file names), and only then writes anything. A mismatch is rejected and nothing is written.
+- **Installs are atomic.** Files are staged in `%APPDATA%\Evi\store-staging`, outside the plugins folder, and moved into place with one rename. An update moves the old folder aside first and puts it back if the swap fails.
 - **Native plugins ask first.** A plugin with a `native.js`, or with `chromiumSwitches`, runs outside Discord's page with full access to your computer. The registry must mark it `"native": true`, and installing it (or updating it) takes an explicit confirmation that says so. Main refuses the install without it.
-- **Only its own plugins.** Store installs carry a `.delight-store.json` marker. The store never overwrites, updates or removes a plugin folder without one, so plugins you put there yourself are safe.
-- **Updates** are offered when the registry's version is newer than the installed one (`1.10.0` > `1.9.0`, `1.0.0` > `1.0.0-beta`). Plugins whose `minDelightVersion` is newer than your Delight can't be installed.
-- **Another registry.** Put `{ "registryUrl": "https://…/registry.json" }` in `%APPDATA%\Delight\store.json`. The renderer can't change it: Discord's page only ever asks for a plugin id, main decides where the files come from. `DELIGHT_STORE_URL` overrides both (the tests use it).
+- **Only its own plugins.** Store installs carry a `.evi-store.json` marker. The store never overwrites, updates or removes a plugin folder without one, so plugins you put there yourself are safe.
+- **Updates** are offered when the registry's version is newer than the installed one (`1.10.0` > `1.9.0`, `1.0.0` > `1.0.0-beta`). Plugins whose `minEviVersion` is newer than your Evi can't be installed.
+- **Another registry.** Put `{ "registryUrl": "https://…/registry.json" }` in `%APPDATA%\Evi\store.json`. The renderer can't change it: Discord's page only ever asks for a plugin id, main decides where the files come from. `EVI_STORE_URL` overrides both (the tests use it).
 
 ### Registry format
 
@@ -120,11 +120,11 @@ The **Store** tab (also under Delight in Discord's settings) lists the plugins i
         "id": "no-track",
         "name": "No Track",
         "description": "Blocks Discord's analytics requests.",
-        "authors": ["Delight"],
+        "authors": ["Evi"],
         "version": "1.0.0",
         "tags": ["privacy"],
         "native": true,
-        "minDelightVersion": "0.1.0",
+        "minEviVersion": "0.1.0",
         "files": {
             "manifest.json": { "url": "https://…/no-track/manifest.json", "sha256": "…" },
             "index.js": { "url": "https://…/no-track/index.js", "sha256": "…" },
@@ -143,19 +143,19 @@ bun run build
 bun scripts/registry.ts
 ```
 
-This copies the built official plugins into `store/plugins/<id>/` and writes `registry.json` with their hashes, pointing at `https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins`. Commit both together: the registry only matches the files from the same run. The same build always gives the same files and hashes. Name, description, authors, version and `tags` come from each plugin's `manifest.json`; `minDelightVersion` too, defaulting to the current Delight version. Options: `--base <https url>` to serve the files from somewhere else, `--files <dir>` for where to copy them, `--out <file>` for the registry, `--only id,id` to publish a subset. The script checks its output with the app's own validation before writing it.
+This copies the built official plugins into `store/plugins/<id>/` and writes `registry.json` with their hashes, pointing at `https://raw.githubusercontent.com/BleedDev/delight/main/store/plugins`. Commit both together: the registry only matches the files from the same run. The same build always gives the same files and hashes. Name, description, authors, version and `tags` come from each plugin's `manifest.json`; `minEviVersion` too, defaulting to the current Evi version. Options: `--base <https url>` to serve the files from somewhere else, `--files <dir>` for where to copy them, `--out <file>` for the registry, `--only id,id` to publish a subset. The script checks its output with the app's own validation before writing it.
 ## Safe mode
 
-A plugin, theme or Quick CSS that breaks Discord can't lock you out of it. In safe mode Delight still loads, with its settings, but nothing you added runs: no plugins (not even their top-level code, their native side or their Chromium switches), no themes and no Quick CSS. Discord itself works normally.
+A plugin, theme or Quick CSS that breaks Discord can't lock you out of it. In safe mode Evi still loads, with its settings, but nothing you added runs: no plugins (not even their top-level code, their native side or their Chromium switches), no themes and no Quick CSS. Discord itself works normally.
 
-- **Crash loops.** Each start is counted in `%APPDATA%\Delight\safe-mode.json`. Once plugins have started and Discord has stayed up for 5 seconds, the start counts as healthy and the counter goes back to 0. A start that crashes, hangs or gets closed before that leaves it up. After 2 of those in a row, the next start is in safe mode.
+- **Crash loops.** Each start is counted in `%APPDATA%\Evi\safe-mode.json`. Once plugins have started and Discord has stayed up for 5 seconds, the start counts as healthy and the counter goes back to 0. A start that crashes, hangs or gets closed before that leaves it up. After 2 of those in a row, the next start is in safe mode.
 - **Crashes while Discord runs.** If Discord's window crashes twice within 2 minutes, Discord switches to safe mode on the spot: native plugin code is stopped and the window reloads without plugins.
-- **Staying safe.** Safe mode caused by crashes stays on across restarts until you leave it. If Discord still fails to start twice in safe mode, the next start skips Delight entirely, then it's back to safe mode.
-- **On demand.** `Discord.exe --delight-safe` starts in safe mode once.
+- **Staying safe.** Safe mode caused by crashes stays on across restarts until you leave it. If Discord still fails to start twice in safe mode, the next start skips Evi entirely, then it's back to safe mode.
+- **On demand.** `Discord.exe --evi-safe` starts in safe mode once.
 
 A notice in Discord (and at the top of the Plugins tab) says why safe mode is on and names the most recent change that's still on: a plugin turned on, added or updated, its settings changed, a theme turned on or edited, or a Quick CSS edit. It offers **Disable &lt;it&gt; and restart** and **Exit safe mode and restart**. Turning a plugin on is written to disk before any of its code runs, so a plugin that crashes Discord the moment you enable it is still named. In safe mode you can still turn plugins and themes on and off; the changes apply once you leave it.
 
-All plugins are off, official ones included. They're installed into the same folder as yours and there's no telling them apart on disk, and a Discord update can break an official plugin's source patch as easily as yours. The notice and the settings are part of Delight's core, so they still work.
+All plugins are off, official ones included. They're installed into the same folder as yours and there's no telling them apart on disk, and a Discord update can break an official plugin's source patch as easily as yours. The notice and the settings are part of Evi's core, so they still work.
 ## Message Logger
 
 An official plugin, off by default. Deleted messages stay in the chat, tinted red and marked **Deleted**, and edited messages show their previous versions under them, rendered with Discord's own markdown. Messages you delete yourself vanish as usual. Settings: keep deleted messages, keep edit history, ignore my own deletes, ignore my own messages, ignore bots, and how many messages to log per channel (the oldest are forgotten past it). The settings card counts what's logged and has a **Clear logged messages** button.
@@ -174,7 +174,7 @@ plugins/my-plugin/
 ```
 
 ```tsx
-import { definePlugin, filters } from "@delight/api";
+import { definePlugin, filters } from "@evi/api";
 
 export default definePlugin({
     settings: {
@@ -219,7 +219,7 @@ The `ctx` object:
 These use Discord's own systems, so they look and behave like Discord's.
 
 ```tsx
-import { definePlugin, findMenuGroup, Menu } from "@delight/api";
+import { definePlugin, findMenuGroup, Menu } from "@evi/api";
 
 export default definePlugin({
     start(ctx) {
@@ -245,17 +245,17 @@ export default definePlugin({
 ```
 
 - **Toasts** go through Discord's toast queue: one shows at a time, the rest wait their turn.
-- **Menus.** `navId` is Discord's name for the menu: `"message"`, `"user-context"`, `"guild-context"`, `"channel-context"`, `"gdm-context"`… or `"*"` for all of them. `children` is the menu's item list; push to it, splice into it, or use `findMenuGroup(children, itemId)` to add next to one of Discord's items. It's a fresh copy on every render, groups included, so edits never touch Discord's own arrays. Items must be `Menu.Item`, `Menu.Group`, `Menu.Separator`, `Menu.CheckboxItem`, `Menu.RadioItem`, `Menu.SwitchItem` or `Menu.ControlItem`, Discord's own components (it rejects anything else). `props` holds what the menu was rendered with (the message and channel, the user, the guild...). It comes from a core source patch, shown as `delight` in the Patches tab, that adds the rendering component's props next to every `navId` in Discord's code. Where that isn't possible (class fields, module scope), `props` is `{}`.
+- **Menus.** `navId` is Discord's name for the menu: `"message"`, `"user-context"`, `"guild-context"`, `"channel-context"`, `"gdm-context"`… or `"*"` for all of them. `children` is the menu's item list; push to it, splice into it, or use `findMenuGroup(children, itemId)` to add next to one of Discord's items. It's a fresh copy on every render, groups included, so edits never touch Discord's own arrays. Items must be `Menu.Item`, `Menu.Group`, `Menu.Separator`, `Menu.CheckboxItem`, `Menu.RadioItem`, `Menu.SwitchItem` or `Menu.ControlItem`, Discord's own components (it rejects anything else). `props` holds what the menu was rendered with (the message and channel, the user, the guild...). It comes from a core source patch, shown as `evi` in the Patches tab, that adds the rendering component's props next to every `navId` in Discord's code. Where that isn't possible (class fields, module scope), `props` is `{}`.
 - **Commands** are listed with Discord's built-ins (`/shrug`, `/tableflip`) and run locally. `args` maps option names to values. Option `type` is `"string"` (default), `"integer"`, `"number"`, `"boolean"`, `"user"`, `"channel"`, `"role"`, `"mentionable"` or `"attachment"`. Returning `{ content }` makes Discord send it as a message from you. A thrown error shows a failure toast.
 
 The same functions exist outside `ctx` as `showToast`, `addContextMenuPatch` and `registerCommand`. The last two return a removal function you must call yourself.
 
-Finders exported from `@delight/api`: `find`, `findAll`, `findByProps`, `findByCode`, `findComponent`, `findStore`, `findExport` (returns where the value lives, for hooking), lazy variants (`findByPropsLazy`…), `findModuleIds`, `requireModule`, `waitFor`. Common modules are `React`, `ReactDOM`, `createRoot`, `Dispatcher` and `getStore(name)`. Plugins may `import` `react` and use JSX. Both resolve to Discord's own React at runtime.
+Finders exported from `@evi/api`: `find`, `findAll`, `findByProps`, `findByCode`, `findComponent`, `findStore`, `findExport` (returns where the value lives, for hooking), lazy variants (`findByPropsLazy`…), `findModuleIds`, `requireModule`, `waitFor`. Common modules are `React`, `ReactDOM`, `createRoot`, `Dispatcher` and `getStore(name)`. Plugins may `import` `react` and use JSX. Both resolve to Discord's own React at runtime.
 
 `native.ts` runs in the main process:
 
 ```ts
-import type { NativePlugin } from "@delight/api/native";
+import type { NativePlugin } from "@evi/api/native";
 
 export default {
     start(ctx) {
@@ -269,7 +269,7 @@ export default {
 
 ## Performance
 
-`Delight.stats` counts what Delight adds to module loading. `bun run bench` measures it on the live bundle. On about 6,800 modules:
+`Evi.stats` counts what Evi adds to module loading. `bun run bench` measures it on the live bundle. On about 6,800 modules:
 
 | | Before | After |
 |---|---|---|
@@ -293,8 +293,8 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 |---|---|
 | `test:unit` | Hook engine (ordering, error isolation, exact restore, getters, construct, rebasing), finders through hooks, Patch Helper evaluation, theme parsing and remote checks, the menu props patch, backup validation/merge/replace, store registry validation and hashing, safe mode start thresholds and suspects, Quick Actions URLs |
 | `test:web` | The renderer on the **live discord.com bundle** in headless Chrome (WebAuthn disabled so no passkey prompts): runtime capture, finders, source patches, hooks, hot reload, live module replacement, toasts, menu items, slash commands, Silent Typing, Quick Actions, Message Logger (against Discord's real MessageStore), and every UI tab (Plugins, Store, Themes, Quick CSS, Backup, Patches, Patch Helper, safe mode notice). Runs on Node because Playwright's transports hang under Bun on Windows. |
-| `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (startup, live, ordering, remote), backup export and restore into a second profile, store install/update/uninstall against a local fake registry (tampered files rejected, native needs confirmation), safe mode (crash loops, `--delight-safe`, mid-session crashes), auto-injection after an update. `DELIGHT_TEST_APP_NAME` gives parallel runs their own profile. |
-| `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `delight update` against a local fake of GitHub's API (`DELIGHT_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection, self-replacement on a copy of the exe, and that updates only refresh Discords that already have Delight |
+| `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (startup, live, ordering, remote), backup export and restore into a second profile, store install/update/uninstall against a local fake registry (tampered files rejected, native needs confirmation), safe mode (crash loops, `--evi-safe`, mid-session crashes), auto-injection after an update. `EVI_TEST_APP_NAME` gives parallel runs their own profile. |
+| `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `evi update` against a local fake of GitHub's API (`EVI_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection, self-replacement on a copy of the exe, and that updates only refresh Discords that already have Evi |
 | `test:plugins` | Fast Lists on a synthetic 185-server sidebar and chat: no visible row ever hidden, never writes the scroll position, never gets stuck scrolling up through loading history |
 
 None of the tests touch your real Discord install or profile.

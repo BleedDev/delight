@@ -1,5 +1,5 @@
-import * as api from "@delight/api";
-import { DelightSettings, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import * as api from "@evi/api";
+import { EviSettings, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
 
 import { Logger } from "../logger";
 import { Native } from "../native";
@@ -41,6 +41,8 @@ function emit() {
 // ---- evaluation -------------------------------------------------------------------------------
 
 const requireMap: Record<string, unknown> = {
+    "@evi/api": api,
+    // Plugins built before the rename to Evi
     "@delight/api": api,
     "react": React,
     "react-dom": ReactDOM,
@@ -52,10 +54,10 @@ function evaluate({ manifest, code }: PluginPayload): PluginDefinition {
     const module = { exports: {} as any };
     const require = (name: string) => {
         if (name in requireMap) return requireMap[name];
-        throw new Error(`${manifest.id} tried to require "${name}". Only @delight/api and react are provided, bundle anything else.`);
+        throw new Error(`${manifest.id} tried to require "${name}". Only @evi/api and react are provided, bundle anything else.`);
     };
 
-    const fn = new Function("module", "exports", "require", `${code}\n//# sourceURL=delight://plugins/${manifest.id}.js`);
+    const fn = new Function("module", "exports", "require", `${code}\n//# sourceURL=evi://plugins/${manifest.id}.js`);
     fn(module, module.exports, require);
 
     const definition = module.exports?.default ?? module.exports;
@@ -269,7 +271,7 @@ export const PluginManager = {
     },
 
     /** Starts and stops plugins to match settings that were replaced wholesale (a restored backup) */
-    async syncEnabled(previous: DelightSettings) {
+    async syncEnabled(previous: EviSettings) {
         if (SafeMode.active) return emit();
         for (const state of plugins.values()) {
             const enabled = isPluginEnabled(Settings.data, state.manifest);

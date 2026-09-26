@@ -1,5 +1,5 @@
 /**
- * Measures what Delight adds to Discord's module loading on the live web bundle.
+ * Measures what Evi adds to Discord's module loading on the live web bundle.
  *   node scripts/bench-web.ts [runs]
  */
 import { existsSync, readdirSync, readFileSync } from "fs";
@@ -33,17 +33,17 @@ for (let i = 0; i < runs; i++) {
     await page.addInitScript(disablePasskeys);
     await page.addInitScript(b => {
         if (window !== window.top) return;
-        (window as any).DelightNative = {
+        (window as any).EviNative = {
             boot: () => structuredClone(b), saveSettings: async () => { }, saveSettingsSync() { }, saveQuickCss: async () => { },
             onQuickCssChange() { }, onPluginChange() { }, callNative: async () => 0, setNativeRunning: async () => { },
         };
     }, boot);
     await page.addInitScript(renderer);
     await page.goto("https://discord.com/login");
-    await page.waitForFunction(() => (window as any).Delight?.plugins.getSnapshot().some((p: any) => p.running), null, { timeout: 60_000 });
+    await page.waitForFunction(() => (window as any).Evi?.plugins.getSnapshot().some((p: any) => p.running), null, { timeout: 60_000 });
     await page.waitForTimeout(3000);
-    results.push(await page.evaluate(() => ({ ...(window as any).Delight.stats })));
-    if (i === 0) console.log("pending waiters:", await page.evaluate(() => (window as any).Delight.pendingWaiters()));
+    results.push(await page.evaluate(() => ({ ...(window as any).Evi.stats })));
+    if (i === 0) console.log("pending waiters:", await page.evaluate(() => (window as any).Evi.pendingWaiters()));
     await page.close();
 }
 await browser.close();

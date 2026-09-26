@@ -1,6 +1,6 @@
 /**
  * Settings UI building blocks. Controls and typography are Discord's own (see discord.tsx) so the
- * settings look and behave exactly like the rest of Discord's; Delight's versions below are only
+ * settings look and behave exactly like the rest of Discord's; Evi's versions below are only
  * fallbacks for when Discord renames one of its components. Layout (sections, lists, rows) follows
  * the measurements of Discord's own settings layout, see styles.css.
  */
@@ -337,7 +337,7 @@ export function Badge({ children, tone }: { children: ReactNode; tone?: "warning
     return <span className="dl-badge" data-tone={tone}>{children}</span>;
 }
 
-/** Discord's inline notice with an optional action; Delight's banner when it isn't available */
+/** Discord's inline notice with an optional action; Evi's banner when it isn't available */
 export function Notice({ tone, action, children }: { tone: "warning" | "danger" | "info"; action?: ReactNode; children: ReactNode; }) {
     const Native = DiscordUI.Notice.get;
     const messageType = ({ warning: "warn", danger: "danger", info: "info" } as const)[tone];

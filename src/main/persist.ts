@@ -28,10 +28,10 @@ export function persistAcrossUpdates(shimAsar: string) {
 
                 fs.renameSync(asar, original);
                 fs.copyFileSync(shimAsar, asar);
-                console.log("[Delight] Injected into updated Discord at", resources);
+                console.log("[Evi] Injected into updated Discord at", resources);
             }
         } catch (err) {
-            console.error("[Delight] Failed to persist across update", err);
+            console.error("[Evi] Failed to persist across update", err);
         }
     };
 

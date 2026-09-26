@@ -1,10 +1,10 @@
-import { DEFAULT_SETTINGS, DelightSettings, PluginSettingsEntry } from "@shared/ipc";
+import { DEFAULT_SETTINGS, EviSettings, PluginSettingsEntry } from "@shared/ipc";
 
 import { Native } from "./native";
 
 type Listener = () => void;
 
-let data: DelightSettings;
+let data: EviSettings;
 const listeners = new Set<Listener>();
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -12,17 +12,17 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 addEventListener("pagehide", () => Settings.flush());
 
 export const Settings = {
-    init(initial: DelightSettings) {
+    init(initial: EviSettings) {
         // Main fills in defaults too, this covers a main process older than the renderer
         data = { ...structuredClone(DEFAULT_SETTINGS), ...initial };
     },
 
-    get data(): Readonly<DelightSettings> {
+    get data(): Readonly<EviSettings> {
         return data;
     },
 
     /** Mutate settings, notify subscribers and persist (debounced) */
-    update(mutate: (draft: DelightSettings) => void) {
+    update(mutate: (draft: EviSettings) => void) {
         mutate(data);
         // New object identity so React's useSyncExternalStore sees a change
         data = { ...data };
@@ -36,7 +36,7 @@ export const Settings = {
     },
 
     /** Swap in settings main already saved (a restored backup) and notify subscribers, without saving again */
-    replace(next: DelightSettings) {
+    replace(next: EviSettings) {
         clearTimeout(saveTimer);
         saveTimer = undefined;
         data = { ...structuredClone(DEFAULT_SETTINGS), ...next };

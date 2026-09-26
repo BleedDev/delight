@@ -42,5 +42,5 @@ __export(exports_gpu_boost, {
   default: () => gpu_boost_default
 });
 module.exports = __toCommonJS(exports_gpu_boost);
-var import_api = require("@delight/api");
+var import_api = require("@evi/api");
 var gpu_boost_default = import_api.definePlugin({});

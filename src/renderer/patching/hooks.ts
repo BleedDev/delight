@@ -53,7 +53,7 @@ interface HookedFunction {
 const logger = new Logger("Hooks", "#9ece6a");
 const hooked = new WeakMap<object, Map<PropertyKey, HookedFunction>>();
 
-const SYM_HOOK_ORIGINAL = Symbol("delight.hookOriginal");
+const SYM_HOOK_ORIGINAL = Symbol("evi.hookOriginal");
 
 function invoke(record: HookedFunction, self: any, args: any[], newTarget: Function | undefined) {
     return newTarget ? Reflect.construct(record.original, args, newTarget) : record.original.apply(self, args);

@@ -7,7 +7,9 @@
  */
 import { createAsar } from "./asar";
 
-export const SHIM_MARKER = "// delight-shim";
+export const SHIM_MARKER = "// evi-shim";
+/** Markers of loaders written before the rename to Evi, so they can be upgraded and uninstalled */
+export const LEGACY_SHIM_MARKERS = ["// delight-shim"];
 export const ORIGINAL_ASAR = "_app.asar";
 
 export interface ShimOptions {
@@ -21,14 +23,14 @@ export function createShim({ corePath, devPluginsDir }: ShimOptions) {
     return `${SHIM_MARKER}
 "use strict";
 const path = require("path");
-${devPluginsDir ? `process.env.DELIGHT_DEV_PLUGINS = ${JSON.stringify(devPluginsDir)};\n` : ""}
+${devPluginsDir ? `process.env.EVI_DEV_PLUGINS = ${JSON.stringify(devPluginsDir)};\n` : ""}
 // The bundler inlines __dirname at build time, so the core learns its location from us
-global.__delightCoreDir = path.dirname(${JSON.stringify(corePath)});
+global.__eviCoreDir = path.dirname(${JSON.stringify(corePath)});
 try {
     require(${JSON.stringify(corePath)});
 } catch (err) {
-    if (global.__delightLoadedDiscord) throw err;
-    console.error("[Delight] Core failed to load, starting Discord without it.", err);
+    if (global.__eviLoadedDiscord) throw err;
+    console.error("[Evi] Core failed to load, starting Discord without it.", err);
     const { app } = require("electron");
     const asar = path.join(__dirname, "..", ${JSON.stringify(ORIGINAL_ASAR)});
     const pkg = require(path.join(asar, "package.json"));

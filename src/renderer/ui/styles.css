@@ -38,7 +38,7 @@
     --dl-badge-text: var(--badge-text-default, var(--text-subtle, #b5bac1));
     --dl-switch-on: var(--status-positive, #23a55a);
     --dl-focus-ring: var(--border-focus, var(--focus-primary, #00a8fc));
-    /* Delight's brand color, only for marking matched code in Patch Helper */
+    /* Evi's brand color, only for marking matched code in Patch Helper */
     --dl-accent-solid: #e0508f;
 
     --dl-radius-panel: var(--radius-lg, 16px);
@@ -576,7 +576,7 @@
     min-block-size: 18px;
 }
 
-/* ---- controls (Delight's fallbacks for Discord's) ------------------------------------------ */
+/* ---- controls (Evi's fallbacks for Discord's) ------------------------------------------ */
 
 .dl-button {
     all: unset;
@@ -759,7 +759,7 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* Delight's own controls; Discord's draw their own focus ring */
+/* Evi's own controls; Discord's draw their own focus ring */
 .dl-root :is(.dl-nav-item, .dl-close-button, .dl-button, .dl-chip, .dl-switch, .dl-input, .dl-textarea, .dl-select, .dl-code):focus-visible {
     outline: 2px solid var(--dl-focus-ring);
     outline-offset: 2px;

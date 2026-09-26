@@ -1,4 +1,4 @@
-import { BootData, DelightSettings, IPC, OpenPathTarget } from "@shared/ipc";
+import { BootData, EviSettings, IPC, OpenPathTarget } from "@shared/ipc";
 import { diffSettings } from "@shared/safeMode";
 import { ORIGINAL_ASAR } from "@shared/shim";
 import { app, ipcMain, Session, session, shell } from "electron";
@@ -14,18 +14,23 @@ import { saveSettings, settings } from "./settings";
 import { initStore } from "./store";
 import { getThemePayloads, initThemes } from "./themes";
 
+// Loaders installed before the rename to Evi still pass the old name
+globalThis.__eviCoreDir ??= globalThis.__delightCoreDir!;
+
 declare global {
     // eslint-disable-next-line no-var
-    var __delightLoadedDiscord: boolean | undefined;
+    var __eviLoadedDiscord: boolean | undefined;
     /** Folder holding main.js, preload.js and renderer.js. Set by the loader. */
-    var __delightCoreDir: string;
+    var __eviCoreDir: string;
+    /** Set by loaders installed before the rename to Evi */
+    var __delightCoreDir: string | undefined;
 }
 
 // Our loader is resources/app.asar, Discord's untouched archive was renamed to resources/_app.asar
 const shimAsar = dirname(require.main!.filename);
 const asarPath = join(shimAsar, "..", ORIGINAL_ASAR);
 
-const vanilla = process.argv.includes("--vanilla") || !!process.env.DELIGHT_DISABLE;
+const vanilla = process.argv.includes("--vanilla") || !!process.env.EVI_DISABLE;
 
 function readQuickCss() {
     try {
@@ -38,12 +43,12 @@ function readQuickCss() {
 function registerIpc() {
     ipcMain.on(IPC.GET_RENDERER, e => {
         // Read fresh every time so Ctrl+R picks up a rebuilt renderer without restarting Discord
-        e.returnValue = readFileSync(join(globalThis.__delightCoreDir, "renderer.js"), "utf8");
+        e.returnValue = readFileSync(join(globalThis.__eviCoreDir, "renderer.js"), "utf8");
     });
 
     ipcMain.on(IPC.GET_BOOT, e => {
         const boot: BootData = {
-            version: DELIGHT_VERSION,
+            version: EVI_VERSION,
             dataDir: DATA_DIR,
             settings,
             plugins: getPluginPayloads(),
@@ -81,7 +86,7 @@ function registerIpc() {
 }
 
 /** Remembers what the save turned on or changed, so safe mode can name a suspect */
-function saveAndRecord(next: DelightSettings) {
+function saveAndRecord(next: EviSettings) {
     for (const change of diffSettings(settings, next)) SafeMode.recordChange(change);
     saveSettings(next);
 }
@@ -110,9 +115,9 @@ function addPreload(s: Session) {
     if (preloadedSessions.has(s)) return;
     preloadedSessions.add(s);
 
-    const filePath = join(globalThis.__delightCoreDir, "preload.js");
+    const filePath = join(globalThis.__eviCoreDir, "preload.js");
     if (typeof s.registerPreloadScript === "function") {
-        s.registerPreloadScript({ id: "delight", type: "frame", filePath });
+        s.registerPreloadScript({ id: "evi", type: "frame", filePath });
     } else {
         s.setPreloads([...s.getPreloads(), filePath]);
     }
@@ -134,7 +139,7 @@ function enableDevTools() {
 }
 
 function setup() {
-    console.log(`[Delight] v${DELIGHT_VERSION} starting, data at ${DATA_DIR}`);
+    console.log(`[Evi] v${EVI_VERSION} starting, data at ${DATA_DIR}`);
 
     registerIpc();
     SafeMode.watchCrashes();
@@ -152,13 +157,13 @@ function setup() {
 }
 
 if (vanilla) {
-    console.log("[Delight] Vanilla mode, not loading.");
+    console.log("[Evi] Vanilla mode, not loading.");
 } else {
     try {
         // Counts this start, and decides whether it's safe mode (or, after repeated failures, vanilla)
         if (SafeMode.begin() !== "vanilla") setup();
     } catch (err) {
-        console.error("[Delight] Setup failed, continuing with Discord only", err);
+        console.error("[Evi] Setup failed, continuing with Discord only", err);
     }
 }
 
@@ -166,5 +171,7 @@ if (vanilla) {
 const discordPkg = require(join(asarPath, "package.json"));
 require.main!.filename = join(asarPath, discordPkg.main);
 (app as any).setAppPath(asarPath);
-globalThis.__delightLoadedDiscord = true;
+globalThis.__eviLoadedDiscord = true;
+// Loaders from before the rename check this name
+(globalThis as any).__delightLoadedDiscord = true;
 require(require.main!.filename);

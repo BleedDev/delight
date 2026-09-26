@@ -1,5 +1,5 @@
 /**
- * The module plugins import as "@delight/api". At runtime it is the live object below, handed to
+ * The module plugins import as "@evi/api". At runtime it is the live object below, handed to
  * plugins through their `require`; for type checking, tsconfig maps the import to this file.
  */
 export { Logger } from "../renderer/logger";

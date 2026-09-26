@@ -1,9 +1,9 @@
-import { DEFAULT_SETTINGS, DelightSettings } from "@shared/ipc";
+import { DEFAULT_SETTINGS, EviSettings } from "@shared/ipc";
 import { readFileSync, renameSync, writeFileSync } from "fs";
 
 import { SETTINGS_FILE } from "./paths";
 
-function load(): DelightSettings {
+function load(): EviSettings {
     try {
         // Files from older versions lack newer keys, defaults fill them in
         return { ...structuredClone(DEFAULT_SETTINGS), ...JSON.parse(readFileSync(SETTINGS_FILE, "utf8")) };
@@ -14,7 +14,7 @@ function load(): DelightSettings {
 
 export let settings = load();
 
-export function saveSettings(next: DelightSettings) {
+export function saveSettings(next: EviSettings) {
     settings = next;
     // Write then rename so a crash mid-write can't leave a truncated file behind
     const tmp = SETTINGS_FILE + ".tmp";

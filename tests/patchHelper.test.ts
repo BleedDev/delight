@@ -37,7 +37,7 @@ describe("patch helper", () => {
 
     test("expands $self and capture groups like the patcher does", () => {
         const r = evaluatePatch({ find: "isDeveloper", match: String.raw`/get:\(\)=>(\i)/`, replace: "get:()=>$self.check($1)" }, sources, undefined, "my-plugin");
-        expect(r.after?.mark).toContain('Delight.$("my-plugin").check(a)');
+        expect(r.after?.mark).toContain('Evi.$("my-plugin").check(a)');
         expect(r.groups).toEqual(["a"]);
         expect(r.compile).toEqual({ ok: true });
     });

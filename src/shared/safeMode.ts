@@ -1,7 +1,7 @@
 /**
  * Safe mode rules shared by main, renderer and tests. Pure functions, no Electron.
  */
-import { DelightSettings, isPluginEnabled, PluginManifest, RecentChange } from "./ipc";
+import { EviSettings, isPluginEnabled, PluginManifest, RecentChange } from "./ipc";
 
 /** Starts in a row that never reached a healthy boot before the next start is in safe mode */
 export const CRASH_LOOP_STARTS = 2;
@@ -45,7 +45,7 @@ export function addChange(changes: RecentChange[], change: RecentChange): Recent
 }
 
 /** What a settings save turned on or changed. Turning things off can't break anything, so it isn't recorded. */
-export function diffSettings(prev: DelightSettings, next: DelightSettings): Omit<RecentChange, "at">[] {
+export function diffSettings(prev: EviSettings, next: EviSettings): Omit<RecentChange, "at">[] {
     const out: Omit<RecentChange, "at">[] = [];
     for (const [id, entry] of Object.entries(next.plugins ?? {})) {
         const before = prev.plugins?.[id];
@@ -60,7 +60,7 @@ export function diffSettings(prev: DelightSettings, next: DelightSettings): Omit
 }
 
 /** Whether a change is about something that's still on, so it could be what breaks Discord */
-export function isStillActive(change: RecentChange, settings: DelightSettings, manifests: PluginManifest[]) {
+export function isStillActive(change: RecentChange, settings: EviSettings, manifests: PluginManifest[]) {
     if (change.kind === "plugin") {
         const manifest = manifests.find(m => m.id === change.id);
         return !!manifest && isPluginEnabled(settings, manifest);
@@ -70,6 +70,6 @@ export function isStillActive(change: RecentChange, settings: DelightSettings, m
 }
 
 /** The newest change that's still on: the most likely reason Discord broke */
-export function pickSuspect(changes: RecentChange[], settings: DelightSettings, manifests: PluginManifest[]) {
+export function pickSuspect(changes: RecentChange[], settings: EviSettings, manifests: PluginManifest[]) {
     return changes.find(c => isStillActive(c, settings, manifests));
 }

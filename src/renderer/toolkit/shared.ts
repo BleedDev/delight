@@ -29,7 +29,7 @@ export class SharedHook {
         let active = true;
         const stopWaiting = waitFor(this.filter, (_, found) => {
             if (!active || found.key === undefined) return;
-            unhook = hook(found.exports, found.key, this.kind, this.callback, "delight");
+            unhook = hook(found.exports, found.key, this.kind, this.callback, "evi");
             this.installed = true;
         });
         this.cancel = () => {

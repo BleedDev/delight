@@ -1,4 +1,4 @@
-import { definePlugin, findMenuGroup, getStore, Menu } from "@delight/api";
+import { definePlugin, findMenuGroup, getStore, Menu } from "@evi/api";
 import type { ReactNode } from "react";
 
 import {

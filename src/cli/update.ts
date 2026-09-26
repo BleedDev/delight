@@ -3,12 +3,12 @@ import { renameSync, rmSync, writeFileSync } from "fs";
 import { compareVersions } from "./discord";
 
 export const REPO = "BleedDev/delight";
-export const EXE_ASSET = "delight.exe";
-export const CHECKSUM_ASSET = "delight.exe.sha256";
+export const EXE_ASSET = "evi.exe";
+export const CHECKSUM_ASSET = "evi.exe.sha256";
 
 /** Overridable so tests can serve fake releases from a local server */
-const API = (process.env.DELIGHT_UPDATE_API || "https://api.github.com").replace(/\/+$/, "");
-const HEADERS = { "User-Agent": "delight-cli", Accept: "application/vnd.github+json" };
+const API = (process.env.EVI_UPDATE_API || "https://api.github.com").replace(/\/+$/, "");
+const HEADERS = { "User-Agent": "evi-cli", Accept: "application/vnd.github+json" };
 
 export class UpdateError extends Error { }
 
@@ -27,7 +27,7 @@ interface GitHubRelease {
     assets: { name: string; browser_download_url: string; }[];
 }
 
-/** True when running as the compiled delight.exe rather than `bun src/cli/index.ts` */
+/** True when running as the compiled evi.exe rather than `bun src/cli/index.ts` */
 export const COMPILED = !/^bun(-debug)?(\.exe)?$/i.test(process.execPath.split(/[\\/]/).pop() ?? "");
 
 /** "v1.2.3-beta" -> "1.2.3" */
@@ -74,7 +74,7 @@ async function download(url: string, timeout: number) {
     }
 }
 
-/** Downloads the release's delight.exe and checks it against the published SHA-256 */
+/** Downloads the release's evi.exe and checks it against the published SHA-256 */
 export async function downloadVerified(release: Release) {
     const checksumText = new TextDecoder().decode(await download(release.checksumUrl, 30_000));
     const expected = checksumText.match(/\b[a-f0-9]{64}\b/i)?.[0].toLowerCase();

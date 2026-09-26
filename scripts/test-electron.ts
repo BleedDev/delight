@@ -24,7 +24,7 @@ const DATA = join(BASE, "data");
 const ELECTRON_DIST = join(ROOT, "node_modules", "electron", "dist");
 // Electron derives the userData folder from the app name. Never "discord": that is the real Discord profile.
 // Overridable so parallel runs (e.g. several worktrees) never share a profile. Never "discord".
-const APP_NAME = process.env.DELIGHT_TEST_APP_NAME ?? "delight-integration-test";
+const APP_NAME = process.env.EVI_TEST_APP_NAME ?? "evi-integration-test";
 if (APP_NAME.toLowerCase().startsWith("discord")) throw new Error("Refusing to run as a Discord app name: that is the real Discord profile");
 
 rmSync(BASE, { recursive: true, force: true });
@@ -99,7 +99,7 @@ const STORE_URL = `https://127.0.0.1:${server.port}/registry.json`;
 
 /** Runs in Discord's page: install a plugin, a tampered one, a native one with and without consent */
 async function storeStepInstall() {
-    const D = (window as any).Delight;
+    const D = (window as any).Evi;
     const listing = await D.store.refresh().then(() => D.store.getSnapshot());
     const good = await D.store.install("store-good");
     const goodState = D.plugins.get("store-good");
@@ -121,7 +121,7 @@ async function storeStepInstall() {
 
 /** After the server published 2.0.0: update, then uninstall */
 async function storeStepUpdate() {
-    const D = (window as any).Delight;
+    const D = (window as any).Evi;
     await D.store.refresh();
     const offered = D.store.getSnapshot().plugins.find((p: any) => p.id === "store-good")?.version;
     const update = await D.store.install("store-good");
@@ -149,30 +149,30 @@ app.whenReady().then(() => {
         webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true },
     });
     win.loadURL("https://discord.com/login");
-    if (process.env.DELIGHT_TEST_PHASE === "import") return importPhase(win);
+    if (process.env.EVI_TEST_PHASE === "import") return importPhase(win);
 
     // Install a plugin while running, it should appear without a reload
     setTimeout(() => {
-        const dir = path.join(process.env.DELIGHT_DATA_DIR, "plugins", "late-plugin");
+        const dir = path.join(process.env.EVI_DATA_DIR, "plugins", "late-plugin");
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(path.join(dir, "index.js"), "module.exports = { default: { start() { window.__late = true; } } };");
         fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({ id: "late-plugin", name: "Late", enabledByDefault: true }));
         // And a theme, enabled in settings before it existed
-        fs.writeFileSync(path.join(process.env.DELIGHT_DATA_DIR, "themes", "late.css"), "/** @name Late Theme */ :root { --delight-late-theme: live; }");
+        fs.writeFileSync(path.join(process.env.EVI_DATA_DIR, "themes", "late.css"), "/** @name Late Theme */ :root { --evi-late-theme: live; }");
     }, 12000);
 
     setTimeout(async () => {
         const result = await win.webContents.executeJavaScript(${"`"}(async () => {
-            const D = window.Delight;
+            const D = window.Evi;
             const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-            if (!D) return { delight: false, discordNative: !!window.__fakeDiscordPreload };
+            if (!D) return { evi: false, discordNative: !!window.__fakeDiscordPreload };
             const blockedFetch = await fetch("https://discord.com/api/v9/science", { method: "POST", body: "{}" })
                 .then(r => "status " + r.status, e => "blocked: " + e.message);
             const noTrack = D.plugins.get("no-track");
             // Discord's own stylesheet makes a real https CSS file to download
             const sheet = [...document.querySelectorAll("link[rel=stylesheet]")].map(l => l.href).find(h => h.startsWith("https://discord.com/assets/"));
             return {
-                delight: true,
+                evi: true,
                 discordNative: window.__fakeDiscordPreload?.ran === true,
                 running: D.plugins.getSnapshot().filter(p => p.running).map(p => p.manifest.id),
                 isDeveloper: D.api.getStore("DeveloperExperimentStore").isDeveloper,
@@ -180,41 +180,41 @@ app.whenReady().then(() => {
                 blockedCount: await noTrack.ctx.native.call("getBlockedCount"),
                 latePlugin: window.__late === true,
                 themes: D.themes.getSnapshot().map(t => t.name),
-                bootTheme: css("--delight-boot-theme"),
-                offTheme: css("--delight-off-theme"),
-                lateTheme: css("--delight-late-theme"),
-                cssOrder: css("--delight-order"),
-                styleOrder: [...document.head.querySelectorAll("style[id^=delight-theme-], #delight-quickcss")].map(s => s.id),
+                bootTheme: css("--evi-boot-theme"),
+                offTheme: css("--evi-off-theme"),
+                lateTheme: css("--evi-late-theme"),
+                cssOrder: css("--evi-order"),
+                styleOrder: [...document.head.querySelectorAll("style[id^=evi-theme-], #evi-quickcss")].map(s => s.id),
                 addHttp: await D.themes.addFromUrl("http://example.com/theme.css"),
                 addHtml: await D.themes.addFromUrl("https://discord.com/login"),
                 addCss: sheet ? await D.themes.addFromUrl(sheet) : "no stylesheet on the page",
-                addedStyles: [...document.head.querySelectorAll("style[id^=delight-theme-]")].length,
+                addedStyles: [...document.head.querySelectorAll("style[id^=evi-theme-]")].length,
                 // Healthy starts are reported a few seconds after plugins start, wait for it
                 reportedOk: await new Promise(resolve => {
                     const deadline = Date.now() + 15000;
                     const poll = () => D.safeMode.reportedOk || Date.now() > deadline ? resolve(D.safeMode.reportedOk) : setTimeout(poll, 200);
                     poll();
                 }),
-                // Last, so the backup holds everything above. The dialog is bypassed by DELIGHT_TEST_BACKUP_PATH.
+                // Last, so the backup holds everything above. The dialog is bypassed by EVI_TEST_BACKUP_PATH.
                 exported: await D.backup.export(),
             };
         })()${"`"});
         console.log("RESULT " + JSON.stringify(result));
 
         // Plugin store, against the local fake registry. What's on disk is checked between steps.
-        const plugins = path.join(process.env.DELIGHT_DATA_DIR, "plugins");
+        const plugins = path.join(process.env.EVI_DATA_DIR, "plugins");
         const disk = () => ({
             good: fs.existsSync(path.join(plugins, "store-good", "index.js")) ? fs.readFileSync(path.join(plugins, "store-good", "index.js"), "utf8").match(/__storeGood = "([^"]+)"/)?.[1] : null,
-            goodMarker: fs.existsSync(path.join(plugins, "store-good", ".delight-store.json")) ? JSON.parse(fs.readFileSync(path.join(plugins, "store-good", ".delight-store.json"), "utf8")).version : null,
+            goodMarker: fs.existsSync(path.join(plugins, "store-good", ".evi-store.json")) ? JSON.parse(fs.readFileSync(path.join(plugins, "store-good", ".evi-store.json"), "utf8")).version : null,
             tampered: fs.existsSync(path.join(plugins, "store-tampered")),
             native: fs.existsSync(path.join(plugins, "store-native", "native.js")),
             late: fs.existsSync(path.join(plugins, "late-plugin")),
-            staging: fs.existsSync(path.join(process.env.DELIGHT_DATA_DIR, "store-staging")) ? fs.readdirSync(path.join(process.env.DELIGHT_DATA_DIR, "store-staging")) : [],
+            staging: fs.existsSync(path.join(process.env.EVI_DATA_DIR, "store-staging")) ? fs.readdirSync(path.join(process.env.EVI_DATA_DIR, "store-staging")) : [],
         });
         try {
             const install = await win.webContents.executeJavaScript(${JSON.stringify(`(${storeStepInstall})()`)});
             const afterInstall = disk();
-            await net.fetch(process.env.DELIGHT_STORE_URL.replace("registry.json", "__publish"), { method: "POST" });
+            await net.fetch(process.env.EVI_STORE_URL.replace("registry.json", "__publish"), { method: "POST" });
             const update = await win.webContents.executeJavaScript(${JSON.stringify(`(${storeStepUpdate})()`)});
             console.log("STORE " + JSON.stringify({ install, afterInstall, update, afterUpdate: disk() }));
         } catch (err) {
@@ -229,29 +229,29 @@ app.whenReady().then(() => {
 function importPhase(win) {
     setTimeout(async () => {
         const result = await win.webContents.executeJavaScript(${"`"}(async () => {
-            const D = window.Delight;
-            if (!D) return { delight: false };
+            const D = window.Evi;
+            if (!D) return { evi: false };
             const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
             const running = () => D.plugins.getSnapshot().filter(p => p.running).map(p => p.manifest.id);
-            const before = { running: running(), bootTheme: css("--delight-boot-theme"), order: css("--delight-order"), mine: css("--delight-mine") };
+            const before = { running: running(), bootTheme: css("--evi-boot-theme"), order: css("--evi-order"), mine: css("--evi-mine") };
             const opened = await D.backup.open();
             const applied = opened.ok ? await D.backup.apply(opened.token, "replace") : null;
             // Quick CSS and theme changes arrive as IPC events, give them a moment
             await new Promise(r => setTimeout(r, 500));
             const again = await D.backup.open();
             return {
-                delight: true,
+                evi: true,
                 before,
-                opened: opened.ok ? { fileName: opened.fileName, delightVersion: opened.delightVersion, previews: opened.previews } : opened,
+                opened: opened.ok ? { fileName: opened.fileName, eviVersion: opened.eviVersion, previews: opened.previews } : opened,
                 applied: applied && (applied.ok ? { ok: true, changes: applied.preview.changes } : applied),
                 after: {
                     running: running(),
                     settings: D.settings.data,
                     themes: D.themes.getSnapshot().map(t => t.file),
-                    bootTheme: css("--delight-boot-theme"),
-                    lateTheme: css("--delight-late-theme"),
-                    order: css("--delight-order"),
-                    mine: css("--delight-mine"),
+                    bootTheme: css("--evi-boot-theme"),
+                    lateTheme: css("--evi-late-theme"),
+                    order: css("--evi-order"),
+                    mine: css("--evi-mine"),
                 },
                 again: again.ok ? { merge: again.previews.merge.changes, replace: again.previews.replace.changes } : again,
             };
@@ -355,11 +355,11 @@ writeFileSync(join(DATA, "themes", "boot.css"), `/**
  * @name Boot Theme
  * @author Tester
  */
-:root { --delight-boot-theme: applied; --delight-order: theme; }
+:root { --evi-boot-theme: applied; --evi-order: theme; }
 `);
-writeFileSync(join(DATA, "themes", "off.css"), ":root { --delight-off-theme: applied; }");
+writeFileSync(join(DATA, "themes", "off.css"), ":root { --evi-off-theme: applied; }");
 // Quick CSS sets the same property as the theme and must win
-writeFileSync(join(DATA, "quick.css"), ":root { --delight-order: quick; }");
+writeFileSync(join(DATA, "quick.css"), ":root { --evi-order: quick; }");
 
 // The first run exports a backup here, the second restores it. Both dialogs answer with this path.
 const BACKUP_FILE = join(BASE, "backup.json");
@@ -371,7 +371,7 @@ function check(name: string, ok: boolean, detail?: unknown) {
 
 async function launch(dataDir: string, env: Record<string, string> = {}) {
     const proc = Bun.spawn([join(INSTALL, "app-1.0.0", "electron.exe")], {
-        env: { ...process.env, DELIGHT_DATA_DIR: dataDir, DELIGHT_TEST_BACKUP_PATH: BACKUP_FILE, DELIGHT_STORE_URL: STORE_URL, ELECTRON_ENABLE_LOGGING: "1", ...env },
+        env: { ...process.env, EVI_DATA_DIR: dataDir, EVI_TEST_BACKUP_PATH: BACKUP_FILE, EVI_STORE_URL: STORE_URL, ELECTRON_ENABLE_LOGGING: "1", ...env },
         stdout: "pipe",
         stderr: "pipe",
     });
@@ -392,14 +392,14 @@ async function launch(dataDir: string, env: Record<string, string> = {}) {
 }
 
 function printLogs(stdout: string, stderr: string) {
-    const delightLines = stderr.split("\n").filter(l => /delight/i.test(l)).join("\n");
-    console.log(`--- stdout ---\n${stdout.slice(-2500)}\n--- stderr (Delight lines) ---\n${delightLines.slice(-4000)}`);
+    const eviLines = stderr.split("\n").filter(l => /evi/i.test(l)).join("\n");
+    console.log(`--- stdout ---\n${stdout.slice(-2500)}\n--- stderr (Evi lines) ---\n${eviLines.slice(-4000)}`);
 }
 
 const { stdout, stderr, r } = await launch(DATA);
 
-check("main process loaded, then handed over to Discord", stdout.includes("[Delight] v"));
-check("session preload booted the renderer", r.delight === true);
+check("main process loaded, then handed over to Discord", stdout.includes("[Evi] v"));
+check("session preload booted the renderer", r.evi === true);
 check("Discord's own preload still ran", r.discordNative === true);
 check("plugins from the dev build started", ["clear-urls", "experiments", "no-track"].every(id => r.running?.includes(id)), r.running);
 check("source patch works in Electron", r.isDeveloper === true);
@@ -409,7 +409,7 @@ check("auto-injected into the updated app-1.0.1", existsSync(join(updated, ORIGI
     && readFileSync(join(updated, "app.asar")).equals(readFileSync(shimAsar)));
 check("enabled theme applied at startup", r.bootTheme === "applied", r.bootTheme);
 check("theme header parsed, disabled theme listed but not applied", ["Boot Theme", "off"].every(n => r.themes?.includes(n)) && r.offTheme === "", { themes: r.themes, off: r.offTheme });
-check("Quick CSS comes after themes and wins", r.cssOrder === "quick" && r.styleOrder?.at(-1) === "delight-quickcss", { value: r.cssOrder, order: r.styleOrder });
+check("Quick CSS comes after themes and wins", r.cssOrder === "quick" && r.styleOrder?.at(-1) === "evi-quickcss", { value: r.cssOrder, order: r.styleOrder });
 check("theme dropped into the folder applies live", r.lateTheme === "live" && r.themes?.includes("Late Theme"), r.lateTheme);
 check("remote themes: http refused, web pages refused", r.addHttp?.ok === false && /https/.test(r.addHttp.error) && r.addHtml?.ok === false && /web page|html/i.test(r.addHtml.error), { http: r.addHttp, html: r.addHtml });
 check("remote theme downloaded into the themes folder and turned on", r.addCss?.ok === true && existsSync(join(DATA, "themes", r.addCss.file)) && r.addedStyles === 3, { result: r.addCss, styles: r.addedStyles });
@@ -436,12 +436,12 @@ check("backup holds settings, Quick CSS, themes and the plugin list, no plugin c
 const DATA_B = join(BASE, "data-restore");
 mkdirSync(join(DATA_B, "themes"), { recursive: true });
 writeFileSync(join(DATA_B, "settings.json"), JSON.stringify({ quickCss: true, plugins: { experiments: { enabled: false } }, enabledThemes: ["mine.css"] }));
-writeFileSync(join(DATA_B, "themes", "mine.css"), ":root { --delight-mine: on; }");
+writeFileSync(join(DATA_B, "themes", "mine.css"), ":root { --evi-mine: on; }");
 // Same file name as a theme in the backup, different contents: gets overwritten
-writeFileSync(join(DATA_B, "themes", "boot.css"), ":root { --delight-boot-theme: old; }");
-writeFileSync(join(DATA_B, "quick.css"), ":root { --delight-order: b-quick; }");
+writeFileSync(join(DATA_B, "themes", "boot.css"), ":root { --evi-boot-theme: old; }");
+writeFileSync(join(DATA_B, "quick.css"), ":root { --evi-order: b-quick; }");
 
-const b = await launch(DATA_B, { DELIGHT_TEST_PHASE: "import" });
+const b = await launch(DATA_B, { EVI_TEST_PHASE: "import" });
 const rb = b.r;
 const preview = rb.opened?.previews?.replace;
 const failedBefore = failed;
@@ -480,8 +480,8 @@ else {
 }
 
 if (failed) {
-    const delightLines = stderr.split("\n").filter(l => /delight/i.test(l)).join("\n");
-    console.log(`--- stdout ---\n${stdout.slice(-2500)}\n--- stderr (Delight lines) ---\n${delightLines.slice(-4000)}`);
+    const eviLines = stderr.split("\n").filter(l => /evi/i.test(l)).join("\n");
+    console.log(`--- stdout ---\n${stdout.slice(-2500)}\n--- stderr (Evi lines) ---\n${eviLines.slice(-4000)}`);
 }
 
 // ---- safe mode ----------------------------------------------------------------------------------
@@ -504,16 +504,16 @@ module.exports = {
         for (const wc of webContents.getAllWebContents()) if (wc.getURL().includes("discord.com")) wc.forcefullyCrashRenderer();
     },
 };`);
-writeFileSync(join(SAFE, "themes", "safe.css"), ":root { --delight-safe-theme: applied; }");
-writeFileSync(join(SAFE, "quick.css"), ":root { --delight-safe-quick: applied; }");
+writeFileSync(join(SAFE, "themes", "safe.css"), ":root { --evi-safe-theme: applied; }");
+writeFileSync(join(SAFE, "quick.css"), ":root { --evi-safe-quick: applied; }");
 writeFileSync(join(SAFE, "settings.json"), JSON.stringify({ quickCss: true, plugins: {}, enabledThemes: ["safe.css"] }));
 
 const readJson = (file: string) => JSON.parse(readFileSync(join(SAFE, file), "utf8"));
 const writeState = (patch: object) => writeFileSync(join(SAFE, "safe-mode.json"), JSON.stringify({ ...readJson("safe-mode.json"), ...patch }));
 
-/** What the page reports once Delight says this start was healthy */
+/** What the page reports once Evi says this start was healthy */
 const PROBE = `(() => {
-    const D = window.Delight;
+    const D = window.Evi;
     if (!D || !D.safeMode.reportedOk) return null;
     const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     const notice = document.querySelector(".dl-safe-float .dl-safe");
@@ -522,8 +522,8 @@ const PROBE = `(() => {
         running: D.plugins.getSnapshot().filter(p => p.running).map(p => p.manifest.id),
         listed: D.plugins.getSnapshot().map(p => p.manifest.id),
         crasherEvaluated: window.__crasherEvaluated === true,
-        theme: css("--delight-safe-theme"),
-        quickCss: css("--delight-safe-quick"),
+        theme: css("--evi-safe-theme"),
+        quickCss: css("--evi-safe-quick"),
         notice: notice?.textContent ?? null,
         buttons: [...(notice?.querySelectorAll("button") ?? [])].map(b => b.textContent || b.getAttribute("aria-label")),
     };
@@ -534,7 +534,7 @@ async function start(name: string, options: { then?: string; onCrash?: "exit"; a
     const run = Bun.spawn([join(INSTALL, "app-1.0.0", "electron.exe"), ...options.args ?? []], {
         env: {
             ...process.env,
-            DELIGHT_DATA_DIR: SAFE,
+            EVI_DATA_DIR: SAFE,
             ELECTRON_ENABLE_LOGGING: "1",
             FAKE_SCENARIO: "safe-mode.js",
             FAKE_PROBE: options.probe ?? PROBE,
@@ -554,14 +554,14 @@ async function start(name: string, options: { then?: string; onCrash?: "exit"; a
         crashes: tagged("CRASH"),
         relaunch: tagged("RELAUNCH")[0],
         state: readJson("safe-mode.json"),
-        log: `${out.slice(-1500)}\n${err.split("\n").filter(l => /delight/i.test(l) && !l.includes("INFO:CONSOLE")).join("\n").slice(-2500)}`,
+        log: `${out.slice(-1500)}\n${err.split("\n").filter(l => /evi/i.test(l) && !l.includes("INFO:CONSOLE")).join("\n").slice(-2500)}`,
     };
     console.log(`  \x1b[2m${name}: ${result.crashes.length} crash(es), pendingStarts ${result.state.pendingStarts}${result.state.forceSafe ? `, sticky ${result.state.forceSafe}` : ""}\x1b[0m`);
     return result;
 }
 
 // 1. Healthy start, then the user turns the crasher on: Discord dies right away
-const s1 = await start("turn crasher on", { then: `Delight.plugins.setEnabled("crasher", true)`, onCrash: "exit" });
+const s1 = await start("turn crasher on", { then: `Evi.plugins.setEnabled("crasher", true)`, onCrash: "exit" });
 check("healthy start in normal mode: plugins, theme and Quick CSS on", s1.result?.safeMode === null && s1.result.running.includes("no-track") && s1.result.theme === "applied" && s1.result.quickCss === "applied", s1.result);
 check("turning the crasher on was saved and recorded before it ran, then it crashed", s1.crashes.length === 1 && readJson("settings.json").plugins.crasher?.enabled === true
     && s1.state.changes[0]?.id === "crasher" && s1.state.changes[0]?.action === "enabled" && s1.state.pendingStarts === 0, { crashes: s1.crashes, changes: s1.state.changes });
@@ -587,10 +587,10 @@ writeState({ pendingStarts: 1 });
 const s5 = await start("normal again");
 check("next start is normal and healthy, resetting the counter", s5.result?.safeMode === null && s5.result.running.includes("no-track") && !s5.result.running.includes("crasher") && s5.state.pendingStarts === 0, { safeMode: s5.result?.safeMode, pending: s5.state.pendingStarts });
 
-// 6. --delight-safe, left with "Exit safe mode and restart"
-const s6 = await start("--delight-safe", { args: ["--delight-safe"], then: click("Exit safe mode and restart") });
-check("--delight-safe starts in safe mode", s6.result?.safeMode?.reason === "flag" && s6.result.running.length === 0 && s6.result.theme === "", s6.result?.safeMode);
-check("the flag is for one start: not sticky, and not passed on when restarting", s6.state.forceSafe === undefined && Array.isArray(s6.relaunch?.args) && !s6.relaunch.args.includes("--delight-safe"), { relaunch: s6.relaunch, state: s6.state });
+// 6. --evi-safe, left with "Exit safe mode and restart"
+const s6 = await start("--evi-safe", { args: ["--evi-safe"], then: click("Exit safe mode and restart") });
+check("--evi-safe starts in safe mode", s6.result?.safeMode?.reason === "flag" && s6.result.running.length === 0 && s6.result.theme === "", s6.result?.safeMode);
+check("the flag is for one start: not sticky, and not passed on when restarting", s6.state.forceSafe === undefined && Array.isArray(s6.relaunch?.args) && !s6.relaunch.args.includes("--evi-safe"), { relaunch: s6.relaunch, state: s6.state });
 
 // 7. Crashes while running: the crasher is on and Discord doesn't restart, only the window dies
 const settingsNow = readJson("settings.json");
@@ -602,11 +602,11 @@ check("that safe mode is saved for the next start", s7.state.forceSafe === "rend
 const s8 = await start("start after the crashes");
 check("next start is still in safe mode, nothing crashes", s8.result?.safeMode?.reason === "renderer-crash" && s8.crashes.length === 0 && s8.result.running.length === 0, s8.result?.safeMode);
 
-// 8. Failing even in safe mode: one start without Delight at all
+// 8. Failing even in safe mode: one start without Evi at all
 writeState({ pendingStarts: 4 });
-const vanillaProbe = `(() => document.readyState === "complete" && document.querySelector("#app-mount") ? { delight: !!window.Delight, bridge: !!window.DelightNative } : null)()`;
+const vanillaProbe = `(() => document.readyState === "complete" && document.querySelector("#app-mount") ? { evi: !!window.Evi, bridge: !!window.EviNative } : null)()`;
 const s9 = await start("failing even in safe mode", { probe: vanillaProbe });
-check("after 4 failed starts, one start is vanilla, then safe mode again", s9.result?.delight === false && s9.result.bridge === false && s9.state.pendingStarts === 2 && s9.state.forceSafe === "renderer-crash", { result: s9.result, state: s9.state });
+check("after 4 failed starts, one start is vanilla, then safe mode again", s9.result?.evi === false && s9.result.bridge === false && s9.state.pendingStarts === 2 && s9.state.forceSafe === "renderer-crash", { result: s9.result, state: s9.state });
 
 if (failed) {
     for (const [name, s] of Object.entries({ s1, s2, s3, s4, s5, s6, s7, s8, s9 })) console.log(`--- ${name} ---\n${s.log.slice(-1500)}`);

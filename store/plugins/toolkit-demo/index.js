@@ -42,7 +42,7 @@ __export(exports_toolkit_demo, {
   default: () => toolkit_demo_default
 });
 module.exports = __toCommonJS(exports_toolkit_demo);
-var import_api = require("@delight/api");
+var import_api = require("@evi/api");
 var jsx_runtime = require("react/jsx-runtime");
 async function copy(text) {
   const native = window.DiscordNative?.clipboard;
@@ -54,11 +54,11 @@ async function copy(text) {
 var toolkit_demo_default = import_api.definePlugin({
   start(ctx) {
     ctx.command({
-      name: "delight",
-      description: "Say hi from Delight",
+      name: "evi",
+      description: "Say hi from Evi",
       options: [{ name: "text", description: "What the toast says", type: "string" }],
       execute(args) {
-        ctx.toast(args.text || `Delight ${window.Delight?.version ?? ""} is running`, { type: "success" });
+        return { ephemeral: args.text || `Evi ${window.Evi?.version ?? ""} is running` };
       }
     });
     ctx.contextMenu("message", (children, { message }) => {
@@ -66,8 +66,8 @@ var toolkit_demo_default = import_api.definePlugin({
         return;
       children.push(/* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Group, {
         children: /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
-          id: "delight-copy-message-id",
-          label: "Copy Message ID (Delight)",
+          id: "evi-copy-message-id",
+          label: "Copy Message ID (Evi)",
           action: async () => {
             try {
               await copy(message.id);

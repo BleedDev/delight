@@ -25,7 +25,7 @@ const valid = () => ({
     version: "1.2.0",
     tags: ["fun"],
     native: false,
-    minDelightVersion: "0.1.0",
+    minEviVersion: "0.1.0",
     files: { "manifest.json": file("manifest.json"), "index.js": file("index.js") },
 });
 
@@ -93,7 +93,7 @@ describe("registry validation", () => {
         expect(validateEntry({ ...valid(), authors: "me" })).toHaveProperty("error");
         expect(validateEntry({ ...valid(), version: "one" })).toHaveProperty("error");
         expect(validateEntry({ ...valid(), native: "yes" })).toHaveProperty("error");
-        expect(validateEntry({ ...valid(), minDelightVersion: "latest" })).toHaveProperty("error");
+        expect(validateEntry({ ...valid(), minEviVersion: "latest" })).toHaveProperty("error");
         expect(validateEntry({ ...valid(), tags: [1] })).toHaveProperty("error");
         expect(validateEntry({ ...valid(), description: "bell\x07" })).toHaveProperty("error");
         const { tags: _, ...noTags } = valid();
@@ -157,7 +157,7 @@ describe("versions", () => {
     });
 
     test("what the Store tab offers", () => {
-        const entry: RegistryEntry = entryOf({ ...valid(), version: "1.2.0", minDelightVersion: "0.2.0" });
+        const entry: RegistryEntry = entryOf({ ...valid(), version: "1.2.0", minEviVersion: "0.2.0" });
         expect(storeAction(entry, undefined, "0.1.0")).toBe("incompatible");
         expect(storeAction(entry, undefined, "0.2.0")).toBe("install");
         expect(storeAction(entry, { id: entry.id, version: "1.1.9", fromStore: true }, "0.2.0")).toBe("update");

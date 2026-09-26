@@ -72,7 +72,7 @@ for (const id of ids) {
         tags: manifest.tags ?? [],
         // Anything that runs outside Discord's page needs the user's explicit trust
         native: !!manifest.native || Object.keys(manifest.chromiumSwitches ?? {}).length > 0,
-        minDelightVersion: manifest.minDelightVersion ?? pkg.version,
+        minEviVersion: manifest.minEviVersion ?? pkg.version,
         files,
     };
     const badManifest = whyNotManifest(manifest, entry as RegistryEntry);

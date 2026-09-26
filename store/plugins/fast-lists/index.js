@@ -42,7 +42,7 @@ __export(exports_fast_lists, {
   default: () => fast_lists_default
 });
 module.exports = __toCommonJS(exports_fast_lists);
-var import_api = require("@delight/api");
+var import_api = require("@evi/api");
 var ROW = "dl-fl-row";
 var FAR = "dl-fl-far";
 var css = `
@@ -210,7 +210,7 @@ function createSession(list, kind, marginScreens) {
   let flat;
   if (kind.flattenPills) {
     flat = document.createElement("style");
-    flat.id = "delight-fl-flatten";
+    flat.id = "evi-fl-flatten";
     flat.textContent = flattenRules(list);
     document.head.append(flat);
   }
