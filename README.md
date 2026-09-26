@@ -93,7 +93,7 @@ The `ctx` object:
 | `hookExport(kind, filter, [method], cb)` | Hook a webpack export as soon as its module loads, even if the module is lazy |
 | `waitFor(filter, cb)` | Get notified when a matching export appears |
 | `flux.subscribe(type, handler)`, `flux.dispatch(action)` | Subscribe to and dispatch Flux actions |
-| `settings.get / set / all / use()` | Typed settings from your schema. `use()` is a React hook |
+| `settings.get / set / all / use() / onChange(cb)` | Typed settings from your schema. `use()` is a React hook, `onChange` is removed on stop |
 | `native.call(method, ...args)` | Call a function exported by your `native.ts` |
 | `addStyle(css)`, `setInterval`, `setTimeout`, `onDispose(fn)` | Tracked resources, cleaned up on stop |
 

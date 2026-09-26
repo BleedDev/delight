@@ -10,7 +10,11 @@ import { Filter, FoundExport, waitFor } from "../webpack/find";
 import type { SettingsSchema, SettingsValues } from "./types";
 
 export class PluginSettings<S extends SettingsSchema> {
-    constructor(private readonly id: string, private readonly schema: S) { }
+    constructor(
+        private readonly id: string,
+        private readonly schema: S,
+        private readonly onDispose: (fn: () => void) => void = () => { },
+    ) { }
 
     private stored() {
         return Settings.plugin(this.id).settings ?? {};
@@ -36,6 +40,19 @@ export class PluginSettings<S extends SettingsSchema> {
         return values as SettingsValues<S>;
     }
 
+    /** Calls back with the new values whenever this plugin's settings change. Removed on stop. */
+    onChange(callback: (values: SettingsValues<S>) => void) {
+        let last = JSON.stringify(this.all);
+        const unsubscribe = Settings.subscribe(() => {
+            const now = JSON.stringify(this.all);
+            if (now === last) return;
+            last = now;
+            callback(this.all);
+        });
+        this.onDispose(unsubscribe);
+        return unsubscribe;
+    }
+
     /** React hook: current values, re-renders on change */
     use(): SettingsValues<S> {
         React.useSyncExternalStore(Settings.subscribe, () => Settings.data);
@@ -54,7 +71,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
 
     constructor(readonly manifest: PluginManifest, schema: S) {
         this.logger = new Logger(manifest.name);
-        this.settings = new PluginSettings(manifest.id, schema);
+        this.settings = new PluginSettings(manifest.id, schema, fn => this.onDispose(fn));
     }
 
     get id() {
