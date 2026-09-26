@@ -40,6 +40,13 @@ plugins.push({
     code: "module.exports = { default: { start(ctx) { ctx.onDispose(ctx.contextMenu(\"__none__\", () => { })); } } };",
     source: "dev",
 });
+// Fails to start on purpose, for the crash report. Its error logs are expected, see BROKEN below.
+const BROKEN = "Broken Plugin";
+plugins.push({
+    manifest: { id: "broken", name: BROKEN, version: "0.0.1", enabledByDefault: true },
+    code: "module.exports = { default: { start() { throw new Error(\"kaboom\"); } } };",
+    source: "dev",
+});
 
 const boot: BootData = {
     version: "test",
@@ -64,7 +71,7 @@ function fakeNative(bootData: BootData) {
     if (window !== window.top) return;
     const pluginListeners: ((change: unknown) => void)[] = [];
     const themeListeners: ((change: unknown) => void)[] = [];
-    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[], bootOk: 0, exitedSafeMode: 0 };
+    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[], themeInstalls: [] as unknown[], stars: [] as unknown[], bootOk: 0, exitedSafeMode: 0 };
     (window as any).EviNative = {
         boot: () => structuredClone(bootData),
         saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
@@ -86,23 +93,60 @@ function fakeNative(bootData: BootData) {
         // Plugin store: a small registry, one plugin installed, one with an update, one native
         storeList: async () => {
             const file = (id: string, name: string) => ({ url: `https://example.com/${id}/${name}`, sha256: "0".repeat(64) });
-            const entry = (id: string, name: string, description: string, version: string, native = false, tags: string[] = []) => ({
-                id, name, description, authors: ["Evi"], version, tags, native, minEviVersion: "0.1.0",
+            const entry = (id: string, name: string, description: string, version: string, native = false, tags: string[] = [], extra: object = {}) => ({
+                id, name, description, authors: ["Evi"], version, tags, native, minEviVersion: "0.1.0", screenshots: [], changelog: [],
                 files: { "manifest.json": file(id, "manifest.json"), "index.js": file(id, "index.js"), ...(native ? { "native.js": file(id, "native.js") } : {}) },
+                ...extra,
+            });
+            const theme = (id: string, name: string, description: string) => ({
+                id, name, description, authors: ["Evi"], version: "1.0.0", tags: ["dark"], screenshots: [], changelog: [], file: file(id, `${id}.css`),
             });
             return {
                 ok: true,
                 registryUrl: "https://raw.githubusercontent.com/BleedDev/evi/main/registry.json",
                 problems: [],
                 plugins: [
-                    entry("store-clock", "Message Clock", "Shows the exact send time next to every message.", "1.0.0", false, ["messages"]),
-                    entry("store-quiet", "Quiet Mode", "Hides typing indicators and read states until you ask for them.", "1.3.0", false, ["privacy"]),
+                    entry("store-clock", "Message Clock", "Shows the exact send time next to every message.", "1.0.0", false, ["messages"], {
+                        updatedAt: "2026-09-01",
+                        source: "https://github.com/BleedDev/evi",
+                        screenshots: ["https://example.com/store-clock/shot.png"],
+                        changelog: [{ version: "1.0.0", notes: ["First release, with 12 and 24 hour clocks"] }],
+                    }),
+                    entry("store-quiet", "Quiet Mode", "Hides typing indicators and read states until you ask for them.", "1.3.0", false, ["privacy"], {
+                        updatedAt: "2026-09-20",
+                        changelog: [{ version: "1.3.0", notes: ["Read states too"] }, { version: "1.2.0", notes: ["Typing indicators"] }],
+                    }),
                     entry("store-rpc", "Local RPC", "Exposes a local API so other apps can read your current channel.", "0.4.0", true, ["integration"]),
                     entry("store-theme-sync", "Theme Sync", "Follows your system's light and dark mode.", "2.1.0"),
                 ],
+                themes: [
+                    theme("midnight", "Midnight", "True black for OLED screens."),
+                    theme("paper", "Paper", "Soft light greys."),
+                ],
                 installed: [{ id: "store-quiet", version: "1.2.0", fromStore: true }, { id: "store-theme-sync", version: "2.1.0", fromStore: true }],
+                installedThemes: [],
             };
         },
+        storeInstallTheme: async (id: string) => {
+            (window as any).__test.themeInstalls.push(id);
+            const theme = { file: `${id}.css`, name: id[0].toUpperCase() + id.slice(1), version: "1.0.0", css: `:root { --dl-store-theme: ${id}; }` };
+            themeListeners.forEach(cb => cb({ type: "upsert", theme }));
+            return { ok: true, id, version: "1.0.0" };
+        },
+        storeUninstallTheme: async (id: string) => {
+            themeListeners.forEach(cb => cb({ type: "remove", file: `${id}.css` }));
+            return { ok: true, id, version: "1.0.0" };
+        },
+        // Stars: counts for two plugins, this install starred Quiet Mode
+        getStars: async () => ({ ok: true, counts: { "plugin:store-clock": 41, "plugin:store-quiet": 7 }, mine: ["plugin:store-quiet"] }),
+        setStar: async (kind: string, id: string, starred: boolean) => {
+            (window as any).__test.stars.push({ kind, id, starred });
+            return { ok: true, starred, count: id === "store-clock" ? (starred ? 42 : 41) : 0 };
+        },
+        // A 1x1 PNG, like main hands back after checking the registry lists the URL
+        storeImage: async (url: string) => url.startsWith("https://example.com/")
+            ? { ok: true, dataUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" }
+            : { ok: false, error: "That image isn't in the store" },
         storeInstall: async (id: string, options?: { allowNative?: boolean; }) => {
             (window as any).__test.storeInstalls.push({ id, options });
             if (id === "store-rpc" && !options?.allowNative) return { ok: false, error: "Needs confirmation" };
@@ -994,6 +1038,50 @@ check("switch disables plugin and persists", toggled.before === "true" && toggle
 check("unsafe module (Flux store) refuses live replacement, asks for reload", toggled.needsReload && /Flux store/.test(toggled.reason ?? ""), toggled.reason);
 await page.screenshot({ path: join(OUT, "ui-reload-banner.png") });
 
+// A plugin's settings open in a dialog: the list underneath doesn't move, Escape closes only the dialog
+const dialog = await page.evaluate(async () => {
+    const body = document.querySelector(".dl-body") as HTMLElement;
+    const row = document.querySelector('li[aria-labelledby="dl-plugin-fast-lists"]') as HTMLElement;
+    body.scrollTop = row.offsetTop - 120;
+    await new Promise(r => setTimeout(r, 100));
+    const before = { scrollTop: body.scrollTop, rowTop: row.getBoundingClientRect().top, rowHeight: row.offsetHeight };
+    (row.querySelector('[aria-label="Fast Lists settings"]') as HTMLElement).click();
+    await new Promise(r => setTimeout(r, 400));
+    const open = document.querySelector('[role="dialog"]#dl-plugin-fast-lists-settings');
+    const after = { scrollTop: body.scrollTop, rowTop: row.getBoundingClientRect().top, rowHeight: row.offsetHeight };
+    return { before, after, open: !!open, fields: open?.querySelectorAll(".dl-setting, [role=switch], input").length ?? 0, focused: !!open?.contains(document.activeElement) };
+});
+await page.screenshot({ path: join(OUT, "ui-plugin-settings.png") });
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+const afterEscape = await page.evaluate(() => ({ dialog: !!document.querySelector("#dl-plugin-fast-lists-settings"), panel: !!document.querySelector(".dl-panel") }));
+check("plugin settings open in a dialog and the list doesn't move", dialog.open && dialog.fields > 0 && dialog.focused && JSON.stringify(dialog.before) === JSON.stringify(dialog.after), dialog);
+check("Escape closes the settings dialog, not the Evi panel", !afterEscape.dialog && afterEscape.panel, afterEscape);
+
+// A plugin that failed to start offers a crash report for its author
+await page.locator('li[aria-labelledby="dl-plugin-broken"]').getByRole("button", { name: "Copy crash report" }).click();
+await page.waitForTimeout(200);
+const report = await page.evaluate(() => navigator.clipboard.readText().catch(e => `clipboard: ${e}`));
+check("Copy crash report copies the error, versions and patches", report.startsWith(`Evi crash report: ${BROKEN} (broken)`) && report.includes("kaboom") && /Evi: {6}\S/.test(report) && report.includes("Other enabled plugins:"), report.slice(0, 200));
+await page.locator('li[aria-labelledby="dl-plugin-broken"]').screenshot({ path: join(OUT, "ui-crash-report.png") });
+
+// Bulk actions: everything off, then undo puts back exactly what was on
+const enabledIds = () => page.evaluate(() => {
+    const D = (window as any).Evi;
+    return D.plugins.getSnapshot().filter((p: any) => D.settings.data.plugins[p.manifest.id]?.enabled ?? p.manifest.enabledByDefault ?? false).map((p: any) => p.manifest.id).sort();
+});
+const enabledBefore = await enabledIds();
+await page.getByRole("group", { name: "All plugins" }).getByRole("button", { name: "Turn all off" }).click();
+await page.waitForSelector("#dl-bulk-undo", { timeout: 5000 });
+const enabledAfterOff = await enabledIds();
+const undoText = await page.evaluate(() => document.querySelector("#dl-bulk-undo")?.closest(".dl-notice")?.textContent ?? "");
+check("Turn all off turns every plugin off and offers undo", enabledAfterOff.length === 0 && enabledBefore.length > 0 && undoText.includes(`Turned off ${enabledBefore.length} plugins`), { enabledBefore, enabledAfterOff, undoText });
+await page.screenshot({ path: join(OUT, "ui-bulk-undo.png") });
+await page.click("#dl-bulk-undo");
+await page.waitForTimeout(500);
+const enabledAfterUndo = await enabledIds();
+check("Undo turns the same plugins back on", JSON.stringify(enabledAfterUndo) === JSON.stringify(enabledBefore), enabledAfterUndo);
+
 await page.click("#dl-tab-patches");
 await page.waitForTimeout(200);
 await page.screenshot({ path: join(OUT, "ui-patches.png") });
@@ -1122,7 +1210,11 @@ check("Backup: restoring applies the new settings live", restored.applied?.mode 
 await page.screenshot({ path: join(OUT, "ui-backup-restored.png") });
 // ---- store --------------------------------------------------------------------------------------
 
-await page.click("#dl-tab-store");
+await page.click("#dl-tab-plugins");
+await page.waitForSelector("#dl-open-plugin-store", { timeout: 5000 });
+const bannerText = await page.evaluate(() => document.querySelector(".dl-store-banner")?.textContent ?? "");
+check("Plugins tab shows the store banner with what's new", bannerText.includes("Plugin Store") && /update/.test(bannerText), bannerText);
+await page.click("#dl-open-plugin-store");
 await page.waitForSelector('[data-store-id="store-rpc"]', { timeout: 5000 });
 await page.waitForTimeout(200);
 await page.screenshot({ path: join(OUT, "ui-store.png") });
@@ -1133,15 +1225,45 @@ const storeList = {
     rpc: await storeCard("store-rpc"),
     sync: await storeCard("store-theme-sync"),
 };
-check("Store tab lists plugins with description, authors and version", storeList.clock.includes("Message Clock") && storeList.clock.includes("exact send time") && storeList.clock.includes("By Evi") && storeList.clock.includes("v1.0.0"), storeList.clock);
-check("Store shows Install, Update + Uninstall, and Installed states", /Install$/.test(storeList.clock) && storeList.quiet.includes("Update available, you have v1.2.0") && storeList.quiet.includes("Uninstall") && storeList.sync.includes("Installed v2.1.0"), storeList);
+check("Store view lists plugins with description, authors and version", storeList.clock.includes("Message Clock") && storeList.clock.includes("exact send time") && storeList.clock.includes("v1.0.0 · Evi"), storeList.clock);
+check("Store shows Install, Update + Uninstall, and Installed states", /Install$/.test(storeList.clock) && storeList.quiet.includes("v1.2.0 → v1.3.0") && storeList.quiet.includes("Uninstall") && storeList.sync.includes("Installed"), storeList);
+
+// Stars: counts on every card, one click stars, and it's sent to main
+const starLabel = (id: string) => page.evaluate(i => document.querySelector(`[data-store-id="${i}"] .dl-star`)?.getAttribute("aria-label") ?? "", id);
+const starsBefore = { clock: await starLabel("store-clock"), quiet: await starLabel("store-quiet") };
+await page.locator('[data-store-id="store-clock"] .dl-star').click();
+await page.waitForTimeout(200);
+const starsAfter = { clock: await starLabel("store-clock"), calls: await page.evaluate(() => (window as any).__test.stars) };
+check("Stars: cards show counts, and starring counts once and is sent to main",
+    starsBefore.clock === "Star Message Clock, 41 stars" && starsBefore.quiet === "Unstar Quiet Mode, 7 stars"
+    && starsAfter.clock === "Unstar Message Clock, 42 stars" && JSON.stringify(starsAfter.calls) === '[{"kind":"plugin","id":"store-clock","starred":true}]', { starsBefore, starsAfter });
+await page.screenshot({ path: join(OUT, "ui-store-grid.png") });
 check("native plugins carry a badge", storeList.rpc.includes("Native") && !storeList.clock.includes("Native"));
 
-await page.fill("#dl-store-search", "privacy");
+const filters = await page.evaluate(() => document.querySelector(".dl-store-filters")?.textContent ?? "");
+check("Store filters by updates, installed and category, and sorts", ["All", "Updates", "Installed", "Messages", "Privacy", "Sort"].every(t => filters.includes(t)), filters);
+
+// The card itself opens the page: click its middle, not the title
+// force: the card's stretched link is what takes the click, on purpose
+await page.locator('[data-store-id="store-clock"] .dl-store-card-desc').click({ force: true });
+await page.waitForSelector('[data-store-detail="store-clock"]', { timeout: 2000 });
+await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
+await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 2000 });
+
+// The detail page: description, screenshots, access, source and changelog
+await page.locator('[data-store-id="store-clock"] .dl-link-button').click();
+await page.waitForSelector('[data-store-detail="store-clock"] .dl-store-shot img', { timeout: 5000 });
+const detail = await page.evaluate(() => document.querySelector('[data-store-detail="store-clock"]')?.textContent ?? "");
+check("Store detail page shows screenshots, access, source and changelog", ["Message Clock", "exact send time", "Runs inside Discord only", "View source", "What’s new", "12 and 24 hour clocks", "Updated"].every(t => detail.includes(t)), detail.slice(0, 300));
+await page.screenshot({ path: join(OUT, "ui-store-detail.png") });
+await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
+await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 2000 });
+
+await page.fill("#dl-plugin-store-search", "privacy");
 await page.waitForTimeout(150);
 const searched = await page.evaluate(() => [...document.querySelectorAll("[data-store-id]")].map(e => e.getAttribute("data-store-id")));
 check("Store search matches tags", JSON.stringify(searched) === '["store-quiet"]', searched);
-await page.fill("#dl-store-search", "");
+await page.fill("#dl-plugin-store-search", "");
 
 const storeButton = (id: string, name: string) => page.locator(`[data-store-id="${id}"]`).getByRole("button", { name, exact: true });
 await storeButton("store-rpc", "Install").click();
@@ -1158,18 +1280,50 @@ const nativeInstall = {
 };
 check("confirming installs with allowNative and shows the result", nativeInstall.calls.at(-1)?.options?.allowNative === true && nativeInstall.card.includes("Installed and turned on"), nativeInstall);
 
-await storeButton("store-quiet", "Update").click();
-await page.waitForTimeout(300);
+const autoUpdate = await page.evaluate(() => document.querySelector(".dl-tab")?.textContent?.includes("Update automatically"));
+check("Store offers automatic updates", !!autoUpdate);
+await page.click("#dl-plugin-update-all");
+await page.waitForTimeout(400);
 const updated = await storeCard("store-quiet");
-check("Update installs the new version", updated.includes("Updated to v1.3.0") && !updated.includes("Update available"), updated);
+check("Update all installs the new version", updated.includes("Updated to v1.3.0") && !updated.includes("Update available"), updated);
 await page.screenshot({ path: join(OUT, "ui-store-after.png") });
+
+// Back in the installed list, store plugins carry a badge and can be uninstalled
+await page.getByRole("button", { name: "Installed plugins" }).click();
+await page.waitForSelector('li[aria-labelledby="dl-plugin-store-rpc"]', { timeout: 2000 });
+const rpcRow = await page.evaluate(() => document.querySelector('li[aria-labelledby="dl-plugin-store-rpc"]')?.textContent ?? "");
+const rpcUninstall = await page.locator('li[aria-labelledby="dl-plugin-store-rpc"]').getByRole("button", { name: "Uninstall store-rpc" }).count();
+check("store plugins show a Store badge and an uninstall button in the list", rpcRow.includes("Store") && rpcUninstall === 1, rpcRow);
+
+// ---- theme store --------------------------------------------------------------------------------
+
+await page.click("#dl-tab-themes");
+await page.waitForSelector("#dl-open-theme-store", { timeout: 5000 });
+await page.click("#dl-open-theme-store");
+await page.waitForSelector('[data-store-id="midnight"]', { timeout: 5000 });
+await page.screenshot({ path: join(OUT, "ui-theme-store.png") });
+await page.locator('[data-store-id="midnight"]').getByRole("button", { name: "Install", exact: true }).click();
+await page.waitForTimeout(400);
+const themeInstall = await page.evaluate(() => ({
+    calls: (window as any).__test.themeInstalls,
+    card: document.querySelector('[data-store-id="midnight"]')?.textContent ?? "",
+    enabled: (window as any).Evi.themes.isEnabled("midnight.css"),
+    applied: getComputedStyle(document.documentElement).getPropertyValue("--dl-store-theme").trim(),
+}));
+check("Theme Store installs a theme and turns it on", JSON.stringify(themeInstall.calls) === '["midnight"]' && themeInstall.card.includes("Installed and turned on") && themeInstall.enabled && themeInstall.applied === "midnight", themeInstall);
+await page.getByRole("button", { name: "Installed themes" }).click();
+await page.waitForTimeout(200);
+const themeRow = await page.evaluate(() => document.querySelector('li[aria-labelledby="dl-theme-midnight_css"]')?.textContent ?? "");
+check("store themes show a Store badge in the Themes tab", themeRow.includes("Midnight") && themeRow.includes("Store"), themeRow);
 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(300);
 check("Escape closes the panel", !(await page.$(".dl-panel")));
 
 check("healthy start reported once plugins ran for a while", await page.evaluate(() => (window as any).__test.bootOk === 1));
-check("no Evi errors in console", eviErrors.length === 0, eviErrors.slice(0, 5));
+// The broken plugin's start failures are the point of it
+const unexpected = eviErrors.filter(e => !e.includes(BROKEN));
+check("no Evi errors in console", unexpected.length === 0, unexpected.slice(0, 5));
 
 // ---- safe mode ----------------------------------------------------------------------------------
 
@@ -1247,7 +1401,8 @@ await safePage.evaluate(() => [...document.querySelectorAll(".dl-panel .dl-safe 
 await safePage.waitForTimeout(200);
 const disabled = await safePage.evaluate(() => ({ saved: (window as any).__test.savedSettings, exited: (window as any).__test.exitedSafeMode }));
 check("\"Disable Experiments and restart\" saves it off right away, then leaves safe mode", disabled.saved?.plugins?.experiments?.enabled === false && disabled.exited === 1, disabled);
-check("no Evi errors in safe mode", eviErrors.length === 0, eviErrors.slice(0, 5));
+const unexpectedInSafeMode = eviErrors.filter(e => !e.includes(BROKEN));
+check("no Evi errors in safe mode", unexpectedInSafeMode.length === 0, unexpectedInSafeMode.slice(0, 5));
 
 await browser.close();
 

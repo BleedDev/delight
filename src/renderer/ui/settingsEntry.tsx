@@ -11,12 +11,12 @@ import { Logger } from "../logger";
 import { hook } from "../patching/hooks";
 import { findExport, filters, waitFor } from "../webpack/find";
 import { BackupTab } from "./BackupTab";
+import { ErrorBoundary } from "./components";
 import { ensureStyles } from "./index";
 import { PatchesTab } from "./PatchesTab";
 import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
-import { StoreTab } from "./StoreTab";
 import { ThemesTab } from "./ThemesTab";
 
 interface LayoutNode {
@@ -42,8 +42,6 @@ const iconPaths = {
     patchHelper: "M8.7 6.3a1 1 0 0 1 0 1.4L4.4 12l4.3 4.3a1 1 0 1 1-1.4 1.4l-5-5a1 1 0 0 1 0-1.4l5-5a1 1 0 0 1 1.4 0zm6.6 0a1 1 0 0 1 1.4 0l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4l4.3-4.3-4.3-4.3a1 1 0 0 1 0-1.4z",
     // Archive box
     backup: "M5 3h14a2 2 0 0 1 2 2v3H3V5a2 2 0 0 1 2-2zm-1 7h16v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9zm5 3a1 1 0 0 0 0 2h6a1 1 0 1 0 0-2H9z",
-    // Shopping bag
-    store: "M6 7V6a6 6 0 0 1 12 0v1h2a1 1 0 0 1 1 1.1l-1.2 12A2 2 0 0 1 17.8 22H6.2a2 2 0 0 1-2-1.9L3 8.1A1 1 0 0 1 4 7h2zm2 0h8V6a4 4 0 0 0-8 0v1z",
     patches: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z",
 };
 
@@ -59,7 +57,7 @@ function makeIcon(path: string) {
 }
 
 function Embedded({ Tab }: { Tab: ComponentType; }) {
-    return <div className="dl-root dl-embedded"><Tab /></div>;
+    return <div className="dl-root dl-embedded"><ErrorBoundary><Tab /></ErrorBoundary></div>;
 }
 
 function buildSection(types: NodeTypes): LayoutNode {
@@ -79,7 +77,6 @@ function buildSection(types: NodeTypes): LayoutNode {
 
     const items = [
         entry("plugins", "Plugins", iconPaths.plugins, PluginsTab),
-        entry("store", "Plugin Store", iconPaths.store, StoreTab),
         entry("themes", "Themes", iconPaths.themes, ThemesTab),
         entry("quickcss", "Quick CSS", iconPaths.css, QuickCssTab),
         entry("backup", "Backup", iconPaths.backup, BackupTab),

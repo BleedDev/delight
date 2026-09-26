@@ -32,6 +32,13 @@ export const IPC = {
     STORE_LIST: "evi:store-list",
     STORE_INSTALL: "evi:store-install",
     STORE_UNINSTALL: "evi:store-uninstall",
+    STORE_THEME_INSTALL: "evi:store-theme-install",
+    STORE_THEME_UNINSTALL: "evi:store-theme-uninstall",
+    /** a screenshot the registry lists, as a data URL */
+    STORE_IMAGE: "evi:store-image",
+    /** store stars: every count plus this install's own, and starring or unstarring one item */
+    STARS_GET: "evi:stars-get",
+    STARS_SET: "evi:stars-set",
     /** main -> renderer: download / install progress of a store operation */
     STORE_PROGRESS: "evi:store-progress",
     OPEN_PATH: "evi:open-path",
@@ -49,8 +56,14 @@ export interface PluginManifest {
     description?: string;
     version?: string;
     authors?: string[];
-    /** Store search keywords */
+    /** Store search keywords, also the store's categories */
     tags?: string[];
+    /** https link to the source, published to the store registry */
+    source?: string;
+    /** https image links, published to the store registry */
+    screenshots?: string[];
+    /** Newest first, published to the store registry */
+    changelog?: { version: string; notes: string[]; }[];
     /** Oldest Evi the plugin works with, published to the store registry */
     minEviVersion?: string;
     /** Renderer entry, relative to the plugin folder. Defaults to index.js */
@@ -107,6 +120,10 @@ export interface EviSettings {
     quickCss: boolean;
     /** File names of enabled themes */
     enabledThemes: string[];
+    /** Update store plugins and themes in the background. Full-access plugins still ask first. */
+    autoUpdate?: boolean;
+    /** The Evi version whose "What's new" was last shown, to show it once after each update */
+    lastSeenVersion?: string;
 }
 
 export const DEFAULT_SETTINGS: EviSettings = {

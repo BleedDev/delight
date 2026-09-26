@@ -1,0 +1,29 @@
+/**
+ * @name Midnight
+ * @description True black backgrounds for OLED screens, with Discord's own accents left as they are.
+ * @author Evi
+ * @version 1.0.0
+ * @tags dark, oled, minimal
+ */
+
+/* Only Discord's dark themes: light mode stays light */
+.theme-dark,
+.theme-darker,
+.theme-midnight {
+    --background-base-lowest: #000;
+    --background-base-lower: #000;
+    --background-base-low: #050506;
+    --background-surface-high: #0b0b0d;
+    --background-surface-higher: #111114;
+    --background-surface-highest: #17171a;
+
+    /* Names older Discord builds use for the same surfaces */
+    --background-primary: #000;
+    --background-secondary: #050506;
+    --background-secondary-alt: #0b0b0d;
+    --background-tertiary: #000;
+    --background-floating: #0b0b0d;
+    --modal-background: #0b0b0d;
+    --chat-background: #000;
+    --channeltextarea-background: #0b0b0d;
+}

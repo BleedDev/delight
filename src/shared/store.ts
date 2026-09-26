@@ -11,18 +11,31 @@
  *         "manifest.json": { "url": "https://…/manifest.json", "sha256": "<64 hex>" },
  *         "index.js":      { "url": "https://…/index.js",      "sha256": "…" },
  *         "native.js":     { "url": "https://…/native.js",     "sha256": "…" }
- *       }
+ *       },
+ *       "updatedAt": "2026-09-26", "source": "https://github.com/…",
+ *       "screenshots": ["https://…/shot.png"],
+ *       "changelog": [{ "version": "1.0.0", "notes": ["First release"] }]
+ *     }],
+ *     "themes": [{
+ *       "id": "midnight", "name": "Midnight", "description": "…", "authors": ["Evi"], "version": "1.0.0",
+ *       "file": { "url": "https://…/midnight.css", "sha256": "…" }
  *     }]
  *   }
+ *
+ * Everything after `files` is optional and `themes` may be missing: older registries stay valid,
+ * and older Evi versions ignore what they don't know.
  */
 import type { PluginManifest } from "./ipc";
 
 export const REGISTRY_SCHEMA = 1;
-export const DEFAULT_REGISTRY_URL = "https://raw.githubusercontent.com/BleedDev/evi/main/registry.json";
+export const DEFAULT_REGISTRY_URL = "https://evi.rest/registry.json";
 
 export const MAX_REGISTRY_BYTES = 1024 * 1024;
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_PLUGINS = 2000;
+export const MAX_THEMES = 2000;
+export const MAX_SCREENSHOTS = 6;
+export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 /** Marks a plugin folder as installed by the store, only those can be updated or uninstalled from it */
 export const STORE_MARKER = ".evi-store.json";
@@ -35,22 +48,45 @@ export interface StoreFile {
     sha256: string;
 }
 
-export interface RegistryEntry {
+export interface ChangelogEntry {
+    version: string;
+    notes: string[];
+}
+
+/** What plugin and theme entries share: everything the store shows about an item */
+export interface ListingInfo {
     id: string;
     name: string;
     description: string;
     authors: string[];
     version: string;
     tags: string[];
+    /** YYYY-MM-DD, when this version was published */
+    updatedAt?: string;
+    /** https link to the source code */
+    source?: string;
+    /** https image URLs, shown on the detail page */
+    screenshots: string[];
+    /** Newest first */
+    changelog: ChangelogEntry[];
+}
+
+export interface RegistryEntry extends ListingInfo {
     /** Runs code in Discord's main process (native.js) or changes how Discord starts (chromiumSwitches) */
     native: boolean;
     minEviVersion?: string;
     files: Partial<Record<StoreFileName, StoreFile>> & Record<"manifest.json" | "index.js", StoreFile>;
 }
 
+export interface ThemeEntry extends ListingInfo {
+    minEviVersion?: string;
+    file: StoreFile;
+}
+
 export interface Registry {
     schema: typeof REGISTRY_SCHEMA;
     plugins: RegistryEntry[];
+    themes: ThemeEntry[];
 }
 
 /** Written into the plugin folder next to the plugin's own files */
@@ -69,14 +105,27 @@ export interface InstalledPlugin {
     fromStore: boolean;
 }
 
+/** A theme the store put in the themes folder */
+export interface InstalledTheme {
+    id: string;
+    version: string;
+    /** File name inside the themes folder */
+    file: string;
+    fromStore: true;
+}
+
 export type StoreListing =
-    | { ok: true; registryUrl: string; plugins: RegistryEntry[]; problems: string[]; installed: InstalledPlugin[]; }
-    | { ok: false; registryUrl: string; error: string; installed: InstalledPlugin[]; };
+    | { ok: true; registryUrl: string; plugins: RegistryEntry[]; themes: ThemeEntry[]; problems: string[]; installed: InstalledPlugin[]; installedThemes: InstalledTheme[]; }
+    | { ok: false; registryUrl: string; error: string; installed: InstalledPlugin[]; installedThemes: InstalledTheme[]; };
+
+export type StoreImageResult = { ok: true; dataUrl: string; } | { ok: false; error: string; };
 
 export type StoreResult = { ok: true; id: string; version: string; } | { ok: false; error: string; };
 
 export interface StoreProgress {
     id: string;
+    /** Missing from mains older than the theme store: those only ever report plugins */
+    kind?: "plugin" | "theme";
     phase: "downloading" | "verifying" | "installing" | "removing";
     done: number;
     total: number;
@@ -151,10 +200,13 @@ function strings(value: unknown, maxItems: number, maxLength: number): value is 
     return Array.isArray(value) && value.length <= maxItems && value.every(v => text(v, maxLength));
 }
 
-/** Validates one entry, returning it cleaned of unknown keys, or the reason it's unusable */
-export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error: string; } {
-    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { error: "not an object" };
-    const e = raw as Record<string, unknown>;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * The fields plugins and themes share, cleaned, or the reason they're unusable. The optional extras
+ * are checked as strictly as the rest: a registry can't slip a non-https image or link past us.
+ */
+function validateInfo(e: Record<string, unknown>): { info: ListingInfo; } | { error: string; } {
     const id = isPluginId(e.id) ? e.id : undefined;
     const fail = (why: string) => ({ error: `${id ?? JSON.stringify(e.id)?.slice(0, 40) ?? "entry"}: ${why}` });
 
@@ -164,6 +216,56 @@ export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error
     if (!strings(e.authors, 10, 80) || !e.authors.length) return fail("authors must list 1-10 names");
     if (!isVersion(e.version)) return fail("version must look like 1.2.3");
     if (e.tags !== undefined && !strings(e.tags, 10, 32)) return fail("tags must be at most 10 short strings");
+    if (e.updatedAt !== undefined && (typeof e.updatedAt !== "string" || !DATE_RE.test(e.updatedAt) || isNaN(Date.parse(e.updatedAt)))) {
+        return fail("updatedAt must be a date like 2026-09-26");
+    }
+    if (e.source !== undefined) {
+        const bad = whyNotStoreUrl(e.source);
+        if (bad) return fail(`source: ${bad}`);
+    }
+    if (e.screenshots !== undefined) {
+        if (!Array.isArray(e.screenshots) || e.screenshots.length > MAX_SCREENSHOTS) return fail(`screenshots must list at most ${MAX_SCREENSHOTS} links`);
+        for (const url of e.screenshots) {
+            const bad = whyNotStoreUrl(url);
+            if (bad) return fail(`screenshots: ${bad}`);
+        }
+    }
+    const changelog: ChangelogEntry[] = [];
+    if (e.changelog !== undefined) {
+        if (!Array.isArray(e.changelog) || e.changelog.length > 50) return fail("changelog must list at most 50 versions");
+        for (const item of e.changelog) {
+            const { version, notes } = (item ?? {}) as Record<string, unknown>;
+            if (!isVersion(version)) return fail("changelog versions must look like 1.2.3");
+            if (!strings(notes, 30, 300)) return fail(`changelog ${version}: notes must be at most 30 lines of 300 characters`);
+            changelog.push({ version, notes: [...notes] });
+        }
+    }
+
+    return {
+        info: {
+            id,
+            name: e.name,
+            description: e.description,
+            authors: [...e.authors],
+            version: e.version,
+            tags: e.tags ? [...(e.tags as string[])] : [],
+            ...(e.updatedAt !== undefined && { updatedAt: e.updatedAt as string }),
+            ...(e.source !== undefined && { source: e.source as string }),
+            screenshots: e.screenshots ? [...(e.screenshots as string[])] : [],
+            changelog,
+        },
+    };
+}
+
+/** Validates one entry, returning it cleaned of unknown keys, or the reason it's unusable */
+export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error: string; } {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { error: "not an object" };
+    const e = raw as Record<string, unknown>;
+    const shared = validateInfo(e);
+    if ("error" in shared) return shared;
+    const { info } = shared;
+    const fail = (why: string) => ({ error: `${info.id}: ${why}` });
+
     if (typeof e.native !== "boolean") return fail("native must be true or false");
     if (e.minEviVersion !== undefined && !isVersion(e.minEviVersion)) return fail("minEviVersion must look like 1.2.3");
 
@@ -184,15 +286,35 @@ export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error
 
     return {
         entry: {
-            id,
-            name: e.name,
-            description: e.description,
-            authors: [...e.authors],
-            version: e.version,
-            tags: e.tags ? [...(e.tags as string[])] : [],
+            ...info,
             native: e.native,
             ...(e.minEviVersion !== undefined && { minEviVersion: e.minEviVersion as string }),
             files: cleanFiles as RegistryEntry["files"],
+        },
+    };
+}
+
+/** Validates one theme entry: the shared fields plus a single .css file */
+export function validateThemeEntry(raw: unknown): { entry: ThemeEntry; } | { error: string; } {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { error: "not an object" };
+    const e = raw as Record<string, unknown>;
+    const shared = validateInfo(e);
+    if ("error" in shared) return shared;
+    const { info } = shared;
+    const fail = (why: string) => ({ error: `${info.id}: ${why}` });
+
+    if (e.minEviVersion !== undefined && !isVersion(e.minEviVersion)) return fail("minEviVersion must look like 1.2.3");
+    const file = e.file as Record<string, unknown> | undefined;
+    if (!file || typeof file !== "object" || Array.isArray(file)) return fail("file is missing");
+    const bad = whyNotStoreUrl(file.url);
+    if (bad) return fail(`file: ${bad}`);
+    if (typeof file.sha256 !== "string" || !SHA256_RE.test(file.sha256)) return fail("file: sha256 must be 64 lowercase hex digits");
+
+    return {
+        entry: {
+            ...info,
+            ...(e.minEviVersion !== undefined && { minEviVersion: e.minEviVersion as string }),
+            file: { url: file.url as string, sha256: file.sha256 },
         },
     };
 }
@@ -203,26 +325,39 @@ export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error
  */
 export function parseRegistry(json: unknown): { registry: Registry; problems: string[]; } | { error: string; } {
     if (!json || typeof json !== "object" || Array.isArray(json)) return { error: "The registry isn't a JSON object" };
-    const { schema, plugins } = json as Record<string, unknown>;
+    const { schema, plugins, themes = [] } = json as Record<string, unknown>;
     if (schema !== REGISTRY_SCHEMA) return { error: `Unsupported registry schema ${JSON.stringify(schema)}, this Evi reads schema ${REGISTRY_SCHEMA}` };
     if (!Array.isArray(plugins)) return { error: "The registry has no plugins list" };
     if (plugins.length > MAX_PLUGINS) return { error: `The registry lists more than ${MAX_PLUGINS} plugins` };
+    if (!Array.isArray(themes)) return { error: "The registry's themes isn't a list" };
+    if (themes.length > MAX_THEMES) return { error: `The registry lists more than ${MAX_THEMES} themes` };
 
     const problems: string[] = [];
-    const seen = new Set<string>();
-    const entries: RegistryEntry[] = [];
-    for (const raw of plugins) {
-        const result = validateEntry(raw);
-        if ("error" in result) {
-            problems.push(result.error);
-        } else if (seen.has(result.entry.id)) {
-            problems.push(`${result.entry.id}: listed twice, kept the first`);
-        } else {
-            seen.add(result.entry.id);
-            entries.push(result.entry);
+    const collect = <T extends { id: string; }>(list: unknown[], validate: (raw: unknown) => { entry: T; } | { error: string; }, label = "") => {
+        const seen = new Set<string>();
+        const entries: T[] = [];
+        for (const raw of list) {
+            const result = validate(raw);
+            if ("error" in result) {
+                problems.push(label + result.error);
+            } else if (seen.has(result.entry.id)) {
+                problems.push(`${label}${result.entry.id}: listed twice, kept the first`);
+            } else {
+                seen.add(result.entry.id);
+                entries.push(result.entry);
+            }
         }
-    }
-    return { registry: { schema: REGISTRY_SCHEMA, plugins: entries }, problems };
+        return entries;
+    };
+
+    return {
+        registry: {
+            schema: REGISTRY_SCHEMA,
+            plugins: collect(plugins, validateEntry),
+            themes: collect(themes, validateThemeEntry, "theme "),
+        },
+        problems,
+    };
 }
 
 /**
@@ -255,11 +390,24 @@ export async function whyNotHash(name: string, data: Uint8Array, expected: strin
     if (actual !== expected.toLowerCase()) return `${name} doesn't match the registry (sha256 ${actual.slice(0, 12)}…, expected ${expected.slice(0, 12)}…). Nothing was installed.`;
 }
 
-/** What the Store tab should offer for an entry */
-export function storeAction(entry: RegistryEntry, installed: InstalledPlugin | undefined, eviVersion: string):
+/** What the store should offer for an entry, plugin or theme */
+export function storeAction(entry: { version: string; minEviVersion?: string; }, installed: { id?: string; version?: string; fromStore: boolean; } | undefined, eviVersion: string):
     "install" | "update" | "installed" | "local" | "incompatible" {
     if (installed && !installed.fromStore) return "local";
     if (entry.minEviVersion && compareVersions(eviVersion, entry.minEviVersion) < 0) return installed ? "installed" : "incompatible";
     if (!installed) return "install";
     return compareVersions(entry.version, installed.version ?? "0") > 0 ? "update" : "installed";
+}
+
+/** Where the store keeps a theme inside the themes folder */
+export const storeThemeFile = (id: string) => `${id}.css`;
+
+export type ListingSort = "name" | "updated" | "stars";
+
+/** By name, newest first (undated last), or most starred; ties go by name */
+export function sortListings<T extends ListingInfo>(items: T[], by: ListingSort, stars: (item: T) => number = () => 0) {
+    const byName = (a: T, b: T) => a.name.localeCompare(b.name);
+    if (by === "name") return [...items].sort(byName);
+    if (by === "stars") return [...items].sort((a, b) => stars(b) - stars(a) || byName(a, b));
+    return [...items].sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "") || byName(a, b));
 }

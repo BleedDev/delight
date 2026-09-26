@@ -1,6 +1,7 @@
 import type { ImportMode } from "@shared/backup";
 import { AddThemeResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, EviSettings, IPC, OpenPathTarget, PluginChange, ThemeChange } from "@shared/ipc";
-import type { StoreListing, StoreProgress, StoreResult } from "@shared/store";
+import type { StarKind, StarResult, StarsResult } from "@shared/stars";
+import type { StoreImageResult, StoreListing, StoreProgress, StoreResult } from "@shared/store";
 import { contextBridge, ipcRenderer, webFrame } from "electron";
 
 /** The bridge the renderer uses to reach the main process. Mirrored by src/renderer/native.ts */
@@ -23,6 +24,11 @@ const EviNative = {
     storeList: (): Promise<StoreListing> => ipcRenderer.invoke(IPC.STORE_LIST),
     storeInstall: (id: string, options?: { allowNative?: boolean; }): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_INSTALL, id, options),
     storeUninstall: (id: string): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_UNINSTALL, id),
+    storeInstallTheme: (id: string): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_THEME_INSTALL, id),
+    storeUninstallTheme: (id: string): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_THEME_UNINSTALL, id),
+    storeImage: (url: string): Promise<StoreImageResult> => ipcRenderer.invoke(IPC.STORE_IMAGE, url),
+    getStars: (): Promise<StarsResult> => ipcRenderer.invoke(IPC.STARS_GET),
+    setStar: (kind: StarKind, id: string, starred: boolean): Promise<StarResult> => ipcRenderer.invoke(IPC.STARS_SET, kind, id, starred),
     onStoreProgress(cb: (progress: StoreProgress) => void) {
         ipcRenderer.on(IPC.STORE_PROGRESS, (_, progress) => cb(progress));
     },

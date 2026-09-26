@@ -1,46 +1,55 @@
 /**
- * The plugin store: reads a registry over https, and installs, updates and uninstalls plugins from it.
+ * The store: reads a registry over https, and installs, updates and uninstalls plugins and themes from it.
  *
- * The renderer only ever names a plugin id. Where files come from and what they must hash to is
- * decided here, from the registry this process downloaded itself, so nothing in Discord's page can
- * point an install at other files. Every file is verified before anything touches the plugins folder,
- * and the finished folder is moved into place with a single rename, so the plugin watcher never sees
- * half a plugin.
+ * The renderer only ever names an id. Where files come from and what they must hash to is decided
+ * here, from the registry this process downloaded itself, so nothing in Discord's page can point an
+ * install at other files. Every file is verified before anything touches the plugins or themes folder,
+ * and a finished plugin folder is moved into place with a single rename, so the plugin watcher never
+ * sees half a plugin.
  */
 import { IPC, PluginManifest } from "@shared/ipc";
 import {
     compareVersions,
     DEFAULT_REGISTRY_URL,
     InstalledPlugin,
+    InstalledTheme,
     isPluginId,
     MAX_FILE_BYTES,
+    MAX_IMAGE_BYTES,
     MAX_REGISTRY_BYTES,
     parseRegistry,
     RegistryEntry,
     STORE_MARKER,
     StoreFileName,
+    StoreImageResult,
     StoreListing,
     StoreMarker,
     StoreProgress,
     StoreResult,
+    storeThemeFile,
+    ThemeEntry,
     whyNotHash,
     whyNotManifest,
     whyNotStoreUrl,
 } from "@shared/store";
+import { MAX_THEME_BYTES, whyNotCss } from "@shared/themes";
 import { ipcMain, WebContents } from "electron";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { downloadHttps } from "./download";
-import { DATA_DIR, PLUGINS_DIR } from "./paths";
+import { DATA_DIR, PLUGINS_DIR, THEMES_DIR } from "./paths";
 import { refreshUserPlugin } from "./plugins";
+import { reloadTheme } from "./themes";
 
 /** Outside the plugins folder, so the plugin watcher never loads a half-written plugin */
 const STAGING_DIR = join(DATA_DIR, "store-staging");
 /** `{ "registryUrl": "https://…" }`, edited by hand. The renderer can't change it. */
 const CONFIG_FILE = join(DATA_DIR, "store.json");
+/** Themes are single files with no room for a marker, so the store remembers its own here */
+const THEMES_RECORD = join(DATA_DIR, "store-themes.json");
 
-let cache: { url: string; entries: Map<string, RegistryEntry>; } | undefined;
+let cache: { url: string; entries: Map<string, RegistryEntry>; themes: Map<string, ThemeEntry>; images: Set<string>; } | undefined;
 const busy = new Set<string>();
 
 export function getRegistryUrl() {
@@ -80,10 +89,35 @@ function listInstalled(): InstalledPlugin[] {
     return installed;
 }
 
+type ThemesRecord = Record<string, { version: string; file: string; }>;
+
+function readThemesRecord(): ThemesRecord {
+    try {
+        const record = JSON.parse(readFileSync(THEMES_RECORD, "utf8"));
+        return record && typeof record === "object" && !Array.isArray(record) ? record : {};
+    } catch {
+        return {};
+    }
+}
+
+function writeThemesRecord(record: ThemesRecord) {
+    const tmp = THEMES_RECORD + ".tmp";
+    writeFileSync(tmp, JSON.stringify(record, null, 4));
+    renameSync(tmp, THEMES_RECORD);
+}
+
+/** Store themes whose file is still there: deleting the file by hand uninstalls it too */
+function listInstalledThemes(): InstalledTheme[] {
+    return Object.entries(readThemesRecord())
+        .filter(([id, t]) => isPluginId(id) && typeof t?.version === "string" && t.file === storeThemeFile(id) && existsSync(join(THEMES_DIR, t.file)))
+        .map(([id, t]) => ({ id, version: t.version, file: t.file, fromStore: true }));
+}
+
 async function fetchRegistry(): Promise<StoreListing> {
     const registryUrl = getRegistryUrl();
     const installed = listInstalled();
-    const fail = (error: string): StoreListing => ({ ok: false, registryUrl, error, installed });
+    const installedThemes = listInstalledThemes();
+    const fail = (error: string): StoreListing => ({ ok: false, registryUrl, error, installed, installedThemes });
 
     const badUrl = whyNotStoreUrl(registryUrl);
     if (badUrl) return fail(`The registry URL can't be used: ${badUrl}`);
@@ -100,18 +134,28 @@ async function fetchRegistry(): Promise<StoreListing> {
     const parsed = parseRegistry(json);
     if ("error" in parsed) return fail(parsed.error);
 
-    cache = { url: registryUrl, entries: new Map(parsed.registry.plugins.map(p => [p.id, p])) };
+    const { plugins, themes } = parsed.registry;
+    cache = {
+        url: registryUrl,
+        entries: new Map(plugins.map(p => [p.id, p])),
+        themes: new Map(themes.map(t => [t.id, t])),
+        images: new Set([...plugins, ...themes].flatMap(e => e.screenshots)),
+    };
     if (parsed.problems.length) console.warn(`[Evi] Store registry: skipped ${parsed.problems.length} entries`, parsed.problems);
-    return { ok: true, registryUrl, plugins: parsed.registry.plugins, problems: parsed.problems, installed };
+    return { ok: true, registryUrl, plugins, themes, problems: parsed.problems, installed, installedThemes };
 }
 
-async function getEntry(id: string) {
-    // Always the registry currently configured, a stale cache from another URL doesn't count
+/** The registry currently configured: a stale cache from another URL doesn't count */
+async function current() {
     if (!cache || cache.url !== getRegistryUrl()) {
         const listing = await fetchRegistry();
         if (!listing.ok) throw new Error(listing.error);
     }
-    const entry = cache!.entries.get(id);
+    return cache!;
+}
+
+async function getEntry(id: string) {
+    const entry = (await current()).entries.get(id);
     if (!entry) throw new Error(`${id} isn't in the store`);
     return entry;
 }
@@ -214,24 +258,119 @@ function uninstall(id: string, report: (p: StoreProgress) => void): StoreResult 
     return { ok: true, id, version: marker.version };
 }
 
-/** Runs one operation per plugin at a time and turns thrown errors into results */
-async function exclusive(id: unknown, run: (id: string) => Promise<StoreResult> | StoreResult): Promise<StoreResult> {
-    if (!isPluginId(id)) return { ok: false, error: "That isn't a valid plugin id" };
-    if (busy.has(id)) return { ok: false, error: `${id} is already being changed` };
-    busy.add(id);
+// ---- themes -----------------------------------------------------------------------------------
+
+async function installTheme(id: string, report: (p: StoreProgress) => void): Promise<StoreResult> {
+    const entry = (await current()).themes.get(id);
+    if (!entry) throw new Error(`${id} isn't in the store`);
+    if (entry.minEviVersion && compareVersions(EVI_VERSION, entry.minEviVersion) < 0) {
+        throw new Error(`${entry.name} needs Evi ${entry.minEviVersion} or newer, this is ${EVI_VERSION}`);
+    }
+
+    const file = storeThemeFile(id);
+    const record = readThemesRecord();
+    const path = join(THEMES_DIR, file);
+    if (existsSync(path) && record[id]?.file !== file) {
+        throw new Error(`A theme named ${file} is already there and wasn't installed from the store. Remove it yourself to install this one.`);
+    }
+
+    report({ id, phase: "downloading", done: 0, total: 1 });
+    const download = await downloadHttps(entry.file.url, Math.min(MAX_FILE_BYTES, MAX_THEME_BYTES), { what: file, cache: "no-store" });
+    if (!download.ok) throw new Error(`${file}: ${download.error}`);
+
+    report({ id, phase: "verifying", done: 1, total: 1 });
+    const badHash = await whyNotHash(file, download.body, entry.file.sha256);
+    if (badHash) throw new Error(badHash);
+    const badCss = whyNotCss(decodeText(file, download.body));
+    if (badCss) throw new Error(badCss);
+
+    report({ id, phase: "installing", done: 1, total: 1 });
+    const updating = !!record[id];
+    // Write then rename, so the theme watcher never reads half a file
+    const tmp = join(THEMES_DIR, `.${file}.evi-tmp`);
+    writeFileSync(tmp, download.body);
+    renameSync(tmp, path);
+    writeThemesRecord({ ...record, [id]: { version: entry.version, file } });
+
+    reloadTheme(file);
+    console.log(`[Evi] Store: ${updating ? "updated" : "installed"} theme ${id} ${entry.version}`);
+    return { ok: true, id, version: entry.version };
+}
+
+function uninstallTheme(id: string, report: (p: StoreProgress) => void): StoreResult {
+    const record = readThemesRecord();
+    const installed = record[id];
+    if (!installed || installed.file !== storeThemeFile(id)) throw new Error(`${id} wasn't installed from the store`);
+
+    report({ id, phase: "removing", done: 0, total: 1 });
+    rmSync(join(THEMES_DIR, installed.file), { force: true });
+    delete record[id];
+    writeThemesRecord(record);
+    reloadTheme(installed.file);
+    console.log(`[Evi] Store: uninstalled theme ${id}`);
+    return { ok: true, id, version: installed.version };
+}
+
+// ---- screenshots ------------------------------------------------------------------------------
+
+/** Only raster formats, recognised by their first bytes rather than what the server claims */
+function imageType(data: Uint8Array) {
+    const starts = (...bytes: number[]) => bytes.every((b, i) => data[i] === b);
+    if (starts(0x89, 0x50, 0x4e, 0x47)) return "image/png";
+    if (starts(0xff, 0xd8, 0xff)) return "image/jpeg";
+    if (starts(0x47, 0x49, 0x46, 0x38)) return "image/gif";
+    if (starts(0x52, 0x49, 0x46, 0x46) && String.fromCharCode(...data.slice(8, 12)) === "WEBP") return "image/webp";
+}
+
+const images = new Map<string, Promise<StoreImageResult>>();
+
+/**
+ * Discord's page can't load images from arbitrary hosts, so main fetches screenshots and hands back
+ * a data URL. Only URLs the registry itself lists: the page can't use this to fetch anything else.
+ */
+async function fetchImage(url: unknown): Promise<StoreImageResult> {
+    if (typeof url !== "string") return { ok: false, error: "Not a URL" };
+    try {
+        if (!(await current()).images.has(url)) return { ok: false, error: "That image isn't in the store" };
+    } catch (err) {
+        return { ok: false, error: (err as Error).message };
+    }
+
+    let pending = images.get(url);
+    if (!pending) {
+        pending = (async (): Promise<StoreImageResult> => {
+            const download = await downloadHttps(url, MAX_IMAGE_BYTES, { what: "The image" });
+            if (!download.ok) return download;
+            const type = imageType(download.body);
+            if (!type) return { ok: false, error: "Not a PNG, JPEG, GIF or WebP image" };
+            return { ok: true, dataUrl: `data:${type};base64,${Buffer.from(download.body).toString("base64")}` };
+        })();
+        images.set(url, pending);
+        // Failures aren't remembered, the next look tries again
+        pending.then(r => !r.ok && images.delete(url));
+    }
+    return pending;
+}
+
+/** Runs one operation per item at a time and turns thrown errors into results */
+async function exclusive(id: unknown, run: (id: string) => Promise<StoreResult> | StoreResult, kind = "plugin"): Promise<StoreResult> {
+    if (!isPluginId(id)) return { ok: false, error: `That isn't a valid ${kind} id` };
+    const key = `${kind}:${id}`;
+    if (busy.has(key)) return { ok: false, error: `${id} is already being changed` };
+    busy.add(key);
     try {
         return await run(id);
     } catch (err) {
-        console.warn(`[Evi] Store: ${id} failed`, err);
+        console.warn(`[Evi] Store: ${kind} ${id} failed`, err);
         return { ok: false, error: (err as Error)?.message ?? String(err) };
     } finally {
-        busy.delete(id);
+        busy.delete(key);
     }
 }
 
-function progressTo(sender: WebContents) {
+function progressTo(sender: WebContents, kind: StoreProgress["kind"] = "plugin") {
     return (progress: StoreProgress) => {
-        if (!sender.isDestroyed()) sender.send(IPC.STORE_PROGRESS, progress);
+        if (!sender.isDestroyed()) sender.send(IPC.STORE_PROGRESS, { ...progress, kind });
     };
 }
 
@@ -243,4 +382,7 @@ export function initStore() {
     ipcMain.handle(IPC.STORE_INSTALL, (e, id: unknown, options?: { allowNative?: unknown; }) =>
         exclusive(id, id => install(id, options?.allowNative === true, progressTo(e.sender))));
     ipcMain.handle(IPC.STORE_UNINSTALL, (e, id: unknown) => exclusive(id, id => uninstall(id, progressTo(e.sender))));
+    ipcMain.handle(IPC.STORE_THEME_INSTALL, (e, id: unknown) => exclusive(id, id => installTheme(id, progressTo(e.sender, "theme")), "theme"));
+    ipcMain.handle(IPC.STORE_THEME_UNINSTALL, (e, id: unknown) => exclusive(id, id => uninstallTheme(id, progressTo(e.sender, "theme")), "theme"));
+    ipcMain.handle(IPC.STORE_IMAGE, (_, url: unknown) => fetchImage(url));
 }

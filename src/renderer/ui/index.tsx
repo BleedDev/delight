@@ -4,12 +4,11 @@ import { Native } from "../native";
 import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
 import { BackupTab } from "./BackupTab";
-import { Button, Icon, IconName, Text, useStore } from "./components";
+import { Button, ErrorBoundary, Icon, IconName, openDialogs, Text, useStore } from "./components";
 import { PatchesTab } from "./PatchesTab";
 import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
-import { StoreTab } from "./StoreTab";
 import { ThemesTab } from "./ThemesTab";
 import css from "./styles.css" with { type: "text" };
 
@@ -39,7 +38,6 @@ function close() {
 // `icon` is optional so a section added without one still fits; its label stays aligned with the rest
 const tabs: readonly { id: string; label: string; icon?: IconName; Component: () => ReactNode; }[] = [
     { id: "plugins", label: "Plugins", icon: "puzzle", Component: PluginsTab },
-    { id: "store", label: "Store", icon: "store", Component: StoreTab },
     { id: "themes", label: "Themes", icon: "palette", Component: ThemesTab },
     { id: "quickcss", label: "Quick CSS", icon: "code", Component: QuickCssTab },
     { id: "backup", label: "Backup", icon: "download", Component: BackupTab },
@@ -138,7 +136,7 @@ function Panel() {
                         </div>
                     </header>
                     <div className="dl-body" role="tabpanel" id="dl-tabpanel" aria-labelledby={`dl-tab-${current.id}`} ref={bodyRef}>
-                        <current.Component />
+                        <ErrorBoundary resetKey={current.id}><current.Component /></ErrorBoundary>
                     </div>
                 </div>
             </div>
@@ -185,7 +183,8 @@ export function installHotkey() {
     // Capture phase, so Discord's own key handlers never see our shortcut
     window.addEventListener("keydown", e => {
         const toggle = e.ctrlKey && e.shiftKey && !e.altKey && e.code === "KeyD";
-        const escape = e.key === "Escape" && view === "open";
+        // An open dialog closes first, with its own Escape handler
+        const escape = e.key === "Escape" && view === "open" && !openDialogs;
         if (!toggle && !escape) return;
 
         e.preventDefault();

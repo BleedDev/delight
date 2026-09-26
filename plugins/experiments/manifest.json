@@ -3,5 +3,7 @@
     "name": "Experiments",
     "description": "Unlocks Discord's Experiments and developer settings tabs.",
     "version": "1.0.0",
-    "authors": ["Evi"]
+    "authors": ["Evi"],
+    "tags": ["developer"],
+    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }]
 }

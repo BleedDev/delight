@@ -4,5 +4,7 @@
     "description": "Adds Copy Message Link, Copy Raw Text, Copy Message ID, Search Image (Google Lens, Yandex, TinEye) and Translate with Google to the message menu.",
     "version": "1.0.0",
     "authors": ["Evi"],
+    "tags": ["messages", "utility"],
+    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
     "enabledByDefault": false
 }

@@ -4,10 +4,10 @@
  * fallbacks for when Discord renames one of its components. Layout (sections, lists, rows) follows
  * the measurements of Discord's own settings layout, see styles.css.
  */
-import type { ButtonHTMLAttributes, ReactElement, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ComponentType, ReactElement, ReactNode } from "react";
 
 import type { SettingDefinition } from "../plugins/types";
-import { React } from "../webpack/common";
+import { React, ReactDOM } from "../webpack/common";
 import { DiscordUI } from "./discord";
 import { Icon, iconComponent, IconName } from "./icons";
 
@@ -414,6 +414,35 @@ export function Collapse({ open, id, children }: { open: boolean; id: string; ch
 
 // ---- plugin settings --------------------------------------------------------------------------
 
+/** Discord's dropdown, or a native <select> when it isn't available */
+export function Dropdown<V extends string>({ id, label, labelledBy, options, value, onChange }: {
+    id: string;
+    label: string;
+    labelledBy?: string;
+    options: readonly { label: string; value: V; }[];
+    value: V;
+    onChange(value: V): void;
+}) {
+    const Select = DiscordUI.Select.get;
+    if (Select) {
+        return (
+            <Select
+                options={options.map(o => ({ label: o.label, value: o.value }))}
+                select={v => onChange(v as V)}
+                isSelected={v => v === value}
+                serialize={String}
+                closeOnSelect
+                aria-label={label}
+            />
+        );
+    }
+    return (
+        <select id={id} className="dl-select" value={value} aria-label={labelledBy ? undefined : label} aria-labelledby={labelledBy} onChange={e => onChange(e.currentTarget.value as V)}>
+            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+    );
+}
+
 export function SettingField({ id, definition, value, onChange }: {
     id: string;
     definition: SettingDefinition;
@@ -441,24 +470,10 @@ export function SettingField({ id, definition, value, onChange }: {
     }
 
     let control: ReactNode;
-    const Select = DiscordUI.Select.get;
     const Slider = DiscordUI.Slider.get;
 
     if (definition.type === "select") {
-        control = Select
-            ? <Select
-                options={definition.options.map(o => ({ label: o.label, value: o.value }))}
-                select={onChange}
-                isSelected={v => v === value}
-                serialize={String}
-                closeOnSelect
-                aria-label={definition.label}
-            />
-            : (
-                <select id={id} className="dl-select" value={String(value)} aria-labelledby={labelId} onChange={e => onChange(e.currentTarget.value)}>
-                    {definition.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-            );
+        control = <Dropdown id={id} labelledBy={labelId} label={definition.label} options={definition.options} value={value as string} onChange={onChange} />;
     } else {
         const { min, max, step = 1 } = definition;
         const ranged = min !== undefined && max !== undefined && (max - min) / step <= 20;
@@ -507,4 +522,110 @@ export function SettingField({ id, definition, value, onChange }: {
 /** Subscribes a component to an external store */
 export function useStore<T>(subscribe: (cb: () => void) => () => void, getSnapshot: () => T) {
     return React.useSyncExternalStore(subscribe, getSnapshot);
+}
+
+// ---- errors -----------------------------------------------------------------------------------
+
+type BoundaryProps = { children: ReactNode; resetKey?: unknown; };
+let Boundary: ComponentType<BoundaryProps> | undefined;
+
+/**
+ * Keeps a view that throws while rendering from taking the whole panel down with it: shows what
+ * went wrong in its place instead. `resetKey` changing (another tab) tries again.
+ */
+export function ErrorBoundary(props: BoundaryProps) {
+    // React is only there once Discord's modules load, so the class is made on first use
+    Boundary ??= class extends React.Component<BoundaryProps, { error?: Error; key?: unknown; }> {
+        override state: { error?: Error; key?: unknown; } = {};
+
+        static getDerivedStateFromError(error: Error) {
+            return { error };
+        }
+
+        static getDerivedStateFromProps(props: BoundaryProps, state: { error?: Error; key?: unknown; }) {
+            return props.resetKey !== state.key ? { error: undefined, key: props.resetKey } : null;
+        }
+
+        override componentDidCatch(error: Error) {
+            console.error("[Evi] A settings view crashed", error);
+        }
+
+        override render() {
+            const { error } = this.state;
+            if (!error) return this.props.children;
+            return (
+                <div className="dl-stack" role="alert">
+                    <Notice tone="danger">This view crashed. The rest of Evi still works.</Notice>
+                    <pre className="dl-error">{String(error.stack ?? error)}</pre>
+                </div>
+            );
+        }
+    };
+    return <Boundary {...props} />;
+}
+
+// ---- dialogs ----------------------------------------------------------------------------------
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** How many Evi dialogs are open: Escape closes the top one instead of the whole panel */
+export let openDialogs = 0;
+
+/**
+ * A dialog over everything, so opening it never moves the page underneath. Rendered into <body>,
+ * which also gets it out of Discord's settings scroller when the tab is embedded there.
+ * Escape and clicking beside it close it; focus stays inside and goes back where it was after.
+ */
+export function Dialog({ title, onClose, children, id }: { title: ReactNode; onClose(): void; children: ReactNode; id: string; }) {
+    const ref = React.useRef<HTMLDivElement>(null);
+    const closeRef = React.useRef(onClose);
+    closeRef.current = onClose;
+
+    React.useEffect(() => {
+        const previous = document.activeElement as HTMLElement | null;
+        ref.current?.focus();
+        openDialogs++;
+        // Capture phase on window, so Discord's own Escape handling (closing settings) never sees it
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== "Escape") return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            closeRef.current();
+        };
+        window.addEventListener("keydown", onKey, true);
+        return () => {
+            openDialogs--;
+            window.removeEventListener("keydown", onKey, true);
+            previous?.focus?.();
+        };
+    }, []);
+
+    const trapTab = (e: React.KeyboardEvent) => {
+        if (e.key !== "Tab" || !ref.current) return;
+        const focusable = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => el.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    };
+
+    return ReactDOM.createPortal(
+        <div className="dl-root">
+            <div className="dl-scrim dl-dialog-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+                <div className="dl-dialog" role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} tabIndex={-1} ref={ref} onKeyDown={trapTab} id={id}>
+                    <header className="dl-dialog-head">
+                        <Text tag="h2" variant="heading-lg/semibold" color="text-strong" id={`${id}-title`}>{title}</Text>
+                        <IconButton icon="close" label="Close" onClick={onClose} />
+                    </header>
+                    <div className="dl-dialog-body">{children}</div>
+                </div>
+            </div>
+        </div>,
+        document.body,
+    );
 }

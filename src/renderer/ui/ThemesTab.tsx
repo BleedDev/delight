@@ -2,10 +2,12 @@ import type { ThemePayload } from "@shared/ipc";
 
 import { Native } from "../native";
 import { Settings } from "../settings";
+import { Store } from "../store";
 import { Themes } from "../themes";
 import { React } from "../webpack/common";
-import { Button, EmptyState, List, Section, Status, Switch, Text, TextField, useStore } from "./components";
+import { Badge, Button, EmptyState, IconButton, List, Section, Status, Switch, Text, TextField, useStore } from "./components";
 import { SafeModeHint } from "./SafeModeNotice";
+import { StoreBanner, StoreView } from "./Store";
 
 type AddState =
     | { type: "idle"; }
@@ -15,13 +17,28 @@ type AddState =
 
 function ThemeRow({ theme }: { theme: ThemePayload; }) {
     const titleId = `dl-theme-${theme.file.replace(/[^\w-]/g, "_")}`;
+    const store = Store.getSnapshot();
+    const storeId = Object.values(store.installedThemes).find(t => t.file === theme.file)?.id;
+    const update = storeId && Store.themeAction(storeId) === "update";
+    const op = storeId ? store.themeOps[storeId] : undefined;
+    const busy = op?.type === "busy";
+
     return (
         <li className="dl-row" aria-labelledby={titleId}>
             <div className="dl-row-head">
                 <div className="dl-row-text">
                     <div className="dl-row-title">
-                        <Text tag="h3" variant="heading-md/medium" color="text-strong" id={titleId}>{theme.name}</Text>
+                        <Text tag="h3" variant="text-md/semibold" color="text-strong" id={titleId}>{theme.name}</Text>
                         {theme.version && <Text variant="text-xs/medium" color="text-muted" className="dl-version" tabular>v{theme.version}</Text>}
+                        {storeId && <Badge>Store</Badge>}
+                        {(update || op) && (
+                            <span className="dl-row-meta" role="status">
+                                {op?.type === "busy" && <Status tone="muted">{op.label}</Status>}
+                                {op?.type === "error" && <Status tone="danger">{op.error}</Status>}
+                                {op?.type === "done" && <Status tone="success">{op.message}</Status>}
+                                {!op && update && <Status tone="warning">Update available</Status>}
+                            </span>
+                        )}
                     </div>
                     {theme.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-desc">{theme.description}</Text>}
                     <Text variant="text-xs/normal" color="text-muted" className="dl-row-meta">
@@ -30,6 +47,8 @@ function ThemeRow({ theme }: { theme: ThemePayload; }) {
                     </Text>
                 </div>
                 <div className="dl-row-controls">
+                    {update && <Button variant="accent" icon="download" disabled={busy} onClick={() => Store.installTheme(storeId)}>Update</Button>}
+                    {storeId && <IconButton icon="trash" label={`Uninstall ${theme.name}`} onClick={() => !busy && Store.uninstallTheme(storeId)} />}
                     <Switch checked={Themes.isEnabled(theme.file)} labelledBy={titleId} onChange={v => Themes.setEnabled(theme.file, v)} />
                 </div>
             </div>
@@ -96,8 +115,16 @@ function AddFromUrl() {
     );
 }
 
+/** Installed themes, with the Theme Store one click away inside the same tab */
 export function ThemesTab() {
+    const [browsing, setBrowsing] = React.useState(false);
+    return browsing ? <StoreView kind="theme" onBack={() => setBrowsing(false)} /> : <InstalledThemes onOpenStore={() => setBrowsing(true)} />;
+}
+
+function InstalledThemes({ onOpenStore }: { onOpenStore(): void; }) {
     const themes = useStore(Themes.subscribe, Themes.getSnapshot);
+    // Rows show store badges and updates
+    useStore(Store.subscribe, Store.getSnapshot);
     // Switch states come from settings
     const settings = useStore(Settings.subscribe, () => Settings.data);
     const enabled = themes.filter(t => settings.enabledThemes.includes(t.file)).length;
@@ -106,6 +133,7 @@ export function ThemesTab() {
     return (
         <div className="dl-tab">
             <SafeModeHint what="themes" />
+            <StoreBanner kind="theme" onOpen={onOpenStore} />
             <Section
                 id="dl-themes-add"
                 title="Add a theme"

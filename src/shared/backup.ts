@@ -262,7 +262,8 @@ export function planImport(current: BackupSource, backup: EviBackup, mode: Impor
     const enabledFromBackup = incoming.enabledThemes.map(onDisk);
     let settings: EviSettings;
     if (mode === "replace") {
-        settings = { ...structuredClone(incoming), enabledThemes: [...new Set(enabledFromBackup)] };
+        // Keys a backup doesn't carry (auto-update, the last seen version) are this device's own and stay
+        settings = { ...structuredClone(current.settings), ...structuredClone(incoming), enabledThemes: [...new Set(enabledFromBackup)] };
     } else {
         const plugins = structuredClone(current.settings.plugins);
         for (const [id, entry] of Object.entries(incoming.plugins)) {

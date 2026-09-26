@@ -11,6 +11,7 @@ import { persistAcrossUpdates } from "./persist";
 import { applyChromiumSwitches, getPluginPayloads, initPlugins } from "./plugins";
 import { SafeMode } from "./safeMode";
 import { saveSettings, settings } from "./settings";
+import { initStars } from "./stars";
 import { initStore } from "./store";
 import { getThemePayloads, initThemes } from "./themes";
 
@@ -152,6 +153,7 @@ function setup() {
     // Themes need nothing from Electron to load, have them ready for the first window's boot
     initThemes();
     initStore();
+    initStars();
     watchQuickCss();
     persistAcrossUpdates(shimAsar);
 }

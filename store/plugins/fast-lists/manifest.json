@@ -6,6 +6,17 @@
     "authors": [
         "Evi"
     ],
+    "tags": [
+        "performance"
+    ],
+    "changelog": [
+        {
+            "version": "2.0.0",
+            "notes": [
+                "Servers, messages and members far out of view skip rendering work instead of being removed, so nothing flickers or jumps."
+            ]
+        }
+    ],
     "enabledByDefault": true,
     "main": "index.js"
 }

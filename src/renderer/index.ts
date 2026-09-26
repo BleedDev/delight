@@ -75,7 +75,12 @@ function boot() {
     onCommonReady(() => {
         if (!SafeMode.active) logger.info("Discord core modules ready, starting plugins");
         PluginManager.startAll().then(() => SafeMode.scheduleBootOk());
-        if (SafeMode.active) showSafeModeNotice();
+        if (SafeMode.active) {
+            showSafeModeNotice();
+        } else {
+            // Waits for a normal start: in safe mode nothing gets updated
+            Store.scheduleAutoUpdate();
+        }
     });
 
     if (SafeMode.active) logger.warn(`Safe mode (${data.safeMode!.reason}): ${data.plugins.length} plugins, themes and Quick CSS are off.`);
