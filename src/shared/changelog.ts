@@ -33,6 +33,16 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.5.0-beta.1",
+        date: "2026-09-27",
+        sections: {
+            added: [
+                "**Claude plugin.** Run Claude Code (and Codex) sessions right inside Discord: they sit in your DM list, with tool steps, diffs and approvals. Off by default, and it uses the `claude` command already on your computer.",
+                "**Claude in chat.** /claude, /catchup, /summarize, /draft and /todo answer as messages only you can see, with a live card showing what Claude is doing.",
+            ],
+        },
+    },
+    {
         version: "0.4.0",
         date: "2026-09-27",
         cover: "0.4.0",
