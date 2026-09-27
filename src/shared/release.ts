@@ -6,6 +6,41 @@ import { compareVersions, isVersion } from "./store";
 
 export const RELEASE_REPO = "BleedDev/evi";
 
+/** evi.rest's mirror of GitHub's release API: same paths and JSON, without GitHub's 60 calls an hour per address */
+export const RELEASE_MIRROR_API = "https://evi.rest/v1/github";
+export const GITHUB_API = "https://api.github.com";
+
+/**
+ * Where to ask for releases, in order: evi.rest's mirror, then GitHub itself. An override (EVI_UPDATE_API,
+ * what the tests use) is the only place asked.
+ */
+export function releaseApis(override?: string): string[] {
+    const api = override?.trim().replace(/\/+$/, "");
+    return api ? [api] : [RELEASE_MIRROR_API, GITHUB_API];
+}
+
+/**
+ * GETs `<api>/repos/BleedDev/evi/<path>` from each API in turn, moving on to the next when one can't be
+ * reached, times out or answers 5xx. Anything else (a release, a 404, GitHub's 403) is the answer. The
+ * last API's failure is thrown or returned as is.
+ */
+export async function fetchReleaseApi(apis: string[], path: string, get: (url: string) => Promise<Response>): Promise<Response> {
+    if (!apis.length) throw new Error("No release API to ask");
+    for (let i = 0; ; i++) {
+        const last = i === apis.length - 1;
+        let res: Response;
+        try {
+            res = await get(`${apis[i]}/repos/${RELEASE_REPO}/${path}`);
+        } catch (err) {
+            if (last) throw err;
+            continue;
+        }
+        if (res.status < 500 || last) return res;
+        // Let the connection go before asking the next one
+        await res.body?.cancel().catch(() => { });
+    }
+}
+
 /** Every installer a release carries, each with a <name>.sha256 beside it */
 export const RELEASE_ASSETS = ["evi.exe", "evi-macos-arm64", "evi-macos-x64", "evi-linux-x64", "evi-linux-arm64"] as const;
 

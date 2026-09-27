@@ -326,7 +326,7 @@ export function TabBar<K extends string>({ id, label, tabs, value, onChange }: {
     id: string;
     label: string;
     /** `count` shows as a red pill, for things waiting on you (updates) */
-    tabs: readonly { id: K; label: string; count?: number; }[];
+    tabs: readonly { id: K; label: string; icon?: IconName; count?: number; }[];
     value: K;
     onChange(value: K): void;
 }) {
@@ -354,6 +354,7 @@ export function TabBar<K extends string>({ id, label, tabs, value, onChange }: {
                     tabIndex={tab.id === value ? 0 : -1}
                     onClick={() => onChange(tab.id)}
                 >
+                    {tab.icon && <Icon name={tab.icon} size={18} />}
                     {tab.label}
                     {!!tab.count && <span className="dl-tabbar-count dl-tabular">{tab.count}</span>}
                 </button>

@@ -33,6 +33,21 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.5.2",
+        date: "2026-09-27",
+        sections: {
+            improved: [
+                "**Update checks go through evi.rest,** so a busy network no longer runs into GitHub's limit and says Evi can't check for updates.",
+                "**Installing a plugin with full access asks in a dialog,** instead of a box squeezed into its card.",
+                "**Icons on every tab,** so Installed and Store are told apart at a glance.",
+                "**Every release gets its dotted cover** in What's new.",
+            ],
+            fixed: [
+                "Opening the Store no longer scrolls Discord's settings down a bit.",
+            ],
+        },
+    },
+    {
         version: "0.5.1",
         date: "2026-09-27",
         sections: {

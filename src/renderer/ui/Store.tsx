@@ -15,7 +15,7 @@ import { PluginManager } from "../plugins/manager";
 import { Settings } from "../settings";
 import { Store, StoreKind, StoreOp, UpdateAllResult } from "../store";
 import { React } from "../webpack/common";
-import { Badge, Button, Collapse, Dropdown, EmptyState, FilterChips, Icon, IconButton, List, Notice, Pagination, scrollToTop, SearchField, Status, SwitchRow, Text, Tooltip, usePages, useStore } from "./components";
+import { Badge, Button, Collapse, Dialog, Dropdown, EmptyState, FilterChips, Icon, IconButton, List, Notice, Pagination, scrollToTop, SearchField, Status, SwitchRow, Text, Tooltip, usePages, useStore } from "./components";
 import { takeStoreTarget } from "./nav";
 import { PluginChangelogSetting } from "./PluginChangelog";
 import { StorePluginPermissions } from "./PluginPermissions";
@@ -155,41 +155,57 @@ function rememberCommunityInstall(id: string) {
     } catch { }
 }
 
-/** The first install of a community plugin asks first, saying who made it */
-function CommunityConfirm({ item, onConfirm, onCancel }: { item: Item; onConfirm(): void; onCancel(): void; }) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    React.useEffect(() => ref.current?.focus(), []);
-    const titleId = `dl-store-community-${item.entry.id}`;
-
+/** The first install of a community plugin asks first, in a dialog, saying who made it */
+function CommunityConfirm({ item, onConfirm, onClose }: { item: Item; onConfirm(): void; onClose(): void; }) {
     return (
-        <div className="dl-store-confirm" data-tone="info" role="group" aria-labelledby={titleId} tabIndex={-1} ref={ref}>
-            <p className="dl-store-confirm-title" id={titleId}><Icon name="info" size={20} />{t("store.communityConfirm")}</p>
-            <p className="dl-hint">{trustNote(item.entry)}</p>
-            <div className="dl-toolbar">
-                <Button variant="accent" onClick={onConfirm}>{t("common.install")}</Button>
-                <Button onClick={onCancel}>{t("common.cancel")}</Button>
-            </div>
-        </div>
+        <Dialog id={`dl-store-community-${item.entry.id}`} title={t("store.communityConfirm")} onClose={onClose}>
+            {close => (
+                <div className="dl-stack">
+                    <Text tag="p" variant="text-sm/normal" color="text-subtle">{trustNote(item.entry)}</Text>
+                    <div className="dl-toolbar">
+                        <Button
+                            variant="accent"
+                            onClick={() => {
+                                onConfirm();
+                                close();
+                            }}
+                        >
+                            {t("common.install")}
+                        </Button>
+                        <Button onClick={close}>{t("common.cancel")}</Button>
+                    </div>
+                </div>
+            )}
+        </Dialog>
     );
 }
 
-/** Native plugins get their own step: what full access means, and a button that repeats it */
-function NativeConfirm({ item, onConfirm, onCancel }: { item: Item; onConfirm(): void; onCancel(): void; }) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    React.useEffect(() => ref.current?.focus(), []);
-    const titleId = `dl-store-confirm-${item.entry.id}`;
-
+/** Native plugins get their own step, in a dialog: what full access means, and a button that repeats it */
+function NativeConfirm({ item, onConfirm, onClose }: { item: Item; onConfirm(): void; onClose(): void; }) {
     return (
-        <div className="dl-store-confirm" role="group" aria-labelledby={titleId} tabIndex={-1} ref={ref}>
-            <p className="dl-store-confirm-title" id={titleId}><Icon name="warning" size={20} />{t("store.nativeTitle", { name: item.entry.name })}</p>
-            <p className="dl-hint">
-                {t("store.nativeBody", { authors: item.entry.authors.join(", ") })}
-            </p>
-            <div className="dl-toolbar">
-                <Button variant="accent" onClick={onConfirm}>{t("store.installFullAccess")}</Button>
-                <Button onClick={onCancel}>{t("common.cancel")}</Button>
-            </div>
-        </div>
+        <Dialog
+            id={`dl-store-confirm-${item.entry.id}`}
+            title={<span className="dl-store-confirm-title"><Icon name="warning" size={20} />{t("store.nativeTitle", { name: item.entry.name })}</span>}
+            onClose={onClose}
+        >
+            {close => (
+                <div className="dl-stack">
+                    <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("store.nativeBody", { authors: item.entry.authors.join(", ") })}</Text>
+                    <div className="dl-toolbar">
+                        <Button
+                            variant="accent"
+                            onClick={() => {
+                                onConfirm();
+                                close();
+                            }}
+                        >
+                            {t("store.installFullAccess")}
+                        </Button>
+                        <Button onClick={close}>{t("common.cancel")}</Button>
+                    </div>
+                </div>
+            )}
+        </Dialog>
     );
 }
 
@@ -216,23 +232,14 @@ function useItemActions(item: Item) {
             {item.action === "update" && <Button variant="accent" icon="download" disabled={busy || !!confirming} onClick={install}>{t("common.update")}</Button>}
         </>
     );
+    // The dialog closes itself (with its exit), then says so; installing starts as soon as it's confirmed
     const confirm = confirming === "native"
-        ? (
-            <NativeConfirm
-                item={item}
-                onCancel={() => setConfirming(undefined)}
-                onConfirm={() => {
-                    setConfirming(undefined);
-                    item.install(true);
-                }}
-            />
-        )
+        ? <NativeConfirm item={item} onClose={() => setConfirming(undefined)} onConfirm={() => item.install(true)} />
         : confirming === "community" && (
             <CommunityConfirm
                 item={item}
-                onCancel={() => setConfirming(undefined)}
+                onClose={() => setConfirming(undefined)}
                 onConfirm={() => {
-                    setConfirming(undefined);
                     rememberCommunityInstall(item.entry.id);
                     item.install();
                 }}
@@ -512,10 +519,17 @@ export function StoreView({ kind }: { kind: StoreKind; }) {
     const [author, setAuthor] = React.useState<string>();
     const topRef = React.useRef<HTMLDivElement>(null);
 
-    // Detail pages start at their top, wherever the list was scrolled to. A block body on purpose:
-    // Chrome's scrollIntoView now returns a promise, and React would call it as the cleanup.
+    // Detail pages start at their top, wherever the list was scrolled to: only when one opens or
+    // closes, never when the Store itself opens (that scrolled Discord's settings under its sticky
+    // header), and only if the top is out of sight. A block body on purpose: Chrome's scrollIntoView
+    // now returns a promise, and React would call it as the cleanup.
+    const opened = React.useRef(false);
     React.useEffect(() => {
-        topRef.current?.scrollIntoView?.({ block: "nearest" });
+        if (!opened.current) {
+            opened.current = true;
+            return;
+        }
+        scrollToTop(topRef.current);
     }, [selected, author]);
 
     const items = itemsOf(kind);

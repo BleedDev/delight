@@ -2155,15 +2155,15 @@ const storeButton = (id: string, name: string) => page.locator(`[data-store-id="
 
     // The first install of a community plugin asks first, saying who made it
     await storeButton("store-community", "Install").click();
-    await page.waitForSelector('[data-store-id="store-community"] .dl-store-confirm', { timeout: 2000 });
+    await page.waitForSelector('#dl-store-community-store-community[role="dialog"]', { timeout: 2000 });
     await page.locator('[data-store-id="store-community"]').screenshot({ path: join(OUT, "ui-store-community-confirm.png") });
     const ask = await page.evaluate(() => ({
-        text: document.querySelector('[data-store-id="store-community"] .dl-store-confirm')?.textContent ?? "",
+        text: document.querySelector('#dl-store-community-store-community')?.textContent ?? "",
         installs: (window as any).__test.storeInstalls.length,
     }));
     check("installing a community plugin the first time asks first",
         ask.text.includes("Install a community plugin?") && ask.text.includes("Made by Mira, not by Evi. Evi’s team reviewed this version before it went into the store.") && ask.installs === 0, ask);
-    await page.locator('[data-store-id="store-community"] .dl-store-confirm').getByRole("button", { name: "Install", exact: true }).click();
+    await page.locator('#dl-store-community-store-community').getByRole("button", { name: "Install", exact: true }).click();
     await page.waitForTimeout(300);
     const confirmed = await page.evaluate(() => ({
         calls: (window as any).__test.storeInstalls.map((c: any) => c.id),
@@ -2223,12 +2223,12 @@ const storeButton = (id: string, name: string) => page.locator(`[data-store-id="
 }
 const installsBeforeClick = await page.evaluate(() => (window as any).__test.storeInstalls.length);
 await storeButton("store-rpc", "Install").click();
-await page.waitForSelector('[data-store-id="store-rpc"] .dl-store-confirm', { timeout: 2000 });
+await page.waitForSelector('#dl-store-confirm-store-rpc[role="dialog"]', { timeout: 2000 });
 await page.screenshot({ path: join(OUT, "ui-store-native-confirm.png") });
-const confirmText = await page.evaluate(() => document.querySelector(".dl-store-confirm")?.textContent ?? "");
+const confirmText = await page.evaluate(() => document.querySelector("#dl-store-confirm-store-rpc")?.textContent ?? "");
 const installsBeforeConfirm = await page.evaluate(() => (window as any).__test.storeInstalls.length);
 check("installing a native plugin asks first, explaining full access", /full access to your computer/.test(confirmText) && installsBeforeConfirm === installsBeforeClick, confirmText.slice(0, 120));
-await storeButton("store-rpc", "Install with full access").click();
+await page.locator("#dl-store-confirm-store-rpc").getByRole("button", { name: "Install with full access", exact: true }).click();
 await page.waitForTimeout(300);
 const nativeInstall = {
     calls: await page.evaluate(() => (window as any).__test.storeInstalls),

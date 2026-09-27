@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { cleanVersion, exeAsset, flavorOf, isNewerRelease, parseRelease } from "../src/shared/release";
+import { cleanVersion, exeAsset, fetchReleaseApi, flavorOf, GITHUB_API, isNewerRelease, parseRelease, RELEASE_MIRROR_API, releaseApis } from "../src/shared/release";
 
 const asset = (name: string) => ({ name, browser_download_url: `https://github.com/BleedDev/evi/releases/download/v0.3.0/${name}` });
 
@@ -50,5 +50,55 @@ describe("Evi's releases", () => {
         expect(exeAsset("darwin", "x64")).toBe("evi-macos-x64");
         expect(exeAsset("linux", "x64")).toBe("evi-linux-x64");
         expect(exeAsset("linux", "arm64")).toBe("evi-linux-arm64");
+    });
+});
+
+describe("where releases are asked for", () => {
+    const answer = (status: number) => new Response(status === 200 ? "{}" : null, { status });
+
+    test("evi.rest's mirror, then GitHub; an override alone", () => {
+        expect(releaseApis()).toEqual([RELEASE_MIRROR_API, GITHUB_API]);
+        expect(releaseApis("")).toEqual([RELEASE_MIRROR_API, GITHUB_API]);
+        expect(releaseApis("http://127.0.0.1:9/fake//")).toEqual(["http://127.0.0.1:9/fake"]);
+        expect(RELEASE_MIRROR_API).toBe("https://evi.rest/v1/github");
+    });
+
+    /** A fetch that answers each URL's host with the next of its answers, and remembers what was asked */
+    function fake(answers: Record<string, (number | Error)[]>) {
+        const asked: string[] = [];
+        const get = async (url: string) => {
+            asked.push(url);
+            const next = answers[new URL(url).host].shift()!;
+            if (next instanceof Error) throw next;
+            return answer(next);
+        };
+        return { asked, get };
+    }
+    const apis = ["https://evi.rest/v1/github", "https://api.github.com"];
+
+    test("the mirror's answer is used, a 404 too", async () => {
+        const { asked, get } = fake({ "evi.rest": [200, 404], "api.github.com": [] });
+        expect((await fetchReleaseApi(apis, "releases/latest", get)).status).toBe(200);
+        expect(asked).toEqual(["https://evi.rest/v1/github/repos/BleedDev/evi/releases/latest"]);
+        expect((await fetchReleaseApi(apis, "releases/tags/v9.9.9", get)).status).toBe(404);
+        expect(asked).toHaveLength(2);
+    });
+
+    test("GitHub is asked when the mirror can't be reached or answers 5xx", async () => {
+        const { asked, get } = fake({ "evi.rest": [new Error("timed out"), 502], "api.github.com": [200, 403] });
+        expect((await fetchReleaseApi(apis, "releases?per_page=30", get)).status).toBe(200);
+        expect(asked).toEqual(["https://evi.rest/v1/github/repos/BleedDev/evi/releases?per_page=30", "https://api.github.com/repos/BleedDev/evi/releases?per_page=30"]);
+        // GitHub's own answer stands, its rate limit included
+        expect((await fetchReleaseApi(apis, "releases/latest", get)).status).toBe(403);
+    });
+
+    test("the last one's failure is what comes back", async () => {
+        const { get } = fake({ "evi.rest": [500, 500], "api.github.com": [503, new Error("offline")] });
+        expect((await fetchReleaseApi(apis, "releases/latest", get)).status).toBe(503);
+        await expect(fetchReleaseApi(apis, "releases/latest", get)).rejects.toThrow("offline");
+        // With an override there's nothing to fall back to
+        const only = fake({ "127.0.0.1:9": [502] });
+        expect((await fetchReleaseApi(releaseApis("http://127.0.0.1:9"), "releases/latest", only.get)).status).toBe(502);
+        expect(only.asked).toHaveLength(1);
     });
 });

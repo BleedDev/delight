@@ -1,6 +1,6 @@
 /**
- * Updating Evi from inside Discord. Checks GitHub for the latest published release (prereleases too, with
- * betas on); installing one downloads its installer for this system (evi.exe on Windows), checks it
+ * Updating Evi from inside Discord. Checks GitHub, through evi.rest's mirror, for the latest published
+ * release (prereleases too, with betas on); installing one downloads its installer for this system (evi.exe on Windows), checks it
  * against the published SHA-256, keeps it in the data folder, and has it run `install --restart` for this
  * Discord: that writes the new core and official plugins, closes Discord and starts it again.
  *
@@ -10,7 +10,7 @@
  * A dev build (the loader points at a repo's dist/) updates with git; it only checks.
  */
 import { IPC } from "@shared/ipc";
-import { EXE_ASSET, flavorOf, isNewerRelease, parseRelease, pickRelease, RELEASE_REPO, ReleaseInfo, UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/release";
+import { EXE_ASSET, fetchReleaseApi, flavorOf, isNewerRelease, parseRelease, pickRelease, releaseApis, ReleaseInfo, UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/release";
 import { execFile, spawn } from "child_process";
 import { createHash } from "crypto";
 import { ipcMain, net, WebContents } from "electron";
@@ -20,10 +20,10 @@ import { join, resolve } from "path";
 import { DATA_DIR } from "./paths";
 import { settings } from "./settings";
 
-/** Overridable so tests can serve fake releases from a local server */
-const API = (process.env.EVI_UPDATE_API || "https://api.github.com").replace(/\/+$/, "");
+/** evi.rest's mirror of GitHub's release API, then GitHub itself. EVI_UPDATE_API alone when set: tests serve fake releases from a local server */
+const APIS = releaseApis(process.env.EVI_UPDATE_API);
 const HEADERS = { "User-Agent": "evi-app", "Accept": "application/vnd.github+json" };
-/** A check within this long is answered from memory: GitHub allows 60 unauthenticated calls an hour */
+/** A check within this long is answered from memory: GitHub, when evi.rest can't answer, allows 60 unauthenticated calls an hour */
 const FRESH_FOR = 10 * 60 * 1000;
 const MAX_EXE_BYTES = 400 * 1024 * 1024;
 const EXE = join(DATA_DIR, EXE_ASSET);
@@ -56,7 +56,7 @@ async function fetchLatest(beta: boolean): Promise<ReleaseInfo | null> {
     let res: Response;
     const path = beta ? "releases?per_page=30" : "releases/latest";
     try {
-        res = await net.fetch(`${API}/repos/${RELEASE_REPO}/${path}`, { headers: HEADERS, cache: "no-store", signal: AbortSignal.timeout(15_000) });
+        res = await fetchReleaseApi(APIS, path, url => net.fetch(url, { headers: HEADERS, cache: "no-store", signal: AbortSignal.timeout(15_000) }));
     } catch (err) {
         throw new Error(`Couldn’t reach GitHub: ${(err as Error).message}`);
     }

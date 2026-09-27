@@ -22,3 +22,4 @@ tests/accounts.test.ts
 tests/authors.test.ts
 tests/pulls.test.ts
 tests/site.test.ts
+tests/releases.test.ts

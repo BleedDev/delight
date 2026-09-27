@@ -1,12 +1,12 @@
 import { renameSync, rmSync, writeFileSync } from "fs";
 
-import { CHECKSUM_ASSET, cleanVersion, EXE_ASSET, isNewerRelease, pickRelease } from "../shared/release";
+import { CHECKSUM_ASSET, cleanVersion, EXE_ASSET, fetchReleaseApi, isNewerRelease, pickRelease, releaseApis } from "../shared/release";
 
 export { CHECKSUM_ASSET, cleanVersion, EXE_ASSET };
 export const REPO = "BleedDev/evi";
 
-/** Overridable so tests can serve fake releases from a local server */
-const API = (process.env.EVI_UPDATE_API || "https://api.github.com").replace(/\/+$/, "");
+/** evi.rest's mirror of GitHub's release API, then GitHub itself. EVI_UPDATE_API alone when set: tests serve fake releases from a local server */
+const APIS = releaseApis(process.env.EVI_UPDATE_API);
 const HEADERS = { "User-Agent": "evi-cli", Accept: "application/vnd.github+json" };
 
 export class UpdateError extends Error { }
@@ -45,7 +45,7 @@ async function request(url: string, timeout: number) {
  * prereleases only with beta: /releases/latest skips them, so that picks the newest from the list instead.
  */
 export async function fetchLatestRelease(beta = false): Promise<Release | null> {
-    const res = await request(`${API}/repos/${REPO}/${beta ? "releases?per_page=30" : "releases/latest"}`, 15_000);
+    const res = await fetchReleaseApi(APIS, beta ? "releases?per_page=30" : "releases/latest", url => request(url, 15_000));
     if (res.status === 404) return null;
     if (res.status === 403 || res.status === 429) throw new UpdateError("GitHub's API rate limit was hit. Try again in a few minutes.");
     if (!res.ok) throw new UpdateError(`GitHub answered ${res.status} ${res.statusText}`);

@@ -47,9 +47,21 @@ struct GitHubRelease {
     assets: Vec<GitHubAsset>,
 }
 
-/// Overridable so tests can serve fake releases from a local server
-fn api() -> String {
-    std::env::var("EVI_UPDATE_API").ok().filter(|s| !s.is_empty()).unwrap_or_else(|| "https://api.github.com".into()).trim_end_matches('/').to_string()
+/// evi.rest's mirror of GitHub's release API: same paths and JSON, without GitHub's 60 calls an hour per address
+pub const MIRROR_API: &str = "https://evi.rest/v1/github";
+pub const GITHUB_API: &str = "https://api.github.com";
+
+/// Where to ask for releases, in order: evi.rest's mirror, then GitHub itself. EVI_UPDATE_API alone
+/// when set: tests serve fake releases from a local server. Like releaseApis in src/shared/release.ts.
+fn apis_for(overridden: Option<&str>) -> Vec<String> {
+    match overridden.map(|s| s.trim().trim_end_matches('/')).filter(|s| !s.is_empty()) {
+        Some(api) => vec![api.to_string()],
+        None => vec![MIRROR_API.to_string(), GITHUB_API.to_string()],
+    }
+}
+
+fn apis() -> Vec<String> {
+    apis_for(std::env::var("EVI_UPDATE_API").ok().as_deref())
 }
 
 fn agent(timeout: u64) -> ureq::Agent {
@@ -119,8 +131,23 @@ pub fn is_newer(tag: &str, current: &str) -> bool {
     compare_release(&clean_version(tag), &clean_version(current)).is_gt()
 }
 
-fn fetch(path: &str) -> Result<Option<Release>, String> {
-    let mut res = get(&format!("{}/repos/{REPO}/{path}", api()), 15)?;
+/// GETs `<api>/repos/BleedDev/evi/<path>` from each API in turn, moving on to the next when one can't
+/// be reached, times out or answers 5xx. Anything else (a release, a 404, GitHub's 403) is the answer.
+fn get_release_api(apis: &[String], path: &str) -> Result<ureq::http::Response<ureq::Body>, String> {
+    let mut failure = String::from("No release API to ask");
+    for (i, api) in apis.iter().enumerate() {
+        let last = i + 1 == apis.len();
+        match get(&format!("{api}/repos/{REPO}/{path}"), 15) {
+            Ok(res) if res.status().as_u16() < 500 || last => return Ok(res),
+            Ok(res) => failure = format!("{} answered {}", host(api), res.status().as_u16()),
+            Err(e) => failure = e,
+        }
+    }
+    Err(failure)
+}
+
+fn fetch_from(apis: &[String], path: &str) -> Result<Option<Release>, String> {
+    let mut res = get_release_api(apis, path)?;
     let status = res.status().as_u16();
     if status == 404 {
         return Ok(None);
@@ -142,12 +169,12 @@ fn fetch(path: &str) -> Result<Option<Release>, String> {
 
 /// The latest published release, or None if nothing has been published yet. Drafts and prereleases never show up here.
 pub fn latest() -> Result<Option<Release>, String> {
-    fetch("releases/latest")
+    fetch_from(&apis(), "releases/latest")
 }
 
 /// A release by version, e.g. the one this installer was built for
 pub fn by_version(version: &str) -> Result<Option<Release>, String> {
-    fetch(&format!("releases/tags/v{version}"))
+    fetch_from(&apis(), &format!("releases/tags/v{version}"))
 }
 
 fn download(url: &str, max: u64, timeout: u64) -> Result<Vec<u8>, String> {
@@ -205,5 +232,58 @@ mod tests {
         assert!(!is_newer("v0.4.0", "0.5.0"));
         assert!(!is_newer("v0.5.0-beta.1", "0.5.0"));
         assert_eq!(clean_version("v1.2.3-beta.1+x"), "1.2.3-beta.1");
+    }
+
+    #[test]
+    fn asks_the_mirror_then_github_unless_overridden() {
+        assert_eq!(apis_for(None), vec![MIRROR_API.to_string(), GITHUB_API.to_string()]);
+        assert_eq!(apis_for(Some("")), vec![MIRROR_API.to_string(), GITHUB_API.to_string()]);
+        assert_eq!(apis_for(Some("http://127.0.0.1:9/api/")), vec!["http://127.0.0.1:9/api".to_string()]);
+    }
+
+    /// A local HTTP server answering `times` requests with one status and body
+    fn serve(status: u16, body: &'static str, times: usize) -> String {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        std::thread::spawn(move || {
+            for stream in listener.incoming().take(times) {
+                let mut stream = stream.unwrap();
+                let (mut buf, mut req) = ([0u8; 4096], Vec::new());
+                while !req.windows(4).any(|w| w == b"\r\n\r\n") {
+                    let n = stream.read(&mut buf).unwrap();
+                    if n == 0 {
+                        break;
+                    }
+                    req.extend_from_slice(&buf[..n]);
+                }
+                let res = format!("HTTP/1.1 {status} X\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());
+                stream.write_all(res.as_bytes()).unwrap();
+            }
+        });
+        format!("http://{addr}")
+    }
+
+    /// An address nothing listens on
+    fn closed() -> String {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        format!("http://{}", listener.local_addr().unwrap())
+    }
+
+    const RELEASE: &str = r#"{"tag_name":"v0.6.0","draft":false,"assets":[{"name":"evi-core.json","browser_download_url":"https://x/evi-core.json"},{"name":"evi-core.json.sha256","browser_download_url":"https://x/evi-core.json.sha256"}]}"#;
+
+    #[test]
+    fn falls_back_to_github_when_the_mirror_fails() {
+        // A 5xx from the mirror: GitHub answers
+        let release = fetch_from(&[serve(502, "{}", 1), serve(200, RELEASE, 1)], "releases/latest").unwrap().unwrap();
+        assert_eq!(release.version, "0.6.0");
+        assert!(has_core(&release));
+        // The mirror can't be reached
+        assert_eq!(fetch_from(&[closed(), serve(200, RELEASE, 1)], "releases/latest").unwrap().unwrap().tag, "v0.6.0");
+        // A 404 is an answer: nothing published, and GitHub (unreachable here) isn't asked
+        assert!(fetch_from(&[serve(404, r#"{"message":"Not Found"}"#, 1), closed()], "releases/latest").unwrap().is_none());
+        // Both failing says what the last one answered
+        assert_eq!(fetch_from(&[serve(503, "{}", 1), serve(500, "{}", 1)], "releases/latest").unwrap_err(), "GitHub answered 500");
+        assert!(fetch_from(&[serve(503, "{}", 1), closed()], "releases/latest").unwrap_err().starts_with("Couldn’t reach 127.0.0.1"));
     }
 }

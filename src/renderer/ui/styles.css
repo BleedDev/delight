@@ -1439,8 +1439,7 @@
 
 /* Controls stay clickable above the stretched link */
 .dl-store-card .dl-star,
-.dl-store-card .dl-row-controls,
-.dl-store-card .dl-store-confirm {
+.dl-store-card .dl-row-controls {
     position: relative;
     z-index: 1;
 }
@@ -2022,6 +2021,7 @@
 
 .dl-version-link:hover { text-decoration-color: var(--dl-text-muted); }
 
+/* The full-access warning over Update all (the install confirmations are dialogs) */
 .dl-store-confirm {
     display: flex;
     flex-direction: column;
@@ -2033,11 +2033,6 @@
 }
 
 .dl-store-confirm > p { margin: 0; }
-
-.dl-store-confirm:focus-visible {
-    outline: 2px solid var(--dl-focus-ring);
-    outline-offset: 2px;
-}
 
 .dl-store-confirm-title {
     display: flex;
@@ -2513,12 +2508,6 @@
 .dl-store-trust > svg { flex: none; margin-block-start: 1px; color: var(--dl-text-muted); }
 
 /* The first install of a community plugin asks first: a question, not a warning */
-.dl-store-confirm[data-tone="info"] {
-    border-color: var(--dl-border-control);
-    background: var(--dl-bg-group);
-}
-
-.dl-store-confirm[data-tone="info"] .dl-store-confirm-title svg { color: var(--dl-text-brand); }
 
 .dl-report-row {
     display: flex;

@@ -22,6 +22,8 @@ import { UpdatesTab } from "./UpdatesTab";
 export interface PageTab {
     id: string;
     label(): string;
+    /** Next to the label, so tabs are told apart at a glance */
+    icon: IconName;
     Component: ComponentType;
     /** Things waiting on you in this tab, shown as a pill */
     count?(): number;
@@ -46,8 +48,8 @@ export const pages: readonly Page[] = [
         label: () => t("tabs.plugins"),
         icon: "puzzle",
         tabs: [
-            { id: "installed", label: () => t("tabs.installed"), Component: InstalledPlugins },
-            { id: "store", label: () => t("common.store"), Component: PluginStore, count: pluginUpdates },
+            { id: "installed", label: () => t("tabs.installed"), icon: "circleCheck", Component: InstalledPlugins },
+            { id: "store", label: () => t("common.store"), icon: "store", Component: PluginStore, count: pluginUpdates },
         ],
     },
     {
@@ -55,9 +57,9 @@ export const pages: readonly Page[] = [
         label: () => t("tabs.themes"),
         icon: "palette",
         tabs: [
-            { id: "installed", label: () => t("tabs.installed"), Component: InstalledThemes },
-            { id: "store", label: () => t("common.store"), Component: ThemeStore, count: themeUpdates },
-            { id: "quickcss", label: () => "Quick CSS", Component: QuickCssTab },
+            { id: "installed", label: () => t("tabs.installed"), icon: "circleCheck", Component: InstalledThemes },
+            { id: "store", label: () => t("common.store"), icon: "store", Component: ThemeStore, count: themeUpdates },
+            { id: "quickcss", label: () => "Quick CSS", icon: "code", Component: QuickCssTab },
         ],
     },
     {
@@ -65,9 +67,9 @@ export const pages: readonly Page[] = [
         label: () => t("tabs.general"),
         icon: "settings",
         tabs: [
-            { id: "updates", label: () => t("tabs.updates"), Component: UpdatesTab },
-            { id: "account", label: () => t("tabs.account"), Component: AccountTab },
-            { id: "backup", label: () => t("tabs.backup"), Component: BackupTab },
+            { id: "updates", label: () => t("tabs.updates"), icon: "download", Component: UpdatesTab },
+            { id: "account", label: () => t("tabs.account"), icon: "people", Component: AccountTab },
+            { id: "backup", label: () => t("tabs.backup"), icon: "folder", Component: BackupTab },
         ],
     },
     {
@@ -76,9 +78,9 @@ export const pages: readonly Page[] = [
         label: () => t("tabs.advanced"),
         icon: "wrench",
         tabs: [
-            { id: "patches", label: () => t("tabs.patches"), Component: PatchesTab },
-            { id: "performance", label: () => t("tabs.performance"), Component: PerformanceTab },
-            { id: "patchhelper", label: () => "Patch Helper", Component: PatchHelperTab },
+            { id: "patches", label: () => t("tabs.patches"), icon: "wrench", Component: PatchesTab },
+            { id: "performance", label: () => t("tabs.performance"), icon: "clock", Component: PerformanceTab },
+            { id: "patchhelper", label: () => "Patch Helper", icon: "beaker", Component: PatchHelperTab },
         ],
     },
 ];
@@ -97,7 +99,7 @@ export function PageView({ page }: { page: Page; }) {
             <TabBar
                 id={barId}
                 label={page.label()}
-                tabs={page.tabs.map(tab => ({ id: tab.id, label: tab.label(), count: tab.count?.() }))}
+                tabs={page.tabs.map(tab => ({ id: tab.id, label: tab.label(), icon: tab.icon, count: tab.count?.() }))}
                 value={current.id}
                 onChange={tab => showTab(page.id, tab)}
             />
