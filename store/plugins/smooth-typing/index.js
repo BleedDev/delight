@@ -44,26 +44,36 @@ __export(exports_smooth_typing, {
 module.exports = __toCommonJS(exports_smooth_typing);
 var import_api = require("@evi/api");
 var DELAY = 250;
+var CLEARS = new Set(["DRAFT_SAVE", "DRAFT_CLEAR", "DRAFT_COMMAND_CLEAR"]);
+var SENT = new Set(["MESSAGE_CREATE", "LOCAL_MESSAGE_CREATE"]);
 var smooth_typing_default = import_api.definePlugin({
   start(ctx) {
     const pending = new Map;
     let dispatchOriginal;
     const keyOf = (a) => `${a.channelId}:${a.draftType}`;
+    const drop = (key) => {
+      clearTimeout(pending.get(key)?.timer);
+      pending.delete(key);
+    };
+    const dropChannel = (channelId, keep = () => false) => {
+      for (const [key, p] of pending)
+        if (p.action.channelId === channelId && !keep(p))
+          drop(key);
+    };
     const flush = () => {
-      for (const [key, { action, timer }] of pending) {
-        clearTimeout(timer);
-        pending.delete(key);
+      for (const [key, { action }] of pending) {
+        drop(key);
         dispatchOriginal?.(action);
       }
     };
+    const text = (v) => typeof v === "string" ? v.trim() : "";
     ctx.hook.instead(import_api.Dispatcher, "dispatch", (call) => {
       const action = call.args[0];
       dispatchOriginal ??= (a) => call.original.call(call.self, a);
-      if (action?.type === "DRAFT_CHANGE") {
+      const type = action?.type;
+      if (type === "DRAFT_CHANGE") {
         const key = keyOf(action);
-        const previous = pending.get(key);
-        if (previous)
-          clearTimeout(previous.timer);
+        drop(key);
         pending.set(key, {
           action,
           timer: setTimeout(() => {
@@ -73,12 +83,16 @@ var smooth_typing_default = import_api.definePlugin({
         });
         return Promise.resolve();
       }
-      if (action?.type === "DRAFT_SAVE" || action?.type === "DRAFT_CLEAR") {
-        const previous = pending.get(keyOf(action));
-        if (previous) {
-          clearTimeout(previous.timer);
-          pending.delete(keyOf(action));
-        }
+      if (pending.size) {
+        if (CLEARS.has(type))
+          dropChannel(action.channelId);
+        else if (SENT.has(type)) {
+          const message = action.message;
+          const sent = text(message?.content);
+          if (sent)
+            dropChannel(message?.channel_id ?? action.channelId, (p) => text(p.action.draft) !== sent);
+        } else if (type === "CHANNEL_SELECT")
+          flush();
       }
       return call.callOriginal(...call.args);
     });

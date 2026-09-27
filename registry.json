@@ -1198,7 +1198,10 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.1",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.2",
             "tags": [
                 "performance"
             ],
@@ -1206,18 +1209,24 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/smooth-typing/manifest.json?v=76718fad40c3",
-                    "sha256": "76718fad40c356e4d19c0175501442fdda6b60db041215edc62997e883295df6"
+                    "url": "https://evi.rest/store/plugins/smooth-typing/manifest.json?v=21a9564f6ad2",
+                    "sha256": "21a9564f6ad2c6725a3f47f033860d4198cd205ae025f4fea309874562df1a5b"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/smooth-typing/index.js?v=4d608adf47a7",
-                    "sha256": "4d608adf47a7354ee2f10c2ea4835365817d9183b72ce36c43b6b6a9f8bf7687"
+                    "url": "https://evi.rest/store/plugins/smooth-typing/index.js?v=6faa527bea74",
+                    "sha256": "6faa527bea74c44e9fc8a8c6b0c17a64d2209c811f184e95accb29363ec7ff2c"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/smooth-typing",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "A message you just sent no longer comes back into the text box: the draft that was that message is dropped when it's sent. Switching channels and slash commands keep the box up to date too."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -1230,9 +1239,6 @@
                         "First release."
                     ]
                 }
-            ],
-            "authorIds": [
-                "evi"
             ]
         },
         {
