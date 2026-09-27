@@ -1522,6 +1522,28 @@ check("Badges: a hidden one is gone for everyone else, and still in your own bad
     JSON.stringify(badgeSettings.shownToOthers) === '["supporter-gold"]' && badgeSettings.inSettings.includes("evi-dev (hidden)")
     && badgeSettings.inSettings.indexOf("evi-supporter") < badgeSettings.inSettings.indexOf("evi-dev (hidden)"), { others: badgeSettings.shownToOthers, settings: badgeSettings.inSettings });
 
+// evi.rest's Plugin Author badge ("plugin-author") is ours, not a plugin's: its details open like the rest
+const authorBadge = await page.evaluate(() => {
+    const { api } = (window as any).Evi;
+    const me = "123456789012345678";
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    (window as any).__test.pushBadges({
+        ok: true,
+        badges: { "plugin-author": { name: "Plugin Author", description: "Made a plugin you can install from the Evi store.", icon: png } },
+        users: { [me]: ["plugin-author"] },
+        supporters: {},
+        prefs: {},
+    });
+    const unUser = api.hook(api.findStore("UserStore"), "getCurrentUser", "instead", () => ({ id: me }));
+    try {
+        const entry = api.findStore("BadgeDirectoryStore").getBadgeById("evi-plugin-author", me);
+        return entry && { name: entry.name, label: entry.info_label };
+    } finally {
+        unUser();
+    }
+});
+check("Badges: the Plugin Author badge opens with its description", authorBadge?.name === "Plugin Author" && authorBadge.label === "Made a plugin you can install from the Evi store.", authorBadge);
+
 // Plugins' badges (ctx.profileBadges): on the profile after everything else, and in the badge directory
 const pluginBadges = await page.evaluate(() => {
     const { api } = (window as any).Evi;
@@ -1530,7 +1552,7 @@ const pluginBadges = await page.evaluate(() => {
     const unProfile = api.hook(profileTarget.exports, profileTarget.key, "instead", () => [{ id: "premium", description: "Nitro", icon: "2ba85e8026a8614b640c2837bcdfe21b" }]);
     try {
         const store = api.findStore("BadgeDirectoryStore");
-        const entry = store.getBadgeById("evi-plugin-test-status", who);
+        const entry = store.getBadgeById("evi-plugin:test-status", who);
         return {
             profile: profileTarget.exports[profileTarget.key]({ userId: who }).map((b: any) => b.id),
             nobodyElse: profileTarget.exports[profileTarget.key]({ userId: "999000000000000002" }).map((b: any) => b.id),
@@ -1544,7 +1566,7 @@ const pluginBadges = await page.evaluate(() => {
 });
 check("Plugins' profile badges show on the profile and in Discord's badge directory (Your badges)",
     JSON.stringify(pluginBadges.profile) === '["premium","evi-test-status"]' && JSON.stringify(pluginBadges.nobodyElse) === '["premium"]'
-    && pluginBadges.directory.includes("evi-plugin-test-status") && pluginBadges.stable && pluginBadges.entry?.name === "Testing" && /Badge User/.test(pluginBadges.entry.label), pluginBadges);
+    && pluginBadges.directory.includes("evi-plugin:test-status") && pluginBadges.stable && pluginBadges.entry?.name === "Testing" && /Badge User/.test(pluginBadges.entry.label), pluginBadges);
 
 // A new version found in the background gets a notice over Discord; skipping it keeps it quiet
 {

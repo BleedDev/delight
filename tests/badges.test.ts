@@ -117,10 +117,11 @@ describe("hiding and ordering in Discord's badge settings", () => {
         expect(oursFromDiscord(["evi-dev", "nope", 3])).toEqual(["dev", 3]);
     });
 
-    test("plugins' badges in the directory are saved nowhere", () => {
-        const { body, prefs } = splitSettings({ display_order: ["evi-plugin-last-seen", 1, "evi-dev"], hidden_badges: ["evi-plugin-platform-web"] });
+    test("plugins' badges in the directory are saved nowhere; the Plugin Author badge is", () => {
+        const { body, prefs } = splitSettings({ display_order: ["evi-plugin:last-seen", 1, "evi-dev", "evi-plugin-author"], hidden_badges: ["evi-plugin:platform-web", "evi-plugin-author"] });
         expect(body).toEqual({ display_order: [1], hidden_badges: [] });
-        expect(prefs).toEqual({ order: [1, "dev"], hidden: [] });
+        // evi.rest's plugin-author badge is ours, not a plugin's: it's kept, hidden and ordered like the rest
+        expect(prefs).toEqual({ order: [1, "dev", "plugin-author"], hidden: ["plugin-author"] });
     });
 });
 

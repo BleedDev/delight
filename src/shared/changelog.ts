@@ -33,6 +33,15 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.5.3",
+        date: "2026-09-27",
+        sections: {
+            fixed: [
+                "The Plugin Author badge opens its details when you click it, and can be hidden and moved in Customize your badges.",
+            ],
+        },
+    },
+    {
         version: "0.5.2",
         date: "2026-09-27",
         sections: {

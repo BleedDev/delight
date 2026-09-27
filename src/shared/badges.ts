@@ -38,8 +38,12 @@ export interface BadgePrefs {
 
 /** Ours, as Discord's badge settings hold them: "evi-developer", "evi-supporter" */
 export const EVI_PREFIX = "evi-";
-/** Plugins' badges in Discord's badge directory (renderer/profileBadges.ts): saved nowhere */
-export const PLUGIN_PREFIX = "evi-plugin-";
+/**
+ * Plugins' badges in Discord's badge directory (renderer/profileBadges.ts): saved nowhere. A colon, which
+ * no badge id can have: "evi-plugin-" would also match evi.rest's own "plugin-author" badge, which then
+ * couldn't be opened, hidden or moved.
+ */
+export const PLUGIN_PREFIX = "evi-plugin:";
 
 type Order = (number | string)[];
 
