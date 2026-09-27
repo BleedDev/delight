@@ -227,7 +227,7 @@ describe("words", () => {
         const base = { id: 1, sessionId: 1, userId: "a", name: "Alice", at: T0, channelId: "vc1" };
         const d = (e: Partial<LogEntry>) => describeEntry({ ...base, kind: "join", ...e } as LogEntry, "General");
         expect(d({ kind: "selfJoin", name: "You" })).toBe("You joined General");
-        expect(d({ kind: "present" })).toBe("Alice was here");
+        expect(d({ kind: "present" })).toBe("Alice was already here");
         expect(d({ kind: "join" })).toBe("Alice joined");
         expect(d({ kind: "leave", stayed: 15 * MIN })).toBe("Alice left (stayed 15m)");
         expect(d({ kind: "moveIn", otherChannelName: "Gaming", otherChannelId: "vc2" })).toBe("Alice moved in from Gaming");
@@ -248,7 +248,7 @@ describe("words", () => {
         expect(text).toBe([
             `General · ${date} 14:02–14:12 (10m)`,
             "14:02  You joined General",
-            "14:02  Alice was here",
+            "14:02  Alice was already here",
             "14:05  Bob joined",
             "14:12  You left (stayed 10m)",
         ].join("\n"));

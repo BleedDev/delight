@@ -15,8 +15,8 @@
  * Both fall back to Discord's HTTP client ({ get, post, put, patch, del }) if the creator moved.
  * Their errors are Discord's HTTP errors, whose body holds the reason shown in the toast.
  */
-import { createRoot, definePlugin, filters, find, findByCode, findMenuGroup, getStore, Menu, React } from "@evi/api";
-import type { PluginContext } from "@evi/api";
+import { definePlugin, filters, find, findByCode, findMenuGroup, getStore, Menu, openLayer, React } from "@evi/api";
+import type { CloseLayer, PluginContext } from "@evi/api";
 import type { ReactNode } from "react";
 
 import {
@@ -169,21 +169,14 @@ async function copy(text: string, done: string) {
 
 // ---- The dialog ---------------------------------------------------------------------------------
 
-let closeOpen: (() => void) | undefined;
+let closeOpen: CloseLayer | undefined;
 
 function openDialog(expression: Expression, guildId?: string) {
     closeOpen?.();
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const close = () => {
-        if (closeOpen !== close) return;
-        closeOpen = undefined;
-        root.unmount();
-        container.remove();
-    };
+    const close = openLayer(close => <Dialog expression={expression} initialGuildId={guildId} onClose={() => close()} />, {
+        onClosed: () => void (closeOpen === close && (closeOpen = undefined)),
+    });
     closeOpen = close;
-    root.render(<Dialog expression={expression} initialGuildId={guildId} onClose={close} />);
 }
 
 const previewUrl = (e: Expression) => e.kind === "emoji" ? emojiUrl(e.id, e.animated, 128) : stickerUrl(e.id, e.formatType);
@@ -243,8 +236,8 @@ function Dialog({ expression, initialGuildId, onClose }: { expression: Expressio
     }
 
     return (
-        <div className="evi-es-scrim" onMouseDown={e => e.target === e.currentTarget && !busy && onClose()}>
-            <div className="evi-es-modal" role="dialog" aria-modal="true" aria-labelledby="evi-es-title" ref={ref}>
+        <div className="evi-es-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && !busy && onClose()}>
+            <div className="evi-es-modal evi-modal" role="dialog" aria-modal="true" aria-labelledby="evi-es-title" ref={ref}>
                 <header className="evi-es-head">
                     <h2 id="evi-es-title">Add {isEmoji ? "Emoji" : "Sticker"} to Server</h2>
                     <button type="button" className="evi-es-close" aria-label="Close" onClick={onClose} disabled={busy}>
@@ -392,7 +385,7 @@ export default definePlugin({
         context = ctx as PluginContext;
         ctx.addStyle(css);
         ctx.onDispose(() => {
-            closeOpen?.();
+            closeOpen?.({ instant: true });
             context = undefined;
         });
 
@@ -405,6 +398,6 @@ export default definePlugin({
     },
 
     stop() {
-        closeOpen?.();
+        closeOpen?.({ instant: true });
     },
 });

@@ -2,9 +2,13 @@
     "id": "voice-activity-log",
     "name": "Voice Activity Log",
     "description": "Logs who joins and leaves the voice channel you're in, with times and how long they stayed. Open it from the Voice Connected panel or with /vclog. Memory only.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "authors": ["Evi"],
     "tags": ["voice"],
-    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "minEviVersion": "0.3.2",
+    "changelog": [
+        { "version": "1.1.0", "notes": ["A cleaner log: sessions are listed by channel with a dot on the one you're in, plus a proper search field and bigger avatars.", "Opens and closes with Discord's own dialog animation.", "People already in the channel when you join now read \"was already here\"."] },
+        { "version": "1.0.0", "notes": ["First release."] }
+    ],
     "enabledByDefault": false
 }

@@ -24,12 +24,17 @@ export function PluginChangelogModal({ updates, onClose, onTurnOff }: { updates:
             title={updatesTitle(updates)}
             subtitle={single && `Updated from ${single.from} to ${single.to}`}
             onClose={onClose}
-            footer={
+            footer={close => (
                 <div className="dl-plugin-whats-new-footer">
                     <Text variant="text-xs/normal" color="text-muted" className="dl-grow">Every version is in the plugin’s details, in Evi’s Plugins.</Text>
-                    {onTurnOff && <Button onClick={onTurnOff}>Stop showing these</Button>}
+                    {onTurnOff && (
+                        <Button onClick={() => {
+                            onTurnOff();
+                            close();
+                        }}>Stop showing these</Button>
+                    )}
                 </div>
-            }
+            )}
         >
             <div className="dl-whats-new-notes" role="region" aria-label="Changelog content" tabIndex={0}>
                 {updates.map(u => (
@@ -79,7 +84,6 @@ function Popup() {
                 Settings.update(d => {
                     d.pluginChangelogs = false;
                 });
-                setShown([]);
             }}
         />
     );

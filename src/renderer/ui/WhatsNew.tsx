@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
 import { Settings } from "../settings";
 import { createRoot, React, ReactDOM } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
-import { Button, cx, Icon, Text, useModal } from "./components";
+import { Button, cx, Icon, Text, useExit, useModal } from "./components";
 import { coverUrl } from "./covers";
 import { ensureStyles } from "./index";
 
@@ -33,9 +33,11 @@ export function ChangelogModal({ className, titleId, title, subtitle, onClose, c
     subtitle?: ReactNode;
     onClose(): void;
     children: ReactNode;
-    footer?: ReactNode;
+    /** A function gets `close`, for buttons that close it with the exit animation */
+    footer?: ReactNode | ((close: () => void) => ReactNode);
 }) {
-    const { ref, onKeyDown } = useModal(onClose);
+    const exit = useExit(onClose);
+    const { ref, onKeyDown } = useModal(exit.close);
     const scrollerRef = React.useRef<HTMLDivElement>(null);
     const innerRef = React.useRef<HTMLElement>(null);
     // Like Discord's modal: dividers above and below the body only when it has to scroll
@@ -51,16 +53,16 @@ export function ChangelogModal({ className, titleId, title, subtitle, onClose, c
     }, []);
 
     return ReactDOM.createPortal(
-        <div className="dl-root">
-            <div className="dl-scrim dl-dialog-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-                <div className={cx("dl-modal", className)} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={ref} onKeyDown={onKeyDown}>
+        <div className="dl-root" {...exit.closingProps}>
+            <div className="dl-scrim dl-dialog-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && exit.close()}>
+                <div className={cx("dl-modal evi-modal", className)} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={ref} onKeyDown={onKeyDown}>
                     <header className="dl-modal-section dl-modal-header">
                         <div className="dl-modal-header-layout">
                             <div className="dl-modal-header-main">
                                 <Text tag="h1" variant="heading-lg/semibold" color="text-strong" id={titleId}>{title}</Text>
                             </div>
                             <div className="dl-modal-header-trailing">
-                                <Button variant="icon" size="md" icon="closeLarge" aria-label="Close" onClick={onClose} />
+                                <Button variant="icon" size="md" icon="closeLarge" aria-label="Close" onClick={exit.close} />
                             </div>
                         </div>
                         {subtitle && <Text variant="text-md/normal" color="text-subtle">{subtitle}</Text>}
@@ -72,7 +74,7 @@ export function ChangelogModal({ className, titleId, title, subtitle, onClose, c
                         </main>
                     </div>
                     <div className={cx("dl-modal-spacer-bottom", scrolls && "dl-modal-divided")} />
-                    {footer && <footer className="dl-modal-section dl-modal-action-bar">{footer}</footer>}
+                    {footer && <footer className="dl-modal-section dl-modal-action-bar">{typeof footer === "function" ? footer(exit.close) : footer}</footer>}
                 </div>
             </div>
         </div>,

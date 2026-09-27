@@ -7,7 +7,7 @@ import type { UpdateProgress, UpdateStatus } from "@shared/release";
 import { Updates } from "../updates";
 import { createRoot, React } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
-import { Button, Icon, IconButton, Section, Status, SwitchRow, Text, useStore } from "./components";
+import { Button, Icon, IconButton, Section, Status, SwitchRow, Text, useExit, useStore } from "./components";
 import { ensureStyles } from "./index";
 
 type Available = Extract<UpdateStatus, { state: "available"; }>;
@@ -137,6 +137,11 @@ function UpdateNotice({ status, onClose }: { status: Available; onClose(): void;
     );
 }
 
+function FloatingNotice({ status, onClose }: { status: Available; onClose(): void; }) {
+    const exit = useExit(onClose);
+    return <div className="dl-safe-float" {...exit.closingProps}><UpdateNotice status={status} onClose={exit.close} /></div>;
+}
+
 let root: ReturnType<typeof createRoot> | undefined;
 
 /** Shows the notice for a version that can be installed from here */
@@ -151,7 +156,7 @@ function showUpdateNotice(status: Available) {
             root = createRoot(container);
         }
         const close = () => root?.render(null);
-        root.render(<div className="dl-safe-float"><UpdateNotice status={status} onClose={close} /></div>);
+        root.render(<FloatingNotice status={status} onClose={close} />);
     });
 }
 

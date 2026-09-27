@@ -17,6 +17,7 @@ import { Updates } from "./updates";
 import { QuickCss } from "./styles";
 import { Themes } from "./themes";
 import { registerToolkitPatches, Toolkit } from "./toolkit";
+import { installLayerStyles } from "./toolkit/layer";
 import { installHotkey, SettingsUI } from "./ui";
 import { startBadges } from "./ui/badges";
 import { startUpdateChecks } from "./ui/UpdatesTab";
@@ -72,6 +73,8 @@ function boot() {
     // Before anything that applies plugins or CSS, they all check it
     SafeMode.init(data.safeMode);
     Settings.init(data.settings);
+    // Dialog and menu motion, before themes so they can restyle it
+    installLayerStyles();
     // Themes first: Quick CSS goes after them in <head>, so it wins
     Themes.init(data.themes);
     QuickCss.init(data.quickCss);

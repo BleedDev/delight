@@ -16,6 +16,8 @@ export { CommandOptionType, registerCommand } from "../renderer/toolkit/commands
 export type { CommandContext, CommandDefinition, CommandOption, CommandResult } from "../renderer/toolkit/commands";
 export { addContextMenuPatch, findMenuGroup, Menu } from "../renderer/toolkit/contextMenu";
 export type { ContextMenuCallback, MenuComponents, MenuItemProps } from "../renderer/toolkit/contextMenu";
+export { exitDone, openLayer } from "../renderer/toolkit/layer";
+export type { CloseLayer, LayerOptions } from "../renderer/toolkit/layer";
 export { showToast } from "../renderer/toolkit/toasts";
 export type { ToastOptions, ToastType } from "../renderer/toolkit/toasts";
 export { lazy, unlazy } from "../renderer/utils/lazy";

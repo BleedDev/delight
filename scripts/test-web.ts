@@ -244,6 +244,21 @@ function fakeNative(bootData: BootData) {
 
 
 const results: { name: string; ok: boolean; detail?: unknown; }[] = [];
+/**
+ * Closes something with `close`, then reports what closing looked like: whether it was still on the
+ * page marked [data-closing] with its exit animations running, and whether it left afterwards.
+ */
+async function closesWithExit(selector: string, close: () => Promise<unknown>) {
+    await close();
+    const during = await page.evaluate(sel => {
+        const el = document.querySelector(sel);
+        const layer = el?.closest("[data-closing]");
+        return { closing: !!layer, running: layer ? layer.getAnimations({ subtree: true }).map(a => (a as CSSAnimation).animationName) : [] };
+    }, selector);
+    const gone = await page.waitForSelector(selector, { state: "detached", timeout: 2000 }).then(() => true, () => false);
+    return { ...during, gone };
+}
+
 function check(name: string, ok: boolean, detail?: unknown) {
     results.push({ name, ok, detail });
     console.log(`${ok ? "\x1b[32m✓" : "\x1b[31m✗"} ${name}\x1b[0m${detail !== undefined ? `  \x1b[2m${JSON.stringify(detail)}\x1b[0m` : ""}`);
@@ -300,6 +315,8 @@ check("enabled plugins started", ["clear-urls", "experiments", "no-track"].every
 
 const whatsNew = await page.waitForSelector(".dl-whats-new[role=dialog]", { timeout: 10_000 }).then(() => page.evaluate(async () => {
     const modal = document.querySelector(".dl-whats-new")!;
+    // Measured once its entrance has settled: it springs up from 90%
+    await Promise.all(modal.getAnimations().map(an => an.finished));
     const heading = modal.querySelector(".dl-whats-new-title");
     return {
         text: modal.textContent ?? "",
@@ -322,8 +339,8 @@ check("What's new shows once after an update, and remembers the version", !!what
 check("What's new is roomy (640px), fits the window, and is styled like Discord's changelog", !!whatsNew && whatsNew.width > 600 && whatsNew.width <= 640 && whatsNew.fits && !!whatsNew.headingColor && whatsNew.headingColor !== whatsNew.itemColor, whatsNew);
 check("What's new opens with the release's cover, full width like Discord's changelog video", !!whatsNew?.cover?.loaded && whatsNew.cover.width > 400 && whatsNew.cover.width <= whatsNew.width - 48 && Math.abs(whatsNew.cover.height - whatsNew.cover.width * 675 / 1200) < 1, whatsNew?.cover);
 await page.screenshot({ path: join(OUT, "ui-whats-new.png") });
-await page.locator(".dl-whats-new").getByRole("button", { name: "Close", exact: true }).click();
-check("What's new closes", !(await page.$(".dl-whats-new")));
+const whatsNewExit = await closesWithExit(".dl-whats-new", () => page.locator(".dl-whats-new").getByRole("button", { name: "Close", exact: true }).click());
+check("What's new closes with Discord's modal exit (shrinks and fades), then leaves the page", whatsNewExit.closing && whatsNewExit.running.includes("evi-modal-out") && whatsNewExit.gone, whatsNewExit);
 
 // Plugins that updated since they were last seen follow, in one popup
 const pluginNews = await page.waitForSelector(".dl-plugin-whats-new[role=dialog]", { timeout: 5000 }).then(() => page.evaluate(() => ({
@@ -334,8 +351,90 @@ check("Plugin updates show their changelogs once, batched, and remember the vers
     !!pluginNews && pluginNews.text.includes("What’s New in 2 Plugins") && pluginNews.text.includes("Clear URLs 1.0.0") && pluginNews.text.includes("Quick Actions 1.0.0")
     && pluginNews.seen?.["clear-urls"] === "1.0.0" && pluginNews.seen?.["message-logger"] !== undefined, pluginNews);
 await page.screenshot({ path: join(OUT, "ui-plugin-whats-new.png") });
-await page.locator(".dl-plugin-whats-new").getByRole("button", { name: "Close", exact: true }).click();
-check("Plugin changelogs close", !(await page.$(".dl-plugin-whats-new")));
+const pluginNewsExit = await closesWithExit(".dl-plugin-whats-new", () => page.locator(".dl-plugin-whats-new").getByRole("button", { name: "Close", exact: true }).click());
+check("Plugin changelogs close with an exit animation", pluginNewsExit.closing && pluginNewsExit.gone, pluginNewsExit);
+
+// ---- dialog motion: a plugin's dialog, on Discord's real page ------------------------------------
+
+{
+    const opened = await page.evaluate(async () => {
+        const w = window as any;
+        await w.Evi.plugins.setEnabled("voice-activity-log", true);
+        const plugin = w.Evi.$("voice-activity-log");
+        const log = plugin?.getLog?.();
+        if (!log) return { ok: false };
+        // An earlier call that ended, then the one you're in now
+        const names: Record<string, string> = { a: "Mira", b: "Theo", c: "Jun" };
+        const quiet = { muted: false, deafened: false, streaming: false, video: false };
+        const base = { selfId: "me", nameOf: (id: string) => names[id] ?? id, channelName: (id: string) => ({ vc1: "late night radio", vc2: "study hall" } as Record<string, string>)[id] ?? id };
+        const t = Date.now() - 50 * 60_000;
+        log.sync({ ...base, channelId: "vc2", snapshot: { a: quiet }, now: t });
+        log.sync({ ...base, channelId: "vc2", snapshot: { a: quiet, b: quiet }, now: t + 4 * 60_000 });
+        log.sync({ ...base, channelId: "vc1", snapshot: { c: quiet }, now: t + 20 * 60_000 });
+        log.sync({ ...base, channelId: "vc1", snapshot: { c: quiet, a: quiet }, now: t + 31 * 60_000 });
+        log.sync({ ...base, channelId: "vc1", snapshot: { a: quiet }, now: t + 44 * 60_000 });
+        plugin.openLog();
+        let modal: Element | null = null;
+        for (let i = 0; i < 60 && !modal; i++) {
+            await new Promise(r => requestAnimationFrame(r));
+            modal = document.querySelector(".evi-vcl-modal");
+        }
+        const running = modal ? modal.getAnimations().map(a => (a as CSSAnimation).animationName) : [];
+        return { ok: !!modal, running, scrim: document.querySelector(".evi-vcl-scrim")?.getAnimations().map(a => (a as CSSAnimation).animationName) ?? [] };
+    });
+    check("A plugin dialog opens with Discord's modal entrance (backdrop fades, dialog springs up)", opened.ok && !!opened.running?.includes("evi-modal-in") && !!opened.scrim?.includes("evi-scrim-in"), opened);
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: join(OUT, "plugin-voice-log.png") });
+    const layout = await page.evaluate(() => {
+        const modal = document.querySelector(".evi-vcl-modal")!.getBoundingClientRect();
+        const rows = [...document.querySelectorAll(".evi-vcl-row")].map(r => r.textContent);
+        const tabs = [...document.querySelectorAll(".evi-vcl-tab")].map(t => t.textContent);
+        const primary = getComputedStyle(document.querySelector('.evi-vcl-button[data-variant="primary"]')!).backgroundColor;
+        return { width: modal.width, fits: modal.bottom <= innerHeight && modal.top >= 0, rows, tabs, primary };
+    });
+    check("The voice log lists the call's people and both sessions, channel first", layout.fits && layout.rows.some(r => r?.includes("Mira")) && layout.tabs.length === 2 && layout.tabs[0]!.startsWith("late night radio"), layout);
+    const logExit = await closesWithExit(".evi-vcl-modal", () => page.keyboard.press("Escape"));
+    check("Escape closes a plugin dialog with the exit animation, then unmounts it", logExit.closing && logExit.running.includes("evi-modal-out") && logExit.running.includes("evi-scrim-out") && logExit.gone, logExit);
+    await page.evaluate(() => (window as any).Evi.plugins.setEnabled("voice-activity-log", false));
+}
+
+// A popover: Snippets' picker slides in from its chat bar button, and fades out on a click elsewhere
+{
+    const opened = await page.evaluate(async () => {
+        const w = window as any;
+        await w.Evi.plugins.setEnabled("snippets", true);
+        const buttons: any[] = [];
+        w.Evi.$("snippets").injectButton(buttons, { channel: { id: "1" } });
+        const host = document.createElement("div");
+        host.id = "evi-test-snip-button";
+        host.style.cssText = "position: fixed; right: 24px; bottom: 24px; z-index: 5";
+        document.body.append(host);
+        w.__snipRoot = w.Evi.api.createRoot(host);
+        w.__snipRoot.render(buttons[0]);
+        let button: HTMLElement | null = null;
+        for (let i = 0; i < 60 && !button; i++) {
+            await new Promise(r => requestAnimationFrame(r));
+            button = host.querySelector("button, [role=button]");
+        }
+        button?.click();
+        let popover: Element | null = null;
+        for (let i = 0; i < 60 && !popover; i++) {
+            await new Promise(r => requestAnimationFrame(r));
+            popover = document.querySelector(".evi-snip-popover");
+        }
+        return { button: !!button, popover: !!popover, running: popover?.getAnimations().map(a => (a as CSSAnimation).animationName) ?? [] };
+    });
+    check("A plugin popover opens with Discord's popout entrance", opened.popover && opened.running.includes("evi-popout-in"), opened);
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: join(OUT, "plugin-snippets-popover.png") });
+    const popExit = await closesWithExit(".evi-snip-popover", () => page.mouse.click(200, 200));
+    check("Clicking elsewhere fades the popover out, then removes it", popExit.closing && popExit.running.includes("evi-popout-out") && popExit.gone, popExit);
+    await page.evaluate(() => {
+        (window as any).__snipRoot?.unmount();
+        document.getElementById("evi-test-snip-button")?.remove();
+        return (window as any).Evi.plugins.setEnabled("snippets", false);
+    });
+}
 
 // ---- flux ---------------------------------------------------------------------------------------
 
@@ -1340,6 +1439,7 @@ check("Badges: a hidden one is gone for everyone else, and still in your own bad
     await notice.getByText("Evi 9.9.0 is available").waitFor({ timeout: 3000 });
     await notice.screenshot({ path: join(OUT, "update-notice.png") });
     await notice.getByRole("button", { name: "Skip this version" }).click();
+    await page.waitForSelector(".dl-safe-float .dl-update", { state: "detached", timeout: 2000 }).catch(() => { });
     const after = await page.evaluate(async () => {
         const D = (window as any).Evi;
         const gone = !document.querySelector(".dl-safe-float .dl-update");
@@ -1789,8 +1889,7 @@ check("notice explains why and names the newest change that's still on", safe.la
 check("notice offers disabling it and leaving safe mode", ["Disable Experiments and restart", "Exit safe mode and restart", "Hide safe mode notice"].every(b => safe.buttons.includes(b)), safe.buttons);
 
 await safePage.getByRole("button", { name: "Hide safe mode notice" }).click();
-await safePage.waitForTimeout(100);
-check("notice can be hidden", !(await safePage.$(".dl-safe-float")));
+check("notice can be hidden, and fades out first", await safePage.waitForSelector(".dl-safe-float", { state: "detached", timeout: 2000 }).then(() => true, () => false));
 
 await safePage.keyboard.press("Control+Shift+D");
 await safePage.waitForSelector(".dl-panel .dl-safe", { timeout: 5000 });

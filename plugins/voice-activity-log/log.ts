@@ -7,7 +7,7 @@ import type { SourcePatch } from "@evi/api";
  * (VoiceStateStore.getVoiceStatesForChannel, copied, yourself left out) after every voice state
  * change. The log diffs it against the previous snapshot:
  *  - a different channel (or none) ends the current session and, if there's a channel, starts a
- *    new one. Everyone already there is logged once as "was here", not as joining;
+ *    new one. Everyone already there is logged once as "was already here", not as joining;
  *  - the same channel yields joins, leaves and, depending on the options, moves, streams, camera,
  *    mutes and deafens.
  * Memory only, capped at MAX_ENTRIES entries over the last MAX_SESSIONS sessions.
@@ -366,7 +366,7 @@ export function describe(entry: LogEntry, sessionChannelName?: string): string {
     switch (entry.kind) {
         case "selfJoin": return `You joined ${channelLabel(sessionChannelName, entry.channelId)}`;
         case "selfLeave": return entry.otherChannelId ? `You moved to ${other}${stayed}` : `You left${stayed}`;
-        case "present": return `${n} was here`;
+        case "present": return `${n} was already here`;
         case "join": return `${n} joined`;
         case "leave": return `${n} left${stayed}`;
         case "moveIn": return `${n} moved in from ${other}`;

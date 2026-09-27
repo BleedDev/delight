@@ -33,6 +33,16 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.3.2",
+        date: "2026-09-27",
+        sections: {
+            improved: [
+                "**Dialogs and menus move like Discord's.** Evi's dialogs, notices and plugin menus now spring open and fade away instead of popping in and vanishing.",
+                "**A cleaner Voice Activity Log**, with sessions listed by channel and a proper search field.",
+            ],
+        },
+    },
+    {
         version: "0.3.1",
         date: "2026-09-27",
         sections: {

@@ -6,7 +6,8 @@
  * - a server: your own permissions, then each role's
  * The math lives in perms.ts; this file reads Discord's stores and draws the dialog.
  */
-import { createRoot, definePlugin, getStore, Menu, React } from "@evi/api";
+import { definePlugin, getStore, Menu, openLayer, React } from "@evi/api";
+import type { CloseLayer } from "@evi/api";
 import type { CSSProperties, ReactNode } from "react";
 
 import {
@@ -140,21 +141,14 @@ interface Subject {
 
 type Filter = "all" | "allow" | "off";
 
-let closeOpen: (() => void) | undefined;
+let closeOpen: CloseLayer | undefined;
 
 function openDialog(subject: Subject, sections: Section[]) {
     closeOpen?.();
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const close = () => {
-        if (closeOpen !== close) return;
-        closeOpen = undefined;
-        root.unmount();
-        container.remove();
-    };
+    const close = openLayer(close => <Dialog subject={subject} sections={sections} onClose={() => close()} />, {
+        onClosed: () => void (closeOpen === close && (closeOpen = undefined)),
+    });
     closeOpen = close;
-    root.render(<Dialog subject={subject} sections={sections} onClose={close} />);
 }
 
 function Dialog({ subject, sections, onClose }: { subject: Subject; sections: Section[]; onClose(): void; }) {
@@ -192,8 +186,8 @@ function Dialog({ subject, sections, onClose }: { subject: Subject; sections: Se
     const filters: [Filter, string, number][] = [["all", "All", items.length], ["allow", labels[0], granted], ["off", labels[1], items.length - granted]];
 
     return (
-        <div className="evi-pv-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-            <div className="evi-pv-modal" role="dialog" aria-modal="true" aria-labelledby="evi-pv-title" aria-describedby="evi-pv-subtitle" tabIndex={-1} ref={ref}>
+        <div className="evi-pv-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+            <div className="evi-pv-modal evi-modal" role="dialog" aria-modal="true" aria-labelledby="evi-pv-title" aria-describedby="evi-pv-subtitle" tabIndex={-1} ref={ref}>
                 <header className="evi-pv-head">
                     <SubjectIcon subject={subject} />
                     <div className="evi-pv-titles">
@@ -566,12 +560,6 @@ const css = `
   .evi-pv-seg button:hover:not([aria-pressed="true"]) { color: var(--interactive-hover, #dbdee1); }
   .evi-pv-row:hover { background: var(--evi-pv-hover); }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .evi-pv-scrim { animation: evi-pv-fade 150ms ease-out; }
-  .evi-pv-modal { animation: evi-pv-enter 200ms cubic-bezier(.2, .8, .2, 1); }
-}
-@keyframes evi-pv-fade { from { opacity: 0; } }
-@keyframes evi-pv-enter { from { opacity: 0; scale: .96; } }
 `;
 
 // ---- Menus --------------------------------------------------------------------------------------
@@ -585,7 +573,7 @@ const item = (id: string, action: () => void) => (
 export default definePlugin({
     start(ctx) {
         ctx.addStyle(css);
-        ctx.onDispose(() => closeOpen?.());
+        ctx.onDispose(() => closeOpen?.({ instant: true }));
 
         const fail = () => ctx.toast("Couldn't read the permissions", { type: "failure" });
 
@@ -654,6 +642,6 @@ export default definePlugin({
     },
 
     stop() {
-        closeOpen?.();
+        closeOpen?.({ instant: true });
     },
 });

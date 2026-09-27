@@ -7,6 +7,7 @@
 import type { ButtonHTMLAttributes, ComponentType, ReactElement, ReactNode } from "react";
 
 import type { SettingDefinition } from "../plugins/types";
+import { exitDone } from "../toolkit/layer";
 import { React, ReactDOM } from "../webpack/common";
 import { DiscordUI } from "./discord";
 import { Icon, iconComponent, IconName } from "./icons";
@@ -617,20 +618,43 @@ export function useModal(onClose: () => void) {
 }
 
 /**
+ * Plays an exit before `onClose` unmounts what's closing: spread `closingProps` on an element
+ * around the animated parts (they animate by class, see toolkit/layer.ts), and call `close`
+ * instead of `onClose`.
+ */
+export function useExit(onClose: () => void) {
+    const ref = React.useRef<HTMLDivElement>(null);
+    const [closing, setClosing] = React.useState(false);
+    const closeRef = React.useRef(onClose);
+    closeRef.current = onClose;
+
+    React.useLayoutEffect(() => {
+        if (!closing) return;
+        let live = true;
+        void exitDone(ref.current).then(() => live && closeRef.current());
+        return () => void (live = false);
+    }, [closing]);
+
+    const close = React.useCallback(() => setClosing(true), []);
+    return { close, closing, closingProps: { ref, "data-closing": closing ? "" : undefined } };
+}
+
+/**
  * A dialog over everything, so opening it never moves the page underneath. Rendered into <body>,
  * which also gets it out of Discord's settings scroller when the tab is embedded there.
  * Escape and clicking beside it close it; focus stays inside and goes back where it was after.
  */
 export function Dialog({ title, onClose, children, id }: { title: ReactNode; onClose(): void; children: ReactNode; id: string; }) {
-    const { ref, onKeyDown } = useModal(onClose);
+    const exit = useExit(onClose);
+    const { ref, onKeyDown } = useModal(exit.close);
 
     return ReactDOM.createPortal(
-        <div className="dl-root">
-            <div className="dl-scrim dl-dialog-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-                <div className="dl-dialog" role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} tabIndex={-1} ref={ref} onKeyDown={onKeyDown} id={id}>
+        <div className="dl-root" {...exit.closingProps}>
+            <div className="dl-scrim dl-dialog-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && exit.close()}>
+                <div className="dl-dialog evi-modal" role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} tabIndex={-1} ref={ref} onKeyDown={onKeyDown} id={id}>
                     <header className="dl-dialog-head">
                         <Text tag="h2" variant="heading-lg/semibold" color="text-strong" id={`${id}-title`}>{title}</Text>
-                        <IconButton icon="close" label="Close" onClick={onClose} />
+                        <IconButton icon="close" label="Close" onClick={exit.close} />
                     </header>
                     <div className="dl-dialog-body">{children}</div>
                 </div>
