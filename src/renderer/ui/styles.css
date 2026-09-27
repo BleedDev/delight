@@ -1692,11 +1692,6 @@
     background: var(--dl-bg-group);
 }
 
-/* A problem to explain gets the whole row */
-.dl-plugin-card[data-wide] {
-    grid-column: 1 / -1;
-}
-
 .dl-plugin-card-top {
     display: flex;
     align-items: center;
@@ -1735,11 +1730,6 @@
     -webkit-line-clamp: 2;
     line-clamp: 2;
     text-wrap: pretty;
-}
-
-.dl-plugin-card[data-wide] .dl-plugin-card-desc {
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
 }
 
 .dl-plugin-card-foot {

@@ -2,10 +2,11 @@
     "id": "smooth-typing",
     "name": "Smooth Typing",
     "description": "Halves the worst frame drops while typing. Discord updates its saved draft on every keystroke, re-rendering everything that shows drafts; this batches those updates until you pause. What you type is never delayed or lost.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "authors": ["Evi"],
     "tags": ["performance"],
     "changelog": [
+        { "version": "1.0.2", "notes": ["A message you just sent no longer comes back into the text box: the draft that was that message is dropped when it's sent. Switching channels and slash commands keep the box up to date too."] },
         { "version": "1.0.1", "notes": ["Fixed a message you just sent sometimes coming back into the text box, when you sent it right after typing."] },
         { "version": "1.0.0", "notes": ["First release."] }
     ],

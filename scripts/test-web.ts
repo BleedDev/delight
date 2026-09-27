@@ -682,12 +682,36 @@ const drafts = await page.evaluate(async () => {
     api.Dispatcher.dispatch({ type: "DRAFT_SAVE", channelId: "424242", draftType: 0, draft: "" });
     await sleep(400);
     const afterSave = [...received];
+
+    // The message you just sent drops the draft that was it; a different pending draft survives
+    change("hello there");
+    api.Dispatcher.dispatch({ type: "MESSAGE_CREATE", channelId: "424242", message: { channel_id: "424242", content: "hello there" } });
+    await sleep(400);
+    const afterSend = [...received];
+    change("still typing");
+    api.Dispatcher.dispatch({ type: "MESSAGE_CREATE", channelId: "424242", message: { channel_id: "424242", content: "someone else's message" } });
+    await sleep(400);
+    const otherMessage = [...received];
+
+    // A slash command's draft clears everything pending for its channel, whatever the draft type
+    change("/giphy cat");
+    api.Dispatcher.dispatch({ type: "DRAFT_COMMAND_CLEAR", channelId: "424242", draftType: 1 });
+    await sleep(400);
+    const afterCommand = [...received];
+
+    // Switching channels writes it right away
+    change("half a thought");
+    api.Dispatcher.dispatch({ type: "CHANNEL_SELECT", channelId: "999", guildId: null });
+    const onSwitch = [...received];
     api.Dispatcher.unsubscribe("DRAFT_CHANGE", onDraft);
-    return { immediately, afterPause, afterClear, afterSave };
+    return { immediately, afterPause, afterClear, afterSave, afterSend, otherMessage, afterCommand, onSwitch };
 });
 check("smooth-typing batches draft updates until a pause", drafts.immediately.length === 0 && JSON.stringify(drafts.afterPause) === '["abc"]', drafts);
 check("clearing a draft cancels pending updates (no stale draft after sending)", JSON.stringify(drafts.afterClear) === '["abc"]', drafts.afterClear);
 check("saving a draft cancels pending updates (sent message doesn't come back)", JSON.stringify(drafts.afterSave) === '["abc"]', drafts.afterSave);
+check("a message you send drops its own pending draft, but not a different one", JSON.stringify(drafts.afterSend) === '["abc"]' && JSON.stringify(drafts.otherMessage) === '["abc","still typing"]', { afterSend: drafts.afterSend, other: drafts.otherMessage });
+check("a slash command's clear drops pending drafts of any type in its channel", JSON.stringify(drafts.afterCommand) === '["abc","still typing"]', drafts.afterCommand);
+check("switching channels writes a pending draft right away", JSON.stringify(drafts.onSwitch) === '["abc","still typing","half a thought"]', drafts.onSwitch);
 
 // ---- native bridge ------------------------------------------------------------------------------
 

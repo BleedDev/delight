@@ -33,6 +33,16 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.6.1",
+        date: "2026-09-27",
+        sections: {
+            fixed: [
+                "**Smooth Typing no longer brings back a message you just sent** into the text box. Switching channels and slash commands keep the box up to date too.",
+                "A plugin that Evi turned off, or that has a problem to explain, keeps its card size in the Plugins list instead of stretching across it.",
+            ],
+        },
+    },
+    {
         version: "0.6.0",
         date: "2026-09-27",
         sections: {

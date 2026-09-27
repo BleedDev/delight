@@ -6,38 +6,51 @@ import { definePlugin, Dispatcher, FluxAction } from "@evi/api";
  * worst frame after a keystroke (p90) 40ms stock -> 20ms with draft changes batched.
  *
  * The editor keeps its own text, the draft store is only the saved copy, so batching changes
- * nothing you see. Safety rules:
+ * nothing you see. Safety rules, so a held-back draft can never land after it stopped being true:
  *  - a newer draft for the same channel replaces the pending one
- *  - DRAFT_SAVE and DRAFT_CLEAR cancel whatever is pending for that channel first: they're newer.
- *    Sending a message clears the box with DRAFT_SAVE "", so without this the pending draft would
- *    land after the send and bring the sent text back into the box.
+ *  - DRAFT_SAVE, DRAFT_CLEAR and DRAFT_COMMAND_CLEAR drop whatever is pending for that channel, of
+ *    any draft type: they're newer. Sending clears the box that way.
+ *  - a message you send drops a pending draft with the same text: that draft is the message itself,
+ *    and landing after the send would bring the sent text back into the box
+ *  - switching channels writes pending drafts at once, so the box you come back to is up to date
  *  - pending drafts are written immediately when the plugin stops or the page closes
  */
 
 const DELAY = 250;
+const CLEARS = new Set(["DRAFT_SAVE", "DRAFT_CLEAR", "DRAFT_COMMAND_CLEAR"]);
+const SENT = new Set(["MESSAGE_CREATE", "LOCAL_MESSAGE_CREATE"]);
+
+type Pending = { action: FluxAction; timer: ReturnType<typeof setTimeout>; };
 
 export default definePlugin({
     start(ctx) {
-        const pending = new Map<string, { action: FluxAction; timer: ReturnType<typeof setTimeout>; }>();
+        const pending = new Map<string, Pending>();
         let dispatchOriginal: ((action: FluxAction) => unknown) | undefined;
 
         const keyOf = (a: FluxAction) => `${a.channelId}:${a.draftType}`;
+        const drop = (key: string) => {
+            clearTimeout(pending.get(key)?.timer);
+            pending.delete(key);
+        };
+        const dropChannel = (channelId: unknown, keep: (p: Pending) => boolean = () => false) => {
+            for (const [key, p] of pending) if (p.action.channelId === channelId && !keep(p)) drop(key);
+        };
         const flush = () => {
-            for (const [key, { action, timer }] of pending) {
-                clearTimeout(timer);
-                pending.delete(key);
+            for (const [key, { action }] of pending) {
+                drop(key);
                 dispatchOriginal?.(action);
             }
         };
+        const text = (v: unknown) => typeof v === "string" ? v.trim() : "";
 
         ctx.hook.instead(Dispatcher, "dispatch", call => {
             const action = call.args[0] as FluxAction;
             dispatchOriginal ??= (a: FluxAction) => call.original.call(call.self, a);
+            const type = action?.type;
 
-            if (action?.type === "DRAFT_CHANGE") {
+            if (type === "DRAFT_CHANGE") {
                 const key = keyOf(action);
-                const previous = pending.get(key);
-                if (previous) clearTimeout(previous.timer);
+                drop(key);
                 pending.set(key, {
                     action,
                     timer: setTimeout(() => {
@@ -48,12 +61,14 @@ export default definePlugin({
                 return Promise.resolve();
             }
 
-            if (action?.type === "DRAFT_SAVE" || action?.type === "DRAFT_CLEAR") {
-                const previous = pending.get(keyOf(action));
-                if (previous) {
-                    clearTimeout(previous.timer);
-                    pending.delete(keyOf(action));
-                }
+            if (pending.size) {
+                if (CLEARS.has(type)) dropChannel(action.channelId);
+                else if (SENT.has(type)) {
+                    // The draft that was this message: only ever the sender's own, matched by its text
+                    const message = action.message as { channel_id?: string; content?: string; } | undefined;
+                    const sent = text(message?.content);
+                    if (sent) dropChannel(message?.channel_id ?? action.channelId, p => text((p.action as { draft?: unknown; }).draft) !== sent);
+                } else if (type === "CHANNEL_SELECT") flush();
             }
 
             return call.callOriginal(...call.args);

@@ -189,14 +189,12 @@ function PluginCard({ state }: { state: PluginState; }) {
     const authors = Store.authorsOf(state);
     const removeLabel = fromStore ? t("common.uninstallName", { name: manifest.name }) : t("common.removeName", { name: manifest.name });
     const reloadNote = state.needsReload && state.reloadReason;
-    // A card with a problem to explain takes the whole row, so the explanation has room
-    const wide = !!(state.error || lookupProblems.length || pulled || health?.message || reloadNote);
 
     // Full-access updates go through the plugin's store page, which asks first
     const update = () => entry?.native ? openStore("plugin", manifest.id) : Store.install(manifest.id);
 
     return (
-        <li className="dl-plugin-card" aria-labelledby={titleId} data-wide={wide ? "" : undefined}>
+        <li className="dl-plugin-card" aria-labelledby={titleId}>
             <div className="dl-plugin-card-top">
                 <Glyph name={manifest.name} />
                 <div className="dl-plugin-card-title">
