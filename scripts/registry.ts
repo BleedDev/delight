@@ -19,15 +19,16 @@
  * it does.
  *
  * Commit (or upload) the files folder and the registry together: the registry's hashes only match
- * the files copied by the same run.
+ * the files copied by the same run. Plugins it didn't build (third-party ones evi.rest published
+ * from approved submissions) are kept as they are in the previous registry.
  */
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { dirname, join, resolve } from "path";
 import { parseArgs } from "util";
 
 import pkg from "../package.json";
-import type { PluginManifest } from "../src/shared/ipc";
-import { parseRegistry, REGISTRY_SCHEMA, RegistryEntry, sha256Hex, STORE_FILES, storeThemeFile, ThemeEntry, whyNotManifest, whyNotStoreUrl } from "../src/shared/store";
+import { buildEntry, versionedUrl as versioned } from "../src/shared/registryEntry";
+import { parseRegistry, REGISTRY_SCHEMA, RegistryEntry, sha256Hex, STORE_FILES, StoreFileName, storeThemeFile, ThemeEntry, whyNotStoreUrl } from "../src/shared/store";
 import { parseThemeMeta, whyNotCss } from "../src/shared/themes";
 
 const ROOT = resolve(import.meta.dir, "..");
@@ -62,19 +63,14 @@ const themesDir = join(dirname(filesDir), "themes");
 const SOURCE = "https://github.com/BleedDev/evi/tree/main";
 const today = new Date().toISOString().slice(0, 10);
 
-/**
- * Each version of a file gets its own address: a CDN in front of the store (Cloudflare) caches files
- * for hours, and would otherwise keep serving the old version under the new hash, failing installs.
- * The server ignores the query.
- */
-const versioned = (url: string, sha256: string) => `${url}?v=${sha256.slice(0, 12)}`;
-
 // Publish dates survive a rebuild: only a new version gets a new date
 const previous = new Map<string, { version: string; updatedAt?: string; }>();
+let oldPlugins: RegistryEntry[] = [];
 try {
     const old = JSON.parse(readFileSync(resolve(values.out!), "utf8"));
     for (const e of old.plugins ?? []) previous.set(`plugin:${e.id}`, e);
     for (const e of old.themes ?? []) previous.set(`theme:${e.id}`, e);
+    oldPlugins = old.plugins ?? [];
 } catch { }
 const dateFor = (key: string, version: string) => {
     const old = previous.get(key);
@@ -86,40 +82,33 @@ const entries: RegistryEntry[] = [];
 for (const id of ids) {
     const dir = join(BUILT, id);
     if (!existsSync(join(dir, "manifest.json"))) fail(`${id} isn't built (no dist/plugins/${id}/manifest.json)`);
-    const manifest: PluginManifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
-
-    const files: Record<string, { url: string; sha256: string; }> = {};
+    const bytes: Partial<Record<StoreFileName, Uint8Array>> = {};
     for (const name of STORE_FILES) {
         const path = join(dir, name);
-        if (!existsSync(path)) continue;
-        const sha256 = await sha256Hex(readFileSync(path));
-        files[name] = { url: versioned(`${base}/${id}/${name}`, sha256), sha256 };
+        if (existsSync(path)) bytes[name] = readFileSync(path);
     }
-
-    const entry = {
-        id,
-        name: manifest.name,
-        description: manifest.description ?? "",
-        authors: manifest.authors?.length ? manifest.authors : ["Unknown"],
-        version: manifest.version ?? "0.0.0",
-        tags: manifest.tags ?? [],
-        // Anything that runs outside Discord's page needs the user's explicit trust
-        native: !!manifest.native || Object.keys(manifest.chromiumSwitches ?? {}).length > 0,
-        minEviVersion: manifest.minEviVersion ?? pkg.version,
-        files,
-        updatedAt: dateFor(`plugin:${id}`, manifest.version ?? "0.0.0"),
-        source: manifest.source ?? (official.has(id) ? `${SOURCE}/plugins/${id}` : undefined),
-        screenshots: manifest.screenshots ?? [],
-        changelog: manifest.changelog ?? [],
-    };
-    const badManifest = whyNotManifest(manifest, entry as RegistryEntry);
-    if (badManifest) fail(`${id}: ${badManifest}`);
-    entries.push(entry as RegistryEntry);
+    const built = await buildEntry(bytes, {
+        base,
+        previous: previous.get(`plugin:${id}`),
+        today,
+        eviVersion: pkg.version,
+        source: official.has(id) ? `${SOURCE}/plugins/${id}` : undefined,
+        // Official plugins are published by Evi's own author profile on evi.rest
+        authorIds: official.has(id) ? ["evi"] : undefined,
+    });
+    if ("error" in built) fail(`${id}: ${built.error}`);
+    entries.push(built.entry);
 
     // A clean copy, so files from an older build of this plugin don't linger
     rmSync(join(filesDir, id), { recursive: true, force: true });
     mkdirSync(join(filesDir, id), { recursive: true });
-    for (const name of Object.keys(files)) cpSync(join(dir, name), join(filesDir, id, name));
+    for (const name of Object.keys(built.entry.files)) cpSync(join(dir, name), join(filesDir, id, name));
+}
+
+// A full rebuild keeps what it didn't build: third-party plugins published by evi.rest
+if (!values.only) {
+    for (const old of oldPlugins) if (!official.has(old.id) && !entries.some(e => e.id === old.id)) entries.push(old);
+    entries.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 // ---- themes ---------------------------------------------------------------------------------------

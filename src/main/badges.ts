@@ -14,10 +14,11 @@ import { imageDataUrl, imageType } from "@shared/images";
 import { IPC } from "@shared/ipc";
 import { isPluginId } from "@shared/store";
 import { SUPPORTER_TIERS } from "@shared/supporter";
-import { ipcMain, net, webContents } from "electron";
+import { ipcMain, net, WebContents, webContents } from "electron";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
+import { confirmWithUser } from "./confirm";
 import { downloadHttps } from "./download";
 import { apiRequest, apiUrl, getInstallId } from "./evirest";
 import { DATA_DIR } from "./paths";
@@ -211,9 +212,28 @@ function adminToken() {
     }
 }
 
-async function admin(input: BadgeAdminAction): Promise<BadgeAdminResult> {
+/** What an admin action does, for the confirmation main shows before it runs */
+function describeAdmin(input: BadgeAdminAction): string | undefined {
+    switch (input?.action) {
+        case "create": return `Create the badge "${input.name}" (${input.id})?`;
+        case "delete": return `Delete the badge ${input.id} and take it off everyone?`;
+        case "grant": return `Give the badge ${input.badgeId} to ${input.userId}?`;
+        case "revoke": return `Take the badge ${input.badgeId} from ${input.userId}?`;
+        case "supporter": return `Make ${input.userId} a supporter?`;
+        case "time": return `${input.days > 0 ? "Give" : "Take"} ${Math.abs(input.days)} days of support ${input.days > 0 ? "to" : "from"} ${input.userId}?`;
+        case "unsupport": return `Stop ${input.userId} being a supporter?`;
+    }
+}
+
+async function admin(input: BadgeAdminAction, sender: WebContents): Promise<BadgeAdminResult> {
     const token = adminToken();
     if (!token) return { ok: false, error: "This install has no admin token (evi-admin.json in the data folder)" };
+    // The token changes badges for everyone: every change is confirmed from main, where no plugin
+    // running in the page can answer for you
+    const question = describeAdmin(input);
+    if (question && !await confirmWithUser(sender, { message: question, detail: "This changes Evi badges for everyone, with this install's admin token.", confirm: "Do it", pageSaid: true })) {
+        return { ok: false, error: "Cancelled" };
+    }
     const auth = { Authorization: `Bearer ${token}` };
     const call = (method: "GET" | "PUT" | "POST" | "DELETE", path: string, body?: unknown) =>
         apiRequest(method, `/admin${path}`, { headers: { ...auth, ...(body !== undefined && { "Content-Type": "application/json" }) }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -302,6 +322,6 @@ export function initBadges() {
         return getBadges(cachedOnly === true);
     });
     ipcMain.handle(IPC.BADGES_ADMIN_AVAILABLE, () => !!adminToken());
-    ipcMain.handle(IPC.BADGES_ADMIN, (_, input: BadgeAdminAction) => admin(input));
+    ipcMain.handle(IPC.BADGES_ADMIN, (e, input: BadgeAdminAction) => admin(input, e.sender));
     ipcMain.handle(IPC.BADGES_SET_PREFS, (_, userId: unknown, prefs: Partial<BadgePrefs>) => setPrefs(userId, prefs));
 }

@@ -1565,161 +1565,283 @@
 
 .dl-crash { flex-wrap: wrap; }
 
-/* ---- what's new ---------------------------------------------------------------------------- */
+/* ---- what's new (WhatsNew.tsx): Evi's release notes ----------------------------------------- */
 
 /*
- * A copy of Discord's changelog modal. The shell is its modal at size "md", padding "sm" (measured
- * from its CSS): 480px wide, 24px side padding, header and footer sections padded 16px above and 8px
- * below, and the body between two spacers that grow a divider when the body scrolls.
+ * Evi's own look, the one on evi.rest: the release's cover across the top, a small mono line over a
+ * headline that fades from white, and each kind of change under a pill in its color. Monochrome
+ * like the site: the accent is the strongest text color.
  */
-.dl-modal {
-    --dl-modal-padding: 24px;
+.dl-notes {
+    --dl-notes-padding: 28px;
+    --dl-notes-accent: var(--dl-text-strong);
+    position: relative;
     display: flex;
     flex-direction: column;
-    inline-size: min(480px, 100%);
-    max-block-size: min(800px, 100%);
-    padding-block: 8px 16px;
-    border-radius: var(--dl-radius-group);
+    inline-size: min(560px, calc(100% - 48px));
+    max-block-size: min(820px, calc(100vh - 48px));
+    overflow: hidden;
+    border-radius: var(--dl-radius-panel);
     border: 1px solid var(--dl-border-divider);
     background: var(--dl-bg-modal);
     box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
     color: var(--dl-text-default);
 }
 
-.dl-modal:focus { outline: none; }
+.dl-notes:focus { outline: none; }
 
-/* Wider and taller than Discord's changelog, so a whole release reads without scrolling */
-.dl-modal:is(.dl-whats-new, .dl-plugin-whats-new) {
-    inline-size: min(640px, calc(100% - 48px));
-    max-block-size: min(880px, calc(100vh - 48px));
-}
-
-.dl-modal-section {
+/* The cover, edge to edge, fading into the modal at its bottom so the title sits on it */
+.dl-notes-hero {
+    position: relative;
     flex: none;
-    padding: 16px var(--dl-modal-padding) 8px;
+    aspect-ratio: 1200 / 540;
+    overflow: hidden;
+    background: #0b0c0d;
 }
 
-.dl-modal-header {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    overflow-wrap: break-word;
+.dl-notes-hero::after {
+    content: "";
+    position: absolute;
+    inset: 40% 0 0;
+    background: linear-gradient(to bottom, transparent, var(--dl-bg-modal));
+    pointer-events: none;
 }
 
-.dl-modal-header-layout { display: flex; }
+.dl-whats-new-cover {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    object-position: center 45%;
+}
 
-.dl-modal-header-main { flex: 1; min-inline-size: 0; }
+/* A release without a cover: its version on the covers' dot grid, under a soft light */
+.dl-notes-hero-art {
+    display: grid;
+    place-items: center;
+    block-size: 100%;
+    background:
+        radial-gradient(ellipse 60% 70% at 50% 45%, rgb(255 255 255 / 0.07), transparent 70%),
+        radial-gradient(circle at 7.5px 7.5px, rgb(255 255 255 / 0.1) 1.3px, transparent 1.6px) 0 0 / 15px 15px,
+        #0b0c0d;
+}
 
-.dl-modal .dl-modal-header-main > h1 { margin: 0; }
+.dl-notes-hero-art > span {
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 72px;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(to right bottom, #fff 30%, rgb(255 255 255 / 0.35));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
 
-/* The close button sits 8px from the modal's top and end edges */
-.dl-modal-header-trailing {
-    display: flex;
+.dl-notes-close {
+    position: absolute;
+    inset-block-start: 12px;
+    inset-inline-end: 12px;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    inline-size: 36px;
+    block-size: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--dl-radius-round);
+    background: rgb(0 0 0 / 0.4);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    cursor: pointer;
+}
+
+.dl-notes-close:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 2px; }
+
+.dl-notes-head {
+    position: relative;
     flex: none;
-    align-items: flex-start;
-    margin-block-start: -16px;
-    margin-inline-end: calc(8px - var(--dl-modal-padding));
-    padding-inline-start: 12px;
+    padding: 28px var(--dl-notes-padding) 4px;
 }
 
-.dl-modal-spacer-top { flex: none; padding-block-start: 16px; }
-.dl-modal-spacer-bottom { flex: none; padding-block-end: 8px; }
-.dl-modal-spacer-top.dl-modal-divided { border-block-end: 1px solid var(--dl-border-divider); }
-.dl-modal-spacer-bottom.dl-modal-divided { border-block-start: 1px solid var(--dl-border-divider); }
+/* Pulled up onto the cover's fade */
+.dl-notes-head[data-hero] { margin-block-start: -36px; }
 
-.dl-modal-body {
+.dl-notes-eyebrow {
+    margin: 0 0 8px;
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0.02em;
+    color: var(--dl-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.dl-notes-title {
+    margin: 0;
+    padding-block-end: 0.12em;
+    font-size: 30px;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    background: linear-gradient(to right bottom, var(--dl-text-strong) 35%, color-mix(in oklab, var(--dl-text-strong) 45%, transparent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.dl-notes-subtitle {
+    margin: 6px 0 0;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--dl-text-subtle);
+    text-wrap: pretty;
+}
+
+.dl-notes-body {
     flex: 0 1 auto;
     min-block-size: 1px;
     overflow-y: auto;
     overscroll-behavior: contain;
+    border-block: 1px solid transparent;
 }
 
-.dl-modal-body-inner {
+.dl-notes-body[data-scrolls] { border-color: var(--dl-border-divider); }
+
+.dl-notes-body-inner {
     display: block;
-    padding-inline: var(--dl-modal-padding);
+    padding: 20px var(--dl-notes-padding) 8px;
     overflow-wrap: break-word;
 }
 
-.dl-modal-body-scrolls { padding-block: 12px; }
-
-.dl-modal-action-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--dl-modal-padding) 8px;
-}
-
-/* ---- what's new: Discord's changelog content ------------------------------------------------ */
-
-.dl-whats-new-notes { padding-block-end: 20px; }
-
 .dl-whats-new-notes:focus { outline: none; }
 
-/* An uppercase heading in the section's color, trailed by a rule in the same color */
+.dl-notes-section + .dl-notes-section { margin-block-start: 24px; }
+
+/* The kind of change, as a pill in its color */
 :is(.dl-whats-new, .dl-plugin-whats-new) .dl-whats-new-title {
-    display: flex;
+    --dl-notes-kind: var(--dl-notes-accent);
+    display: inline-flex;
     align-items: center;
-    gap: 4px;
-    margin: 24px 0 0;
-    text-transform: uppercase;
+    gap: 6px;
+    margin: 0 0 12px;
+    padding: 4px 10px 4px 8px;
+    border-radius: var(--dl-radius-round);
+    background: color-mix(in oklab, var(--dl-notes-kind) 16%, transparent);
+    color: color-mix(in oklab, var(--dl-notes-kind) 70%, var(--dl-text-strong));
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
 }
 
-/* In Discord's place for its video: the release's blog cover, 24px above the first heading */
-.dl-whats-new-cover {
-    display: block;
-    inline-size: 100%;
-    block-size: auto;
-    border-radius: var(--radius-xs, 4px);
-}
+.dl-whats-new-title.dl-whats-new-improved { --dl-notes-kind: var(--dl-text-brand); }
+.dl-whats-new-title.dl-whats-new-fixed { --dl-notes-kind: var(--dl-text-positive); }
+.dl-whats-new-title.dl-whats-new-progress { --dl-notes-kind: var(--dl-text-warning); }
 
-/* A release without a picture starts right at its first heading */
-:is(.dl-whats-new, .dl-plugin-whats-new) .dl-whats-new-title:first-child { margin-block-start: 0; }
-
-.dl-whats-new-title::after {
-    content: "";
-    flex: 1 1 auto;
-    block-size: 1px;
-    opacity: 0.6;
-    background-color: currentColor;
-}
-
-.dl-whats-new .dl-whats-new-added { color: var(--dl-text-positive); }
-:is(.dl-whats-new, .dl-plugin-whats-new) .dl-whats-new-improved { color: var(--dl-text-brand); }
-.dl-whats-new .dl-whats-new-fixed { color: var(--dl-text-critical); }
-.dl-whats-new .dl-whats-new-progress { color: var(--dl-text-warning); }
+.dl-notes-mark { flex: none; }
 
 .dl-whats-new-list {
-    margin: 4px 0 4px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
     padding: 0;
-    list-style: disc;
+    list-style: none;
 }
 
+/* A short bar in the section's color instead of a bullet */
 .dl-whats-new-item {
-    margin-block-end: 16px;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 1.25;
+    position: relative;
+    padding-inline-start: 18px;
+    font-size: 15px;
+    line-height: 22px;
+    color: var(--dl-text-subtle);
+    text-wrap: pretty;
 }
 
-.dl-whats-new-footer {
-    display: flex;
-    flex: 1;
-    min-inline-size: 0;
+.dl-whats-new-item::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 8px;
+    inset-inline-start: 2px;
+    inline-size: 6px;
+    block-size: 6px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.45;
 }
 
-.dl-whats-new-social {
-    display: flex;
-    margin-inline-end: 16px;
+.dl-notes-section[data-kind="added"] .dl-whats-new-item::before { background: var(--dl-notes-accent); opacity: 0.7; }
+
+.dl-whats-new-item strong { font-weight: 600; color: var(--dl-text-strong); }
+
+.dl-whats-new-item code {
+    padding: 1px 5px;
     border-radius: 4px;
-    color: var(--primary-300, #b5bac1);
+    background: var(--dl-bg-code);
+    color: var(--dl-text-default);
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 0.86em;
 }
 
-.theme-light .dl-whats-new-social { color: var(--primary-500, #4e5058); }
-
-.dl-whats-new-social:focus-visible {
-    outline: 2px solid var(--dl-focus-ring);
-    outline-offset: 2px;
+.dl-notes-foot {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+    padding: 16px var(--dl-notes-padding) 20px;
 }
+
+.dl-notes-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 4px;
+    color: var(--dl-text-muted);
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.dl-notes-link:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 2px; }
+
+.dl-notes-done {
+    block-size: 36px;
+    padding: 0 20px;
+    border: 0;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-notes-accent);
+    color: var(--dl-bg-modal);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.dl-notes-done:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 2px; }
+
+@media (hover: hover) {
+    .dl-notes-close:hover { background: rgb(0 0 0 / 0.6); }
+    .dl-notes-link:hover { color: var(--dl-text-default); }
+    .dl-notes-done:hover { background: color-mix(in oklab, var(--dl-notes-accent) 85%, var(--dl-bg-modal)); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-notes-done { transition: scale var(--dl-duration-base) ease-out; }
+    :root:not(.reduce-motion) .dl-notes-done:active { scale: 0.97; }
+    /* The notes rise in a beat after the modal, section by section */
+    :root:not(.reduce-motion) .dl-notes-section { animation: dl-notes-rise 360ms cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+    :root:not(.reduce-motion) .dl-notes-section:nth-child(1) { animation-delay: 140ms; }
+    :root:not(.reduce-motion) .dl-notes-section:nth-child(2) { animation-delay: 190ms; }
+    :root:not(.reduce-motion) .dl-notes-section:nth-child(n + 3) { animation-delay: 240ms; }
+}
+
+@keyframes dl-notes-rise { from { opacity: 0; translate: 0 6px; } }
+
+.theme-light .dl-notes-hero::after { background: linear-gradient(to bottom, transparent, var(--dl-bg-modal)); }
 
 .dl-version-link:hover { text-decoration-color: var(--dl-text-muted); }
 
@@ -1980,7 +2102,7 @@
 .dl-sidebar,
 .dl-body,
 .dl-code,
-.dl-modal-body,
+.dl-notes-body,
 .dl-dialog-body {
     scrollbar-width: none;
 }
@@ -1988,7 +2110,7 @@
 .dl-sidebar::-webkit-scrollbar,
 .dl-body::-webkit-scrollbar,
 .dl-code::-webkit-scrollbar,
-.dl-modal-body::-webkit-scrollbar,
+.dl-notes-body::-webkit-scrollbar,
 .dl-dialog-body::-webkit-scrollbar {
     display: none;
 }
@@ -2038,3 +2160,207 @@
 .dl-update-notes-list li + li { margin-block-start: 4px; }
 
 /* ==== end updates ============================================================================ */
+
+/* ---- plugin health and authors (Store.tsx, PluginsTab.tsx) ----------------------------------- */
+
+/* Known to be broken, from evi.rest: a warning, not a failure on this install */
+.dl-health {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-block-size: 18px;
+    padding-inline: 8px;
+    border-radius: var(--dl-radius-round);
+    background: color-mix(in oklab, var(--dl-text-warning) 18%, transparent);
+    color: var(--dl-text-warning);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+    white-space: nowrap;
+}
+
+.dl-health > svg { flex: none; }
+
+.dl-store-health {
+    border-color: color-mix(in oklab, var(--dl-text-warning) 45%, transparent);
+    background: var(--dl-bg-warning);
+}
+
+.dl-store-health > svg { color: var(--dl-text-warning); }
+
+.dl-verified {
+    display: inline-flex;
+    margin-inline-start: 4px;
+    color: var(--dl-text-brand);
+    vertical-align: -2px;
+}
+
+/* Above the card's stretched link, like its other controls */
+.dl-store-card .dl-author {
+    position: relative;
+    z-index: 1;
+}
+
+.dl-author-avatar {
+    flex: none;
+    inline-size: 64px;
+    block-size: 64px;
+    border-radius: 50%;
+    background: var(--dl-bg-emphasis);
+}
+
+.dl-author-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+}
+
+.dl-author-links:empty { display: none; }
+
+/* ---- send to author (PluginsTab.tsx) --------------------------------------------------------- */
+
+.dl-crash-text {
+    max-block-size: 280px;
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-code);
+    color: var(--dl-text-default);
+    font-family: var(--dl-font-code);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow-y: auto;
+}
+
+.dl-crash-text:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+.dl-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--dl-text-default);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.dl-check > input {
+    inline-size: 16px;
+    block-size: 16px;
+    margin: 0;
+    accent-color: var(--dl-brand);
+    cursor: pointer;
+}
+
+/* ---- trust: pulled plugins, community plugins, reports (Trust.tsx, Store.tsx) ---------------- */
+
+/* Evi turned it off on every install: in the plugin's row and its details */
+.dl-pulled {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-block-start: 12px;
+    padding: 12px 16px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid color-mix(in oklab, var(--dl-text-critical) 45%, transparent);
+    background: var(--dl-bg-critical);
+}
+
+.dl-plugin-details > .dl-pulled { margin-block-start: 0; }
+.dl-pulled > svg { flex: none; align-self: flex-start; margin-block-start: 1px; color: var(--dl-text-critical); }
+.dl-pulled > .dl-pulled-text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-inline-size: 0; }
+.dl-pulled p { margin: 0; max-inline-size: 72ch; text-wrap: pretty; overflow-wrap: break-word; }
+
+.dl-store-pulled {
+    border-color: color-mix(in oklab, var(--dl-text-critical) 45%, transparent);
+    background: var(--dl-bg-critical);
+}
+
+.dl-store-pulled > svg { color: var(--dl-text-critical); }
+
+/* Not one of Evi's own: neutral, it's where it comes from rather than a warning */
+.dl-store-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-block-size: 18px;
+    padding-inline: 8px;
+    border-radius: var(--dl-radius-round);
+    background: var(--dl-bg-emphasis);
+    color: var(--dl-text-subtle);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+    white-space: nowrap;
+}
+
+.dl-store-label > svg { flex: none; }
+
+.dl-store-trust {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0;
+    color: var(--dl-text-subtle);
+    font-size: 14px;
+    line-height: 1.2857;
+    text-wrap: pretty;
+}
+
+.dl-store-trust > svg { flex: none; margin-block-start: 1px; color: var(--dl-text-muted); }
+
+/* The first install of a community plugin asks first: a question, not a warning */
+.dl-store-confirm[data-tone="info"] {
+    border-color: var(--dl-border-control);
+    background: var(--dl-bg-group);
+}
+
+.dl-store-confirm[data-tone="info"] .dl-store-confirm-title svg { color: var(--dl-text-brand); }
+
+.dl-report-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding-block-start: 16px;
+    border-block-start: 1px solid var(--dl-border-divider);
+}
+
+/* Reasons, details and the note read as three groups */
+.dl-report.dl-stack { gap: 16px; }
+
+.dl-report-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.dl-report-reasons > legend {
+    margin-block-end: 10px;
+    padding: 0;
+}
+
+.dl-report-details {
+    min-block-size: 96px;
+    font-family: inherit;
+}
+
+.dl-report-details[aria-invalid="true"] { border-color: var(--dl-text-critical); }
+
+.dl-report-count { align-self: flex-end; }
+
+.dl-report [role="alert"]:empty { display: none; }
+
+/* Discord's inputs draw their own focus, these native ones don't */
+.dl-root .dl-check > input:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}

@@ -5,7 +5,7 @@
  *   {
  *     "schema": 1,
  *     "plugins": [{
- *       "id": "no-track", "name": "No Track", "description": "…", "authors": ["Evi"],
+ *       "id": "no-track", "name": "No Track", "description": "…", "authors": ["Evi"], "authorIds": ["evi"],
  *       "version": "1.0.0", "tags": ["privacy"], "native": true, "minEviVersion": "0.1.0",
  *       "files": {
  *         "manifest.json": { "url": "https://…/manifest.json", "sha256": "<64 hex>" },
@@ -78,6 +78,8 @@ export interface ListingInfo {
     name: string;
     description: string;
     authors: string[];
+    /** The authors' profiles on evi.rest, by slug (evi.rest/author?u=<slug>), in the order of `authors` */
+    authorIds?: string[];
     version: string;
     tags: string[];
     /** YYYY-MM-DD, when this version was published */
@@ -233,6 +235,9 @@ function validateInfo(e: Record<string, unknown>): { info: ListingInfo; } | { er
     if (!text(e.name, 80)) return fail("name must be 1-80 characters");
     if (!text(e.description, 500, false)) return fail("description must be at most 500 characters");
     if (!strings(e.authors, 10, 80) || !e.authors.length) return fail("authors must list 1-10 names");
+    if (e.authorIds !== undefined && (!Array.isArray(e.authorIds) || e.authorIds.length > 10 || !e.authorIds.every(isPluginId))) {
+        return fail("authorIds must list at most 10 author slugs");
+    }
     if (!isVersion(e.version)) return fail("version must look like 1.2.3");
     if (e.tags !== undefined && !strings(e.tags, 10, 32)) return fail("tags must be at most 10 short strings");
     if (e.updatedAt !== undefined && (typeof e.updatedAt !== "string" || !DATE_RE.test(e.updatedAt) || isNaN(Date.parse(e.updatedAt)))) {
@@ -266,6 +271,7 @@ function validateInfo(e: Record<string, unknown>): { info: ListingInfo; } | { er
             name: e.name,
             description: e.description,
             authors: [...e.authors],
+            ...(e.authorIds !== undefined && { authorIds: [...(e.authorIds as string[])] }),
             version: e.version,
             tags: e.tags ? [...(e.tags as string[])] : [],
             ...(e.updatedAt !== undefined && { updatedAt: e.updatedAt as string }),

@@ -61,13 +61,15 @@ describe("supporters", () => {
 
     test("levels by days supported, granted time included", () => {
         expect(supporterTier(now, now).badge).toBe("supporter-bronze");
-        expect(supporterTier(now - 90 * DAY, now).badge).toBe("supporter-bronze");
-        expect(supporterTier(now - 91 * DAY, now).badge).toBe("supporter-silver");
-        expect(supporterTier(now - 400 * DAY, now).badge).toBe("supporter-emerald");
+        expect(supporterTier(now - 29 * DAY, now).badge).toBe("supporter-bronze");
+        expect(supporterTier(now - 30 * DAY, now).badge).toBe("supporter-silver");
+        expect(supporterTier(now - 300 * DAY, now).badge).toBe("supporter-ruby")
+        // A year is the top
+        expect(supporterTier(now - 365 * DAY, now).badge).toBe("supporter-prismatic");
         expect(supporterTier(now - 4000 * DAY, now).badge).toBe("supporter-prismatic");
         // A start date in the future (time taken away) is just day 0
         expect(supportedDays(now + 10 * DAY, now)).toBe(0);
-        expect(nextSupporterTier(now - 100 * DAY, now)).toEqual({ tier: SUPPORTER_TIERS[2], at: now - 100 * DAY + 182 * DAY });
+        expect(nextSupporterTier(now - 100 * DAY, now)).toEqual({ tier: SUPPORTER_TIERS[4], at: now - 100 * DAY + 122 * DAY });
         expect(nextSupporterTier(now - 4000 * DAY, now)).toBeUndefined();
         expect(isSupporterBadge("supporter-ruby")).toBe(true);
         expect(isSupporterBadge("developer")).toBe(false);
@@ -105,6 +107,12 @@ describe("hiding and ordering in Discord's badge settings", () => {
         // Only what's there is touched
         expect(splitSettings({ hidden_badges: new Set([22]) })).toEqual({ body: { hidden_badges: [22] }, prefs: { hidden: [] } });
         expect(oursFromDiscord(["evi-dev", "nope", 3])).toEqual(["dev", 3]);
+    });
+
+    test("plugins' badges in the directory are saved nowhere", () => {
+        const { body, prefs } = splitSettings({ display_order: ["evi-plugin-last-seen", 1, "evi-dev"], hidden_badges: ["evi-plugin-platform-web"] });
+        expect(body).toEqual({ display_order: [1], hidden_badges: [] });
+        expect(prefs).toEqual({ order: [1, "dev"], hidden: [] });
     });
 });
 

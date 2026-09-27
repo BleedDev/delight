@@ -1,18 +1,22 @@
+import { MAX_REPORT_CHARS } from "@shared/crashReports";
+import { healthWarns } from "@shared/health";
 import { isPluginEnabled } from "@shared/ipc";
 
-import { buildCrashReport, copyText } from "../crashReport";
+import { buildCrashReport, copyText, discordBuild } from "../crashReport";
 import { Native } from "../native";
 import { getPatchRecords } from "../patching/source";
 import { diagnoseLookups, isLookupProblem, LookupDiagnosis } from "../plugins/lookups";
 import { PluginManager, PluginState } from "../plugins/manager";
 import { SafeMode } from "../safeMode";
+import { crashKey, fitReport } from "../sentReports";
 import { Settings } from "../settings";
 import { Store } from "../store";
 import { React } from "../webpack/common";
 import { Badge, Button, Dialog, EmptyState, FilterChips, IconButton, List, Notice, SearchField, SettingField, Status, Switch, Text, useStore } from "./components";
 import { PluginDetailsButton } from "./PluginPermissions";
 import { SafeModeNotice } from "./SafeModeNotice";
-import { StoreBanner, StoreView } from "./Store";
+import { HealthPill, StoreBanner, StoreView } from "./Store";
+import { PulledNotice } from "./Trust";
 
 type Filter = "all" | "enabled" | "disabled" | "settings" | "dev";
 
@@ -30,7 +34,7 @@ const filterTests: Record<Filter, (p: PluginState) => boolean> = {
 };
 
 const matchesQuery = (p: PluginState, q: string) =>
-    !q || `${p.manifest.name} ${p.manifest.description ?? ""} ${p.manifest.id} ${(p.manifest.authors ?? []).join(" ")}`.toLowerCase().includes(q);
+    !q || `${p.manifest.name} ${p.manifest.description ?? ""} ${p.manifest.id} ${Store.authorsOf(p).join(" ")}`.toLowerCase().includes(q);
 
 function PatchSummary({ id }: { id: string; }) {
     const records = getPatchRecords(id);
@@ -86,19 +90,84 @@ function PluginSettings({ state }: { state: PluginState; }) {
     );
 }
 
+/** Crash reports sent this session, to who: the same crash isn't sent twice */
+const sentCrashes = new Map<string, string>();
+
 /** Everything needed to hand a failing plugin's problem to its author, one click to copy */
 function CrashReport({ state }: { state: PluginState; }) {
     const [copied, setCopied] = React.useState<"copied" | "failed">();
     const copy = () => copyText(buildCrashReport(state)).then(() => setCopied("copied"), () => setCopied("failed"));
+    // Store plugins only: evi.rest finds their author from the registry
+    const installed = Store.installedPlugin(state.manifest.id);
+    const entry = Store.getSnapshot().plugins.find(p => p.id === state.manifest.id);
+    const version = installed?.version ?? state.manifest.version;
+    const canSend = !!installed?.fromStore && !!entry && !!version && !!Native.sendCrashReport;
 
     return (
         <div className="dl-toolbar dl-crash">
             <Button icon="copy" onClick={copy}>Copy crash report</Button>
+            {canSend && <SendToAuthor state={state} version={version!} author={entry!.authors.join(", ")} />}
             <span role="status">
                 {copied === "copied" && <Status tone="success">Copied. Paste it into a bug report for {state.manifest.name}.</Status>}
                 {copied === "failed" && <Status tone="danger">Couldn’t reach the clipboard</Status>}
             </span>
         </div>
+    );
+}
+
+/** The same report as Copy, sent to the plugin's author through evi.rest after showing exactly what goes */
+function SendToAuthor({ state, version, author }: { state: PluginState; version: string; author: string; }) {
+    const { id } = state.manifest;
+    const [asking, setAsking] = React.useState<string>();
+    const [dontAsk, setDontAsk] = React.useState(false);
+    const [sending, setSending] = React.useState(false);
+    const [error, setError] = React.useState<string>();
+    const report = () => fitReport(buildCrashReport(state), MAX_REPORT_CHARS);
+    const sentTo = sentCrashes.get(crashKey(id, version, report()));
+
+    const send = async (text: string) => {
+        setAsking(undefined);
+        if (dontAsk) Settings.update(d => void (d.crashReportConsent = true));
+        setSending(true);
+        setError(undefined);
+        const result = await Native.sendCrashReport({ plugin: id, version, eviVersion: EVI_VERSION, discordBuild: discordBuild(), report: text })
+            .catch(err => ({ ok: false as const, error: String(err) }));
+        if (result.ok) sentCrashes.set(crashKey(id, version, text), result.author ?? author);
+        else setError(result.error);
+        setSending(false);
+    };
+    const start = () => {
+        const text = report();
+        if (Settings.data.crashReportConsent) void send(text);
+        else setAsking(text);
+    };
+
+    return (
+        <>
+            <Button disabled={sending || !!sentTo} onClick={start}>{sentTo ? "Sent" : sending ? "Sending…" : "Send to author"}</Button>
+            <span role="status">
+                {sentTo && <Status tone="success">Sent to {sentTo}</Status>}
+                {!sentTo && error && <Status tone="danger">Couldn’t send it: {error}</Status>}
+            </span>
+            {asking !== undefined && (
+                <Dialog id={`dl-crash-send-${id}`} title={`Send this crash report to ${author}?`} onClose={() => setAsking(undefined)}>
+                    <div className="dl-stack">
+                        <pre className="dl-crash-text" tabIndex={0} aria-label="The crash report">{asking}</pre>
+                        <Text tag="p" variant="text-sm/normal" color="text-subtle">
+                            It goes to {author} through evi.rest. It has no messages, tokens or account details.
+                        </Text>
+                        <label className="dl-check">
+                            <input type="checkbox" checked={dontAsk} onChange={e => setDontAsk(e.currentTarget.checked)} />
+                            Don’t ask again
+                        </label>
+                        <div className="dl-toolbar">
+                            <Button variant="accent" onClick={() => void send(asking)}>Send report</Button>
+                            <Button onClick={() => setAsking(undefined)}>Cancel</Button>
+                        </div>
+                    </div>
+                </Dialog>
+            )}
+        </>
     );
 }
 
@@ -118,7 +187,12 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
     const op = Store.getSnapshot().ops[manifest.id];
     const busy = op?.type === "busy";
     const lookupProblems = state.running ? diagnoseLookups(manifest.id).filter(d => isLookupProblem(d.health)) : [];
-    const statuses = state.error || state.needsReload || state.running || enabled || action === "update" || op;
+    // What evi.rest knows about this version (dev builds aren't the store's)
+    const known = state.source === "dev" ? undefined : Store.healthOf(manifest.id);
+    const health = healthWarns(known, Store.installedPlugin(manifest.id)?.version ?? manifest.version) ? known : undefined;
+    // Evi turned this version off everywhere: it can't run, and says why instead
+    const { pulled } = state;
+    const statuses = state.error || state.needsReload || state.running || enabled || action === "update" || op || health || pulled;
 
     // Full-access updates go through the plugin's store page, which asks first
     const update = () => entry?.native ? onOpenStore(manifest.id) : Store.install(manifest.id);
@@ -138,20 +212,22 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
                                 {op?.type === "busy" && <Status tone="muted">{op.label}</Status>}
                                 {op?.type === "error" && <Status tone="danger">{op.error}</Status>}
                                 {op?.type === "done" && <Status tone="success">{op.message}</Status>}
-                                {!op && action === "update" && <Status tone="warning">v{entry?.version} available</Status>}
+                                {pulled && <Status tone="danger">Turned off by Evi</Status>}
+                                {!op && !pulled && action === "update" && <Status tone="warning">v{entry?.version} available</Status>}
                                 {state.error && <Status tone="danger">Failed to start</Status>}
                                 {state.needsReload && <Status tone="warning">Reload to apply</Status>}
                                 {state.running && !state.error && <Status tone="success" quiet>Running</Status>}
-                                {paused && <Status tone="muted">Paused in safe mode</Status>}
-                                {enabled && <PatchSummary id={manifest.id} />}
+                                {paused && !pulled && <Status tone="muted">Paused in safe mode</Status>}
+                                {enabled && !pulled && <PatchSummary id={manifest.id} />}
                                 <LookupSummary problems={lookupProblems} />
+                                {health && <HealthPill health={health} />}
                             </span>
                         )}
                     </div>
                     {manifest.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-desc">{manifest.description}</Text>}
                 </div>
                 <div className="dl-row-controls">
-                    {action === "update" && <Button variant="accent" icon="download" disabled={busy} onClick={update}>Update</Button>}
+                    {action === "update" && !pulled && <Button variant="accent" icon="download" disabled={busy} onClick={update}>Update</Button>}
                     <IconButton
                         icon="trash"
                         label={`${fromStore ? "Uninstall" : "Remove"} ${manifest.name}`}
@@ -168,9 +244,11 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
                             onClick={() => setSettingsOpen(true)}
                         />
                     )}
-                    <Switch checked={enabled} labelledBy={titleId} onChange={v => PluginManager.setEnabled(manifest.id, v)} />
+                    {/* Off while pulled, whatever it's set to; the notice below says why */}
+                    <Switch checked={enabled && !pulled} disabled={!!pulled} labelledBy={titleId} onChange={v => PluginManager.setEnabled(manifest.id, v)} />
                 </div>
             </div>
+            {pulled && <PulledNotice pull={pulled} update={action === "update" && entry ? { version: entry.version, busy, run: update } : undefined} />}
             {confirmingUninstall && (
                 <div className="dl-store-confirm dl-uninstall" role="group" aria-label={`${fromStore ? "Uninstall" : "Remove"} ${manifest.name}`}>
                     <p className="dl-hint">
@@ -200,12 +278,16 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
             {!state.error && lookupProblems.length > 0 && (
                 <>
                     <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">
+                        {health && "Others are seeing this too. "}
                         {lookupProblems.some(d => d.health === "broken")
                             ? "Discord probably changed these after an update. The plugin still runs, but the parts that need them won’t work:"
                             : "Not found in what Discord has loaded so far. If you’ve already used the parts of Discord this plugin changes, Discord probably changed them:"}
                     </Text>
                     {lookupProblems.map((d, i) => <pre key={i} className="dl-error">{d.target}</pre>)}
                 </>
+            )}
+            {health?.message && (
+                <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">{health.setBy ? `${health.setBy}: ` : ""}{health.message}</Text>
             )}
             {(state.error || lookupProblems.length > 0) && <CrashReport state={state} />}
             {state.needsReload && state.reloadReason && (
@@ -272,8 +354,9 @@ function BulkActions({ plugins, onDone }: { plugins: PluginState[]; onDone(undo:
 function InstalledPlugins({ onOpenStore }: { onOpenStore(id?: string): void; }) {
     const plugins = useStore(PluginManager.subscribe, PluginManager.getSnapshot);
     useStore(Settings.subscribe, () => Settings.data);
-    // Rows show store badges and updates
+    // Rows show store badges, updates and known problems
     useStore(Store.subscribe, Store.getSnapshot);
+    React.useEffect(() => Store.loadReports(), []);
     const [undo, setUndo] = React.useState<Undo>();
     const [query, setQuery] = React.useState("");
     const [filter, setFilter] = React.useState<Filter>("all");

@@ -11,6 +11,7 @@ import { Settings } from "../settings";
 import { Store } from "../store";
 import { createRoot, React } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
+import { whenAppReady } from "./appReady";
 import { Button, SwitchRow, Text, useStore } from "./components";
 import { ensureStyles } from "./index";
 import { afterWhatsNew, ChangelogModal, inline } from "./WhatsNew";
@@ -21,6 +22,7 @@ export function PluginChangelogModal({ updates, onClose, onTurnOff }: { updates:
         <ChangelogModal
             className="dl-plugin-whats-new"
             titleId="dl-plugin-whats-new-title"
+            eyebrow="Plugin updates"
             title={updatesTitle(updates)}
             subtitle={single && `Updated from ${single.from} to ${single.to}`}
             onClose={onClose}
@@ -33,6 +35,7 @@ export function PluginChangelogModal({ updates, onClose, onTurnOff }: { updates:
                             close();
                         }}>Stop showing these</Button>
                     )}
+                    <button type="button" className="dl-notes-done" onClick={close}>Got it</button>
                 </div>
             )}
         >
@@ -96,11 +99,11 @@ function show(updates: PluginUpdate[]) {
     if (mounted) return;
     mounted = true;
     ensureStyles();
-    waitFor(filters.byProps("createRoot"), () => {
+    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
         const container = document.createElement("div");
         document.body.append(container);
         createRoot(container).render(<Popup />);
-    });
+    }));
 }
 
 /** Compares installed versions with the ones last seen, remembers the new ones, shows what changed */

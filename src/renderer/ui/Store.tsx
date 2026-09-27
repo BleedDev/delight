@@ -1,16 +1,24 @@
 /**
  * The store, for plugins and themes alike: a banner on top of the Plugins and Themes tabs, the
- * listing it opens (search, categories, sorting, Update all, auto-update) and a detail page per item.
+ * listing it opens (search, categories, sorting, Update all, auto-update), a detail page per item
+ * and a page per verified author. Evi's own plugins say so; everyone else's are marked Community,
+ * and the first install of each asks first.
  */
+import { AuthorProfile, authorPageUrl, isOfficialListing, OFFICIAL_AUTHOR } from "@shared/authors";
+import { healthLabel, healthWarns, PluginHealth } from "@shared/health";
 import { entriesBetween } from "@shared/pluginChangelog";
+import type { PulledPlugin } from "@shared/pulls";
 import { ListingInfo, ListingSort, RegistryEntry, sortListings, ThemeEntry } from "@shared/store";
 
+import { PluginManager } from "../plugins/manager";
+import { ago } from "../sentReports";
 import { Settings } from "../settings";
 import { Store, StoreKind, StoreOp, UpdateAllResult } from "../store";
 import { React } from "../webpack/common";
-import { Badge, Button, Dropdown, EmptyState, FilterChips, Icon, List, Notice, SearchField, Status, SwitchRow, Text, useStore } from "./components";
+import { Badge, Button, Dropdown, EmptyState, FilterChips, Icon, List, Notice, SearchField, Status, SwitchRow, Text, Tooltip, useStore } from "./components";
 import { PluginChangelogSetting } from "./PluginChangelog";
 import { StorePluginPermissions } from "./PluginPermissions";
+import { ReportRow } from "./Trust";
 
 const words = {
     plugin: { one: "plugin", many: "plugins", Store: "Plugin Store", back: "Installed plugins" },
@@ -30,6 +38,12 @@ interface Item {
     installedVersion?: string;
     fromStore: boolean;
     op?: StoreOp;
+    /** A known problem with the version you have, or would install */
+    health?: PluginHealth;
+    /** One of Evi's own, rather than a community plugin */
+    official: boolean;
+    /** Evi pulled the listed version: it can't be installed */
+    pulled?: PulledPlugin;
     install(allowNative?: boolean): Promise<unknown>;
     uninstall(): Promise<unknown>;
 }
@@ -39,12 +53,16 @@ function itemsOf(kind: StoreKind): Item[] {
     if (kind === "plugin") {
         return state.plugins.map((entry: RegistryEntry) => {
             const installed = Store.installedPlugin(entry.id);
+            const health = Store.healthOf(entry.id);
             return {
                 kind, entry, native: entry.native,
                 action: Store.pluginAction(entry.id),
                 installedVersion: installed?.version,
                 fromStore: !!installed?.fromStore,
                 op: state.ops[entry.id],
+                health: healthWarns(health, installed?.version ?? entry.version) ? health : undefined,
+                official: isOfficialListing(entry),
+                pulled: Store.pullOf(entry.id, entry.version),
                 install: (allowNative = false) => Store.install(entry.id, { allowNative }),
                 uninstall: () => Store.uninstall(entry.id),
             };
@@ -58,6 +76,7 @@ function itemsOf(kind: StoreKind): Item[] {
             installedVersion: installed?.version,
             fromStore: !!installed,
             op: state.themeOps[entry.id],
+            official: isOfficialListing(entry),
             install: () => Store.installTheme(entry.id),
             uninstall: () => Store.uninstallTheme(entry.id),
         };
@@ -67,6 +86,8 @@ function itemsOf(kind: StoreKind): Item[] {
 /** Loads the registry the first time anything store-related shows */
 function useStoreState() {
     const state = useStore(Store.subscribe, Store.getSnapshot);
+    // Pulls arrive through the plugin manager
+    useStore(PluginManager.subscribe, PluginManager.getSnapshot);
     React.useEffect(() => {
         if (state.status === "idle") Store.refresh();
     }, []);
@@ -127,7 +148,63 @@ function ItemStatus({ item, short }: { item: Item; short?: boolean; }) {
     if (action === "update") return <Status tone="warning">{short ? `v${installedVersion} → v${entry.version}` : `Update available, you have v${installedVersion}`}</Status>;
     if (action === "local") return <Status tone="success" quiet>{short ? "Installed" : `Installed outside the store${installedVersion ? `, v${installedVersion}` : ""}`}</Status>;
     if (action === "incompatible") return <Status tone="danger">Needs Evi {entry.minEviVersion} or newer</Status>;
+    if (action === "pulled") return <Status tone="danger">{short ? "Pulled" : `Pulled by Evi${installedVersion ? `, you have v${installedVersion}` : ""}`}</Status>;
     return null;
+}
+
+/** What a community plugin's page and its first install say about it */
+const trustNote = (entry: ListingInfo) =>
+    `Made by ${entry.authors.join(", ")}, not by Evi. Evi’s team reviewed this version before it went into the store.`;
+
+/** Not one of Evi's own: made by someone else, reviewed before it was listed */
+function CommunityLabel() {
+    return <span className="dl-store-label"><Icon name="people" size={14} />Community</span>;
+}
+
+// Community plugins installed before, by id: only the first install of each asks. Discord deletes
+// window.localStorage once it starts; Evi runs before it, so keep a reference now.
+const COMMUNITY_KEY = "evi-community-installs";
+const storage = (() => {
+    try {
+        return window.localStorage;
+    } catch {
+        return undefined;
+    }
+})();
+let communityFallback: string[] = [];
+
+function communityInstalls(): string[] {
+    try {
+        const saved = JSON.parse(storage?.getItem(COMMUNITY_KEY) ?? "null");
+        return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : communityFallback;
+    } catch {
+        return communityFallback;
+    }
+}
+
+function rememberCommunityInstall(id: string) {
+    communityFallback = [...new Set([...communityInstalls(), id])];
+    try {
+        storage?.setItem(COMMUNITY_KEY, JSON.stringify(communityFallback));
+    } catch { }
+}
+
+/** The first install of a community plugin asks first, saying who made it */
+function CommunityConfirm({ item, onConfirm, onCancel }: { item: Item; onConfirm(): void; onCancel(): void; }) {
+    const ref = React.useRef<HTMLDivElement>(null);
+    React.useEffect(() => ref.current?.focus(), []);
+    const titleId = `dl-store-community-${item.entry.id}`;
+
+    return (
+        <div className="dl-store-confirm" data-tone="info" role="group" aria-labelledby={titleId} tabIndex={-1} ref={ref}>
+            <p className="dl-store-confirm-title" id={titleId}><Icon name="info" size={20} />Install a community plugin?</p>
+            <p className="dl-hint">{trustNote(item.entry)}</p>
+            <div className="dl-toolbar">
+                <Button variant="accent" onClick={onConfirm}>Install</Button>
+                <Button onClick={onCancel}>Cancel</Button>
+            </div>
+        </div>
+    );
 }
 
 /** Native plugins get their own step: what full access means, and a button that repeats it */
@@ -152,13 +229,17 @@ function NativeConfirm({ item, onConfirm, onCancel }: { item: Item; onConfirm():
     );
 }
 
-/** Install / Update / Uninstall, with the full-access step in between for native plugins */
+/**
+ * Install / Update / Uninstall, with a step in between for native plugins (full access) and for the
+ * first install of a community plugin (who made it)
+ */
 function useItemActions(item: Item) {
-    const [confirming, setConfirming] = React.useState(false);
+    const [confirming, setConfirming] = React.useState<"native" | "community">();
     const busy = item.op?.type === "busy";
     const install = () => {
         // Updates ask again: a new version may do more than the one you agreed to
-        if (item.native) return setConfirming(true);
+        if (item.native) return setConfirming("native");
+        if (item.kind === "plugin" && item.action === "install" && !item.official && !communityInstalls().includes(item.entry.id)) return setConfirming("community");
         item.install();
     };
 
@@ -167,20 +248,32 @@ function useItemActions(item: Item) {
             {item.fromStore && <Button disabled={busy} onClick={() => item.uninstall()}>Uninstall</Button>}
             {/* Plugins Evi shipped with, or put in the folder by hand: removable here too */}
             {!item.fromStore && item.kind === "plugin" && item.action === "local" && <Button disabled={busy} onClick={() => item.uninstall()}>Remove</Button>}
-            {item.action === "install" && <Button variant="accent" icon="download" disabled={busy || confirming} onClick={install}>Install</Button>}
-            {item.action === "update" && <Button variant="accent" icon="download" disabled={busy || confirming} onClick={install}>Update</Button>}
+            {item.action === "install" && <Button variant="accent" icon="download" disabled={busy || !!confirming} onClick={install}>Install</Button>}
+            {item.action === "update" && <Button variant="accent" icon="download" disabled={busy || !!confirming} onClick={install}>Update</Button>}
         </>
     );
-    const confirm = confirming && (
-        <NativeConfirm
-            item={item}
-            onCancel={() => setConfirming(false)}
-            onConfirm={() => {
-                setConfirming(false);
-                item.install(true);
-            }}
-        />
-    );
+    const confirm = confirming === "native"
+        ? (
+            <NativeConfirm
+                item={item}
+                onCancel={() => setConfirming(undefined)}
+                onConfirm={() => {
+                    setConfirming(undefined);
+                    item.install(true);
+                }}
+            />
+        )
+        : confirming === "community" && (
+            <CommunityConfirm
+                item={item}
+                onCancel={() => setConfirming(undefined)}
+                onConfirm={() => {
+                    setConfirming(undefined);
+                    rememberCommunityInstall(item.entry.id);
+                    item.install();
+                }}
+            />
+        );
     return { buttons, confirm };
 }
 
@@ -205,13 +298,91 @@ function StarButton({ item, large }: { item: Item; large?: boolean; }) {
     );
 }
 
+/** Known to be broken right now, from evi.rest: enough installs reported it, or its author said so */
+export function HealthPill({ health }: { health: PluginHealth; }) {
+    return (
+        <span className="dl-health" data-state={health.state}>
+            <Icon name="warning" size={12} />
+            {healthLabel(health)}
+        </span>
+    );
+}
+
+/** The whole story on a plugin's page: what's wrong, who says so and since when */
+function HealthCallout({ health }: { health: PluginHealth; }) {
+    const who = health.setBy
+        ? `Set by ${health.setBy}`
+        : health.reports ? `${health.reports} ${health.reports === 1 ? "install" : "installs"} reported it` : undefined;
+    return (
+        <section className="dl-store-access dl-store-health" aria-label="Known problem">
+            <Icon name="warning" size={20} />
+            <div>
+                <Text variant="text-md/semibold" color="text-strong">{healthLabel(health)}</Text>
+                {health.message && <Text tag="p" variant="text-sm/normal" color="text-default">{health.message}</Text>}
+                <Text tag="p" variant="text-xs/normal" color="text-muted">{[who, ago(health.since)].filter(Boolean).join(" · ")}</Text>
+            </div>
+        </section>
+    );
+}
+
+/** A version Evi pulled from every install: why, and since when */
+function PulledCallout({ pull, version }: { pull: PulledPlugin; version: string; }) {
+    return (
+        <section className="dl-store-access dl-store-pulled" aria-label="Pulled by Evi">
+            <Icon name="circleError" size={20} />
+            <div>
+                <Text variant="text-md/semibold" color="text-strong">Evi pulled v{version} from every install</Text>
+                <Text tag="p" variant="text-sm/normal" color="text-default">{pull.reason}</Text>
+                <Text tag="p" variant="text-xs/normal" color="text-muted">It can’t be installed · {ago(pull.at)}</Text>
+            </div>
+        </section>
+    );
+}
+
+function VerifiedCheck({ size = 14 }: { size?: number; }) {
+    return (
+        <Tooltip text="Verified author">
+            <span className="dl-verified"><Icon name="circleCheck" size={size} /></span>
+        </Tooltip>
+    );
+}
+
+/**
+ * The listed authors; the ones verified on evi.rest open their page. Evi's own plugins are by Evi
+ * with the check, whether or not its profile has loaded.
+ */
+function Authors({ entry, onAuthor }: { entry: ListingInfo; onAuthor(slug: string): void; }) {
+    const official = isOfficialListing(entry);
+    return (
+        <>
+            {entry.authors.map((name, i) => {
+                const evi = official && i === 0;
+                const slug = evi ? OFFICIAL_AUTHOR : entry.authorIds?.[i];
+                const profile = slug ? Store.authorOf(slug) : undefined;
+                return (
+                    <React.Fragment key={i}>
+                        {i > 0 && ", "}
+                        {profile?.verified
+                            ? (
+                                <button type="button" className="dl-link-button dl-author" aria-label={`${profile.name}, verified author`} onClick={() => onAuthor(profile.slug)}>
+                                    {profile.name}<VerifiedCheck size={12} />
+                                </button>
+                            )
+                            : evi ? <span className="dl-author">Evi<VerifiedCheck size={12} /></span> : name}
+                    </React.Fragment>
+                );
+            })}
+        </>
+    );
+}
+
 function Glyph({ name, size }: { name: string; size?: "lg"; }) {
     return <span className="dl-store-glyph" data-size={size} aria-hidden="true">{name.charAt(0)}</span>;
 }
 
 // ---- listing ----------------------------------------------------------------------------------
 
-function StoreCard({ item, onOpen }: { item: Item; onOpen(): void; }) {
+function StoreCard({ item, onOpen, onAuthor }: { item: Item; onOpen(): void; onAuthor(slug: string): void; }) {
     const { entry } = item;
     const { buttons, confirm } = useItemActions(item);
     const titleId = `dl-store-${item.kind}-${entry.id}`;
@@ -226,13 +397,15 @@ function StoreCard({ item, onOpen }: { item: Item; onOpen(): void; }) {
                     <Text tag="h3" variant="text-md/semibold" color="text-strong" id={titleId}>
                         <button type="button" className="dl-link-button dl-store-card-link" onClick={onOpen}>{entry.name}</button>
                     </Text>
-                    <Text variant="text-xs/normal" color="text-muted" tabular>v{entry.version} · {entry.authors.join(", ")}</Text>
+                    <Text variant="text-xs/normal" color="text-muted" tabular>v{entry.version} · By <Authors entry={entry} onAuthor={onAuthor} /></Text>
                 </div>
                 <StarButton item={item} />
             </div>
             {entry.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-store-card-desc">{entry.description}</Text>}
-            {(item.native || entry.tags.length > 0) && (
+            {(item.native || item.health || !item.official || entry.tags.length > 0) && (
                 <div className="dl-store-card-tags">
+                    {item.health && <HealthPill health={item.health} />}
+                    {!item.official && <CommunityLabel />}
                     {item.native && <Badge tone="warning">Native</Badge>}
                     {entry.tags.map(t => <span key={t} className="dl-store-tag">{t}</span>)}
                 </div>
@@ -350,7 +523,7 @@ function UpdateAll({ kind, items }: { kind: StoreKind; items: Item[]; }) {
     );
 }
 
-type Filter = "all" | "updates" | "installed" | `tag:${string}`;
+type Filter = "all" | "updates" | "installed" | "official" | "community" | `tag:${string}`;
 
 const sortOptions = [
     { value: "name", label: "Name" },
@@ -365,18 +538,39 @@ export function StoreView({ kind, onBack, initialId }: { kind: StoreKind; onBack
     const [filter, setFilter] = React.useState<Filter>("all");
     const [sort, setSort] = React.useState<ListingSort>("name");
     const [selected, setSelected] = React.useState(initialId);
+    // An author's page, over the list or over the plugin page it was opened from
+    const [author, setAuthor] = React.useState<string>();
     const topRef = React.useRef<HTMLDivElement>(null);
 
     // Detail pages start at their top, wherever the list was scrolled to. A block body on purpose:
     // Chrome's scrollIntoView now returns a promise, and React would call it as the cleanup.
     React.useEffect(() => {
         topRef.current?.scrollIntoView?.({ block: "nearest" });
-    }, [selected]);
+    }, [selected, author]);
 
     const items = itemsOf(kind);
     const current = selected ? items.find(i => i.entry.id === selected) : undefined;
+    const profile = author ? Store.authorOf(author) : undefined;
+    if (profile) {
+        return (
+            <div ref={topRef}>
+                <AuthorView
+                    kind={kind}
+                    profile={profile}
+                    items={items.filter(i => profile.plugins.includes(i.entry.id) || !!i.entry.authorIds?.includes(profile.slug))}
+                    backLabel={current ? current.entry.name : words[kind].Store}
+                    onBack={() => setAuthor(undefined)}
+                    onOpen={id => {
+                        setAuthor(undefined);
+                        setSelected(id);
+                    }}
+                    onAuthor={setAuthor}
+                />
+            </div>
+        );
+    }
     if (current) {
-        return <div ref={topRef}><StoreDetail item={current} onBack={() => setSelected(undefined)} /></div>;
+        return <div ref={topRef}><StoreDetail item={current} onBack={() => setSelected(undefined)} onAuthor={setAuthor} /></div>;
     }
 
     const tags = [...new Set(items.flatMap(i => i.entry.tags))].sort();
@@ -384,6 +578,8 @@ export function StoreView({ kind, onBack, initialId }: { kind: StoreKind; onBack
         all: () => true,
         updates: i => i.action === "update",
         installed: i => i.action === "installed" || i.action === "update" || i.action === "local",
+        official: i => i.official,
+        community: i => !i.official,
         ...Object.fromEntries(tags.map(t => [`tag:${t}`, (i: Item) => i.entry.tags.includes(t)])),
     };
     const test = tests[filter] ?? tests.all;
@@ -416,6 +612,8 @@ export function StoreView({ kind, onBack, initialId }: { kind: StoreKind; onBack
                                 { id: "all", label: "All", count: items.length },
                                 { id: "updates", label: "Updates", count: count("updates") },
                                 { id: "installed", label: "Installed", count: count("installed") },
+                                { id: "official", label: "Official", count: count("official") },
+                                { id: "community", label: "Community", count: count("community") },
                                 ...tags.map(t => ({ id: `tag:${t}` as Filter, label: t[0].toUpperCase() + t.slice(1), count: count(`tag:${t}`) })),
                             ]}
                         />
@@ -439,7 +637,7 @@ export function StoreView({ kind, onBack, initialId }: { kind: StoreKind; onBack
                 </div>
                 {visible.length ? (
                     <ul className="dl-store-grid" aria-label={`Store ${words[kind].many}`}>
-                        {visible.map(i => <StoreCard key={i.entry.id} item={i} onOpen={() => setSelected(i.entry.id)} />)}
+                        {visible.map(i => <StoreCard key={i.entry.id} item={i} onOpen={() => setSelected(i.entry.id)} onAuthor={setAuthor} />)}
                     </ul>
                 ) : state.status === "ready" && (
                     <EmptyState
@@ -462,6 +660,32 @@ export function StoreView({ kind, onBack, initialId }: { kind: StoreKind; onBack
                         onChange={Store.setAutoUpdate}
                     />
                 </li>
+                {kind === "plugin" && (
+                    <li className="dl-row">
+                        <SwitchRow
+                            id="dl-store-health-reports"
+                            label="Help spot broken plugins"
+                            description="Tells evi.rest when a store plugin can’t find parts of Discord. Only the plugin, its version and Discord’s build are sent."
+                            checked={settings.healthReports !== false}
+                            onChange={on => Settings.update(d => {
+                                d.healthReports = on;
+                            })}
+                        />
+                    </li>
+                )}
+                {kind === "plugin" && (
+                    <li className="dl-row">
+                        <SwitchRow
+                            id="dl-store-crash-consent"
+                            label="Ask before sending a crash report"
+                            description="Shows the whole report before Send to author sends it to the plugin’s author."
+                            checked={!settings.crashReportConsent}
+                            onChange={ask => Settings.update(d => {
+                                d.crashReportConsent = !ask;
+                            })}
+                        />
+                    </li>
+                )}
                 {kind === "plugin" && <PluginChangelogSetting />}
             </List>
 
@@ -503,7 +727,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode; }
     );
 }
 
-function StoreDetail({ item, onBack }: { item: Item; onBack(): void; }) {
+function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; onAuthor(slug: string): void; }) {
     const { entry, kind } = item;
     const { buttons, confirm } = useItemActions(item);
     const headingId = `dl-store-detail-${entry.id}`;
@@ -519,16 +743,23 @@ function StoreDetail({ item, onBack }: { item: Item; onBack(): void; }) {
                 <div className="dl-store-detail-title">
                     <div className="dl-row-title">
                         <Text tag="h2" variant="heading-xl/bold" color="text-strong" id={headingId}>{entry.name}</Text>
+                        {!item.official && <CommunityLabel />}
                         {item.native && <Badge tone="warning">Native</Badge>}
                     </div>
-                    <Text variant="text-sm/normal" color="text-subtle">By {entry.authors.join(", ")}</Text>
+                    <Text variant="text-sm/normal" color="text-subtle">By <Authors entry={entry} onAuthor={onAuthor} /></Text>
                     <span className="dl-store-status" role="status"><ItemStatus item={item} /></span>
                 </div>
                 <div className="dl-row-controls"><StarButton item={item} large />{buttons}</div>
             </header>
+            {!item.official && kind === "plugin" && (
+                <p className="dl-store-trust"><Icon name="info" size={16} /><span>{trustNote(entry)}</span></p>
+            )}
             {confirm}
 
             {entry.description && <Text tag="p" variant="text-md/normal" color="text-default" className="dl-store-detail-desc">{entry.description}</Text>}
+
+            {item.pulled && <PulledCallout pull={item.pulled} version={entry.version} />}
+            {item.health && <HealthCallout health={item.health} />}
 
             {entry.screenshots.length > 0 && (
                 <div className="dl-store-shots">
@@ -540,6 +771,7 @@ function StoreDetail({ item, onBack }: { item: Item; onBack(): void; }) {
                 <Fact label="Version">v{entry.version}{item.installedVersion && item.installedVersion !== entry.version && ` (you have v${item.installedVersion})`}</Fact>
                 {entry.updatedAt && <Fact label="Updated">{formatDate(entry.updatedAt)}</Fact>}
                 {entry.minEviVersion && <Fact label="Needs">Evi {entry.minEviVersion}+</Fact>}
+                {item.health && <Fact label="Status"><HealthPill health={item.health} /></Fact>}
                 {entry.tags.length > 0 && <Fact label="Categories">{entry.tags.join(", ")}</Fact>}
             </dl>
 
@@ -584,6 +816,75 @@ function StoreDetail({ item, onBack }: { item: Item; onBack(): void; }) {
                     </ol>
                 ) : (
                     <Text tag="p" variant="text-sm/normal" color="text-muted">No changelog published for this {words[kind].one}.</Text>
+                )}
+            </section>
+
+            {kind === "plugin" && <ReportRow id={entry.id} name={entry.name} version={item.installedVersion ?? entry.version} />}
+        </article>
+    );
+}
+
+// ---- author -----------------------------------------------------------------------------------
+
+/** Their Discord avatar, or Discord's default one for their account */
+function avatarUrl({ userId, avatar }: AuthorProfile) {
+    if (avatar) return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png?size=64`;
+    return `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(userId) >> BigInt(22)) % BigInt(6))}.png`;
+}
+
+/** A verified author: who they are, where to find them, and what they've published here */
+function AuthorView({ kind, profile, items, backLabel, onBack, onOpen, onAuthor }: {
+    kind: StoreKind;
+    profile: AuthorProfile;
+    items: Item[];
+    backLabel: string;
+    onBack(): void;
+    onOpen(id: string): void;
+    /** Another author of one of these, for plugins made together */
+    onAuthor(slug: string): void;
+}) {
+    const site = useStore(Store.subscribe, Store.getSnapshot).authorSite;
+    const headingId = `dl-store-author-${profile.slug}`;
+    const link = (href: string, icon: "github" | "link", label: string) => (
+        <a className="dl-store-source" href={href} target="_blank" rel="noreferrer noopener"><Icon name={icon} size={16} />{label}</a>
+    );
+    const Many = words[kind].many[0].toUpperCase() + words[kind].many.slice(1);
+
+    return (
+        <article className="dl-tab dl-store-detail" aria-labelledby={headingId} data-store-author={profile.slug}>
+            <div>
+                <Button icon="chevronLeft" onClick={onBack}>{backLabel}</Button>
+            </div>
+
+            <header className="dl-store-detail-head">
+                <img className="dl-author-avatar" src={avatarUrl(profile)} alt="" width={64} height={64} />
+                <div className="dl-store-detail-title">
+                    <div className="dl-row-title">
+                        <Text tag="h2" variant="heading-xl/bold" color="text-strong" id={headingId}>{profile.name}</Text>
+                        {profile.verified && <VerifiedCheck size={18} />}
+                    </div>
+                    <Text variant="text-sm/normal" color="text-subtle">
+                        {profile.verified ? "Verified author" : "Author"} · {plural(items.length, kind)} in the store
+                    </Text>
+                </div>
+            </header>
+
+            {profile.bio && <Text tag="p" variant="text-md/normal" color="text-default" className="dl-store-detail-desc">{profile.bio}</Text>}
+
+            <div className="dl-author-links">
+                {profile.links.github && link(profile.links.github, "github", "GitHub")}
+                {profile.links.site && link(profile.links.site, "link", "Website")}
+                {site && link(authorPageUrl(site, profile.slug), "link", "View on evi.rest")}
+            </div>
+
+            <section className="dl-stack" aria-labelledby={`${headingId}-items`}>
+                <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={`${headingId}-items`}>{Many}</Text>
+                {items.length ? (
+                    <ul className="dl-store-grid" aria-label={`${Many} by ${profile.name}`}>
+                        {items.map(i => <StoreCard key={i.entry.id} item={i} onOpen={() => onOpen(i.entry.id)} onAuthor={onAuthor} />)}
+                    </ul>
+                ) : (
+                    <Text tag="p" variant="text-sm/normal" color="text-muted">No {words[kind].many} from {profile.name} in this store yet.</Text>
                 )}
             </section>
         </article>

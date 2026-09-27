@@ -1,4 +1,7 @@
+import type { AuthorProfile } from "./authors";
 import type { ImportMode, ImportPreview } from "./backup";
+import type { PluginHealth } from "./health";
+import type { PulledPlugins } from "./pulls";
 
 /** IPC channel names shared by main, preload and renderer. */
 export const IPC = {
@@ -6,6 +9,7 @@ export const IPC = {
     GET_RENDERER: "evi:get-renderer",
     /** sync: everything the renderer needs to boot, see BootData */
     GET_BOOT: "evi:get-boot",
+    /** answers with SettingsSaveResult, after asking about plugins it turns on that reach beyond the page */
     SETTINGS_SAVE: "evi:settings-save",
     /** sync: last-chance flush while the page unloads, async IPC may not make it */
     SETTINGS_SAVE_SYNC: "evi:settings-save-sync",
@@ -47,6 +51,16 @@ export const IPC = {
     BADGES_ADMIN: "evi:badges-admin",
     /** hide and order your own badges, saved on evi.rest (this install must be linked to that account) */
     BADGES_SET_PREFS: "evi:badges-set-prefs",
+    /** plugin authors and store-wide plugin health from evi.rest, cached on disk */
+    AUTHORS_GET: "evi:authors-get",
+    HEALTH_GET: "evi:health-get",
+    /** send a crash report to a plugin's author; say a store plugin can't find parts of Discord */
+    CRASH_REPORT_SEND: "evi:crash-report-send",
+    HEALTH_REPORT: "evi:health-report",
+    /** main -> renderer: the plugins Evi pulled changed (see shared/pulls.ts) */
+    PULLS_CHANGED: "evi:pulls-changed",
+    /** report a store plugin to Evi's team */
+    PLUGIN_REPORT: "evi:plugin-report",
     /** Evi's own updates: is a newer release published; download and install it (restarts Discord) */
     UPDATE_CHECK: "evi:update-check",
     UPDATE_INSTALL: "evi:update-install",
@@ -151,6 +165,10 @@ export interface EviSettings {
     pluginVersionsSeen?: Record<string, string>;
     /** `false` turns off "What's new" popups after plugin updates. On by default. */
     pluginChangelogs?: boolean;
+    /** `false` stops telling evi.rest when a store plugin can't find parts of Discord. On by default. */
+    healthReports?: boolean;
+    /** Send to author without showing the report first ("Don't ask again") */
+    crashReportConsent?: boolean;
 }
 
 export const DEFAULT_SETTINGS: EviSettings = {
@@ -158,6 +176,14 @@ export const DEFAULT_SETTINGS: EviSettings = {
     quickCss: true,
     enabledThemes: [],
 };
+
+/**
+ * Main's answer to a settings save. Turning on a plugin with native code or Chromium switches waits
+ * for the user's yes in a dialog main shows; `refused` lists the ones they kept off.
+ */
+export interface SettingsSaveResult {
+    refused: string[];
+}
 
 export interface BootData {
     version: string;
@@ -168,6 +194,8 @@ export interface BootData {
     themes: ThemePayload[];
     /** Set when this start is in safe mode: no plugins, themes or Quick CSS */
     safeMode?: SafeModeInfo;
+    /** Plugins Evi turned off everywhere, from the last health answer on disk: they never start */
+    pulled?: PulledPlugins;
 }
 
 /**
@@ -197,6 +225,15 @@ export interface SafeModeInfo {
 export type OpenPathTarget = "data" | "plugins" | "themes" | "quickCss";
 
 type Failed = { ok: false; canceled?: false; error: string; } | { ok: false; canceled: true; };
+
+/** Authors by slug, and the site their pages are on (evi.rest/author?u=<slug>) */
+export type AuthorsResult = { ok: true; authors: Record<string, AuthorProfile>; site: string; } | { ok: false; error: string; };
+/** Statuses by plugin id; plugins with none are left out. `pulled`: the plugins Evi turned off everywhere. */
+export type HealthResult = { ok: true; plugins: Record<string, PluginHealth>; pulled: PulledPlugins; } | { ok: false; error: string; };
+export type PluginReportResult = { ok: true; } | { ok: false; error: string; };
+/** `author`: who the crash report went to, as evi.rest names them */
+export type CrashReportResult = { ok: true; author?: string; } | { ok: false; error: string; };
+export type HealthReportResult = { ok: true; } | { ok: false; error: string; };
 
 export type BackupExportResult = { ok: true; path: string; } | Failed;
 

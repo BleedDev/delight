@@ -10,6 +10,7 @@ export { getUnhooked, hook } from "../renderer/patching/hooks";
 export type { HookCallback, HookContext, HookKind } from "../renderer/patching/hooks";
 export type { PatchRecord, Replacement, SourcePatch } from "../renderer/patching/source";
 export type { PluginContext, PluginSettings } from "../renderer/plugins/context";
+export type { ProfileBadge, ProfileBadgeProvider } from "../renderer/profileBadges";
 export { definePlugin } from "../renderer/plugins/types";
 export type * from "../renderer/plugins/types";
 export { CommandOptionType, registerCommand } from "../renderer/toolkit/commands";

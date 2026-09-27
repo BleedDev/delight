@@ -126,16 +126,18 @@ export function IconButton({ icon, label, onClick, className, ...props }: {
 
 // ---- inputs -----------------------------------------------------------------------------------
 
-export function Switch({ checked, onChange, label, labelledBy }: {
+export function Switch({ checked, onChange, label, labelledBy, disabled }: {
     checked: boolean;
     onChange(checked: boolean): void;
     /** Accessible name when there's no visible label to point at */
     label?: string;
     labelledBy?: string;
+    /** Say why next to it: a disabled control's tooltip never opens for the keyboard */
+    disabled?: boolean;
 }) {
     const Native = DiscordUI.Switch.get;
     // Discord's switch is named through labelledBy only
-    if (Native && labelledBy) return <Native checked={checked} onChange={onChange} labelledBy={labelledBy} />;
+    if (Native && labelledBy) return <Native checked={checked} onChange={onChange} labelledBy={labelledBy} disabled={disabled} />;
     return (
         <button
             type="button"
@@ -144,6 +146,7 @@ export function Switch({ checked, onChange, label, labelledBy }: {
             aria-checked={checked}
             aria-label={label}
             aria-labelledby={labelledBy}
+            disabled={disabled}
             onClick={() => onChange(!checked)}
         />
     );
@@ -571,6 +574,8 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), texta
 
 /** How many Evi dialogs are open: Escape closes the top one instead of the whole panel */
 export let openDialogs = 0;
+/** Open dialogs, newest last: with one opened from another, Escape closes only the newest */
+const dialogStack: object[] = [];
 
 /**
  * What every Evi dialog does: focus moves in on open and back where it was on close, Tab stays
@@ -585,9 +590,11 @@ export function useModal(onClose: () => void) {
         const previous = document.activeElement as HTMLElement | null;
         ref.current?.focus();
         openDialogs++;
+        const self = {};
+        dialogStack.push(self);
         // Capture phase on window, so Discord's own Escape handling (closing settings) never sees it
         const onKey = (e: KeyboardEvent) => {
-            if (e.key !== "Escape") return;
+            if (e.key !== "Escape" || dialogStack.at(-1) !== self) return;
             e.preventDefault();
             e.stopImmediatePropagation();
             closeRef.current();
@@ -595,6 +602,7 @@ export function useModal(onClose: () => void) {
         window.addEventListener("keydown", onKey, true);
         return () => {
             openDialogs--;
+            dialogStack.splice(dialogStack.indexOf(self), 1);
             window.removeEventListener("keydown", onKey, true);
             previous?.focus?.();
         };
@@ -615,6 +623,17 @@ export function useModal(onClose: () => void) {
     };
 
     return { ref, onKeyDown: trapTab };
+}
+
+/**
+ * Our dialogs are rendered into <body>, outside Discord's settings screen, which pulls focus back
+ * whenever it leaves (Discord's focus layers). Inside it, a dropdown lost focus as it opened and
+ * closed again. As its own layer on top, like Discord's nested modals, focus may stay in the dialog.
+ */
+export function FocusLayer({ containerRef, children }: { containerRef: React.RefObject<HTMLElement | null>; children: ReactNode; }) {
+    // Resolved once, so the tree under it never remounts when Discord's module turns up later
+    const [Lock] = React.useState(() => DiscordUI.FocusLock.get);
+    return Lock ? <Lock containerRef={containerRef}>{children}</Lock> : <>{children}</>;
 }
 
 /**
@@ -643,8 +662,9 @@ export function useExit(onClose: () => void) {
  * A dialog over everything, so opening it never moves the page underneath. Rendered into <body>,
  * which also gets it out of Discord's settings scroller when the tab is embedded there.
  * Escape and clicking beside it close it; focus stays inside and goes back where it was after.
+ * `children` can be a function of `close`, for content that closes the dialog itself (with its exit).
  */
-export function Dialog({ title, onClose, children, id }: { title: ReactNode; onClose(): void; children: ReactNode; id: string; }) {
+export function Dialog({ title, onClose, children, id }: { title: ReactNode; onClose(): void; children: ReactNode | ((close: () => void) => ReactNode); id: string; }) {
     const exit = useExit(onClose);
     const { ref, onKeyDown } = useModal(exit.close);
 
@@ -652,11 +672,13 @@ export function Dialog({ title, onClose, children, id }: { title: ReactNode; onC
         <div className="dl-root" {...exit.closingProps}>
             <div className="dl-scrim dl-dialog-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && exit.close()}>
                 <div className="dl-dialog evi-modal" role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} tabIndex={-1} ref={ref} onKeyDown={onKeyDown} id={id}>
-                    <header className="dl-dialog-head">
-                        <Text tag="h2" variant="heading-lg/semibold" color="text-strong" id={`${id}-title`}>{title}</Text>
-                        <IconButton icon="close" label="Close" onClick={exit.close} />
-                    </header>
-                    <div className="dl-dialog-body">{children}</div>
+                    <FocusLayer containerRef={ref}>
+                        <header className="dl-dialog-head">
+                            <Text tag="h2" variant="heading-lg/semibold" color="text-strong" id={`${id}-title`}>{title}</Text>
+                            <IconButton icon="close" label="Close" onClick={exit.close} />
+                        </header>
+                        <div className="dl-dialog-body">{typeof children === "function" ? children(exit.close) : children}</div>
+                    </FocusLayer>
                 </div>
             </div>
         </div>,

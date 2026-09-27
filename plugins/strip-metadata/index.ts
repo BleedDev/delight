@@ -4,12 +4,12 @@ import type { HookContext, PluginContext } from "@evi/api";
 import { randomFileName, stripMetadata } from "./strip";
 
 /**
- * Every file you attach goes through Discord's upload attachment actions before it reaches the
- * upload queue (UploadAttachmentStore): addFiles({ files: [{ file, platform }], channelId, ... })
- * for picks, drops and pastes, setFile for an edited attachment, and instantBatchUpload for
- * uploads that skip the queue. We hook those with `instead`: the File objects found in the
- * arguments are read, cleaned and swapped for new Files before the original runs. Calls
- * carrying no File run straight through, synchronously as before.
+ * Picks, drops and pastes go through Discord's upload entry point, (files, channel, draftType,
+ * { requireConfirm }). It either queues them with the upload attachment actions
+ * (addFiles({ files: [{ file, platform }], channelId, ... })) or, for uploads that skip the queue,
+ * sends them right away. setFile replaces an edited attachment. We hook all of them with `instead`:
+ * the File objects found in the arguments are read, cleaned and swapped for new Files before the
+ * original runs. Calls carrying no File run straight through, synchronously as before.
  */
 
 type Settings = typeof settings;
@@ -31,10 +31,11 @@ const settings = {
 /** Images bigger than this are uploaded as they are rather than read into memory */
 const MAX_IMAGE_BYTES = 100 * 1024 * 1024;
 const IMAGE_NAME = /\.(jpe?g|jfif|png|apng|webp)$/i;
-const METHODS = ["addFiles", "addFile", "setFile", "instantBatchUpload"];
+const METHODS = ["addFiles", "addFile", "setFile"];
 
 const uploadActions = filters.byProps("addFiles", "clearAll");
-const uploadHandler = filters.byProps("instantBatchUpload");
+/** The entry point: its instant branch sends without the queue, so those files never reach addFiles */
+const uploadEntry = filters.byCode("INSTANT_UPLOAD", "requireConfirm");
 
 let context: PluginContext<Settings> | undefined;
 /** Files we made, so a call passing them on to another hooked method doesn't clean them twice */
@@ -93,6 +94,23 @@ function hasFiles(args: any[]) {
     return found.some(f => !cleaned.has(f.file));
 }
 
+/** The entry point takes a FileList or an array of Files first */
+function interceptEntry(call: HookContext) {
+    const ctx = context;
+    const [files, ...rest] = call.args;
+    const list: unknown[] = files && typeof files === "object" && typeof files.length === "number" ? Array.from(files as ArrayLike<unknown>) : [];
+    if (!ctx || (!ctx.settings.get("stripImages") && !ctx.settings.get("randomNames")) || !list.some(f => f instanceof File && !cleaned.has(f))) {
+        return call.callOriginal(...call.args);
+    }
+    const clean = list.map(f => f instanceof File
+        ? cleanFile(f).catch(err => {
+            context?.logger.error("Couldn't clean", f.name, err);
+            return f;
+        })
+        : f);
+    return Promise.all(clean).then(files => call.callOriginal(files, ...rest));
+}
+
 function interceptUpload(call: HookContext) {
     const ctx = context;
     if (!ctx || (!ctx.settings.get("stripImages") && !ctx.settings.get("randomNames")) || !hasFiles(call.args)) {
@@ -108,16 +126,11 @@ export default definePlugin({
         context = ctx;
         ctx.onDispose(() => void (context = undefined));
 
-        // Both filters may find the same object: hook each method once
-        const hooked = new WeakSet<object>();
-        for (const filter of [uploadActions, uploadHandler]) {
-            ctx.waitFor(filter, actions => {
-                if (hooked.has(actions)) return;
-                hooked.add(actions);
-                for (const method of METHODS) {
-                    if (typeof actions[method] === "function") ctx.hook.instead(actions, method, interceptUpload);
-                }
-            });
-        }
+        ctx.hookExport("instead", uploadEntry, interceptEntry);
+        ctx.waitFor(uploadActions, actions => {
+            for (const method of METHODS) {
+                if (typeof actions[method] === "function") ctx.hook.instead(actions, method, interceptUpload);
+            }
+        });
     },
 });

@@ -58,7 +58,7 @@ Evi also updates from inside Discord: Evi settings → **Updates** shows the lat
 Discord.exe
  └ resources/app.asar        our loader (src/shared/shim.ts). Falls back to vanilla if the core fails
     └ core/main.js           src/main: IPC, settings, plugin host + native modules, file watchers
-       ├ session preload     src/preload: exposes EviNative, injects the renderer before Discord's scripts
+       ├ session preload     src/preload: hands EviNative to the renderer only, injects it before Discord's scripts
        │  └ renderer.js      src/renderer: webpack capture, patching, plugin manager, UI
        └ resources/_app.asar Discord's untouched original, loaded after setup
 ```

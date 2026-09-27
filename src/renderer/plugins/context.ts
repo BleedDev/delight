@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Logger } from "../logger";
 import { Native } from "../native";
+import { ProfileBadgeProvider, ProfileBadges } from "../profileBadges";
 import { hook, HookCallback, HookKind } from "../patching/hooks";
 import { Settings } from "../settings";
 import { createStyle, ManagedStyle } from "../styles";
@@ -214,6 +215,14 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     command(definition: CommandDefinition) {
         PluginUsage.add(this.id, "commands", definition.name);
         return this.onDispose(registerCommand(definition, this.id));
+    }
+
+    /**
+     * Badges this plugin adds to profiles: `provider(userId)` returns them, asked on every render. They show
+     * after Evi's own on the profile and in Discord's badge directory ("Your badges"). Removed on stop.
+     */
+    profileBadges(provider: ProfileBadgeProvider) {
+        return this.onDispose(ProfileBadges.add(this.manifest.name, provider));
     }
 
     setInterval(fn: () => void, ms: number) {

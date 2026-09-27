@@ -19,4 +19,6 @@ server/
 site/
 tests/server.test.ts
 tests/accounts.test.ts
+tests/authors.test.ts
+tests/pulls.test.ts
 tests/site.test.ts

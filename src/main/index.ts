@@ -1,7 +1,7 @@
-import { BootData, EviSettings, IPC, OpenPathTarget } from "@shared/ipc";
+import { BootData, EviSettings, IPC, isPluginEnabled, OpenPathTarget, PluginManifest, SettingsSaveResult } from "@shared/ipc";
 import { diffSettings } from "@shared/safeMode";
 import { ORIGINAL_ASAR } from "@shared/shim";
-import { app, ipcMain, Session, session, shell } from "electron";
+import { app, ipcMain, Session, session, shell, WebContents } from "electron";
 import { existsSync, readFileSync, watch, writeFileSync } from "fs";
 import { dirname, join } from "path";
 
@@ -9,10 +9,11 @@ import { initAccount } from "./account";
 import { initBackup } from "./backup";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
-import { applyChromiumSwitches, getPluginPayloads, initPlugins } from "./plugins";
+import { applyChromiumSwitches, askToEnable, enablesNeedingConsent, getPluginPayloads, initPlugins } from "./plugins";
 import { SafeMode } from "./safeMode";
 import { saveSettings, settings } from "./settings";
 import { initBadges } from "./badges";
+import { currentPulls, initReports } from "./reports";
 import { initStars } from "./stars";
 import { initStore } from "./store";
 import { getThemePayloads, initThemes } from "./themes";
@@ -59,14 +60,16 @@ function registerIpc() {
             quickCss: readQuickCss(),
             themes: getThemePayloads(),
             safeMode: SafeMode.info,
+            pulled: currentPulls(),
         };
         e.returnValue = boot;
     });
 
-    ipcMain.handle(IPC.SETTINGS_SAVE, (_, next) => saveAndRecord(next));
+    ipcMain.handle(IPC.SETTINGS_SAVE, (e, next: EviSettings) => saveFromPage(next, e.sender));
     ipcMain.handle(IPC.CSS_SAVE, (_, css: string) => writeFileSync(QUICK_CSS_FILE, css));
-    ipcMain.on(IPC.SETTINGS_SAVE_SYNC, (e, next) => {
-        saveAndRecord(next);
+    ipcMain.on(IPC.SETTINGS_SAVE_SYNC, (e, next: EviSettings) => {
+        // Saved before this returns; any question about turning a plugin on is answered later
+        void saveFromPage(next, e.sender);
         e.returnValue = true;
     });
     ipcMain.on(IPC.CSS_SAVE_SYNC, (e, css: string) => {
@@ -93,6 +96,44 @@ function registerIpc() {
 function saveAndRecord(next: EviSettings) {
     for (const change of diffSettings(settings, next)) SafeMode.recordChange(change);
     saveSettings(next);
+}
+
+/** What the page last asked for: a yes that comes later only applies if it still wants the plugin on */
+let requested: EviSettings | undefined;
+
+/** `settings` with one plugin's switch set to `enabled` (undefined: back to its default) */
+function withEnabled(base: EviSettings, id: string, enabled: boolean | undefined): EviSettings {
+    const entry = { ...base.plugins[id] };
+    if (enabled === undefined) delete entry.enabled;
+    else entry.enabled = enabled;
+    return { ...base, plugins: { ...base.plugins, [id]: entry } };
+}
+
+/**
+ * Saves settings sent by the page, except for turning on plugins that reach beyond it (native code,
+ * Chromium switches): those stay as they were until the user says yes in a dialog main shows
+ * (plugins.ts). Plugins run in the page and can save settings too; without this one could turn on
+ * another plugin's native code and restart Discord. Resolves once every question is answered, with
+ * the plugins the user kept off, so Evi's switch can flip back.
+ */
+async function saveFromPage(next: EviSettings, sender: WebContents): Promise<SettingsSaveResult> {
+    if (!next || typeof next !== "object" || !next.plugins || typeof next.plugins !== "object") return { refused: [] };
+    requested = next;
+    const held: PluginManifest[] = enablesNeedingConsent(settings, next);
+    let saved = next;
+    for (const manifest of held) saved = withEnabled(saved, manifest.id, settings.plugins[manifest.id]?.enabled);
+    saveAndRecord(saved);
+    if (!held.length) return { refused: [] };
+
+    const refused: string[] = [];
+    await Promise.all(held.map(async manifest => {
+        if (!await askToEnable(manifest, sender)) return void refused.push(manifest.id);
+        // Other saves may have landed while the question was up: apply the yes to what's saved now
+        if (requested && isPluginEnabled(requested, manifest) && !isPluginEnabled(settings, manifest)) {
+            saveAndRecord(withEnabled(settings, manifest.id, true));
+        }
+    }));
+    return { refused };
 }
 
 function watchQuickCss() {
@@ -157,6 +198,7 @@ function setup() {
     initThemes();
     initStore();
     initStars();
+    initReports();
     initAccount();
     initBadges();
     initUpdater();

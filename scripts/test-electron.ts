@@ -108,6 +108,12 @@ async function storeStepInstall() {
     const nativeRefusedListed = !!D.plugins.get("store-native");
     const native = await D.store.install("store-native", { allowNative: true });
     const nativeState = D.plugins.get("store-native");
+    const nativePing = nativeState ? await nativeState.ctx.native.call("ping") : null;
+    // Switched off, its native side answers nobody, not even a ctx kept from when it ran
+    const nativeCtx = nativeState?.ctx;
+    const nativeRunning = nativeState?.running === true;
+    if (nativeState) await D.plugins.setEnabled("store-native", false);
+    const nativeOffCall = nativeCtx ? await nativeCtx.native.call("ping").then((r: unknown) => `answered ${r}`, (e: Error) => `refused: ${e.message}`) : null;
     // Any plugin can be removed: one dropped into the folder by hand, and one from the dev build
     const manual = await D.store.uninstall("late-plugin");
     const devRemoved = await D.store.uninstall("toolkit-demo");
@@ -116,7 +122,7 @@ async function storeStepInstall() {
         good, goodRan: (window as any).__storeGood, goodRunning: goodState?.running === true, goodSource: goodState?.source,
         tampered, tamperedListed: !!D.plugins.get("store-tampered"), tamperedRan: "__tampered" in window,
         nativeRefused, nativeRefusedListed,
-        native, nativeRunning: nativeState?.running === true, nativePing: nativeState ? await nativeState.ctx.native.call("ping") : null,
+        native, nativeRunning, nativePing, nativeOffCall,
         manual, lateStillThere: !!D.plugins.get("late-plugin"),
         devRemoved, devStillThere: !!D.plugins.get("toolkit-demo"),
     };
@@ -176,6 +182,8 @@ app.whenReady().then(() => {
             const sheet = [...document.querySelectorAll("link[rel=stylesheet]")].map(l => l.href).find(h => h.startsWith("https://discord.com/assets/"));
             return {
                 evi: true,
+                // Evi's renderer claimed the bridge as it started: nothing else in the page can reach it
+                bridge: { native: "EviNative" in window, claim: "__eviClaimNative" in window },
                 discordNative: window.__fakeDiscordPreload?.ran === true,
                 running: D.plugins.getSnapshot().filter(p => p.running).map(p => p.manifest.id),
                 isDeveloper: D.api.getStore("DeveloperExperimentStore").isDeveloper,
@@ -204,6 +212,19 @@ app.whenReady().then(() => {
         })()${"`"});
         console.log("RESULT " + JSON.stringify(result));
 
+        // Reports, asked for the way a page still holding the bridge would: straight at main's handlers
+        // (Electron's own table of them; the page can't reach them any more, that's the point)
+        const invoke = (channel, ...args) => require("electron").ipcMain._invokeHandlers.get(channel)({ sender: win.webContents }, ...args);
+        const crash = (plugin, version) => invoke("evi:crash-report-send", { plugin, version, eviVersion: "0.0.0", discordBuild: "test", report: "Error: test" });
+        try {
+            console.log("REPORTS " + JSON.stringify({
+                crashNotStore: await crash("late-plugin", "1.0.0"),
+                healthNotStore: await invoke("evi:health-report", { plugin: "late-plugin", version: "1.0.0", discordBuild: "test", kind: "start" }),
+            }));
+        } catch (err) {
+            console.log("REPORTS " + JSON.stringify({ error: String(err && err.stack || err) }));
+        }
+
         // Plugin store, against the local fake registry. What's on disk is checked between steps.
         const plugins = path.join(process.env.EVI_DATA_DIR, "plugins");
         const disk = () => ({
@@ -218,6 +239,8 @@ app.whenReady().then(() => {
         try {
             const install = await win.webContents.executeJavaScript(${JSON.stringify(`(${storeStepInstall})()`)});
             const afterInstall = disk();
+            // Installed from the store at 1.0.0: a report about another version isn't about what's here
+            install.crashOtherVersion = await crash("store-good", "9.9.9");
             await net.fetch(process.env.EVI_STORE_URL.replace("registry.json", "__publish"), { method: "POST" });
             const update = await win.webContents.executeJavaScript(${JSON.stringify(`(${storeStepUpdate})()`)});
             console.log("STORE " + JSON.stringify({ install, afterInstall, update, afterUpdate: disk() }));
@@ -375,7 +398,7 @@ function check(name: string, ok: boolean, detail?: unknown) {
 
 async function launch(dataDir: string, env: Record<string, string> = {}) {
     const proc = Bun.spawn([join(INSTALL, "app-1.0.0", "electron.exe")], {
-        env: { ...process.env, EVI_DATA_DIR: dataDir, EVI_TEST_BACKUP_PATH: BACKUP_FILE, EVI_STORE_URL: STORE_URL, ELECTRON_ENABLE_LOGGING: "1", ...env },
+        env: { ...process.env, EVI_DATA_DIR: dataDir, EVI_TEST_BACKUP_PATH: BACKUP_FILE, EVI_TEST_CONFIRM: "page", EVI_STORE_URL: STORE_URL, ELECTRON_ENABLE_LOGGING: "1", ...env },
         stdout: "pipe",
         stderr: "pipe",
     });
@@ -404,6 +427,7 @@ const { stdout, stderr, r } = await launch(DATA);
 
 check("main process loaded, then handed over to Discord", stdout.includes("[Evi] v"));
 check("session preload booted the renderer", r.evi === true);
+check("the bridge is gone from the page once Evi's renderer claimed it", r.bridge?.native === false && r.bridge.claim === false, r.bridge);
 check("Discord's own preload still ran", r.discordNative === true);
 check("plugins from the dev build started", ["clear-urls", "experiments", "no-track"].every(id => r.running?.includes(id)), r.running);
 check("source patch works in Electron", r.isDeveloper === true);
@@ -456,9 +480,12 @@ check("restore: preview lists what replace changes", !!preview
     && preview.themesDisabled.includes("mine.css") && preview.quickCss === "replaced"
     && preview.missingPlugins.some((p: any) => p.id === "late-plugin"), preview ?? rb.opened);
 check("restore: applied", rb.applied?.ok === true && rb.applied.changes > 0, rb.applied);
+// Only what a backup carries: this install's own bookkeeping (lastSeenVersion, pluginVersionsSeen, set
+// by its first start) isn't in a backup and stays as it was, so What's New doesn't come back
+const carried = (settings: any) => settings && backup && Object.fromEntries(Object.keys(backup.settings).map(k => [k, settings[k]]));
 check("restore: settings round-trip, in memory and on disk", !!backup
-    && Bun.deepEquals(rb.after?.settings, backup.settings)
-    && Bun.deepEquals(JSON.parse(readFileSync(join(DATA_B, "settings.json"), "utf8")), backup.settings), rb.after?.settings);
+    && Bun.deepEquals(carried(rb.after?.settings), backup.settings)
+    && Bun.deepEquals(carried(JSON.parse(readFileSync(join(DATA_B, "settings.json"), "utf8"))), backup.settings), rb.after?.settings);
 check("restore: theme files and Quick CSS round-trip on disk", !!backup
     && backup.themes.every(t => readFileSync(join(DATA_B, "themes", t.file), "utf8") === t.css)
     && readFileSync(join(DATA_B, "quick.css"), "utf8") === backup.quickCss
@@ -467,6 +494,12 @@ check("restore: applies live, no reload (plugins, themes, Quick CSS)", rb.after?
     && rb.after.bootTheme === "applied" && rb.after.lateTheme === "live" && rb.after.order === "quick" && rb.after.mine === "", rb.after && { ...rb.after, settings: undefined });
 check("restore: opening the same backup again changes nothing", rb.again?.merge === 0 && rb.again.replace === 0, rb.again);
 if (failed > failedBefore) printLogs(b.stdout, b.stderr);
+
+const reportsLine = stdout.split("\n").find(l => l.startsWith("REPORTS "));
+const reports = reportsLine ? JSON.parse(reportsLine.slice(8)) : { error: "no REPORTS line" };
+check("reports: crash and health reports for a plugin the store didn't install are refused",
+    reports.crashNotStore?.ok === false && /isn't installed from the store/.test(reports.crashNotStore.error)
+    && reports.healthNotStore?.ok === false && /isn't installed from the store/.test(reports.healthNotStore.error), reports);
 
 const storeLine = stdout.split("\n").find(l => l.startsWith("STORE "));
 const s = storeLine ? JSON.parse(storeLine.slice(6)) : { error: "no STORE line" };
@@ -478,6 +511,8 @@ else {
     check("store: tampered file (bad sha256) rejected, nothing written", i.tampered?.ok === false && /sha256|doesn't match/.test(i.tampered.error) && !i.tamperedListed && !i.tamperedRan && !d1.tampered && d1.staging.length === 0, { result: i.tampered, disk: d1.tampered, staging: d1.staging });
     check("store: native plugin refused without the user's confirmation", i.nativeRefused?.ok === false && /full access/.test(i.nativeRefused.error) && !i.nativeRefusedListed, i.nativeRefused);
     check("store: native plugin installs once confirmed, its native side works", i.native?.ok === true && i.nativeRunning && i.nativePing === "pong" && d1.native, { result: i.native, ping: i.nativePing });
+    check("store: main refuses native calls for a plugin that's switched off", /^refused: .*turned off/.test(i.nativeOffCall ?? ""), i.nativeOffCall);
+    check("reports: a crash report about another version than the store installed is refused", i.crashOtherVersion?.ok === false && /isn't installed from the store/.test(i.crashOtherVersion.error), i.crashOtherVersion);
     check("store: removes a plugin it didn't install, and remembers it so updates don't bring it back", i.manual?.ok === true && !i.lateStillThere && !d1.late && d1.removed.includes("late-plugin"), { result: i.manual, removed: d1.removed });
     check("store: a dev build plugin is hidden (its files are the repo's) and remembered too", i.devRemoved?.ok === true && !i.devStillThere && d1.removed.includes("toolkit-demo"), { result: i.devRemoved, removed: d1.removed });
     check("store: update replaces the plugin live", u.offered === "2.0.0" && u.update?.ok === true && u.update.version === "2.0.0" && u.afterUpdate.ran === "2.0.0" && u.afterUpdate.running && u.afterUpdate.disposed === 1, { offered: u.offered, update: u.update, after: u.afterUpdate });
@@ -535,11 +570,13 @@ const PROBE = `(() => {
 })()`;
 const click = (text: string) => `[...document.querySelectorAll(".dl-safe-float button")].find(b => b.textContent.includes(${JSON.stringify(text)})).click()`;
 
-async function start(name: string, options: { then?: string; onCrash?: "exit"; args?: string[]; probe?: string; } = {}) {
+async function start(name: string, options: { then?: string; onCrash?: "exit"; args?: string[]; probe?: string; confirm?: "yes" | "no"; } = {}) {
     const run = Bun.spawn([join(INSTALL, "app-1.0.0", "electron.exe"), ...options.args ?? []], {
         env: {
             ...process.env,
             EVI_DATA_DIR: SAFE,
+            // Main's own questions (turning on a plugin with native code), answered for the user
+            EVI_TEST_CONFIRM: options.confirm ?? "yes",
             ELECTRON_ENABLE_LOGGING: "1",
             FAKE_SCENARIO: "safe-mode.js",
             FAKE_PROBE: options.probe ?? PROBE,
@@ -587,10 +624,12 @@ check("safe mode notice names the crasher and offers both ways out", /safe mode/
 check("\"Disable Crasher and restart\" turns it off, leaves safe mode and restarts", s4.relaunch !== undefined && readJson("settings.json").plugins.crasher?.enabled === false
     && s4.state.pendingStarts === 0 && s4.state.forceSafe === undefined, { relaunch: s4.relaunch, state: s4.state });
 
-// 5. Back to normal. A leftover failed start is forgotten once this one is healthy.
+// 5. Back to normal. A leftover failed start is forgotten once this one is healthy. Then the page turns
+// the crasher on again, and the user says no to main's question: it's not saved and never runs.
 writeState({ pendingStarts: 1 });
-const s5 = await start("normal again");
+const s5 = await start("normal again", { then: `Evi.plugins.setEnabled("crasher", true)`, confirm: "no" });
 check("next start is normal and healthy, resetting the counter", s5.result?.safeMode === null && s5.result.running.includes("no-track") && !s5.result.running.includes("crasher") && s5.state.pendingStarts === 0, { safeMode: s5.result?.safeMode, pending: s5.state.pendingStarts });
+check("turning on a native plugin without the user's yes in main isn't saved, and it doesn't run", s5.crashes.length === 0 && readJson("settings.json").plugins.crasher?.enabled === false, { crashes: s5.crashes, crasher: readJson("settings.json").plugins.crasher });
 
 // 6. --evi-safe, left with "Exit safe mode and restart"
 const s6 = await start("--evi-safe", { args: ["--evi-safe"], then: click("Exit safe mode and restart") });
@@ -609,7 +648,7 @@ check("next start is still in safe mode, nothing crashes", s8.result?.safeMode?.
 
 // 8. Failing even in safe mode: one start without Evi at all
 writeState({ pendingStarts: 4 });
-const vanillaProbe = `(() => document.readyState === "complete" && document.querySelector("#app-mount") ? { evi: !!window.Evi, bridge: !!window.EviNative } : null)()`;
+const vanillaProbe = `(() => document.readyState === "complete" && document.querySelector("#app-mount") ? { evi: !!window.Evi, bridge: "EviNative" in window || "__eviClaimNative" in window } : null)()`;
 const s9 = await start("failing even in safe mode", { probe: vanillaProbe });
 check("after 4 failed starts, one start is vanilla, then safe mode again", s9.result?.evi === false && s9.result.bridge === false && s9.state.pendingStarts === 2 && s9.state.forceSafe === "renderer-crash", { result: s9.result, state: s9.state });
 

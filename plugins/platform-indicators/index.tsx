@@ -1,12 +1,13 @@
 /**
- * Which devices someone is on: desktop, mobile, web or a console. Each is a small outline icon in
- * Discord's muted icon color with a status dot cut into its corner, like the dot on an avatar.
+ * Which device someone is on: desktop, mobile, web or a console, one icon for the one they're using.
+ * A small outline icon in Discord's muted icon color with a status dot cut into its corner, like the
+ * dot on an avatar.
  *
  * - Where from: PresenceStore.getClientStatus(userId) is Discord's own `{ desktop?, mobile?, web?,
  *   embedded? }` of statuses per device, the same data behind its mobile phone icon. Your own come
  *   from SessionsStore, one session per logged-in client.
- * - Profiles: added to Discord's profile badges (the same hook Evi's badges use), so they get
- *   Discord's own tooltip and layout.
+ * - Profiles: a profile badge through ctx.profileBadges, so it gets Discord's own tooltip and layout,
+ *   and shows in Discord's badge directory ("Your badges") too.
  * - Chat: added to the message header's badge decorations, after the name.
  * - Member list: a source patch adds them to the row's `decorators` (the crown, bot tag and boost
  *   icons), which Discord's member row renders after the name.
@@ -14,8 +15,6 @@
 import { Components, definePlugin, filters, getStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
-/** Discord's `(displayProfile, hideLegacyUsername?) => ProfileBadge[]` */
-const profileBadgesFilter = filters.byCode("getBadges()??[]", "hidePersonalInformation");
 /** The username in a message header, with decorations = { [SYSTEM_TAG]: …, [BADGES]: [...] } */
 const usernameFilter = filters.componentByCode("withMentionPrefix", "hideSystemTag", "decorations");
 /** Discord's MessageHeaderDecorations.BADGES */
@@ -69,26 +68,46 @@ const store = (name: string) => {
 
 const ownId = () => store("UserStore")?.getCurrentUser?.()?.id as string | undefined;
 
-/** The devices someone is on right now, in a stable order */
+/** How present a device's status says someone is there: an idle device is one they walked away from */
+const PRESENCE: Record<Status, number> = { online: 2, dnd: 2, idle: 1 };
+
+/**
+ * The one device someone is on right now. Discord keeps a status per logged-in client, and a web
+ * session left open in a background tab (or not yet timed out) reads as online next to the desktop
+ * app they're actually using. So one icon: the most present device, and between equals, desktop,
+ * then mobile, web and consoles.
+ */
+function deviceOf(statuses: Partial<Record<string, string>> | undefined): [Platform, Status] | undefined {
+    let best: [Platform, Status] | undefined;
+    for (const p of PLATFORMS) {
+        const s = statuses?.[p];
+        if (s !== "online" && s !== "idle" && s !== "dnd") continue;
+        if (!best || PRESENCE[s] > PRESENCE[best[1]]) best = [p, s];
+    }
+    return best;
+}
+
+/** The device someone is on, as a list (empty or one) for the places that draw it */
 function devicesOf(userId: string | undefined): [Platform, Status][] {
     if (!userId) return [];
     let statuses: Partial<Record<string, string>> | undefined;
     if (userId === ownId()) {
         if (!context?.settings.get("showOwn")) return [];
-        // One session per logged-in client; the active status applies to all of them
+        // One session per logged-in client. Only ones in use count: SessionsStore keeps idle and
+        // closed ones around for a while
         const status = (store("PresenceStore")?.getStatus?.(userId) ?? "online") as string;
+        const sessions = Object.values(store("SessionsStore")?.getSessions?.() ?? {}) as any[];
+        const live = sessions.filter(s => s?.active !== false && s?.status !== "invisible" && s?.status !== "offline");
         statuses = {};
-        for (const s of Object.values(store("SessionsStore")?.getSessions?.() ?? {}) as any[]) {
+        for (const s of live.length ? live : sessions) {
             const client = s?.clientInfo?.client;
-            if (typeof client === "string") statuses[client] = status;
+            if (typeof client === "string") statuses[client] = s.status === "idle" ? "idle" : status;
         }
     } else {
         statuses = store("PresenceStore")?.getClientStatus?.(userId);
     }
-    return PLATFORMS.flatMap(p => {
-        const s = statuses?.[p];
-        return s === "online" || s === "idle" || s === "dnd" ? [[p, s] as [Platform, Status]] : [];
-    });
+    const device = deviceOf(statuses);
+    return device ? [device] : [];
 }
 
 const tooltip = (p: Platform, s: Status) => `${STATUS_NAMES[s]} on ${NAMES[p]}`;
@@ -172,13 +191,10 @@ export default definePlugin({
         ctx.settings.onChange(bump);
         bump();
 
-        ctx.hookExport("after", profileBadgesFilter, ({ args, result }) => {
-            if (!ctx.settings.get("showOnProfiles")) return;
-            const devices = devicesOf(args[0]?.userId);
-            if (!devices.length) return;
-            const ours = devices.map(([p, s]) => ({ id: `evi-platform-${p}`, description: tooltip(p, s), iconSrc: iconSrc(p, s) }));
-            return [...(Array.isArray(result) ? result : []), ...ours];
-        });
+        // On profiles and in Discord's badge directory, through Evi's badges
+        ctx.profileBadges(userId => ctx.settings.get("showOnProfiles")
+            ? devicesOf(userId).map(([p, s]) => ({ id: `platform-${p}`, name: `${STATUS_NAMES[s]} on ${NAMES[p]}`, description: tooltip(p, s), iconSrc: iconSrc(p, s) }))
+            : []);
 
         ctx.hookExport("before", usernameFilter, ({ args }) => {
             const props = args[0];

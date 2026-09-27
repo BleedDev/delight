@@ -1,3 +1,7 @@
+import type { AuthorProfile } from "@shared/authors";
+import type { PluginHealth } from "@shared/health";
+import type { PluginManifest } from "@shared/ipc";
+import { PulledPlugin, pullFor } from "@shared/pulls";
 import { starKey, StarsSnapshot } from "@shared/stars";
 import { InstalledPlugin, InstalledTheme, RegistryEntry, storeAction, StoreProgress, StoreResult, ThemeEntry } from "@shared/store";
 
@@ -34,6 +38,12 @@ export interface StoreState {
     updatingAll?: StoreKind;
     /** Star counts and this install's stars. Missing while loading or when the server is unreachable. */
     stars?: StarsSnapshot;
+    /** Store plugins evi.rest knows are broken right now, by id. Missing until loaded. */
+    health?: Record<string, PluginHealth>;
+    /** Author profiles on evi.rest, by slug. Missing until loaded. */
+    authors?: Record<string, AuthorProfile>;
+    /** Where author pages are, e.g. https://evi.rest */
+    authorSite?: string;
 }
 
 export interface UpdateAllResult {
@@ -47,6 +57,7 @@ const logger = new Logger("Store", "#f0a35e");
 const listeners = new Set<() => void>();
 let state: StoreState = { status: "idle", plugins: [], themes: [], problems: [], installed: {}, installedThemes: {}, ops: {}, themeOps: {} };
 let listening = false;
+let reportsAsked = false;
 
 function set(next: Partial<StoreState>) {
     state = { ...state, ...next };
@@ -99,11 +110,30 @@ async function run(kind: StoreKind, id: string, label: string, action: () => Pro
  * What's installed under a plugin id. Main only looks in the plugins folder, so a plugin loaded from
  * somewhere else (a dev build) counts as installed outside the store instead of being offered again.
  */
+/** What a fresh install says, from how the plugin actually ended up rather than what was asked */
+function installedMessage(plugin: ReturnType<typeof PluginManager.get>) {
+    if (SafeMode.active) return "Installed. It turns on when you exit safe mode";
+    if (!plugin) return "Installed. It turns on the next time Discord starts";
+    if (plugin.error) return "Installed, but it couldn’t start. Its crash report is in the Plugins list";
+    if (plugin.needsReload) return "Installed. Restart Discord to finish turning it on";
+    return plugin.running ? "Installed and turned on" : "Installed";
+}
+
 function installedPlugin(id: string): InstalledPlugin | undefined {
     const listed = state.installed[id];
     if (listed) return listed;
     const loaded = PluginManager.get(id);
     return loaded ? { id, version: loaded.manifest.version, fromStore: false } : undefined;
+}
+
+/**
+ * A manifest's authors, if they're a list of names. A manifest says whatever its plugin says, in any
+ * shape: nothing here assumes it's an array of strings.
+ */
+export function manifestAuthors(manifest: PluginManifest): string[] {
+    const authors: unknown = manifest.authors;
+    if (!Array.isArray(authors)) return [];
+    return authors.filter((a): a is string => typeof a === "string" && !!a.trim()).map(a => a.trim().slice(0, 80)).slice(0, 10);
 }
 
 const images = new Map<string, Promise<string | null>>();
@@ -115,6 +145,8 @@ export const Store = {
     async refresh() {
         listen();
         set({ status: "loading", error: undefined });
+        // They don't need the registry: plugin health shows in the Plugins list even when it can't load
+        void Store.refreshReports();
         try {
             const listing = await Native.storeList();
             const installed = Object.fromEntries(listing.installed.map(p => [p.id, p]));
@@ -130,12 +162,48 @@ export const Store = {
 
     installedPlugin,
 
+    /**
+     * Who made an installed plugin. For a store install, the registry's names: those were reviewed,
+     * while its manifest could claim to be by anyone (nothing until the registry has loaded). Anything
+     * else, its manifest's.
+     */
+    authorsOf({ manifest, source }: { manifest: PluginManifest; source: string; }): string[] {
+        if (source !== "dev" && state.installed[manifest.id]?.fromStore) return state.plugins.find(p => p.id === manifest.id)?.authors ?? [];
+        return manifestAuthors(manifest);
+    },
+
     /** Loads star counts. Stars are extra: when the server is down the store works without them. */
     async refreshStars() {
         const result = await Native.getStars?.().catch(() => undefined);
         if (result?.ok) set({ stars: { counts: result.counts, mine: result.mine } });
         else if (result) logger.warn(`Stars unavailable: ${result.error}`);
     },
+
+    /** Plugin health and author profiles. Extra, like stars: without them there's no pill and no profile. */
+    async refreshReports() {
+        reportsAsked = true;
+        const [health, authors] = await Promise.all([
+            Native.getHealth?.().catch(() => undefined),
+            Native.getAuthors?.().catch(() => undefined),
+        ]);
+        if (health?.ok) {
+            set({ health: health.plugins });
+            // Main tells every page when pulls change; this answer may simply be here first
+            if (health.pulled) void PluginManager.setPulls(health.pulled);
+        }
+        else if (health) logger.warn(`Plugin health unavailable: ${health.error}`);
+        if (authors?.ok) set({ authors: authors.authors, authorSite: authors.site });
+        else if (authors) logger.warn(`Authors unavailable: ${authors.error}`);
+    },
+
+    /** Loads plugin health and authors the first time something shows them */
+    loadReports() {
+        if (!reportsAsked) void Store.refreshReports();
+    },
+
+    healthOf: (id: string): PluginHealth | undefined => state.health?.[id],
+
+    authorOf: (slug: string): AuthorProfile | undefined => state.authors?.[slug],
 
     stars: (kind: StoreKind, id: string) => state.stars?.counts[starKey(kind, id)] ?? 0,
 
@@ -166,11 +234,19 @@ export const Store = {
         }
     },
 
-    /** What the store offers for a plugin id, or undefined when the registry doesn't list it */
+    /**
+     * What the store offers for a plugin id, or undefined when the registry doesn't list it. "pulled":
+     * it would offer the version Evi pulled, which is never installed, not even as an update.
+     */
     pluginAction(id: string) {
         const entry = state.plugins.find(p => p.id === id);
-        return entry && storeAction(entry, installedPlugin(id), EVI_VERSION);
+        const action = entry && storeAction(entry, installedPlugin(id), EVI_VERSION);
+        if ((action === "install" || action === "update") && Store.pullOf(id, entry!.version)) return "pulled" as const;
+        return action;
     },
+
+    /** The pull on a version of a plugin, if Evi pulled it */
+    pullOf: (id: string, version: string | undefined): PulledPlugin | undefined => pullFor(PluginManager.pulls(), id, version),
 
     themeAction(id: string) {
         const entry = state.themes.find(t => t.id === id);
@@ -182,14 +258,31 @@ export const Store = {
      * only passes after the user confirmed they trust it with full access to their computer.
      */
     async install(id: string, options: { allowNative?: boolean; } = {}) {
+        if (Store.pluginAction(id) === "pulled") return { ok: false, error: "Evi pulled this version" } as StoreResult;
         const updating = !!state.installed[id];
+        // Switched on before it arrives, so it starts however main's announcement and its answer are
+        // ordered (and on the next start of Discord, if neither reaches this page)
+        const wasOn = Settings.data.plugins[id]?.enabled;
+        if (!updating) Settings.update(d => void ((d.plugins[id] ??= {}).enabled = true));
         const result = await run("plugin", id, "Starting…", () => Native.storeInstall(id, options));
-        if (!result.ok) return result;
+        if (!result.ok) {
+            if (!updating) Settings.update(d => {
+                const entry = d.plugins[id];
+                if (!entry) return;
+                if (wasOn === undefined) delete entry.enabled;
+                else entry.enabled = wasOn;
+            });
+            return result;
+        }
 
         set({ installed: { ...state.installed, [id]: { id, version: result.version, fromStore: true } } });
-        // Main announced the plugin before answering, so the manager has it by now
-        if (!updating && PluginManager.get(id)) await PluginManager.setEnabled(id, true);
-        setOp("plugin", id, { type: "done", message: updating ? `Updated to v${result.version}` : "Installed and turned on" });
+        if (updating) {
+            setOp("plugin", id, { type: "done", message: `Updated to v${result.version}` });
+            return result;
+        }
+        const plugin = await PluginManager.whenLoaded(id);
+        if (plugin) await PluginManager.setEnabled(id, true);
+        setOp("plugin", id, { type: "done", message: installedMessage(plugin) });
         return result;
     },
 
