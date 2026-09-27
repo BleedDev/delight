@@ -122,6 +122,7 @@ var PROTECTED = new RegExp([
   ":[\\w+-]+:",
   "@(?:everyone|here)\\b"
 ].join("|"), "g");
+var translatable = new Map;
 var TRANSLATABLE_TYPES = new Set([0, 19, 20, 21, 23]);
 class LRU {
   capacity;

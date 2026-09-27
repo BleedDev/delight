@@ -159,7 +159,12 @@ function diff(all = false) {
       cb();
   }
 }
-var diffSoon = () => void (diffTimer ??= setTimeout(diff, 0));
+var DIFF_DELAY_MS = 250;
+var diffSoon = () => {
+  if (!listeners.size)
+    return;
+  diffTimer ??= setTimeout(diff, DIFF_DELAY_MS);
+};
 function useDevice(userId) {
   const sub = import_api.React.useCallback((cb) => subscribe(userId, cb), [userId]);
   return import_api.React.useSyncExternalStore(sub, () => lastKeys.get(userId) ?? deviceKey(userId));

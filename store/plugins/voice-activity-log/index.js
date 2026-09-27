@@ -67,6 +67,18 @@ function snapshotOf(voiceStates, selfId) {
 var ARRIVALS = new Set(["present", "join", "moveIn"]);
 var DEPARTURES = new Set(["leave", "moveOut"]);
 var DEFAULT_OPTIONS = { moves: true, streams: false, muteDeafen: false };
+function touchesSession(voiceStates, channelId, snapshot, selfId) {
+  if (!Array.isArray(voiceStates))
+    return true;
+  for (const vs of voiceStates) {
+    const userId = vs?.userId;
+    if (!userId || userId === selfId || userId in snapshot)
+      return true;
+    if (vs.channelId === channelId || vs.oldChannelId === channelId)
+      return true;
+  }
+  return false;
+}
 function diffSnapshots(channelId, prev, next, options = DEFAULT_OPTIONS, moveOf = () => {
   return;
 }) {
@@ -966,9 +978,24 @@ var voice_activity_log_default = import_api.definePlugin({
         log = undefined;
       context = undefined;
     });
-    const onVoiceStates = (action) => sync(movesOf(action));
+    const settled = () => {
+      const session = current.current;
+      const channelId = (selectedChannels ??= store("SelectedChannelStore"))?.getVoiceChannelId?.() ?? null;
+      return session && session.channelId === channelId ? session : undefined;
+    };
+    const onVoiceStates = (action) => {
+      const session = settled();
+      if (session && !touchesSession(action.voiceStates, session.channelId, session.snapshot, selfId()))
+        return;
+      sync(movesOf(action));
+    };
     ctx.flux.subscribe("VOICE_STATE_UPDATES", onVoiceStates);
-    ctx.flux.subscribe("PASSIVE_UPDATE_V2", () => sync());
+    ctx.flux.subscribe("PASSIVE_UPDATE_V2", (action) => {
+      const session = settled();
+      if (session && session.guildId && action.guildId && action.guildId !== session.guildId)
+        return;
+      sync();
+    });
     const selected = selectedChannels = store("SelectedChannelStore");
     const onSelected = () => {
       const id = selected?.getVoiceChannelId?.() ?? null;

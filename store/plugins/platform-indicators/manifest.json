@@ -2,7 +2,7 @@
     "id": "platform-indicators",
     "name": "Platform Indicators",
     "description": "Shows whether someone is on desktop, mobile, web or a console: on their profile, next to their name in chat and in the member list.",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
     ],
     "minEviVersion": "0.4.0",
     "changelog": [
+        {
+            "version": "1.2.2",
+            "notes": [
+                "Faster: in busy servers, presence updates are checked together a few times a second instead of one by one."
+            ]
+        },
         {
             "version": "1.2.1",
             "notes": [

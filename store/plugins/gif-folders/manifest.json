@@ -2,7 +2,7 @@
     "id": "gif-folders",
     "name": "GIF Folders",
     "description": "Sort your favourite GIFs into folders. All shows every favourite, Unsorted the ones not in a folder yet, and each folder its own. Right-click a GIF to add it to one, and drag the GIF picker's corner to resize it.",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "authors": [
         "Evi"
     ],
@@ -10,6 +10,12 @@
         "utility"
     ],
     "changelog": [
+        {
+            "version": "1.2.2",
+            "notes": [
+                "Starting the plugin no longer holds up Discord while it tidies your folders."
+            ]
+        },
         {
             "version": "1.2.1",
             "notes": [

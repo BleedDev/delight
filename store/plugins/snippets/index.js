@@ -822,21 +822,19 @@ var setOpenAnchor = (el) => {
   for (const fn of [...openListeners])
     fn();
 };
-function openLayer(render, anchor) {
+function showLayer(render, anchor) {
   closeOpen?.();
-  const container = document.createElement("div");
-  container.className = "evi-snip-layer";
-  document.body.append(container);
-  const root = import_api.createRoot(container);
   const previous = document.activeElement;
+  let host = null;
+  const setHost = (el) => void (host = el);
   const onPointer = (e) => {
     const target = e.target;
-    if (container.contains(target) || anchor?.contains(target))
+    if (host?.contains(target) || anchor?.contains(target))
       return;
     close();
   };
   const onKey = (e) => {
-    if (e.key !== "Escape" || container.contains(e.target))
+    if (e.key !== "Escape" || host?.contains(e.target))
       return;
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -844,63 +842,67 @@ function openLayer(render, anchor) {
   };
   const onInnerKey = (e) => {
     e.stopPropagation();
-    if (e.key === "Escape" && !e.defaultPrevented)
+    if (e.key === "Escape" && !e.nativeEvent.defaultPrevented)
       close();
   };
-  container.addEventListener("keydown", onInnerKey);
-  const close = () => {
-    if (closeOpen !== close)
-      return;
-    container.removeEventListener("keydown", onInnerKey);
-    closeOpen = undefined;
-    setOpenAnchor(null);
-    window.removeEventListener("mousedown", onPointer, true);
-    window.removeEventListener("keydown", onKey, true);
-    root.unmount();
-    container.remove();
-    if (!anchor && previous?.isConnected)
-      previous.focus?.();
+  const close = (options) => {
+    if (closeOpen === close) {
+      closeOpen = undefined;
+      setOpenAnchor(null);
+      window.removeEventListener("mousedown", onPointer, true);
+      window.removeEventListener("keydown", onKey, true);
+      if (!anchor && previous?.isConnected)
+        previous.focus?.();
+    }
+    closeLayer(options);
   };
-  closeOpen = close;
-  window.addEventListener("mousedown", onPointer, true);
-  window.addEventListener("keydown", onKey, true);
-  setOpenAnchor(anchor ?? null);
+  let content;
   if (anchor) {
     const rect = anchor.getBoundingClientRect();
     const right = Math.max(8, window.innerWidth - rect.right - 8);
     const bottom = Math.max(8, window.innerHeight - rect.top + 8);
-    root.render(/* @__PURE__ */ jsx_runtime.jsx("div", {
-      className: "evi-snip-popover",
+    content = /* @__PURE__ */ jsx_runtime.jsx("div", {
+      className: "evi-snip-popover evi-popout",
+      "data-side": "top",
       role: "dialog",
       "aria-label": "Snippets",
       style: { right, bottom, maxHeight: Math.max(240, rect.top - 24) },
+      ref: setHost,
+      onKeyDown: onInnerKey,
       children: render(close)
-    }));
+    });
   } else {
-    root.render(/* @__PURE__ */ jsx_runtime.jsx("div", {
-      className: "evi-snip-scrim",
+    content = /* @__PURE__ */ jsx_runtime.jsx("div", {
+      className: "evi-snip-scrim evi-scrim",
+      ref: setHost,
+      onKeyDown: onInnerKey,
       onMouseDown: (e) => e.target === e.currentTarget && close(),
       children: /* @__PURE__ */ jsx_runtime.jsx("div", {
-        className: "evi-snip-dialog",
+        className: "evi-snip-dialog evi-modal",
         role: "dialog",
         "aria-modal": "true",
         "aria-label": "Snippet",
         children: render(close)
       })
-    }));
+    });
   }
+  const closeLayer = import_api.openLayer(() => content, { className: "evi-snip-layer" });
+  closeOpen = close;
+  window.addEventListener("mousedown", onPointer, true);
+  window.addEventListener("keydown", onKey, true);
+  setOpenAnchor(anchor ?? null);
   return close;
 }
 function openPicker(anchor, channel) {
   if (closeOpen && openAnchor === anchor)
     return closeOpen();
-  openLayer((close) => /* @__PURE__ */ jsx_runtime.jsx(Picker, {
+  showLayer((close) => /* @__PURE__ */ jsx_runtime.jsx(Picker, {
     channel,
     onClose: close
   }), anchor);
 }
 function openEditorDialog(initial) {
-  openLayer((close) => /* @__PURE__ */ jsx_runtime.jsxs("div", {
+  showLayer((close) => /* @__PURE__ */ jsx_runtime.jsxs("div", {
     className: "evi-snip-picker",
     children: [
       /* @__PURE__ */ jsx_runtime.jsx("header", {
@@ -922,13 +924,21 @@ function openEditorDialog(initial) {
     ]
   }));
 }
-var containerClass;
-function getContainerClass() {
-  containerClass ??= Object.values(import_api.find((v) => typeof v === "object" && Object.values(v).some((c) => typeof c === "string" && c.startsWith("channelAppLauncherButtonPopoutIconAnimation_"))) ?? {}).find((c) => typeof c === "string" && c.startsWith("buttonContainer_"));
-  return containerClass;
+function lookup(search) {
+  let value;
+  let missedAt = -Infinity;
+  return () => {
+    if (value !== undefined || performance.now() - missedAt < 1e4)
+      return value;
+    value = search();
+    if (value === undefined)
+      missedAt = performance.now();
+    return value;
+  };
 }
+var getContainerClass = lookup(() => Object.values(import_api.find((v) => typeof v === "object" && Object.values(v).some((c) => typeof c === "string" && c.startsWith("channelAppLauncherButtonPopoutIconAnimation_"))) ?? {}).find((c) => typeof c === "string" && c.startsWith("buttonContainer_")));
 var chatButtonFilter = import_api.filters.componentByCode("CHAT_INPUT_BUTTON_NOTIFICATION", "sparkle");
-var ChatButton;
+var getChatButton = lookup(() => import_api.find(chatButtonFilter));
 function SnippetIcon() {
   return /* @__PURE__ */ jsx_runtime.jsx("svg", {
     width: 20,
@@ -950,7 +960,7 @@ function SnippetsButton({ channel }) {
   const open = !!anchor && anchor === ref.current;
   const onClick = () => ref.current && openPicker(ref.current, channel);
   const label = "Snippets";
-  ChatButton ??= import_api.find(chatButtonFilter);
+  const ChatButton = getChatButton();
   const button = ChatButton ? /* @__PURE__ */ jsx_runtime.jsx(ChatButton, {
     onClick,
     isActive: open,
@@ -1089,10 +1099,9 @@ var snippets_default = import_api.definePlugin({
     flex-direction: column;
     overflow: hidden;
 }
-.evi-snip-popover { position: fixed; width: min(420px, calc(100vw - 16px)); animation: evi-snip-in 140ms cubic-bezier(.2, .8, .2, 1); }
+.evi-snip-popover { position: fixed; width: min(420px, calc(100vw - 16px)); }
 .evi-snip-scrim { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.6); }
-.evi-snip-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 64px); animation: evi-snip-in 160ms cubic-bezier(.2, .8, .2, 1); }
-@keyframes evi-snip-in { from { opacity: 0; transform: translateY(4px) scale(.98); } }
+.evi-snip-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 64px); }
 .evi-snip-picker { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .evi-snip-head { display: flex; gap: 8px; align-items: center; padding: 12px 12px 8px; }
 .evi-snip-title { margin: 0; font-size: 16px; font-weight: 600; color: var(--header-primary, var(--evi-snip-text)); }
@@ -1160,7 +1169,7 @@ var snippets_default = import_api.definePlugin({
     --evi-snip-brand: var(--brand-500, #5865f2);
 }
 .evi-snip-hint { margin: 0; color: var(--text-muted, #949ba4); font-size: 13px; }
-@media (prefers-reduced-motion: reduce) { .evi-snip-popover, .evi-snip-dialog { animation: none; } .evi-snip-actions, .evi-snip-button { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .evi-snip-actions, .evi-snip-button { transition: none; } }
 `,
   start(context) {
     ctx = context;
@@ -1184,7 +1193,7 @@ var snippets_default = import_api.definePlugin({
         closeOpen?.();
     });
     context.onDispose(() => {
-      closeOpen?.();
+      closeOpen?.({ instant: true });
       unregisterCommand?.();
       unregisterCommand = undefined;
       registeredChoices = "";

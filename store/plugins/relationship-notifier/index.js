@@ -47,6 +47,32 @@ var import_api = require("@evi/api");
 // plugins/relationship-notifier/events.ts
 var RelationshipType = { NONE: 0, FRIEND: 1, BLOCKED: 2, INCOMING: 3, OUTGOING: 4, IMPLICIT: 5 };
 var GROUP_DM = 3;
+function storeLookup(store) {
+  const cache = new Map;
+  const get = (name) => {
+    if (!cache.has(name))
+      cache.set(name, store(name));
+    return cache.get(name);
+  };
+  return {
+    get currentUserId() {
+      return get("UserStore")?.getCurrentUser?.()?.id;
+    },
+    relationshipType: (id) => get("RelationshipStore")?.getRelationshipType?.(id),
+    userName: (id) => {
+      const nick = get("RelationshipStore")?.getNickname?.(id);
+      if (nick)
+        return nick;
+      const user = get("UserStore")?.getUser?.(id);
+      return user ? user.globalName ?? user.global_name ?? user.username : undefined;
+    },
+    channel: (id) => {
+      const channel = get("ChannelStore")?.getChannel?.(id);
+      return channel ? { type: channel.type, name: channel.name, recipients: channel.recipients } : undefined;
+    },
+    guildName: (id) => get("GuildStore")?.getGuild?.(id)?.name
+  };
+}
 var SELF_WINDOW = 60000;
 var DEDUPE_WINDOW = 1e4;
 var ALL = "*";
@@ -193,29 +219,6 @@ function store(name) {
     return;
   }
 }
-function createLookup() {
-  const users = store("UserStore");
-  const relationships = store("RelationshipStore");
-  const channels = store("ChannelStore");
-  const guilds = store("GuildStore");
-  const userName = (id) => {
-    const nick = relationships?.getNickname?.(id);
-    if (nick)
-      return nick;
-    const user = users?.getUser?.(id);
-    return user ? user.globalName ?? user.global_name ?? user.username : undefined;
-  };
-  return {
-    currentUserId: users?.getCurrentUser?.()?.id,
-    relationshipType: (id) => relationships?.getRelationshipType?.(id),
-    userName,
-    channel: (id) => {
-      const channel = channels?.getChannel?.(id);
-      return channel ? { type: channel.type, name: channel.name, recipients: channel.recipients } : undefined;
-    },
-    guildName: (id) => guilds?.getGuild?.(id)?.name
-  };
-}
 function markOwn(ctx, tracker, props, methods, scope) {
   ctx.waitFor(import_api.filters.byProps(...props), (module2) => {
     for (const method of methods) {
@@ -316,7 +319,7 @@ var relationship_notifier_default = import_api.definePlugin({
       if (!action || !TYPES.has(action.type))
         return;
       try {
-        const entry = decide(action, createLookup(), tracker);
+        const entry = decide(action, storeLookup(store), tracker);
         if (entry)
           report(entry);
       } catch (e) {

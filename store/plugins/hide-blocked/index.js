@@ -93,6 +93,40 @@ function shouldHideMessage(message, collapse, lookups, options) {
     return true;
   return options.replies && repliesToHidden(message, lookups, options);
 }
+function createReplyTracker(read, max = 5000) {
+  const asked = new Map;
+  const targetOf = (ref) => {
+    try {
+      return read(ref)?.message;
+    } catch {
+      return;
+    }
+  };
+  return {
+    referenced(ref) {
+      const result = read(ref);
+      if (asked.size >= max)
+        asked.clear();
+      asked.set(`${ref.channel_id}:${ref.message_id}`, { ref, message: result?.message });
+      return result;
+    },
+    changed() {
+      let changed = false;
+      for (const entry of asked.values()) {
+        const now = targetOf(entry.ref);
+        if (now === entry.message)
+          continue;
+        entry.message = now;
+        changed = true;
+      }
+      return changed;
+    },
+    clear: () => asked.clear(),
+    get size() {
+      return asked.size;
+    }
+  };
+}
 function shouldHideMemberRow(row, rel, options) {
   if (row == null || typeof row !== "object")
     return false;
@@ -171,11 +205,12 @@ var settings = {
 var options;
 var relationships;
 var referencedStore;
+var replies = createReplyTracker((ref) => referencedStore?.getMessageByReference?.(ref));
 var lookups = {
   get relationships() {
     return relationships;
   },
-  referenced: (ref) => referencedStore?.getMessageByReference?.(ref)
+  referenced: replies.referenced
 };
 var version = 0;
 var listeners = new Set;
@@ -219,7 +254,7 @@ var hide_blocked_default = import_api.definePlugin({
     if (!relationships)
       ctx.logger.warn("RelationshipStore not found, only Discord's own blocked flags are used");
     const onRelationships = () => void (options?.active && bump());
-    const onReferenced = () => void (options?.active && options.replies && bump());
+    const onReferenced = () => void (options?.active && options.replies && replies.changed() && bump());
     relationships?.addChangeListener?.(onRelationships);
     referencedStore?.addChangeListener?.(onReferenced);
     ctx.settings.onChange((values) => {
@@ -241,6 +276,7 @@ var hide_blocked_default = import_api.definePlugin({
       options = undefined;
       relationships = undefined;
       referencedStore = undefined;
+      replies.clear();
       bump();
     });
     bump();

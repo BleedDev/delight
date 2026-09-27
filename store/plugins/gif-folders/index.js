@@ -694,7 +694,11 @@ var gif_folders_default = import_api.definePlugin({
     ctx = context;
     state = parseState(storage()?.get(STORAGE_KEY));
     active = null;
-    prune();
+    const idle = typeof requestIdleCallback === "function" ? requestIdleCallback(() => ctx === context && prune(), { timeout: 1e4 }) : undefined;
+    if (idle !== undefined)
+      context.onDispose(() => cancelIdleCallback(idle));
+    else
+      prune();
     context.settings.onChange(notify);
     context.contextMenu("gif-picker", (children, props, menuProps) => {
       const url = props?.link ?? menuProps?.link;

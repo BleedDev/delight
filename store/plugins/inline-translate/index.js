@@ -126,10 +126,19 @@ function restore(translated, tokens) {
 function translatableText(text) {
   return text.replace(PROTECTED, " ").replace(EMOJI, " ").replace(/[^\p{L}\p{M}\s]/gu, " ").replace(/\s+/g, " ").trim();
 }
+var translatable = new Map;
+var TRANSLATABLE_CACHE_SIZE = 1000;
 function isTranslatable(text) {
   if (!text)
     return false;
-  return (translatableText(text).match(/\p{L}/gu)?.length ?? 0) >= 2;
+  let answer = translatable.get(text);
+  if (answer !== undefined)
+    return answer;
+  answer = /\p{L}[^]*\p{L}/u.test(translatableText(text));
+  if (translatable.size >= TRANSLATABLE_CACHE_SIZE)
+    translatable.delete(translatable.keys().next().value);
+  translatable.set(text, answer);
+  return answer;
 }
 var SCRIPT_TESTS = [
   ["japanese", /[\p{Script=Hiragana}\p{Script=Katakana}]/u],
@@ -383,7 +392,7 @@ var MAX_QUEUED = 25;
 var CACHE_SIZE = 500;
 var accessoriesFilter = import_api.filters.byCode("channelMessageProps:{message:", "isAutomodBlockedMessage:");
 var renderedContentFilter = import_api.filters.byCode('"useMessageRenderedContent"', "hideSimpleEmbedContent");
-var markupFilter = Object.assign((v) => !!v && typeof v === "object" && !Array.isArray(v) && Object.values(v).some((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) && Object.values(v).some((c) => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)), { $code: [/"markup_+[\da-f]+"/] });
+var markupFilter = Object.assign((v) => !!v && typeof v === "object" && !Array.isArray(v) && Object.values(v).some((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) && Object.values(v).some((c) => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)), { $code: ['"markup_', '"codeContainer_'] });
 var useRenderedContent;
 var markupClass = "";
 var css = `
@@ -765,10 +774,12 @@ var inline_translate_default = import_api.definePlugin({
       runtime.dispose();
     });
     ctx.addStyle(css);
-    ctx.waitFor(renderedContentFilter, (fn) => void (useRenderedContent = fn));
-    ctx.waitFor(markupFilter, (classes) => {
-      markupClass = Object.values(classes).find((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
-    });
+    if (!useRenderedContent)
+      ctx.waitFor(renderedContentFilter, (fn) => void (useRenderedContent = fn));
+    if (!markupClass)
+      ctx.waitFor(markupFilter, (classes) => {
+        markupClass = Object.values(classes).find((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
+      });
     ctx.hookExport("after", accessoriesFilter, ({ args, result }) => {
       const props = args[0];
       const message = props?.channelMessageProps?.message;
@@ -804,8 +815,11 @@ var inline_translate_default = import_api.definePlugin({
     };
     locale?.addChangeListener?.(onLocale);
     ctx.onDispose(() => locale?.removeChangeListener?.(onLocale));
-    ctx.flux.subscribe("CONNECTION_OPEN", () => {
-      me = undefined;
+    ctx.flux.subscribe("CONNECTION_OPEN", (action) => {
+      const previous = me;
+      me = typeof action.user?.id === "string" ? action.user.id : undefined;
+      if (me !== undefined && me === previous)
+        return;
       runtime.invalidate();
     });
     ctx.onDispose(() => void (me = undefined));

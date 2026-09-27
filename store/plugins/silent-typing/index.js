@@ -58,12 +58,20 @@ function toggle() {
   context.settings.set("enabled", enabled);
   return enabled ? "Silent typing is on: others won't see you typing." : "Silent typing is off.";
 }
-var containerClass;
-function getContainerClass() {
-  containerClass ??= Object.values(import_api.find((v) => typeof v === "object" && Object.values(v).some((c) => typeof c === "string" && c.startsWith("channelAppLauncherButtonPopoutIconAnimation_"))) ?? {}).find((c) => typeof c === "string" && c.startsWith("buttonContainer_"));
-  return containerClass;
+function lookup(search) {
+  let value;
+  let missedAt = -Infinity;
+  return () => {
+    if (value !== undefined || performance.now() - missedAt < 1e4)
+      return value;
+    value = search();
+    if (value === undefined)
+      missedAt = performance.now();
+    return value;
+  };
 }
-var ChatButton;
+var getContainerClass = lookup(() => Object.values(import_api.find((v) => typeof v === "object" && Object.values(v).some((c) => typeof c === "string" && c.startsWith("channelAppLauncherButtonPopoutIconAnimation_"))) ?? {}).find((c) => typeof c === "string" && c.startsWith("buttonContainer_")));
+var getChatButton = lookup(() => import_api.find(chatButtonFilter));
 function KeyboardIcon({ off }) {
   return /* @__PURE__ */ jsx_runtime.jsxs("svg", {
     width: 20,
@@ -104,7 +112,7 @@ function KeyboardIcon({ off }) {
 function SilentTypingButton() {
   const { enabled } = context.settings.use();
   const label = enabled ? "Silent typing on (click to turn off)" : "Silent typing off (click to turn on)";
-  ChatButton ??= import_api.find(chatButtonFilter);
+  const ChatButton = getChatButton();
   const icon = /* @__PURE__ */ jsx_runtime.jsx(KeyboardIcon, {
     off: enabled
   });

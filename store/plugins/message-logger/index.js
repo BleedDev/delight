@@ -220,7 +220,15 @@ var PURGE_ACTION = "EVI_MESSAGE_LOGGER_PURGE";
 var SELF_DELETE_WINDOW = 60000;
 var accessoriesFilter = import_api.filters.byCode("channelMessageProps:{message:", "isAutomodBlockedMessage:");
 var renderedContentFilter = import_api.filters.byCode('"useMessageRenderedContent"', "hideSimpleEmbedContent");
-var markupFilter = Object.assign((v) => !!v && typeof v === "object" && !Array.isArray(v) && Object.values(v).some((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) && Object.values(v).some((c) => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)), { $code: [/"markup_+[\da-f]+"/] });
+var markupFilter = Object.assign((v) => !!v && typeof v === "object" && !Array.isArray(v) && Object.values(v).some((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) && Object.values(v).some((c) => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)), { $code: ['"markup_', '"codeContainer_'] });
+var messageActionsFilter = Object.assign(import_api.filters.byProps("deleteMessage", "editMessage", "sendMessage"), { $code: ["deleteMessage", "editMessage", "sendMessage"] });
+function withStore(ctx, name, callback) {
+  const found = import_api.findStore(name);
+  if (found)
+    callback(found);
+  else
+    ctx.waitFor(import_api.filters.byStoreName(name), callback);
+}
 var useRenderedContent;
 var markupClass = "";
 var css = `
@@ -421,14 +429,14 @@ function install(ctx, log, store) {
   const invalidate = () => registry._invalidateCaches?.();
   ctx.onDispose(invalidate);
   let users;
-  ctx.waitFor(import_api.filters.byStoreName("UserStore"), (s) => void (users = s));
+  withStore(ctx, "UserStore", (s) => void (users = s));
   const logFilters = () => ({
     currentUserId: users?.getCurrentUser?.()?.id,
     ignoreSelf: ctx.settings.get("ignoreSelf"),
     ignoreBots: ctx.settings.get("ignoreBots")
   });
   const selfDeletes = new Map;
-  ctx.hookExport("before", import_api.filters.byProps("deleteMessage", "editMessage", "sendMessage"), "deleteMessage", ({ args }) => {
+  ctx.hookExport("before", messageActionsFilter, "deleteMessage", ({ args }) => {
     const now = Date.now();
     for (const [key, at] of selfDeletes)
       if (now - at > SELF_DELETE_WINDOW)
@@ -544,11 +552,13 @@ var message_logger_default = import_api.definePlugin({
   start(ctx) {
     const log = new MessageLog({ perChannel: ctx.settings.get("limit") });
     ctx.addStyle(css);
-    ctx.waitFor(import_api.filters.byStoreName("MessageStore"), (store) => install(ctx, log, store));
-    ctx.waitFor(renderedContentFilter, (fn) => void (useRenderedContent = fn));
-    ctx.waitFor(markupFilter, (classes) => {
-      markupClass = Object.values(classes).find((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
-    });
+    withStore(ctx, "MessageStore", (store) => install(ctx, log, store));
+    if (!useRenderedContent)
+      ctx.waitFor(renderedContentFilter, (fn) => void (useRenderedContent = fn));
+    if (!markupClass)
+      ctx.waitFor(markupFilter, (classes) => {
+        markupClass = Object.values(classes).find((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
+      });
     ctx.contextMenu(["channel-context", "thread-context", "gdm-context"], (children, props) => {
       const item = props.channel?.id && clearItem(ctx, "evi-ml-clear-channel", "Clear Logged Messages", [props.channel.id]);
       if (item)

@@ -164,15 +164,20 @@ function describeDiff(theirOffset, yourOffset) {
   const amount = [h ? `${h}h` : "", m ? `${m}m` : ""].filter(Boolean).join(" ");
   return `${amount} ${diff > 0 ? "ahead of" : "behind"} you`;
 }
+var uses12h = new Map;
 function localeUses12h(locale) {
+  const key = locale || "en-US";
+  let found = uses12h.get(key);
+  if (found !== undefined)
+    return found;
   try {
-    const o = new Intl.DateTimeFormat(locale || "en-US", { hour: "numeric" }).resolvedOptions();
-    if (o.hourCycle)
-      return o.hourCycle === "h11" || o.hourCycle === "h12";
-    return !!o.hour12;
+    const o = new Intl.DateTimeFormat(key, { hour: "numeric" }).resolvedOptions();
+    found = o.hourCycle ? o.hourCycle === "h11" || o.hourCycle === "h12" : !!o.hour12;
   } catch {
-    return false;
+    found = false;
   }
+  uses12h.set(key, found);
+  return found;
 }
 var formatters = new Map;
 var ODD_SPACES = new RegExp(`[${String.fromCharCode(8239, 160)}]`, "g");
@@ -566,21 +571,13 @@ function clockIcon(zone, at) {
 var closeOpen;
 function openPicker(userId) {
   closeOpen?.();
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = import_api.createRoot(container);
-  const close = () => {
-    if (closeOpen !== close)
-      return;
-    closeOpen = undefined;
-    root.unmount();
-    container.remove();
-  };
-  closeOpen = close;
-  root.render(/* @__PURE__ */ jsx_runtime.jsx(Picker, {
+  const close = import_api.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(Picker, {
     userId,
-    onClose: close
-  }));
+    onClose: () => close2()
+  }), {
+    onClosed: () => void (closeOpen === close && (closeOpen = undefined))
+  });
+  closeOpen = close;
 }
 function Picker({ userId, onClose }) {
   useVersion();
@@ -633,10 +630,10 @@ function Picker({ userId, onClose }) {
   const cyc = cycle();
   const loc = locale();
   return /* @__PURE__ */ jsx_runtime.jsx("div", {
-    className: "evi-tz-scrim",
+    className: "evi-tz-scrim evi-scrim",
     onMouseDown: (e) => e.target === e.currentTarget && onClose(),
     children: /* @__PURE__ */ jsx_runtime.jsxs("div", {
-      className: "evi-tz-modal",
+      className: "evi-tz-modal evi-modal",
       role: "dialog",
       "aria-modal": "true",
       "aria-labelledby": "evi-tz-title",
@@ -863,7 +860,7 @@ var timezones_default = import_api.definePlugin({
     zones = parseZones(storage()?.get(STORAGE_KEY));
     ctx.addStyle(css);
     ctx.settings.onChange(bump);
-    ctx.onDispose(() => closeOpen?.());
+    ctx.onDispose(() => closeOpen?.({ instant: true }));
     ctx.setTimeout(() => {
       bump();
       ctx.setInterval(bump, 60000);
@@ -890,15 +887,25 @@ var timezones_default = import_api.definePlugin({
         ]
       }, "evi-tz-group"));
     });
+    const badgeLists = new Map;
     ctx.hookExport("after", profileBadgesFilter, ({ args, result }) => {
       if (!ctx.settings.get("showOnProfiles"))
         return;
-      const zone = zoneOf(args[0]?.userId);
-      if (!zone || !isValidZone(zone))
+      const userId = args[0]?.userId;
+      const zone = zoneOf(userId);
+      if (!userId || !zone || !isValidZone(zone))
         return;
       const now = new Date;
-      const badge = { id: "evi-timezone", description: tooltipText(describeAt(zone, now)), iconSrc: clockIcon(zone, now) };
-      return [...Array.isArray(result) ? result : [], badge];
+      const description = tooltipText(describeAt(zone, now));
+      const iconSrc = clockIcon(zone, now);
+      const cached = badgeLists.get(userId);
+      if (cached && cached.result === result && cached.description === description && cached.iconSrc === iconSrc)
+        return cached.list;
+      const list = [...Array.isArray(result) ? result : [], { id: "evi-timezone", description, iconSrc }];
+      if (badgeLists.size >= 100)
+        badgeLists.clear();
+      badgeLists.set(userId, { result, description, iconSrc, list });
+      return list;
     });
     ctx.hookExport("before", usernameFilter, ({ args }) => {
       const props = args[0];
@@ -928,7 +935,7 @@ var timezones_default = import_api.definePlugin({
     });
   },
   stop() {
-    closeOpen?.();
+    closeOpen?.({ instant: true });
     context = undefined;
     bump();
   },

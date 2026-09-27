@@ -145,37 +145,92 @@ function serialize(tracker, now) {
 }
 var num = (v) => typeof v === "number" && v > 0 ? v : 0;
 var str = (v) => typeof v === "string" && v ? v : undefined;
+function restore(tracker, savedAt, id, seen, message, online, active, channelId, messageId, approx) {
+  const entry = {};
+  const s = num(seen);
+  if (online && savedAt > s) {
+    entry.seen = savedAt;
+    entry.approx = true;
+  } else if (s) {
+    entry.seen = s;
+    if (approx)
+      entry.approx = true;
+  }
+  if (num(active))
+    entry.active = num(active);
+  if (num(message)) {
+    entry.message = num(message);
+    if (str(channelId))
+      entry.channelId = str(channelId);
+    if (str(messageId))
+      entry.messageId = str(messageId);
+  }
+  if (entry.seen || entry.message || entry.active)
+    tracker.set(id, entry);
+}
+var SEP = ",";
+function pack(tracker, now) {
+  const n = tracker.size;
+  const seen = new Float64Array(n), message = new Float64Array(n), active = new Float64Array(n), flags = new Uint8Array(n);
+  const ids = [], channelIds = [], messageIds = [];
+  let i = 0;
+  for (const [id, e] of tracker) {
+    const channelId = e.channelId ?? "", messageId = e.messageId ?? "";
+    if (id.includes(SEP) || channelId.includes(SEP) || messageId.includes(SEP))
+      continue;
+    ids.push(id);
+    channelIds.push(channelId);
+    messageIds.push(messageId);
+    seen[i] = e.seen ?? 0;
+    message[i] = e.message ?? 0;
+    active[i] = e.active ?? 0;
+    flags[i] = (e.online ? 1 : 0) | (e.approx ? 2 : 0);
+    i++;
+  }
+  return {
+    v: 3,
+    savedAt: now,
+    ids: ids.join(SEP),
+    seen: i < n ? seen.slice(0, i) : seen,
+    message: i < n ? message.slice(0, i) : message,
+    active: i < n ? active.slice(0, i) : active,
+    flags: i < n ? flags.slice(0, i) : flags,
+    channelIds: channelIds.join(SEP),
+    messageIds: messageIds.join(SEP)
+  };
+}
+function unpack(saved, tracker) {
+  const { seen, message, active, flags } = saved;
+  if (!(seen instanceof Float64Array) || !(message instanceof Float64Array) || !(active instanceof Float64Array) || !(flags instanceof Uint8Array))
+    return;
+  const n = seen.length;
+  if (!n || typeof saved.ids !== "string")
+    return;
+  const ids = saved.ids.split(SEP);
+  const channelIds = typeof saved.channelIds === "string" ? saved.channelIds.split(SEP) : [];
+  const messageIds = typeof saved.messageIds === "string" ? saved.messageIds.split(SEP) : [];
+  if (ids.length !== n || message.length !== n || active.length !== n || flags.length !== n)
+    return;
+  const savedAt = num(saved.savedAt);
+  for (let i = 0;i < n; i++) {
+    if (!ids[i])
+      continue;
+    restore(tracker, savedAt, ids[i], seen[i], message[i], flags[i] & 1, active[i], channelIds[i], messageIds[i], flags[i] & 2);
+  }
+}
 function deserialize(data, opts = {}) {
   const tracker = new Map;
   const saved = data;
-  if (!saved || !Array.isArray(saved.rows))
-    return tracker;
-  const savedAt = num(saved.savedAt);
-  for (const row of saved.rows) {
-    if (!Array.isArray(row) || typeof row[0] !== "string")
-      continue;
-    const [id, seen, message, online, active, channelId, messageId, approx] = row;
-    const entry = {};
-    const s = num(seen);
-    if (online && savedAt > s) {
-      entry.seen = savedAt;
-      entry.approx = true;
-    } else if (s) {
-      entry.seen = s;
-      if (approx)
-        entry.approx = true;
+  if (saved?.v === 3)
+    unpack(saved, tracker);
+  else if (saved && Array.isArray(saved.rows)) {
+    const savedAt = num(saved.savedAt);
+    for (const row of saved.rows) {
+      if (!Array.isArray(row) || typeof row[0] !== "string")
+        continue;
+      const [id, seen, message, online, active, channelId, messageId, approx] = row;
+      restore(tracker, savedAt, id, seen, message, online, active, channelId, messageId, approx);
     }
-    if (num(active))
-      entry.active = num(active);
-    if (num(message)) {
-      entry.message = num(message);
-      if (str(channelId))
-        entry.channelId = str(channelId);
-      if (str(messageId))
-        entry.messageId = str(messageId);
-    }
-    if (entry.seen || entry.message || entry.active)
-      tracker.set(id, entry);
   }
   prune(tracker, opts.cap, opts.keep, opts.slack);
   return tracker;
@@ -461,7 +516,7 @@ async function save() {
     return;
   state.dirty = false;
   try {
-    await dbPut(serialize(state.tracker, Date.now()));
+    await dbPut(pack(state.tracker, Date.now()));
   } catch (e) {
     state.dirty = true;
     state.context?.logger.error("Couldn't save", e);
@@ -657,7 +712,7 @@ function Remembered() {
     setUndo({ tracker: state.tracker, count });
     replaceAll(new Map);
   };
-  const restore = () => {
+  const restore2 = () => {
     if (!undo)
       return;
     const tracker = new Map(undo.tracker);
@@ -725,7 +780,7 @@ function Remembered() {
         className: "evi-ls-actions",
         children: [
           undo ? /* @__PURE__ */ jsx_runtime4.jsx(SmallButton, {
-            onClick: restore,
+            onClick: restore2,
             children: "Undo"
           }) : confirming ? /* @__PURE__ */ jsx_runtime4.jsxs(jsx_runtime4.Fragment, {
             children: [
@@ -1058,7 +1113,7 @@ var last_seen_default = import_api5.definePlugin({
         return;
       refreshOwnId();
       invalidateKeep();
-      setTimeout(seed, 1000);
+      setTimeout(() => whenIdle(() => void (state.context && seed())), 1000);
     },
     RELATIONSHIP_ADD: invalidateKeep,
     RELATIONSHIP_REMOVE: invalidateKeep,

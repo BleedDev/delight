@@ -72,36 +72,79 @@ function findScroller(list) {
   }
   return null;
 }
-function flattenRules(root) {
-  const inside = [...root.querySelectorAll("*")];
-  const flatten = (value) => value.replace(/translate3d\(\s*([^,]+),\s*([^,]+),\s*0(?:px)?\s*\)/g, "translate($1, $2)").replace(/\s*translateZ\(\s*0(?:px)?\s*\)/g, "").trim() || "none";
-  const css2 = [];
-  const visit = (list) => {
-    for (const rule of list) {
-      if (rule instanceof CSSStyleRule) {
-        const transform = rule.style.getPropertyValue("transform");
-        if (!transform || !/translateZ\(\s*0|translate3d\([^)]*,\s*0(?:px)?\s*\)/.test(transform))
-          continue;
-        let applies = false;
-        try {
-          applies = inside.some((el) => el.matches(rule.selectorText));
-        } catch {}
-        if (!applies)
-          continue;
-        const selector = rule.selectorText.split(",").map((part) => `[data-list-id="guildsnav"] ${part.trim()}`).join(", ");
-        css2.push(`${selector} { transform: ${flatten(transform)}; }`);
-      } else if ("cssRules" in rule) {
-        visit(rule.cssRules);
-      }
-    }
-  };
-  for (const sheet of document.styleSheets) {
-    try {
-      visit(sheet.cssRules);
-    } catch {}
+var flatten = (value) => value.replace(/translate3d\(\s*([^,]+),\s*([^,]+),\s*0(?:px)?\s*\)/g, "translate($1, $2)").replace(/\s*translateZ\(\s*0(?:px)?\s*\)/g, "").trim() || "none";
+var LAYER_HACK = /translateZ\(\s*0|translate3d\([^)]*,\s*0(?:px)?\s*\)/;
+var SLICE_MS = 4;
+var flattened;
+function flattenRules(root, done) {
+  const sheetCount = document.styleSheets.length;
+  if (flattened?.sheets === sheetCount) {
+    done(flattened.css);
+    return () => {};
   }
-  return css2.join(`
-`);
+  const css2 = [];
+  const sheets = [...document.styleSheets];
+  const stack = [];
+  const visit = (rule) => {
+    if (rule instanceof CSSStyleRule) {
+      const transform = rule.style.getPropertyValue("transform");
+      if (!transform || !LAYER_HACK.test(transform))
+        return false;
+      let applies = false;
+      try {
+        applies = root.querySelector(rule.selectorText) !== null;
+      } catch {}
+      if (!applies)
+        return false;
+      const selector = rule.selectorText.split(",").map((part) => `[data-list-id="guildsnav"] ${part.trim()}`).join(", ");
+      css2.push(`${selector} { transform: ${flatten(transform)}; }`);
+    } else if ("cssRules" in rule) {
+      stack.push({ rules: rule.cssRules, next: 0 });
+      return true;
+    }
+    return false;
+  };
+  const step = (deadline) => {
+    while (performance.now() < deadline) {
+      const top = stack[stack.length - 1];
+      if (!top) {
+        const sheet = sheets.shift();
+        if (!sheet)
+          return true;
+        try {
+          stack.push({ rules: sheet.cssRules, next: 0 });
+        } catch {}
+        continue;
+      }
+      if (top.next >= top.rules.length) {
+        stack.pop();
+        continue;
+      }
+      const end = Math.min(top.next + 200, top.rules.length);
+      while (top.next < end && !visit(top.rules[top.next++]))
+        ;
+    }
+    return false;
+  };
+  return inIdleSlices(step, () => {
+    flattened = { sheets: sheetCount, css: css2.join(`
+`) };
+    done(flattened.css);
+  });
+}
+function inIdleSlices(step, finish) {
+  let cancelled = false;
+  const schedule = (fn) => typeof requestIdleCallback === "function" ? requestIdleCallback(fn, { timeout: 1000 }) : setTimeout(fn, 16);
+  const run = () => {
+    if (cancelled)
+      return;
+    if (step(performance.now() + SLICE_MS))
+      finish();
+    else
+      schedule(run);
+  };
+  schedule(run);
+  return () => void (cancelled = true);
 }
 function createSession(list, kind, marginScreens) {
   const itemSelector = kind.item(list.getAttribute("data-list-id"));
@@ -208,18 +251,21 @@ function createSession(list, kind, marginScreens) {
   };
   scroller?.addEventListener("scroll", onScroll, { passive: true });
   let flat;
-  if (kind.flattenPills) {
+  const stopFlattening = kind.flattenPills ? flattenRules(list, (css2) => {
+    if (disposed || !css2)
+      return;
     flat = document.createElement("style");
     flat.id = "evi-fl-flatten";
-    flat.textContent = flattenRules(list);
+    flat.textContent = css2;
     document.head.append(flat);
-  }
+  }) : undefined;
   sync();
   return {
     list,
     stale: () => !scroller && !!findScroller(list),
     dispose() {
       disposed = true;
+      stopFlattening?.();
       visibility?.disconnect();
       mutations.disconnect();
       scroller?.removeEventListener("scroll", onScroll);

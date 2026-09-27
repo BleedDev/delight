@@ -284,8 +284,8 @@ function setWatchList(list) {
   storage()?.set(WATCH_KEY, list);
   bump();
 }
-function watched(id) {
-  return !!ctx && isWatched(id, watchList(), ctx.settings.get("watchAllFriends"), isFriend, selfId());
+function watched(id, list = watchList()) {
+  return !!ctx && isWatched(id, list, ctx.settings.get("watchAllFriends"), isFriend, selfId());
 }
 function toggle(id) {
   const list = watchList();
@@ -368,8 +368,9 @@ function flush() {
     return pending.clear();
   const now = Date.now();
   const cfg = config();
+  const list = new Set(watchList());
   for (const id of pending) {
-    if (!watched(id))
+    if (!watched(id, list))
       continue;
     for (const alert of engine.observe(id, snapshot(id), now, cfg))
       deliver(alert);

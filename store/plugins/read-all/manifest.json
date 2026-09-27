@@ -2,7 +2,7 @@
     "id": "read-all",
     "name": "Read All",
     "description": "Mark every server as read in one click, with a button above the server list, /readall, or the server right-click menu. DMs too if you want.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "authors": [
         "Evi"
     ],
@@ -10,6 +10,12 @@
         "utility"
     ],
     "changelog": [
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Smoother: the unread count no longer holds up Discord while it starts, and counts a few servers at a time when the browser is idle."
+            ]
+        },
         {
             "version": "1.0.1",
             "notes": [

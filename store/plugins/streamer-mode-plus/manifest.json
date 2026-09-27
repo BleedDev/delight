@@ -2,7 +2,7 @@
     "id": "streamer-mode-plus",
     "name": "Streamer Mode+",
     "description": "Blurs your DMs, servers, chat images and more while you stream, with hover to reveal. Turns on when you go live, with Discord's Streamer Mode, or by hotkey and /streamerplus.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
         "Evi"
     ],
@@ -10,6 +10,12 @@
         "privacy"
     ],
     "changelog": [
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Smoother channel switching: the page's styles are only touched when blurring actually changes."
+            ]
+        },
         {
             "version": "1.0.0",
             "notes": [

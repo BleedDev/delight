@@ -67,6 +67,14 @@ function channelOf(value) {
   return typeof channel?.id === "string" ? channel : undefined;
 }
 function collectUnread(stores, options = {}) {
+  const steps = collectUnreadSteps(stores, options);
+  for (;; ) {
+    const step = steps.next();
+    if (step.done)
+      return step.value;
+  }
+}
+function* collectUnreadSteps(stores, options = {}) {
   const { ReadStateStore: rs } = stores;
   const seen = new Set;
   const out = [];
@@ -92,6 +100,7 @@ function collectUnread(stores, options = {}) {
       for (const thread of Object.values(byId ?? {}))
         consider(channelOf(thread), guildId);
     }
+    yield;
   }
   if (options.includeDms)
     stores.ChannelStore?.getSortedPrivateChannels?.()?.forEach((channel) => consider(channel, null));
@@ -166,18 +175,43 @@ async function readAllWithToast() {
   }
 }
 var unreadCount = 0;
+var showButton = true;
 var listeners = new Set;
 var recountTimer;
 var cancelIdle;
-function recount() {
-  recountTimer = undefined;
-  cancelIdle = undefined;
-  const s = stores();
-  const next = s && context ? collectUnread(s, { includeDms: context.settings.get("includeDms"), skipReadGuilds: true }).length : 0;
+var counting;
+var countAgain = false;
+var SLICE_MS = 5;
+function setUnreadCount(next) {
   if (next === unreadCount)
     return;
   unreadCount = next;
   listeners.forEach((l) => l());
+}
+function recount(deadline) {
+  cancelIdle = undefined;
+  const s = stores();
+  if (!s || !context) {
+    counting = undefined;
+    return setUnreadCount(0);
+  }
+  counting ??= collectUnreadSteps(s, { includeDms: context.settings.get("includeDms"), skipReadGuilds: true });
+  const until = performance.now() + Math.min(SLICE_MS, Math.max(1, deadline?.timeRemaining?.() ?? SLICE_MS));
+  for (;; ) {
+    const step = counting.next();
+    if (step.done) {
+      counting = undefined;
+      setUnreadCount(step.value.length);
+      if (countAgain) {
+        countAgain = false;
+        cancelIdle = whenIdle(recount);
+      }
+      return;
+    }
+    if (performance.now() >= until)
+      break;
+  }
+  cancelIdle = whenIdle(recount);
 }
 var RECOUNT_AFTER = 1500;
 var RECOUNT_WITHIN = 5000;
@@ -187,7 +221,7 @@ function whenIdle(fn) {
     const handle2 = requestIdleCallback(fn, { timeout: 1000 });
     return () => cancelIdleCallback(handle2);
   }
-  const handle = setTimeout(fn, 0);
+  const handle = setTimeout(() => fn(), 0);
   return () => clearTimeout(handle);
 }
 function scheduleRecount() {
@@ -199,14 +233,17 @@ function scheduleRecount() {
   clearTimeout(recountTimer);
   recountTimer = setTimeout(() => {
     recountTimer = undefined;
+    if (counting)
+      countAgain = true;
     cancelIdle ??= whenIdle(recount);
   }, RECOUNT_AFTER);
 }
-function useUnreadCount() {
-  return import_api.React.useSyncExternalStore((cb) => {
-    listeners.add(cb);
-    return () => void listeners.delete(cb);
-  }, () => unreadCount);
+var subscribe = (cb) => {
+  listeners.add(cb);
+  return () => void listeners.delete(cb);
+};
+function useButtonCount() {
+  return import_api.React.useSyncExternalStore(subscribe, () => showButton ? unreadCount : 0);
 }
 var CheckIcon = () => /* @__PURE__ */ jsx_runtime.jsx("svg", {
   width: "20",
@@ -223,9 +260,8 @@ var CheckIcon = () => /* @__PURE__ */ jsx_runtime.jsx("svg", {
   })
 });
 function ReadAllButton() {
-  const { showButton } = context.settings.use();
-  const count = useUnreadCount();
-  if (!showButton || count === 0)
+  const count = useButtonCount();
+  if (count === 0)
     return null;
   const label = `Mark ${count} ${count === 1 ? "channel" : "channels"} as read`;
   const button = /* @__PURE__ */ jsx_runtime.jsx("button", {
@@ -282,6 +318,8 @@ var read_all_default = import_api.definePlugin({
       recountTimer = undefined;
       cancelIdle?.();
       cancelIdle = undefined;
+      counting = undefined;
+      countAgain = false;
       cachedStores = undefined;
       unreadCount = 0;
       listeners.forEach((l) => l());
@@ -290,8 +328,15 @@ var read_all_default = import_api.definePlugin({
     for (const store of watched)
       store.addChangeListener?.(scheduleRecount);
     ctx.onDispose(() => watched.forEach((store) => store.removeChangeListener?.(scheduleRecount)));
-    ctx.settings.onChange(scheduleRecount);
-    recount();
+    showButton = ctx.settings.get("showButton");
+    ctx.settings.onChange((values) => {
+      if (values.showButton !== showButton) {
+        showButton = values.showButton;
+        listeners.forEach((l) => l());
+      }
+      scheduleRecount();
+    });
+    cancelIdle = whenIdle(recount);
     ctx.command({
       name: "readall",
       description: "Mark every server as read",

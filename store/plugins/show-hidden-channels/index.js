@@ -102,18 +102,57 @@ function store(name) {
 }
 function findCached(search) {
   let value;
-  let lastMiss = -Infinity;
+  let retryAt = -Infinity;
+  let wait = 5000;
   return () => {
     if (value !== undefined)
       return value;
-    if (performance.now() - lastMiss < 5000)
+    if (performance.now() < retryAt)
       return;
     value = search();
-    if (value === undefined)
-      lastMiss = performance.now();
+    if (value === undefined) {
+      retryAt = performance.now() + wait;
+      wait = Math.min(wait * 2, 60000);
+    }
     return value;
   };
 }
+var permissionStamp = 0;
+var watching = false;
+var permissionChanges = () => permissionStamp;
+function watchPermissions() {
+  const permissions = store("PermissionStore");
+  if (typeof permissions?.addChangeListener !== "function")
+    return () => {};
+  const changed = () => void permissionStamp++;
+  permissions.addChangeListener(changed);
+  watching = true;
+  return () => {
+    watching = false;
+    permissionStamp++;
+    permissions.removeChangeListener?.(changed);
+  };
+}
+var verdicts = new WeakMap;
+function verdictFor(permissions, channel) {
+  const guildVersion = typeof permissions.getGuildVersion === "function" ? permissions.getGuildVersion(channel.guild_id) : undefined;
+  const channelsVersion = typeof permissions.getChannelsVersion === "function" ? permissions.getChannelsVersion() : undefined;
+  let verdict = watching ? verdicts.get(channel) : undefined;
+  if (verdict && verdict.stamp === permissionStamp && verdict.guildVersion === guildVersion && verdict.channelsVersion === channelsVersion)
+    return verdict;
+  verdict = { stamp: permissionStamp, guildVersion, channelsVersion, canView: !!permissions.can(Permissions.VIEW_CHANNEL, channel) };
+  if (watching)
+    verdicts.set(channel, verdict);
+  return verdict;
+}
+function canConnect(channel) {
+  const permissions = store("PermissionStore");
+  if (!permissions || channel == null || typeof channel !== "object")
+    return false;
+  const verdict = verdictFor(permissions, channel);
+  return verdict.canConnect ??= !!permissions.can(Permissions.CONNECT, channel);
+}
+var PSEUDO_CHANNELS = new Set(["browse", "customize", "guide"]);
 function isHiddenChannel(channel, checkConnect = false) {
   try {
     if (channel == null || Object.hasOwn(channel, "channelId") && channel.channelId == null)
@@ -122,12 +161,17 @@ function isHiddenChannel(channel, checkConnect = false) {
       channel = store("ChannelStore")?.getChannel(channel.channelId);
     if (channel == null || channel.isDM?.() || channel.isGroupDM?.() || channel.isMultiUserDM?.())
       return false;
-    if (["browse", "customize", "guide"].includes(channel.id))
+    if (PSEUDO_CHANNELS.has(channel.id))
       return false;
     const permissions = store("PermissionStore");
     if (!permissions)
       return false;
-    return !permissions.can(Permissions.VIEW_CHANNEL, channel) || checkConnect && !permissions.can(Permissions.CONNECT, channel);
+    if (typeof channel !== "object")
+      return !permissions.can(Permissions.VIEW_CHANNEL, channel) || checkConnect && !permissions.can(Permissions.CONNECT, channel);
+    const verdict = verdictFor(permissions, channel);
+    if (!verdict.canView)
+      return true;
+    return checkConnect && !(verdict.canConnect ??= !!permissions.can(Permissions.CONNECT, channel));
   } catch (err) {
     context?.logger.error("isHiddenChannel threw", err);
     return false;
@@ -541,7 +585,6 @@ function HiddenIcon() {
 }
 var isUncategorized = (entry) => entry.channel.id === "null" && entry.channel.name === "Uncategorized" && entry.comparator === -1;
 var filteredChannels = new WeakMap;
-var permissionChanges = 0;
 function guildOf(channels) {
   if (typeof channels.id === "string")
     return channels.id;
@@ -957,9 +1000,9 @@ var show_hidden_channels_default = import_api3.definePlugin({
   showLockIcon: (channel) => setting("showMode") === "lock" && isHiddenChannel(channel),
   hideUnread: (channel) => setting("hideUnreads") && isHiddenChannel(channel),
   showUnreadWhileMuted: (channel) => !setting("hideUnreads") && mutedStyle(channel),
-  canConnect: (channel) => !!store("PermissionStore")?.can(Permissions.CONNECT, channel),
+  canConnect,
   swapViewChannelWithConnectPermission(mergedPermissions, channel) {
-    if (!store("PermissionStore")?.can(Permissions.CONNECT, channel)) {
+    if (!canConnect(channel)) {
       mergedPermissions &= ~Permissions.VIEW_CHANNEL;
       mergedPermissions |= Permissions.CONNECT;
     }
@@ -969,16 +1012,17 @@ var show_hidden_channels_default = import_api3.definePlugin({
     if (includeHidden || !channels || typeof channels !== "object")
       return channels;
     const cached = filteredChannels.get(channels);
-    if (cached?.stamp === permissionChanges)
+    const stamp = permissionChanges();
+    if (cached?.stamp === stamp)
       return cached.result;
     const key = permissionKey(guildOf(channels));
     if (cached && key !== undefined && cached.key === key) {
-      cached.stamp = permissionChanges;
+      cached.stamp = stamp;
       return cached.result;
     }
     const fresh = filterChannels(channels);
     const result = cached && sameChannels(cached.result, fresh) ? cached.result : fresh;
-    filteredChannels.set(channels, { stamp: permissionChanges, key, result });
+    filteredChannels.set(channels, { stamp, key, result });
     return result;
   },
   makeAllowedRolesReduce(guildId) {
@@ -997,10 +1041,7 @@ var show_hidden_channels_default = import_api3.definePlugin({
   HiddenChannelIcon: () => /* @__PURE__ */ jsx_runtime2.jsx(HiddenIcon, {}),
   start(ctx) {
     setContext(ctx);
-    const permissions = store("PermissionStore");
-    const changed = () => void permissionChanges++;
-    permissions?.addChangeListener?.(changed);
-    ctx.onDispose(() => permissions?.removeChangeListener?.(changed));
+    ctx.onDispose(watchPermissions());
   },
   stop() {
     setContext(undefined);

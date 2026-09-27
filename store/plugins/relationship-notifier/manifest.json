@@ -2,7 +2,7 @@
     "id": "relationship-notifier",
     "name": "Relationship Notifier",
     "description": "Tells you when someone removes you as a friend, declines your friend request, or removes you from a group DM or server. Kept in memory only: nothing is saved, and the log is gone when Discord restarts.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
         "Evi"
     ],
@@ -10,6 +10,12 @@
         "social"
     ],
     "changelog": [
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Faster: when a channel or server goes away, only what's needed to tell whether it concerns you is looked up."
+            ]
+        },
         {
             "version": "1.0.0",
             "notes": [

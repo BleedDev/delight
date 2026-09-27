@@ -2,7 +2,7 @@
     "id": "friend-online-alerts",
     "name": "Friend Online Alerts",
     "description": "Get told when the people you pick come online, with a toast, a desktop notification or a sound. Optionally when they go offline, start a game or start streaming.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
         "Evi"
     ],
@@ -10,6 +10,12 @@
         "social"
     ],
     "changelog": [
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Lighter on big servers: a burst of status updates reads your watch list once instead of once per person."
+            ]
+        },
         {
             "version": "1.0.0",
             "notes": [

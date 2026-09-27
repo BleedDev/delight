@@ -263,7 +263,8 @@ function applyClasses(classes) {
     if (!classes.includes(c))
       body.classList.remove(c);
   for (const c of classes)
-    body.classList.add(c);
+    if (!body.classList.contains(c))
+      body.classList.add(c);
   applied = classes;
 }
 function update(manual = false, quiet = false) {
