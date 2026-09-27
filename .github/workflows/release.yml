@@ -94,7 +94,8 @@ jobs:
           fi
           prerelease=()
           if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
-          gh release create "$TAG" dist/evi.exe dist/evi-macos-* dist/evi-linux-* dist/*.sha256 \
+          # Named one by one: evi-linux-* would also match the .sha256 files, uploading them twice
+          gh release create "$TAG" dist/evi.exe dist/evi-macos-{arm64,x64} dist/evi-linux-{x64,arm64} dist/*.sha256 \
             --draft "${prerelease[@]}" \
             --target "$GITHUB_SHA" \
             --title "Evi $VERSION" \
