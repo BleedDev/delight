@@ -12,7 +12,8 @@ import pkg from "../../package.json";
 import { readAsarFile } from "../shared/asar";
 import { createShimAsar, ORIGINAL_ASAR } from "../shared/shim";
 import { parseRemovedPlugins, REMOVED_PLUGINS_FILE, RETIRED_PLUGINS, STORE_MARKER } from "../shared/store";
-import { DiscordInstall, findInstalls, FLAVORS, injectionState, isDiscordRunning, killDiscord, startDiscord } from "./discord";
+import { DiscordInstall, findInstalls, FLAVORS, injectionState, isDiscordRunning, killDiscord, searchedLocations, startDiscord } from "./discord";
+import { APP_DATA, giveBackToUser, isSudo } from "./paths";
 import { cleanupPreviousUpdate, COMPILED, downloadVerified, fetchLatestRelease, isNewer, replaceExecutable, UpdateError } from "./update";
 
 interface Embed {
@@ -21,11 +22,11 @@ interface Embed {
     plugins: Record<string, Record<string, string>>;
 }
 
-const DATA_DIR = join(process.env.APPDATA ?? "", "Evi");
+const DATA_DIR = join(APP_DATA, "Evi");
 
 // Before the rename to Evi the data folder was %APPDATA%/Delight: move it over once
-const LEGACY_DATA_DIR = join(process.env.APPDATA ?? "", "Delight");
-if (process.env.APPDATA && !existsSync(DATA_DIR) && existsSync(LEGACY_DATA_DIR)) {
+const LEGACY_DATA_DIR = join(APP_DATA, "Delight");
+if (APP_DATA && !existsSync(DATA_DIR) && existsSync(LEGACY_DATA_DIR)) {
     try {
         renameSync(LEGACY_DATA_DIR, DATA_DIR);
     } catch { }
@@ -58,7 +59,7 @@ function fail(message: string): never {
 
 function selectedInstalls() {
     const installs = findInstalls();
-    if (!installs.length) fail("No Discord installation found in %LOCALAPPDATA%.");
+    if (!installs.length) fail(`No Discord installation found in ${searchedLocations()}.`);
     if (flags.flavor === "all") return installs;
     if (!(flags.flavor! in FLAVORS)) fail(`Unknown flavor "${flags.flavor}". Use one of: ${Object.keys(FLAVORS).join(", ")}, all`);
 
@@ -107,13 +108,26 @@ async function prepareCore(): Promise<{ corePath: string; devPluginsDir?: string
         const dir = join(DATA_DIR, "plugins", id);
         if (!existsSync(join(dir, STORE_MARKER))) rmSync(dir, { recursive: true, force: true });
     }
+    giveBackToUser(DATA_DIR);
 
     return { corePath: join(coreDir, "main.js") };
 }
 
+/** Why the archives couldn't be swapped, with what to do about it */
+function permissionHint(install: DiscordInstall, err: unknown) {
+    const code = (err as NodeJS.ErrnoException)?.code;
+    if (code !== "EACCES" && code !== "EPERM") return;
+    if (process.platform === "darwin") {
+        return `macOS didn't let this terminal change ${install.root}. Allow it in System Settings > Privacy & Security > App Management, then try again.`;
+    }
+    if (process.platform === "linux" && !isSudo()) {
+        return `${install.root} belongs to root. Run it again with sudo: sudo ${COMPILED ? process.execPath : "bun src/cli/index.ts"} ${Bun.argv.slice(2).join(" ")}`;
+    }
+}
+
 /**
  * Discord keeps app.asar open while running, so it has to be closed to swap the archives.
- * Returns false when it's running and we weren't allowed to close it.
+ * Returns false when it's running and we weren't allowed to close it, or the swap failed.
  */
 async function withDiscordClosed(install: DiscordInstall, action: () => void) {
     const running = isDiscordRunning(install);
@@ -124,8 +138,13 @@ async function withDiscordClosed(install: DiscordInstall, action: () => void) {
     if (running) await killDiscord(install);
     try {
         action();
+    } catch (err) {
+        const hint = permissionHint(install, err);
+        if (!hint) throw err;
+        console.error(c.err(`✗ ${hint}`));
+        return false;
     } finally {
-        if (running) startDiscord(install);
+        if (running && !startDiscord(install)) console.log(c.dim(`  Start Discord ${install.flavor} again yourself: under sudo it would run as root.`));
     }
     return true;
 }
@@ -244,7 +263,7 @@ function help() {
   install     Install or update Evi
   uninstall   Remove Evi, Discord goes back to vanilla
   status      Show every Discord install and whether Evi is in it
-  update      Download the latest evi.exe and refresh every Discord that has Evi
+  update      Download the latest release and refresh every Discord that has Evi
 
 Options
   --flavor <stable|ptb|canary|development|all>   Which Discord (default: stable)
@@ -252,7 +271,7 @@ Options
   --dev                                          Point Discord at this repo's dist/ (hot reload)
   --check                                        With update: only report whether a newer release exists
 
-Launch Discord with --vanilla to start it once without Evi.`);
+Launch Discord with --vanilla to start it once without Evi.${process.platform === "linux" ? "\nDiscord's folder usually belongs to root on Linux: run install, uninstall and update with sudo." : ""}`);
 }
 
 if (COMPILED) cleanupPreviousUpdate(process.execPath);

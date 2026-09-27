@@ -2,6 +2,7 @@
  *   bun scripts/build.ts            build core + plugins into dist/
  *   bun scripts/build.ts --watch    rebuild on change; running Discord hot-reloads plugins, Ctrl+R picks up core
  *   bun scripts/build.ts --cli      also compile the installer into dist/evi.exe
+ *   bun scripts/build.ts --release  compile the installer for every system a release carries, each with its .sha256
  */
 import type { BunPlugin } from "bun";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, watch, writeFileSync } from "fs";
@@ -9,6 +10,7 @@ import { basename, join, resolve } from "path";
 
 import pkg from "../package.json";
 import type { PluginManifest } from "../src/shared/ipc";
+import { RELEASE_ASSETS } from "../src/shared/release";
 
 const ROOT = resolve(import.meta.dir, "..");
 const DIST = join(ROOT, "dist");
@@ -18,7 +20,17 @@ const PLUGIN_ROOTS = [join(ROOT, "plugins"), join(ROOT, "userplugins")];
 
 const args = new Set(process.argv.slice(2));
 const WATCH = args.has("--watch");
-const CLI = args.has("--cli");
+const RELEASE = args.has("--release");
+const CLI = args.has("--cli") || RELEASE;
+
+/** Bun cross-compiles, so every installer builds from any machine */
+const TARGETS: Record<typeof RELEASE_ASSETS[number], string> = {
+    "evi.exe": "bun-windows-x64",
+    "evi-macos-arm64": "bun-darwin-arm64",
+    "evi-macos-x64": "bun-darwin-x64",
+    "evi-linux-x64": "bun-linux-x64",
+    "evi-linux-arm64": "bun-linux-arm64",
+};
 
 const define = {
     EVI_VERSION: JSON.stringify(pkg.version),
@@ -142,13 +154,69 @@ function writeEmbed() {
     writeFileSync(join(DIST, "embed.json"), JSON.stringify(embed));
 }
 
+/**
+ * Bun's cross-compiled macOS binaries carry a signature that doesn't match their contents, and Apple
+ * Silicon kills those on launch. rcodesign (github.com/indygreg/apple-platform-rs) re-signs them ad hoc
+ * from any system, like `codesign -s -` would on a Mac.
+ */
+function adhocSign(file: string) {
+    const rcodesign = process.env.RCODESIGN || Bun.which("rcodesign");
+    if (!rcodesign) {
+        console.error("✗ rcodesign isn't installed, and the macOS installers need re-signing. Get it from https://github.com/indygreg/apple-platform-rs/releases or set RCODESIGN.");
+        process.exit(1);
+    }
+    const sign = Bun.spawnSync([rcodesign, "sign", "--binary-identifier", "rest.evi.installer", file], { stderr: "pipe" });
+    const problem = sign.exitCode === 0 ? signatureProblem(readFileSync(file)) : sign.stderr.toString();
+    if (problem) {
+        console.error(`✗ Signing ${basename(file)} failed: ${problem}`);
+        process.exit(1);
+    }
+}
+
+/**
+ * What macOS checks before running a binary: the code directory covers the whole file up to the
+ * signature, and every page hashes to what it records. (rcodesign's own verify trips over ad hoc signatures.)
+ */
+function signatureProblem(bin: Buffer): string | undefined {
+    if (bin.readUInt32LE(0) !== 0xfeedfacf) return "not a 64-bit Mach-O";
+    let sigOffset = -1;
+    for (let i = 0, off = 32; i < bin.readUInt32LE(16); i++, off += bin.readUInt32LE(off + 4)) {
+        if (bin.readUInt32LE(off) === 0x1d) sigOffset = bin.readUInt32LE(off + 8);
+    }
+    if (sigOffset < 0) return "no signature";
+    for (let i = 0; i < bin.readUInt32BE(sigOffset + 8); i++) {
+        const cd = sigOffset + bin.readUInt32BE(sigOffset + 16 + i * 8);
+        if (bin.readUInt32BE(cd) !== 0xfade0c02) continue;
+        const hashOffset = bin.readUInt32BE(cd + 16), pages = bin.readUInt32BE(cd + 28), codeLimit = bin.readUInt32BE(cd + 32);
+        const hashSize = bin[cd + 36], hashType = bin[cd + 37], pageSize = 2 ** bin[cd + 39];
+        if (codeLimit !== sigOffset) return `signs ${codeLimit} bytes of ${sigOffset}`;
+        const algorithm = hashType === 2 ? "sha256" : hashType === 1 ? "sha1" : undefined;
+        if (!algorithm) return `unknown hash type ${hashType}`;
+        for (let p = 0; p < pages; p++) {
+            const actual = new Bun.CryptoHasher(algorithm).update(bin.subarray(p * pageSize, Math.min((p + 1) * pageSize, codeLimit))).digest();
+            if (!actual.subarray(0, hashSize).equals(bin.subarray(cd + hashOffset + p * hashSize, cd + hashOffset + (p + 1) * hashSize))) return `page ${p} doesn't match its hash`;
+        }
+    }
+}
+
+/** The installer for this machine, or with --release for every system at once */
 async function compileCli() {
     writeEmbed();
-    const proc = Bun.spawnSync(["bun", "build", "--compile", "--minify", join(ROOT, "src/cli/index.ts"), "--outfile", join(DIST, "evi.exe")], {
-        stdio: ["inherit", "inherit", "inherit"],
-    });
-    if (proc.exitCode !== 0) process.exit(proc.exitCode ?? 1);
-    console.log("✓ dist/evi.exe");
+    const builds = RELEASE ? RELEASE_ASSETS.map(asset => ({ asset, target: [`--target=${TARGETS[asset]}`] })) : [{ asset: "evi.exe", target: [] }];
+    const codes = await Promise.all(builds.map(({ asset, target }) =>
+        Bun.spawn(["bun", "build", "--compile", "--minify", ...target, join(ROOT, "src/cli/index.ts"), "--outfile", join(DIST, asset)], {
+            stdio: ["inherit", "inherit", "inherit"],
+        }).exited));
+    const failed = codes.find(code => code !== 0);
+    if (failed !== undefined) process.exit(failed);
+    for (const { asset } of builds) {
+        if (RELEASE) {
+            if (asset.startsWith("evi-macos-")) adhocSign(join(DIST, asset));
+            const hash = new Bun.CryptoHasher("sha256").update(readFileSync(join(DIST, asset))).digest("hex");
+            writeFileSync(join(DIST, `${asset}.sha256`), `${hash}  ${asset}\n`);
+        }
+        console.log(`✓ dist/${asset}`);
+    }
 }
 
 function debounce(fn: () => void, ms = 100) {

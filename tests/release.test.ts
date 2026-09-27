@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { cleanVersion, flavorOf, isNewerRelease, parseRelease } from "../src/shared/release";
+import { cleanVersion, exeAsset, flavorOf, isNewerRelease, parseRelease } from "../src/shared/release";
 
 const asset = (name: string) => ({ name, browser_download_url: `https://github.com/BleedDev/evi/releases/download/v0.3.0/${name}` });
 
@@ -37,5 +37,18 @@ describe("Evi's releases", () => {
         expect(flavorOf("C:\\Users\\a\\AppData\\Local\\DiscordPTB\\app-1.0.1\\DiscordPTB.exe")).toBe("ptb");
         expect(flavorOf("C:/Users/a/AppData/Local/DiscordCanary/app-1.0.1/DiscordCanary.exe")).toBe("canary");
         expect(flavorOf("C:\\Program Files\\electron\\electron.exe")).toBeUndefined();
+        expect(flavorOf("/Applications/Discord.app/Contents/MacOS/Discord")).toBe("stable");
+        expect(flavorOf("/Applications/Discord PTB.app/Contents/MacOS/Discord PTB")).toBe("ptb");
+        expect(flavorOf("/usr/share/discord-canary/DiscordCanary")).toBe("canary");
+        expect(flavorOf("/opt/discord/Discord")).toBe("stable");
+        expect(flavorOf("/usr/lib/electron37/electron")).toBeUndefined();
+    });
+
+    test("each system gets its own installer", () => {
+        expect(exeAsset("win32", "x64")).toBe("evi.exe");
+        expect(exeAsset("darwin", "arm64")).toBe("evi-macos-arm64");
+        expect(exeAsset("darwin", "x64")).toBe("evi-macos-x64");
+        expect(exeAsset("linux", "x64")).toBe("evi-linux-x64");
+        expect(exeAsset("linux", "arm64")).toBe("evi-linux-arm64");
     });
 });

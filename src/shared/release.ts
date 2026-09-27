@@ -1,14 +1,26 @@
 /**
- * Evi's own releases: published on GitHub with evi.exe and evi.exe.sha256 attached. Read by the CLI's
- * `evi update` and by the app's Updates page, which installs a new release with one click.
+ * Evi's own releases: published on GitHub with an installer per system and its .sha256 attached. Read
+ * by the CLI's `evi update` and by the app's Updates page, which installs a new release with one click.
  */
 import { compareVersions } from "./store";
 
 export const RELEASE_REPO = "BleedDev/evi";
-export const EXE_ASSET = "evi.exe";
-export const CHECKSUM_ASSET = "evi.exe.sha256";
 
-/** Discord's install folders in %LOCALAPPDATA%, by flavor */
+/** Every installer a release carries, each with a <name>.sha256 beside it */
+export const RELEASE_ASSETS = ["evi.exe", "evi-macos-arm64", "evi-macos-x64", "evi-linux-x64", "evi-linux-arm64"] as const;
+
+/** The installer for a system: evi.exe on Windows, evi-<macos|linux>-<arm64|x64> elsewhere */
+export function exeAsset(platform: string = globalThis.process?.platform, arch: string = globalThis.process?.arch) {
+    const cpu = arch === "arm64" ? "arm64" : "x64";
+    if (platform === "darwin") return `evi-macos-${cpu}`;
+    if (platform === "linux") return `evi-linux-${cpu}`;
+    return "evi.exe";
+}
+
+export const EXE_ASSET = exeAsset();
+export const CHECKSUM_ASSET = `${EXE_ASSET}.sha256`;
+
+/** Discord's install folders in %LOCALAPPDATA%, by flavor. Also its executable's name on every system, minus spaces and .exe */
 export const FLAVORS = {
     stable: "Discord",
     ptb: "DiscordPTB",
@@ -18,11 +30,17 @@ export const FLAVORS = {
 
 export type Flavor = keyof typeof FLAVORS;
 
-/** Which Discord a path belongs to: its exe lives in %LOCALAPPDATA%\<Flavor folder>\app-x.y.z\ */
+/**
+ * Which Discord a path belongs to. On Windows its exe lives in %LOCALAPPDATA%\<Flavor folder>\app-x.y.z\;
+ * on macOS it's Discord PTB.app/Contents/MacOS/Discord PTB, on Linux /usr/share/discord-ptb/DiscordPTB.
+ */
 export function flavorOf(execPath: string): Flavor | undefined {
     const parts = execPath.split(/[\\/]/);
     const folder = parts[parts.length - 3]?.toLowerCase();
-    return (Object.keys(FLAVORS) as Flavor[]).find(f => FLAVORS[f].toLowerCase() === folder);
+    const byFolder = (Object.keys(FLAVORS) as Flavor[]).find(f => FLAVORS[f].toLowerCase() === folder);
+    if (byFolder) return byFolder;
+    const exe = parts[parts.length - 1].replace(/\.exe$/i, "").replace(/\s+/g, "").toLowerCase();
+    return (Object.keys(FLAVORS) as Flavor[]).find(f => FLAVORS[f].toLowerCase() === exe);
 }
 
 /** "v1.2.3-beta" -> "1.2.3" */
@@ -63,8 +81,8 @@ export type UpdateStatus =
     /** Nothing published on GitHub yet */
     | { state: "none"; current: string; checkedAt: number; }
     | { state: "current"; current: string; latest: string; checkedAt: number; }
-    /** installable is false for a dev build, which updates with git instead */
-    | { state: "available"; current: string; release: ReleaseInfo; installable: boolean; checkedAt: number; }
+    /** installable is false for a dev build, which updates with git instead, or where Discord's folder isn't ours to write; blocked says which */
+    | { state: "available"; current: string; release: ReleaseInfo; installable: boolean; blocked?: string; checkedAt: number; }
     | { state: "error"; current: string; error: string; checkedAt: number; };
 
 export interface UpdateProgress {
