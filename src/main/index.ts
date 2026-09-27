@@ -16,6 +16,7 @@ import { initBadges } from "./badges";
 import { initStars } from "./stars";
 import { initStore } from "./store";
 import { getThemePayloads, initThemes } from "./themes";
+import { initUpdater } from "./updater";
 
 // Loaders installed before the rename to Evi still pass the old name
 globalThis.__eviCoreDir ??= globalThis.__delightCoreDir!;
@@ -158,6 +159,7 @@ function setup() {
     initStars();
     initAccount();
     initBadges();
+    initUpdater();
     watchQuickCss();
     persistAcrossUpdates(shimAsar);
 }

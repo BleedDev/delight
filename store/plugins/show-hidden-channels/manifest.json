@@ -1,0 +1,29 @@
+{
+    "id": "show-hidden-channels",
+    "name": "Show Hidden Channels",
+    "description": "Shows the channels you can't view in the channel list, with a lock. Opening one shows its topic, settings and who can see it, never its messages.",
+    "version": "1.0.1",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "servers",
+        "utility"
+    ],
+    "changelog": [
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Fixes Discord freezing when the plugin is on."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
+}

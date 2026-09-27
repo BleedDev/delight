@@ -20,7 +20,7 @@ export interface Release {
     date: string;
     /**
      * The release's picture, where Discord's changelog has its video: a blog cover, by the name of
-     * its file in site/public/blog/covers. Usually the cover of the post announcing the release.
+     * its file in src/renderer/ui/covers. Usually the cover of the post announcing the release.
      */
     cover?: string;
     /** One line per change. Like Discord's, a line can open with a **bold lead-in.** */
@@ -32,6 +32,22 @@ export interface Release {
  * version you saw and this one, once, after Evi updates itself. Add an entry here with each release.
  */
 export const RELEASES: Release[] = [
+    {
+        version: "0.3.0",
+        date: "2026-09-27",
+        sections: {
+            added: [
+                "**Evi badges are part of Evi.** They show on profiles and next to names for everyone using Evi, and can't be turned off by accident.",
+                "**Hide and reorder your Evi badges** in Discord's own Customize your badges. Everyone sees the change within seconds.",
+                "**Supporter badges that level up.** From Bronze to Prismatic the longer you support Evi, with your progress in Your badges.",
+                "**Update Evi from the app.** Evi says when a new version is out, and one button installs it.",
+            ],
+            improved: [
+                "Badges update live instead of every half hour.",
+                "Every plugin can be removed, including the ones Evi comes with, and they stay removed when Evi updates.",
+            ],
+        },
+    },
     {
         version: "0.2.0",
         date: "2026-09-26",

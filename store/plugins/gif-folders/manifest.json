@@ -1,0 +1,47 @@
+{
+    "id": "gif-folders",
+    "name": "GIF Folders",
+    "description": "Sort your favourite GIFs into folders. All shows every favourite, Unsorted the ones not in a folder yet, and each folder its own. Right-click a GIF to add it to one, and drag the GIF picker's corner to resize it.",
+    "version": "1.2.1",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "utility"
+    ],
+    "changelog": [
+        {
+            "version": "1.2.1",
+            "notes": [
+                "All shows every favourite again, and the Unsorted tab (now on by default) shows only the GIFs that aren't in a folder.",
+                "Removed the Hide foldered GIFs from All setting and its Show in All and search options: Unsorted does that job."
+            ]
+        },
+        {
+            "version": "1.2.0",
+            "notes": [
+                "New setting: Hide foldered GIFs from All. Once a GIF is in a folder it only shows there; tick Show in All on a folder's right-click menu to keep that folder's GIFs in All.",
+                "New setting: Search still finds hidden GIFs, so searching in All still turns them up.",
+                "New setting: Unsorted tab, listing the favourites that aren't in any folder yet.",
+                "New setting: One folder per GIF, so adding a GIF to a folder moves it there.",
+                "New setting: Show counts next to tab names.",
+                "Fixed: tab text turned black on hover."
+            ]
+        },
+        {
+            "version": "1.1.0",
+            "notes": [
+                "Resize the GIF picker by dragging its corner. Double-click the corner to reset; the size is remembered.",
+                "Fixed: what you typed while naming or renaming a folder didn't show."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
+}

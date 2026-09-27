@@ -73,7 +73,7 @@ var smooth_typing_default = import_api.definePlugin({
         });
         return Promise.resolve();
       }
-      if (action?.type === "DRAFT_CLEAR") {
+      if (action?.type === "DRAFT_SAVE" || action?.type === "DRAFT_CLEAR") {
         const previous = pending.get(keyOf(action));
         if (previous) {
           clearTimeout(previous.timer);

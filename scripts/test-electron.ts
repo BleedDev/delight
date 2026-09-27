@@ -108,7 +108,9 @@ async function storeStepInstall() {
     const nativeRefusedListed = !!D.plugins.get("store-native");
     const native = await D.store.install("store-native", { allowNative: true });
     const nativeState = D.plugins.get("store-native");
+    // Any plugin can be removed: one dropped into the folder by hand, and one from the dev build
     const manual = await D.store.uninstall("late-plugin");
+    const devRemoved = await D.store.uninstall("toolkit-demo");
     return {
         status: listing.status, ids: listing.plugins.map((p: any) => p.id), problems: listing.problems.length,
         good, goodRan: (window as any).__storeGood, goodRunning: goodState?.running === true, goodSource: goodState?.source,
@@ -116,6 +118,7 @@ async function storeStepInstall() {
         nativeRefused, nativeRefusedListed,
         native, nativeRunning: nativeState?.running === true, nativePing: nativeState ? await nativeState.ctx.native.call("ping") : null,
         manual, lateStillThere: !!D.plugins.get("late-plugin"),
+        devRemoved, devStillThere: !!D.plugins.get("toolkit-demo"),
     };
 }
 
@@ -209,6 +212,7 @@ app.whenReady().then(() => {
             tampered: fs.existsSync(path.join(plugins, "store-tampered")),
             native: fs.existsSync(path.join(plugins, "store-native", "native.js")),
             late: fs.existsSync(path.join(plugins, "late-plugin")),
+            removed: fs.existsSync(path.join(process.env.EVI_DATA_DIR, "removed-plugins.json")) ? JSON.parse(fs.readFileSync(path.join(process.env.EVI_DATA_DIR, "removed-plugins.json"), "utf8")) : [],
             staging: fs.existsSync(path.join(process.env.EVI_DATA_DIR, "store-staging")) ? fs.readdirSync(path.join(process.env.EVI_DATA_DIR, "store-staging")) : [],
         });
         try {
@@ -474,7 +478,8 @@ else {
     check("store: tampered file (bad sha256) rejected, nothing written", i.tampered?.ok === false && /sha256|doesn't match/.test(i.tampered.error) && !i.tamperedListed && !i.tamperedRan && !d1.tampered && d1.staging.length === 0, { result: i.tampered, disk: d1.tampered, staging: d1.staging });
     check("store: native plugin refused without the user's confirmation", i.nativeRefused?.ok === false && /full access/.test(i.nativeRefused.error) && !i.nativeRefusedListed, i.nativeRefused);
     check("store: native plugin installs once confirmed, its native side works", i.native?.ok === true && i.nativeRunning && i.nativePing === "pong" && d1.native, { result: i.native, ping: i.nativePing });
-    check("store: won't uninstall a plugin it didn't install", i.manual?.ok === false && i.lateStillThere && d1.late, i.manual);
+    check("store: removes a plugin it didn't install, and remembers it so updates don't bring it back", i.manual?.ok === true && !i.lateStillThere && !d1.late && d1.removed.includes("late-plugin"), { result: i.manual, removed: d1.removed });
+    check("store: a dev build plugin is hidden (its files are the repo's) and remembered too", i.devRemoved?.ok === true && !i.devStillThere && d1.removed.includes("toolkit-demo"), { result: i.devRemoved, removed: d1.removed });
     check("store: update replaces the plugin live", u.offered === "2.0.0" && u.update?.ok === true && u.update.version === "2.0.0" && u.afterUpdate.ran === "2.0.0" && u.afterUpdate.running && u.afterUpdate.disposed === 1, { offered: u.offered, update: u.update, after: u.afterUpdate });
     check("store: uninstall stops and removes it live", u.uninstall?.ok === true && !u.listedAfterUninstall && u.disposedAfterUninstall === 2 && !u.installed.includes("store-good") && d2.good === null && d2.staging.length === 0, { result: u.uninstall, disk: d2 });
 }

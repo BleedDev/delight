@@ -1,9 +1,10 @@
 /**
  * The blog's cover art, bundled into Evi for the release notes' pictures: no network, nothing for
- * Discord's content policy to block. Add a cover here when a release first uses it.
+ * Discord's content policy to block. Copies of the website's covers live in ./covers; add one there
+ * when a release first uses it.
  */
-import hello from "../../../site/public/blog/covers/hello.svg" with { type: "text" };
-import store from "../../../site/public/blog/covers/store.svg" with { type: "text" };
+import hello from "./covers/hello.svg" with { type: "text" };
+import store from "./covers/store.svg" with { type: "text" };
 
 export const COVERS: Record<string, string> = { hello, store };
 

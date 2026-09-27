@@ -1,4 +1,4 @@
-import { Components, definePlugin, Dispatcher, filters, React } from "@evi/api";
+import { Components, definePlugin, Dispatcher, filters, findStore, Menu, React } from "@evi/api";
 import type { Filter, FluxAction, HookContext, PluginContext } from "@evi/api";
 
 import { LoggedMessage, MessageLog, MessageRef, PreviousVersion, shouldLog } from "./log";
@@ -14,6 +14,8 @@ import { LoggedMessage, MessageLog, MessageRef, PreviousVersion, shouldLog } fro
  *   The red tint is CSS on the list item that contains our tag.
  * - On stop, kept messages are really deleted from MessageStore (a private action only it handles),
  *   the log is cleared, so every tag and history unmounts, and the stylesheet goes.
+ * - Right-clicking a channel, thread, DM or server with anything logged offers to clear just that,
+ *   the same purge as the settings button, scoped to its channels.
  */
 
 const PURGE_ACTION = "EVI_MESSAGE_LOGGER_PURGE";
@@ -145,6 +147,8 @@ interface Runtime {
     log: MessageLog;
     /** Forgets everything and removes kept deleted messages from the chat */
     clear(): void;
+    /** The same, for some channels only */
+    clearChannels(channelIds: string[]): void;
 }
 
 let active: Runtime | undefined;
@@ -273,6 +277,7 @@ function install(ctx: Ctx, log: MessageLog, store: any) {
     const runtime: Runtime = {
         log,
         clear: () => void purge(log.clear()),
+        clearChannels: ids => void purge(log.clearChannels(ids)),
     };
     active = runtime;
 
@@ -296,6 +301,41 @@ function install(ctx: Ctx, log: MessageLog, store: any) {
     });
 }
 
+// ---- Menus --------------------------------------------------------------------------------------
+
+/** "3 deleted, 1 edited" */
+function countLabel({ deleted, edited }: { deleted: number; edited: number; }) {
+    return [deleted && `${deleted} deleted`, edited && `${edited} edited`].filter(Boolean).join(", ");
+}
+
+/** A menu group clearing these channels' logs, or nothing when they have none */
+function clearItem(ctx: Ctx, id: string, label: string, channelIds: string[]) {
+    const runtime = active;
+    if (!runtime || !channelIds.length) return;
+    const counts = runtime.log.counts(channelIds);
+    if (counts.deleted + counts.edited === 0) return;
+    return (
+        <Menu.Group key={`${id}-group`}>
+            <Menu.Item
+                id={id}
+                label={label}
+                subtext={countLabel(counts)}
+                color="danger"
+                action={() => {
+                    runtime.clearChannels(channelIds);
+                    ctx.toast(`Cleared ${countLabel(counts)}`, { type: "success" });
+                }}
+            />
+        </Menu.Group>
+    );
+}
+
+/** Logged channels in a server, threads included */
+function guildChannelIds(guildId: string) {
+    const channels = findStore("ChannelStore");
+    return active?.log.channelIds().filter(id => channels?.getChannel?.(id)?.guild_id === guildId) ?? [];
+}
+
 export default definePlugin({
     settings,
 
@@ -307,6 +347,22 @@ export default definePlugin({
         ctx.waitFor(renderedContentFilter, fn => void (useRenderedContent = fn));
         ctx.waitFor(markupFilter, classes => {
             markupClass = Object.values(classes).find((c): c is string => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
+        });
+
+        ctx.contextMenu(["channel-context", "thread-context", "gdm-context"], (children, props) => {
+            const item = props.channel?.id && clearItem(ctx, "evi-ml-clear-channel", "Clear Logged Messages", [props.channel.id]);
+            if (item) children.push(item);
+        });
+        // A DM in the list: the menu is the other user's, with the DM as its channel
+        ctx.contextMenu("user-context", (children, props) => {
+            const channel = props.channel;
+            if (!channel?.id || channel.guild_id || channel.type !== 1) return;
+            const item = clearItem(ctx, "evi-ml-clear-dm", "Clear Logged Messages", [channel.id]);
+            if (item) children.push(item);
+        });
+        ctx.contextMenu("guild-context", (children, props) => {
+            const item = props.guild?.id && clearItem(ctx, "evi-ml-clear-guild", "Clear Logged Messages", guildChannelIds(props.guild.id));
+            if (item) children.push(item);
         });
 
         // Discord's renderMessageAccessories({ channelMessageProps: { message, channel }, ... })

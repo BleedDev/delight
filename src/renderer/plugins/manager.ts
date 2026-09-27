@@ -25,6 +25,8 @@ export interface PluginState {
     needsReload: boolean;
     reloadReason?: string;
     patchesRegistered: boolean;
+    /** The renderer bundle as loaded, scanned for what the plugin can touch (ui/PluginPermissions.tsx) */
+    code?: string;
 }
 
 const logger = new Logger("Plugins", "#ff6fae");
@@ -146,6 +148,7 @@ function load(payload: PluginPayload): PluginState {
     const state: PluginState = {
         manifest: payload.manifest,
         source: payload.source,
+        code: payload.code,
         running: false,
         needsReload: false,
         patchesRegistered: false,
@@ -175,7 +178,7 @@ function upsert(payload: PluginPayload) {
     const enabled = isPluginEnabled(Settings.data, payload.manifest);
 
     if (SafeMode.active) {
-        if (previous) previous.manifest = payload.manifest;
+        if (previous) Object.assign(previous, { manifest: payload.manifest, code: payload.code });
         else load(payload);
         return emit();
     }
@@ -200,6 +203,7 @@ function upsert(payload: PluginPayload) {
     }
 
     previous.manifest = payload.manifest;
+    previous.code = payload.code;
     previous.definition = definition;
     previous.error = undefined;
 

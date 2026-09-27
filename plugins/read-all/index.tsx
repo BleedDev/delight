@@ -1,0 +1,191 @@
+import { Components, definePlugin, Dispatcher, findStore, Menu, React } from "@evi/api";
+import type { PluginContext } from "@evi/api";
+
+import { chunk, collectUnread, countGuilds, summary, toAck } from "./collect";
+import type { ReadStores } from "./collect";
+
+/**
+ * Marking read is Discord's own BULK_ACK action, the one "Mark as read" on a folder dispatches:
+ * { type: "BULK_ACK", context: "APP", channels: [{ channelId, messageId, readStateType }] }.
+ * ReadStateStore acks each channel locally, and in the "APP" context queues them for
+ * POST /read-states/ack-bulk, which it sends 100 at a time, a second apart. We dispatch in batches
+ * of 100 too, so one huge action never blocks a frame.
+ *
+ * The button comes from a source patch on the server list ("guildsnav"): its scroller renders
+ * [home and DMs, separator, servers], and ours goes in right before the servers. It's a round icon
+ * like the servers around it, and only shows while something is unread: the count is recomputed
+ * a moment after ReadStateStore changes, so a burst of messages costs one pass, not one each.
+ */
+
+type Settings = typeof settings;
+const settings = {
+    includeDms: { type: "boolean", label: "Include DMs", description: "Also mark direct messages and group DMs as read.", default: false },
+    showButton: { type: "boolean", label: "Server list button", description: "A button above your servers, shown while anything is unread.", default: true },
+    contextMenu: { type: "boolean", label: "Server menu item", description: "\"Mark All Servers as Read\" when you right-click a server.", default: true },
+} as const;
+
+let context: PluginContext<Settings> | undefined;
+
+function stores(): ReadStores | undefined {
+    const GuildStore = findStore("GuildStore");
+    const GuildChannelStore = findStore("GuildChannelStore");
+    const ReadStateStore = findStore("ReadStateStore");
+    if (!GuildStore || !GuildChannelStore || !ReadStateStore) return;
+    return {
+        GuildStore,
+        GuildChannelStore,
+        ReadStateStore,
+        ActiveJoinedThreadsStore: findStore("ActiveJoinedThreadsStore"),
+        ChannelStore: findStore("ChannelStore"),
+    };
+}
+
+/** Marks everything read and returns what to tell the user */
+async function readAll(): Promise<{ message: string; ok: boolean; }> {
+    const s = stores();
+    if (!s) return { message: "Couldn't find Discord's read state stores", ok: false };
+
+    const unread = collectUnread(s, { includeDms: context?.settings.get("includeDms") ?? false });
+    for (const batch of chunk(unread.map(toAck))) {
+        await Dispatcher.dispatch({ type: "BULK_ACK", context: "APP", channels: batch });
+    }
+    return { message: summary(unread.length, countGuilds(unread)), ok: true };
+}
+
+let busy = false;
+async function readAllWithToast() {
+    if (busy) return;
+    busy = true;
+    try {
+        const { message, ok } = await readAll();
+        context?.toast(message, { type: ok ? "success" : "failure" });
+    } catch (err) {
+        context?.logger.error("Marking all as read failed", err);
+        context?.toast("Couldn't mark everything as read", { type: "failure" });
+    } finally {
+        busy = false;
+    }
+}
+
+/** Unread channels right now, kept up to date while the plugin runs */
+let unreadCount = 0;
+const listeners = new Set<() => void>();
+let recountTimer: ReturnType<typeof setTimeout> | undefined;
+
+function recount() {
+    recountTimer = undefined;
+    const s = stores();
+    const next = s && context ? collectUnread(s, { includeDms: context.settings.get("includeDms") }).length : 0;
+    if (next === unreadCount) return;
+    unreadCount = next;
+    listeners.forEach(l => l());
+}
+
+const scheduleRecount = () => void (recountTimer ??= setTimeout(recount, 250));
+
+function useUnreadCount() {
+    return React.useSyncExternalStore(
+        cb => {
+            listeners.add(cb);
+            return () => void listeners.delete(cb);
+        },
+        () => unreadCount,
+    );
+}
+
+const CheckIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M2 12.5l4.5 4.5L15 8.5M11.5 16l1 1L22 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+function ReadAllButton() {
+    const { showButton } = context!.settings.use();
+    const count = useUnreadCount();
+    if (!showButton || count === 0) return null;
+
+    const label = `Mark ${count} ${count === 1 ? "channel" : "channels"} as read`;
+    const button = (
+        <button type="button" className="dl-read-all-button" onClick={readAllWithToast} aria-label={label}>
+            <CheckIcon />
+        </button>
+    );
+    const Tooltip = Components.Tooltip;
+    return (
+        <div className="dl-read-all">
+            {Tooltip ? <Tooltip text={label} position="right">{button}</Tooltip> : React.cloneElement(button, { title: label })}
+        </div>
+    );
+}
+
+export default definePlugin({
+    settings,
+
+    patches: [{
+        find: "\"guildsnav\"",
+        replace: {
+            // children:[<Home .../>,<Separator/>,<Guilds guildDiscoveryButton=... />]: ours goes before the servers
+            match: /(?<=lurkingGuildIds:\i\}\),\(0,\i\.jsx\)\(\i,\{\}\),)(?=\(0,\i\.jsx\)\(\i,\{guildDiscoveryButton:)/,
+            with: "$self.renderButton(),",
+        },
+    }],
+
+    /** Called by the patched server list */
+    renderButton() {
+        if (!context) return null;
+        return <ReadAllButton key="evi-read-all" />;
+    },
+
+    readAll,
+
+    css: `
+        .dl-read-all { display: flex; justify-content: center; width: 100%; margin-bottom: 8px;
+            animation: dl-read-all-in 0.2s ease-out; }
+        .dl-read-all-button { display: flex; align-items: center; justify-content: center;
+            width: var(--guildbar-avatar-size, 40px); height: var(--guildbar-avatar-size, 40px);
+            padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+            color: var(--status-positive, #23a55a); background: var(--background-surface-high, var(--background-secondary));
+            transition: border-radius 0.15s ease-out, background-color 0.15s ease-out, color 0.15s ease-out; }
+        .dl-read-all-button:hover { border-radius: 30%; color: var(--white, #fff); background: var(--status-positive, #23a55a); }
+        .dl-read-all-button:active { transform: translateY(1px); }
+        .dl-read-all-button:focus-visible { outline: 2px solid var(--focus-primary, #5865f2); outline-offset: 2px; }
+        @keyframes dl-read-all-in { from { opacity: 0; transform: scale(0.8); } }
+        @media (prefers-reduced-motion: reduce) { .dl-read-all, .dl-read-all-button { animation: none; transition: none; } }
+    `,
+
+    start(ctx) {
+        context = ctx;
+        ctx.onDispose(() => {
+            context = undefined;
+            clearTimeout(recountTimer);
+            recountTimer = undefined;
+            unreadCount = 0;
+            listeners.forEach(l => l());
+        });
+
+        // ReadStateStore changes on every new message and ack; GuildStore on joining or leaving
+        const watched = ["ReadStateStore", "GuildStore"].map(name => findStore(name)).filter(Boolean);
+        for (const store of watched) store.addChangeListener?.(scheduleRecount);
+        ctx.onDispose(() => watched.forEach(store => store.removeChangeListener?.(scheduleRecount)));
+        ctx.settings.onChange(scheduleRecount);
+        recount();
+
+        ctx.command({
+            name: "readall",
+            description: "Mark every server as read",
+            async execute() {
+                const { message } = await readAll();
+                return { ephemeral: message };
+            },
+        });
+
+        ctx.contextMenu("guild-context", (children, props) => {
+            if (!ctx.settings.get("contextMenu") || !props.guild?.id || unreadCount === 0) return;
+            children.push(
+                <Menu.Group key="dl-read-all">
+                    <Menu.Item id="dl-read-all" label="Mark All Servers as Read" action={readAllWithToast} />
+                </Menu.Group>,
+            );
+        });
+    },
+});

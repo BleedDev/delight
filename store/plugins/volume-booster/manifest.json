@@ -1,0 +1,22 @@
+{
+    "id": "volume-booster",
+    "name": "Volume Booster",
+    "description": "Turn people up past Discord's 200% limit. The volume slider in a user's menu and on stream tiles goes up to 400% by default, or up to 1000% if you set it higher.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "voice"
+    ],
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
+}

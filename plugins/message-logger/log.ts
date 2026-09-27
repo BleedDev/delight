@@ -146,16 +146,38 @@ export class MessageLog {
         return deleted;
     }
 
-    counts() {
+    /** Forgets the given channels. Returns the deleted messages that were kept in them. */
+    clearChannels(channelIds: Iterable<string>): MessageRef[] {
+        const deleted: MessageRef[] = [];
+        let had = false;
+        for (const channelId of channelIds) {
+            const channel = this.channels.get(channelId);
+            if (!channel) continue;
+            had = true;
+            this.channels.delete(channelId);
+            for (const entry of channel.values()) if (entry.deletedAt !== undefined) deleted.push({ channelId, id: entry.id });
+        }
+        if (had) this.changed();
+        return deleted;
+    }
+
+    /** Channels with anything logged */
+    channelIds(): string[] {
+        return [...this.channels.keys()];
+    }
+
+    /** Counts across every channel, or only the given ones */
+    counts(channelIds?: Iterable<string>) {
         let deleted = 0;
         let edited = 0;
-        for (const channel of this.channels.values()) {
+        const channels = channelIds ? [...channelIds].flatMap(id => this.channels.get(id) ?? []) : [...this.channels.values()];
+        for (const channel of channels) {
             for (const entry of channel.values()) {
                 if (entry.deletedAt !== undefined) deleted++;
                 if (entry.edits.length) edited++;
             }
         }
-        return { deleted, edited, channels: this.channels.size };
+        return { deleted, edited, channels: channels.length };
     }
 
     subscribe = (listener: () => void) => {

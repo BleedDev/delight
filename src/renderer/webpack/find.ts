@@ -9,6 +9,8 @@ export type Filter = ((value: any) => boolean) & {
      * stringifying each exported function.
      */
     $code?: CodeMatcher[];
+    /** What the filter looks for, in words, for diagnostics */
+    $label?: string;
 };
 export type CodeMatcher = string | RegExp;
 
@@ -40,7 +42,7 @@ export function functionSource(fn: Function) {
     return src;
 }
 
-function matchesAll(source: string, code: CodeMatcher[]) {
+export function matchesAll(source: string, code: CodeMatcher[]) {
     return code.every(c => typeof c === "string" ? source.includes(c) : c.test(source));
 }
 
@@ -50,22 +52,31 @@ function unwrapComponent(value: any): Function | undefined {
     if (value?.$$typeof) return unwrapComponent(value.render ?? value.type);
 }
 
+const showCode = (code: CodeMatcher[]) => code.map(c => typeof c === "string" ? JSON.stringify(c) : String(c)).join(", ");
 const withCode = (code: CodeMatcher[], filter: Filter): Filter => Object.assign(filter, { $code: code });
+const labeled = (label: string, filter: Filter): Filter => Object.assign(filter, { $label: label });
 
 export const filters = {
     /** Objects that have every one of these properties */
-    byProps: (...props: string[]): Filter => v => props.every(p => v[p] !== undefined),
+    byProps: (...props: string[]): Filter => labeled(`props ${props.join(", ")}`, v => props.every(p => v[p] !== undefined)),
     /** Functions whose source contains every snippet */
-    byCode: (...code: CodeMatcher[]): Filter => withCode(code, v => typeof v === "function" && matchesAll(functionSource(v), code)),
+    byCode: (...code: CodeMatcher[]): Filter => labeled(`code ${showCode(code)}`, withCode(code, v => typeof v === "function" && matchesAll(functionSource(v), code))),
     /** React components (including memo / forwardRef) whose render source contains every snippet */
-    componentByCode: (...code: CodeMatcher[]): Filter => withCode(code, v => {
+    componentByCode: (...code: CodeMatcher[]): Filter => labeled(`component ${showCode(code)}`, withCode(code, v => {
         const fn = unwrapComponent(v);
         return !!fn && matchesAll(functionSource(fn), code);
-    }),
+    })),
     /** Flux stores by name, e.g. "UserStore" */
-    byStoreName: (name: string): Filter => v =>
-        v?.constructor?.displayName === name || (typeof v?.getName === "function" && "_dispatchToken" in v && v.getName() === name),
+    byStoreName: (name: string): Filter => labeled(`store ${name}`, v =>
+        v?.constructor?.displayName === name || (typeof v?.getName === "function" && "_dispatchToken" in v && v.getName() === name)),
 };
+
+/** What a filter looks for, in words. Hand-written filters without a label show their code hint or source. */
+export function describeFilter(filter: Filter) {
+    if (filter.$label) return filter.$label;
+    if (filter.$code) return `code ${showCode(filter.$code)}`;
+    return `filter ${String(filter).replace(/\s+/g, " ").slice(0, 80)}`;
+}
 
 // Some Discord exports are Proxies that answer every property access; they'd match any byProps filter
 const CANARY = "__eviCanary__";
@@ -171,7 +182,7 @@ interface Waiter {
 
 const waiters = new Set<Waiter>();
 /** Pending waitFor filters, for diagnostics */
-export const pendingWaiters = () => [...waiters].map(w => w.filter.$code ? `code: ${w.filter.$code.join(", ")}` : String(w.filter).slice(0, 80));
+export const pendingWaiters = () => [...waiters].map(w => describeFilter(w.filter));
 
 /**
  * One listener serves every waiter: each new module's exports are read once, and code-based

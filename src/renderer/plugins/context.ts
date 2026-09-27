@@ -11,7 +11,9 @@ import { addContextMenuPatch, ContextMenuCallback } from "../toolkit/contextMenu
 import { showToast, ToastOptions } from "../toolkit/toasts";
 import { Dispatcher, FluxAction, React } from "../webpack/common";
 import { Filter, FoundExport, waitFor } from "../webpack/find";
+import { diagnoseLookups, isLookupProblem, LOOKUP_GRACE_MS, trackLookup, untrackLookup } from "./lookups";
 import type { SettingsSchema, SettingsValues } from "./types";
+import { PluginUsage } from "./usage";
 
 export class PluginSettings<S extends SettingsSchema> {
     constructor(
@@ -72,10 +74,13 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     readonly logger: Logger;
     readonly settings: PluginSettings<S>;
     private disposers: (() => void)[] = [];
+    private lookupCheck?: ReturnType<typeof setTimeout>;
 
     constructor(readonly manifest: PluginManifest, schema: S) {
         this.logger = new Logger(manifest.name);
         this.settings = new PluginSettings(manifest.id, schema, fn => this.onDispose(fn));
+        // A context per start: what this run registers is what its details show
+        PluginUsage.reset(manifest.id);
     }
 
     get id() {
@@ -89,6 +94,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     }
 
     private addHook(target: any, key: PropertyKey, kind: HookKind, callback: HookCallback) {
+        PluginUsage.add(this.id, "hooks", String(key));
         return this.onDispose(hook(target, key, kind, callback, this.id));
     }
 
@@ -110,7 +116,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
         const method = typeof methodOrCallback === "string" ? methodOrCallback : undefined;
         const callback = maybeCallback ?? methodOrCallback as HookCallback;
 
-        this.waitFor(filter, (value, found: FoundExport) => {
+        this.lookup(filter, method, (value, found: FoundExport) => {
             if (method) return void this.addHook(value, method, kind, callback);
             if (found.key === undefined) {
                 this.logger.error("hookExport: the filter matched a whole module, pass a method name to hook one of its functions");
@@ -120,21 +126,43 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
         });
     }
 
-    /** Like webpack waitFor, cancelled on stop */
+    /** Like webpack waitFor, cancelled on stop. A target that never shows up is reported (see lookups.ts). */
     waitFor<T = any>(filter: Filter, callback: (value: T, found: FoundExport<T>) => void) {
+        return this.lookup(filter, undefined, callback);
+    }
+
+    private lookup<T>(filter: Filter, method: string | undefined, callback: (value: T, found: FoundExport<T>) => void) {
         let active = true;
+        const record = trackLookup(this.id, filter, method);
         const unsubscribe = waitFor<T>(filter, (value, found) => {
             if (!active) return;
+            record.found = true;
             try {
                 callback(value, found);
             } catch (err) {
                 this.logger.error("waitFor callback threw", err);
             }
         });
+        if (!record.found) this.scheduleLookupCheck();
         return this.onDispose(() => {
             active = false;
             unsubscribe();
+            untrackLookup(record);
         });
+    }
+
+    /** Once Discord has had time to load, says in the console which lookups never found their target */
+    private scheduleLookupCheck() {
+        if (this.lookupCheck) return;
+        this.lookupCheck = setTimeout(() => {
+            for (const d of diagnoseLookups(this.id)) {
+                if (!isLookupProblem(d.health)) continue;
+                this.logger.warn(d.health === "broken"
+                    ? `Couldn't find ${d.target}. Discord probably changed it, this part of the plugin won't work.`
+                    : `Couldn't find ${d.target} yet. If you've used the part of Discord it's for, Discord probably changed it.`);
+            }
+        }, LOOKUP_GRACE_MS + 100);
+        this.onDispose(() => clearTimeout(this.lookupCheck));
     }
 
     readonly flux = {
@@ -146,6 +174,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
                     this.logger.error(`Flux handler for ${type} threw`, err);
                 }
             };
+            PluginUsage.add(this.id, "flux", type);
             Dispatcher.subscribe(type, safe);
             return this.onDispose(() => Dispatcher.unsubscribe(type, safe));
         },
@@ -160,6 +189,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     };
 
     addStyle(css: string): ManagedStyle {
+        PluginUsage.addStyle(this.id);
         const style = createStyle(css, `evi-plugin-${this.id}`);
         this.onDispose(style.remove);
         return style;
@@ -176,11 +206,13 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
      * Push Menu.Item / Menu.Group elements (from @evi/api) into `children`. Removed on stop.
      */
     contextMenu(navId: string | string[], callback: ContextMenuCallback) {
+        for (const id of [navId].flat()) PluginUsage.add(this.id, "menus", id);
         return this.onDispose(addContextMenuPatch(navId, callback));
     }
 
     /** Registers a slash command that runs locally, listed with Discord's built-ins. Removed on stop. */
     command(definition: CommandDefinition) {
+        PluginUsage.add(this.id, "commands", definition.name);
         return this.onDispose(registerCommand(definition, this.id));
     }
 

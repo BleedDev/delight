@@ -1,8 +1,10 @@
 import type { ImportMode } from "@shared/backup";
 import { AddThemeResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, EviSettings, IPC, OpenPathTarget, PluginChange, ThemeChange } from "@shared/ipc";
 import type { AccountLinkResult, AccountStatus } from "@shared/account";
-import type { BadgeAdminAction, BadgeAdminResult, BadgesResult } from "@shared/badges";
+import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesResult } from "@shared/badges";
+import type { UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/release";
 import type { StarKind, StarResult, StarsResult } from "@shared/stars";
+import type { StorePreviewResult } from "@shared/pluginPermissions";
 import type { StoreImageResult, StoreListing, StoreProgress, StoreResult } from "@shared/store";
 import { contextBridge, ipcRenderer, webFrame } from "electron";
 
@@ -29,14 +31,24 @@ const EviNative = {
     storeInstallTheme: (id: string): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_THEME_INSTALL, id),
     storeUninstallTheme: (id: string): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_THEME_UNINSTALL, id),
     storeImage: (url: string): Promise<StoreImageResult> => ipcRenderer.invoke(IPC.STORE_IMAGE, url),
+    storePreview: (id: string): Promise<StorePreviewResult> => ipcRenderer.invoke(IPC.STORE_PREVIEW, id),
     getStars: (): Promise<StarsResult> => ipcRenderer.invoke(IPC.STARS_GET),
     setStar: (kind: StarKind, id: string, starred: boolean): Promise<StarResult> => ipcRenderer.invoke(IPC.STARS_SET, kind, id, starred),
     getBadges: (cachedOnly = false): Promise<BadgesResult> => ipcRenderer.invoke(IPC.BADGES_GET, cachedOnly),
+    onBadgesChange(cb: (badges: BadgesResult) => void) {
+        ipcRenderer.on(IPC.BADGES_CHANGED, (_, badges) => cb(badges));
+    },
     accountStatus: (): Promise<AccountStatus> => ipcRenderer.invoke(IPC.ACCOUNT_STATUS),
     linkAccount: (): Promise<AccountLinkResult> => ipcRenderer.invoke(IPC.ACCOUNT_LINK),
     openDashboard: (): Promise<void> => ipcRenderer.invoke(IPC.ACCOUNT_DASHBOARD),
     badgeAdminAvailable: (): Promise<boolean> => ipcRenderer.invoke(IPC.BADGES_ADMIN_AVAILABLE),
     badgeAdmin: (input: BadgeAdminAction): Promise<BadgeAdminResult> => ipcRenderer.invoke(IPC.BADGES_ADMIN, input),
+    setBadgePrefs: (userId: string, prefs: Partial<BadgePrefs>): Promise<BadgePrefsResult> => ipcRenderer.invoke(IPC.BADGES_SET_PREFS, userId, prefs),
+    checkForUpdate: (force = false): Promise<UpdateStatus> => ipcRenderer.invoke(IPC.UPDATE_CHECK, force),
+    installUpdate: (): Promise<UpdateInstallResult> => ipcRenderer.invoke(IPC.UPDATE_INSTALL),
+    onUpdateProgress(cb: (progress: UpdateProgress) => void) {
+        ipcRenderer.on(IPC.UPDATE_PROGRESS, (_, progress) => cb(progress));
+    },
     onStoreProgress(cb: (progress: StoreProgress) => void) {
         ipcRenderer.on(IPC.STORE_PROGRESS, (_, progress) => cb(progress));
     },

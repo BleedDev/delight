@@ -129,10 +129,31 @@ class MessageLog {
       this.changed();
     return deleted;
   }
-  counts() {
+  clearChannels(channelIds) {
+    const deleted = [];
+    let had = false;
+    for (const channelId of channelIds) {
+      const channel = this.channels.get(channelId);
+      if (!channel)
+        continue;
+      had = true;
+      this.channels.delete(channelId);
+      for (const entry of channel.values())
+        if (entry.deletedAt !== undefined)
+          deleted.push({ channelId, id: entry.id });
+    }
+    if (had)
+      this.changed();
+    return deleted;
+  }
+  channelIds() {
+    return [...this.channels.keys()];
+  }
+  counts(channelIds) {
     let deleted = 0;
     let edited = 0;
-    for (const channel of this.channels.values()) {
+    const channels = channelIds ? [...channelIds].flatMap((id) => this.channels.get(id) ?? []) : [...this.channels.values()];
+    for (const channel of channels) {
       for (const entry of channel.values()) {
         if (entry.deletedAt !== undefined)
           deleted++;
@@ -140,7 +161,7 @@ class MessageLog {
           edited++;
       }
     }
-    return { deleted, edited, channels: this.channels.size };
+    return { deleted, edited, channels: channels.length };
   }
   subscribe = (listener) => {
     this.listeners.add(listener);
@@ -467,7 +488,8 @@ function install(ctx, log, store) {
   invalidate();
   const runtime = {
     log,
-    clear: () => void purge(log.clear())
+    clear: () => void purge(log.clear()),
+    clearChannels: (ids) => void purge(log.clearChannels(ids))
   };
   active = runtime;
   ctx.settings.onChange((values) => {
@@ -490,6 +512,33 @@ function install(ctx, log, store) {
     });
   });
 }
+function countLabel({ deleted, edited }) {
+  return [deleted && `${deleted} deleted`, edited && `${edited} edited`].filter(Boolean).join(", ");
+}
+function clearItem(ctx, id, label, channelIds) {
+  const runtime = active;
+  if (!runtime || !channelIds.length)
+    return;
+  const counts = runtime.log.counts(channelIds);
+  if (counts.deleted + counts.edited === 0)
+    return;
+  return /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Group, {
+    children: /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+      id,
+      label,
+      subtext: countLabel(counts),
+      color: "danger",
+      action: () => {
+        runtime.clearChannels(channelIds);
+        ctx.toast(`Cleared ${countLabel(counts)}`, { type: "success" });
+      }
+    })
+  }, `${id}-group`);
+}
+function guildChannelIds(guildId) {
+  const channels = import_api.findStore("ChannelStore");
+  return active?.log.channelIds().filter((id) => channels?.getChannel?.(id)?.guild_id === guildId) ?? [];
+}
 var message_logger_default = import_api.definePlugin({
   settings,
   start(ctx) {
@@ -499,6 +548,24 @@ var message_logger_default = import_api.definePlugin({
     ctx.waitFor(renderedContentFilter, (fn) => void (useRenderedContent = fn));
     ctx.waitFor(markupFilter, (classes) => {
       markupClass = Object.values(classes).find((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
+    });
+    ctx.contextMenu(["channel-context", "thread-context", "gdm-context"], (children, props) => {
+      const item = props.channel?.id && clearItem(ctx, "evi-ml-clear-channel", "Clear Logged Messages", [props.channel.id]);
+      if (item)
+        children.push(item);
+    });
+    ctx.contextMenu("user-context", (children, props) => {
+      const channel = props.channel;
+      if (!channel?.id || channel.guild_id || channel.type !== 1)
+        return;
+      const item = clearItem(ctx, "evi-ml-clear-dm", "Clear Logged Messages", [channel.id]);
+      if (item)
+        children.push(item);
+    });
+    ctx.contextMenu("guild-context", (children, props) => {
+      const item = props.guild?.id && clearItem(ctx, "evi-ml-clear-guild", "Clear Logged Messages", guildChannelIds(props.guild.id));
+      if (item)
+        children.push(item);
     });
     ctx.hookExport("after", accessoriesFilter, ({ args, result }) => {
       const props = args[0];

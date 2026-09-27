@@ -1,0 +1,22 @@
+{
+    "id": "last-seen",
+    "name": "Last Seen",
+    "description": "See when someone was last online and when they last sent a message, on their profile and next to offline members. Only counts what your client has seen, kept on this device.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "social"
+    ],
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
+}

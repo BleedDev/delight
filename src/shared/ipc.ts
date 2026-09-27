@@ -36,6 +36,8 @@ export const IPC = {
     STORE_THEME_UNINSTALL: "evi:store-theme-uninstall",
     /** a screenshot the registry lists, as a data URL */
     STORE_IMAGE: "evi:store-image",
+    /** a store plugin's manifest and code, verified like an install, for what its store page says it can access */
+    STORE_PREVIEW: "evi:store-preview",
     /** store stars: every count plus this install's own, and starring or unstarring one item */
     STARS_GET: "evi:stars-get",
     STARS_SET: "evi:stars-set",
@@ -43,6 +45,15 @@ export const IPC = {
     BADGES_GET: "evi:badges-get",
     BADGES_ADMIN_AVAILABLE: "evi:badges-admin-available",
     BADGES_ADMIN: "evi:badges-admin",
+    /** hide and order your own badges, saved on evi.rest (this install must be linked to that account) */
+    BADGES_SET_PREFS: "evi:badges-set-prefs",
+    /** Evi's own updates: is a newer release published; download and install it (restarts Discord) */
+    UPDATE_CHECK: "evi:update-check",
+    UPDATE_INSTALL: "evi:update-install",
+    /** main -> renderer: download and install progress of an update */
+    UPDATE_PROGRESS: "evi:update-progress",
+    /** main -> renderer: the badge list changed (evi.rest said so over its change stream) */
+    BADGES_CHANGED: "evi:badges-changed",
     /** who this install is linked to on evi.rest; starting a link (opens the site to confirm it) */
     ACCOUNT_STATUS: "evi:account-status",
     ACCOUNT_LINK: "evi:account-link",
@@ -130,8 +141,16 @@ export interface EviSettings {
     enabledThemes: string[];
     /** Update store plugins and themes in the background. Full-access plugins still ask first. */
     autoUpdate?: boolean;
+    /** Look for new versions of Evi when Discord starts (on unless turned off) */
+    checkEviUpdates?: boolean;
+    /** The version whose "update available" notice was dismissed, so it doesn't come back */
+    dismissedUpdate?: string;
     /** The Evi version whose "What's new" was last shown, to show it once after each update */
     lastSeenVersion?: string;
+    /** Each plugin's version when it was last seen, to show its changelog once after it updates */
+    pluginVersionsSeen?: Record<string, string>;
+    /** `false` turns off "What's new" popups after plugin updates. On by default. */
+    pluginChangelogs?: boolean;
 }
 
 export const DEFAULT_SETTINGS: EviSettings = {

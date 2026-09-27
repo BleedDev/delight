@@ -1,0 +1,28 @@
+{
+    "id": "permissions-viewer",
+    "name": "Permissions Viewer",
+    "description": "Adds View Permissions to user, role, channel and server menus: see every permission someone has in a channel and which role or overwrite granted or denied it.",
+    "version": "1.1.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "utility"
+    ],
+    "changelog": [
+        {
+            "version": "1.1.0",
+            "notes": [
+                "A cleaner dialog: permissions are grouped by category, with Granted and Not granted filters, search, and role-colored sources."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
+}

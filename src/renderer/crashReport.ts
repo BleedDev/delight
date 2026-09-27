@@ -5,6 +5,7 @@
 import { isPluginEnabled } from "@shared/ipc";
 
 import { getPatchRecords } from "./patching/source";
+import { diagnoseLookups } from "./plugins/lookups";
 import type { PluginState } from "./plugins/manager";
 import { PluginManager } from "./plugins/manager";
 import { SafeMode } from "./safeMode";
@@ -37,6 +38,14 @@ export function buildCrashReport(state: PluginState, now = new Date()) {
             const find = r.patch.find instanceof RegExp ? String(r.patch.find) : JSON.stringify(r.patch.find);
             lines.push(`  #${r.index} ${r.state}, find ${find}${r.modules.length ? `, modules ${r.modules.join(", ")}` : ""}`);
             for (const e of r.errors) lines.push(`      ${e}`);
+        }
+    }
+
+    const lookups = diagnoseLookups(manifest.id);
+    if (lookups.length) {
+        lines.push("", "Lookups (waitFor, hookExport):");
+        for (const d of lookups) {
+            lines.push(`  ${d.health}, ${d.target}${d.candidates.length ? `, candidate modules ${d.candidates.join(", ")}` : ""}`);
         }
     }
 

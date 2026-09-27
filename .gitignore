@@ -5,11 +5,6 @@ userplugins/*
 *.exe
 test-results/
 
-# Site
-site/.next/
-site/out/
-site/next-env.d.ts
-
 # evi.rest local database
 server/data/
 .covers/
@@ -18,10 +13,10 @@ server/data/
 .env
 .env.*
 !.env.example
-site/*.tsbuildinfo
 
-# evi.rest API: private, kept out of this repo
+# evi.rest (the API server) and its website: private, kept out of this repo
 server/
+site/
 tests/server.test.ts
 tests/accounts.test.ts
 tests/site.test.ts

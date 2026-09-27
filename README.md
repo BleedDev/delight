@@ -34,6 +34,8 @@ Launch `Discord.exe --vanilla` to start once without Evi, or `Discord.exe --evi-
 
 `evi update` asks GitHub for the latest published release of `BleedDev/evi`. If it's newer than the running exe, it downloads the new `evi.exe` next to the current one and checks it against the release's `evi.exe.sha256`. A mismatch is rejected and nothing changes. Windows can't overwrite a running exe, so the current one is renamed to `evi.exe.old`, the new one takes its name, and the `.old` is removed the next time Evi runs. Then the new exe runs `install` (with your `--flavor` / `--restart`), which refreshes the core and official plugins in `%APPDATA%\Evi`.
 
+Evi also updates from inside Discord: Evi settings → **Updates** shows the latest release and its notes, and **Update and restart Discord** installs it. It downloads `evi.exe`, checks it against `evi.exe.sha256`, keeps it as `%APPDATA%\Evi\evi.exe` and runs its `install --restart` as a separate process (output in `logs\update.log`). Evi checks when Discord starts and every few hours after, and shows a notice when a new version is out; the Updates tab can turn that off.
+
 `evi update --check` only reports whether a newer release exists. Source checkouts (`bun src/cli/index.ts`) don't replace themselves: update them with `git pull` and `bun run build`.
 
 ### Releasing
@@ -102,7 +104,7 @@ The Backup tab saves everything to one JSON file (`evi-backup-YYYY-MM-DD.json`):
 Both write the backup's themes (new files, or changed ones overwritten) and never delete anything. All files are written together or not at all, and Discord updates live, no reload.
 ## Plugin store
 
-The **Plugin Store** (the banner at the top of the Plugins tab; themes have their own in the Themes tab) lists the plugins in a registry, a JSON file at `https://evi.rest/registry.json`, served by `server/` (see `server/README.md`). Search by name, description, author or tag, then **Install**, **Update** or **Uninstall**. An installed plugin appears and starts right away, no restart: the store writes it into `%APPDATA%\Evi\plugins\<id>` and the plugin watcher picks it up like any other folder.
+The **Plugin Store** (the banner at the top of the Plugins tab; themes have their own in the Themes tab) lists the plugins in a registry, a JSON file at `https://evi.rest/registry.json`, served by evi.rest. Search by name, description, author or tag, then **Install**, **Update** or **Uninstall**. An installed plugin appears and starts right away, no restart: the store writes it into `%APPDATA%\Evi\plugins\<id>` and the plugin watcher picks it up like any other folder.
 
 - **Every file is verified.** The registry lists a sha256 for each file. Evi downloads all of them (https only, redirects included, 5 MB per file, 1 MB for the registry), checks each hash and the manifest (same id, standard file names), and only then writes anything. A mismatch is rejected and nothing is written.
 - **Installs are atomic.** Files are staged in `%APPDATA%\Evi\store-staging`, outside the plugins folder, and moved into place with one rename. An update moves the old folder aside first and puts it back if the swap fails.
@@ -163,6 +165,8 @@ An official plugin, off by default. Deleted messages stay in the chat, tinted re
 Nothing is written to disk. It uses no source patches: it hooks MessageStore's own entries in the Flux dispatcher, so only MessageStore keeps a deleted message (unread counts and mentions still see the delete), and the exported function that renders a message's accessories. Turning it off really deletes the kept messages and hides every edit history.
 
 ## Writing a plugin
+
+The full guide, including how to have Claude generate a plugin, is in [docs/plugins.md](docs/plugins.md).
 
 A plugin is a folder in `plugins/` (official) or `userplugins/` (yours, gitignored):
 
