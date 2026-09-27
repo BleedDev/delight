@@ -33,6 +33,18 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.5.1",
+        date: "2026-09-27",
+        sections: {
+            added: [
+                "**Community plugins with a native part.** Authors can submit a native.js with their plugin. Evi's team reads all of it before it goes in, and Evi still asks you before installing anything with full access.",
+            ],
+            fixed: [
+                "Opening Evi's pages in Discord's settings no longer crashes Discord.",
+            ],
+        },
+    },
+    {
         version: "0.5.0",
         date: "2026-09-27",
         sections: {

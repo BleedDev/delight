@@ -54,13 +54,13 @@ function Embedded({ page }: { page: Page; }) {
 }
 
 function buildSection(types: NodeTypes): LayoutNode {
-    // Titles are hooks to Discord, so they follow its language as it changes
+    // Discord calls useTitle and useSearchTerms like hooks, but from components that also call its own
+    // nodes' ones, and those use no hooks. So these mustn't either: a hook here changed how many hooks
+    // Discord's header rendered when it moved onto an Evi page, and React crashed Discord (error #310).
+    // They read the language as they're called; Discord redraws its settings when its language changes.
     const entry = (page: Page): LayoutNode => {
         const key = page.id;
-        const title = () => {
-            useLocale();
-            return page.label();
-        };
+        const title = () => page.label();
         const Component = () => <Embedded page={page} />;
         // Discord's settings search finds a page by its tabs too ("Quick CSS", "Backup"...)
         const useSearchTerms = () => ["Evi", title(), ...page.tabs.map(tab => tab.label())];
