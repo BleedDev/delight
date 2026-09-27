@@ -203,12 +203,18 @@ if (!EXE) {
 }
 server.stop(true);
 
-// The release workflow must parse and must only ever produce drafts
+// The release workflow must parse, write its notes from the changelog, and publish only after testing what it uploads
 const workflow = Bun.YAML.parse(readFileSync(join(ROOT, ".github", "workflows", "release.yml"), "utf8")) as any;
 const triggers = Object.keys(workflow?.on ?? {}).sort().join(",");
 check("release.yml parses, triggers only on manual runs and v* tags", triggers === "push,workflow_dispatch" && JSON.stringify(workflow.on.push) === JSON.stringify({ tags: ["v*"] }), triggers);
 const releaseStep = workflow?.jobs?.release?.steps?.find((s: any) => /gh release create/.test(s.run ?? ""));
-check("release.yml creates a draft", /--draft\b/.test(releaseStep?.run ?? ""), releaseStep?.run);
+const steps: any[] = workflow?.jobs?.release?.steps ?? [];
+const stepIndex = (re: RegExp) => steps.findIndex((s: any) => re.test(s.run ?? ""));
+check("release.yml publishes with notes from the changelog, after the installers are tested",
+    /--notes-file notes\.md/.test(releaseStep?.run ?? "") && !/--draft\b/.test(releaseStep?.run ?? "")
+    && stepIndex(/release-notes\.ts/) >= 0 && stepIndex(/release-notes\.ts/) < stepIndex(/scripts\/build\.ts --release/)
+    && stepIndex(/test-installer\.ts/) < stepIndex(/gh release create/) && stepIndex(/test-cli\.ts --exe/) < stepIndex(/gh release create/),
+    releaseStep?.run);
 
 // Upgrading an install from before the rename to Evi: an old "// delight-shim" loader and data in %APPDATA%\Delight
 rmSync(join(RESOURCES, ORIGINAL_ASAR), { force: true });
