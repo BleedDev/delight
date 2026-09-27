@@ -8,8 +8,10 @@ import { analyzePermissions, Capability, PermissionsReport, Risk, RISK_LABELS, r
 import { Native } from "../native";
 import type { PluginState } from "../plugins/manager";
 import { PluginUsage } from "../plugins/usage";
+import { Store } from "../store";
 import { React } from "../webpack/common";
 import { Badge, Dialog, Icon, IconButton, IconName, Status, Text, Tone } from "./components";
+import { PulledNotice, ReportRow } from "./Trust";
 
 const riskTone: Record<Risk, Tone> = { low: "success", medium: "warning", high: "danger" };
 const riskIcon: Record<Risk, IconName> = { low: "circleCheck", medium: "info", high: "warning" };
@@ -92,16 +94,28 @@ export function InstalledPluginPermissions({ state }: { state: PluginState; }) {
     );
 }
 
-/** An installed plugin's details: what it can touch and its full changelog (the "View all" of its popups) */
+/**
+ * An installed plugin's details: what it can touch and its full changelog (the "View all" of its
+ * popups). Store plugins can be reported to Evi's team from here.
+ */
 function PluginDetails({ state }: { state: PluginState; }) {
     const { manifest } = state;
     const headingId = `dl-plugin-${manifest.id}-details`;
     const changelog = manifest.changelog ?? [];
+    const fromStore = state.source !== "dev" && !!Store.installedPlugin(manifest.id)?.fromStore;
+    // A store plugin's reviewed names, not what its manifest claims
+    const authors = Store.authorsOf(state);
+    // A pulled plugin's way back: the store's newer version (full-access ones update from their store page)
+    const entry = Store.getSnapshot().plugins.find(p => p.id === manifest.id);
+    const update = state.pulled && entry && !entry.native && Store.pluginAction(manifest.id) === "update"
+        ? { version: entry.version, busy: Store.getSnapshot().ops[manifest.id]?.type === "busy", run: () => void Store.install(manifest.id) }
+        : undefined;
     return (
         <div className="dl-stack dl-plugin-details">
+            {state.pulled && <PulledNotice pull={state.pulled} update={update} />}
             {manifest.description && <Text tag="p" variant="text-md/normal" color="text-default">{manifest.description}</Text>}
             <Text variant="text-sm/normal" color="text-subtle" tabular>
-                {[manifest.version && `v${manifest.version}`, manifest.authors?.length && `By ${manifest.authors.join(", ")}`].filter(Boolean).join(" · ")}
+                {[manifest.version && `v${manifest.version}`, authors.length > 0 && `By ${authors.join(", ")}`].filter(Boolean).join(" · ")}
             </Text>
 
             <section className="dl-stack" aria-labelledby={`${headingId}-access`}>
@@ -127,6 +141,8 @@ function PluginDetails({ state }: { state: PluginState; }) {
                     <Text tag="p" variant="text-sm/normal" color="text-muted">{manifest.name} doesn’t publish a changelog.</Text>
                 )}
             </section>
+
+            {fromStore && <ReportRow id={manifest.id} name={manifest.name} version={Store.installedPlugin(manifest.id)?.version ?? manifest.version} />}
         </div>
     );
 }

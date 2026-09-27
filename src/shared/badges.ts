@@ -1,5 +1,5 @@
 /**
- * Evi badges: shown on Discord profiles and next to names in chat, served by evi.rest.
+ * Evi badges: shown on Discord profiles, served by evi.rest.
  *
  *   GET /v1/badges         { badges: { "<id>": { name, description, icon } }, users: { "<discord id>": ["<id>", …] },
  *                            supporters: { "<discord id>": <since, ms> },
@@ -38,6 +38,8 @@ export interface BadgePrefs {
 
 /** Ours, as Discord's badge settings hold them: "evi-developer", "evi-supporter" */
 export const EVI_PREFIX = "evi-";
+/** Plugins' badges in Discord's badge directory (renderer/profileBadges.ts): saved nowhere */
+export const PLUGIN_PREFIX = "evi-plugin-";
 
 type Order = (number | string)[];
 
@@ -63,7 +65,7 @@ export function arrange<T>(theirs: T[], ours: T[], oursKey: (item: T) => string,
 /** The badges settings hold ours as "evi-<key>": back to our keys, Discord's numbers as they are */
 export function oursFromDiscord(ids: unknown): Order {
     return (Array.isArray(ids) ? ids : [...(ids as Iterable<unknown> ?? [])]).flatMap((id): Order =>
-        typeof id === "number" ? [id] : typeof id === "string" && id.startsWith(EVI_PREFIX) ? [id.slice(EVI_PREFIX.length)] : []);
+        typeof id === "number" ? [id] : typeof id === "string" && id.startsWith(EVI_PREFIX) && !id.startsWith(PLUGIN_PREFIX) ? [id.slice(EVI_PREFIX.length)] : []);
 }
 
 /** A PATCH body for the badge settings, without ours; and what of it is ours */

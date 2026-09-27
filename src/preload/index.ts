@@ -1,6 +1,10 @@
 import type { ImportMode } from "@shared/backup";
-import { AddThemeResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, EviSettings, IPC, OpenPathTarget, PluginChange, ThemeChange } from "@shared/ipc";
+import { AddThemeResult, AuthorsResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, CrashReportResult, EviSettings, HealthReportResult, HealthResult, IPC, OpenPathTarget, PluginChange, PluginReportResult, SettingsSaveResult, ThemeChange } from "@shared/ipc";
 import type { AccountLinkResult, AccountStatus } from "@shared/account";
+import type { CrashReportInput } from "@shared/crashReports";
+import type { HealthReportInput } from "@shared/health";
+import type { PluginReportInput } from "@shared/pluginReports";
+import type { PulledPlugins } from "@shared/pulls";
 import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesResult } from "@shared/badges";
 import type { UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/release";
 import type { StarKind, StarResult, StarsResult } from "@shared/stars";
@@ -11,7 +15,7 @@ import { contextBridge, ipcRenderer, webFrame } from "electron";
 /** The bridge the renderer uses to reach the main process. Mirrored by src/renderer/native.ts */
 const EviNative = {
     boot: (): BootData => ipcRenderer.sendSync(IPC.GET_BOOT),
-    saveSettings: (settings: EviSettings) => ipcRenderer.invoke(IPC.SETTINGS_SAVE, settings),
+    saveSettings: (settings: EviSettings): Promise<SettingsSaveResult | void> => ipcRenderer.invoke(IPC.SETTINGS_SAVE, settings),
     saveQuickCss: (css: string) => ipcRenderer.invoke(IPC.CSS_SAVE, css),
     saveSettingsSync: (settings: EviSettings) => void ipcRenderer.sendSync(IPC.SETTINGS_SAVE_SYNC, settings),
     saveQuickCssSync: (css: string) => void ipcRenderer.sendSync(IPC.CSS_SAVE_SYNC, css),
@@ -34,6 +38,14 @@ const EviNative = {
     storePreview: (id: string): Promise<StorePreviewResult> => ipcRenderer.invoke(IPC.STORE_PREVIEW, id),
     getStars: (): Promise<StarsResult> => ipcRenderer.invoke(IPC.STARS_GET),
     setStar: (kind: StarKind, id: string, starred: boolean): Promise<StarResult> => ipcRenderer.invoke(IPC.STARS_SET, kind, id, starred),
+    getAuthors: (): Promise<AuthorsResult> => ipcRenderer.invoke(IPC.AUTHORS_GET),
+    getHealth: (): Promise<HealthResult> => ipcRenderer.invoke(IPC.HEALTH_GET),
+    sendCrashReport: (input: CrashReportInput): Promise<CrashReportResult> => ipcRenderer.invoke(IPC.CRASH_REPORT_SEND, input),
+    reportHealth: (input: HealthReportInput): Promise<HealthReportResult> => ipcRenderer.invoke(IPC.HEALTH_REPORT, input),
+    onPullsChange(cb: (pulled: PulledPlugins) => void) {
+        ipcRenderer.on(IPC.PULLS_CHANGED, (_, pulled) => cb(pulled));
+    },
+    reportPlugin: (id: string, input: PluginReportInput): Promise<PluginReportResult> => ipcRenderer.invoke(IPC.PLUGIN_REPORT, id, input),
     getBadges: (cachedOnly = false): Promise<BadgesResult> => ipcRenderer.invoke(IPC.BADGES_GET, cachedOnly),
     onBadgesChange(cb: (badges: BadgesResult) => void) {
         ipcRenderer.on(IPC.BADGES_CHANGED, (_, badges) => cb(badges));
@@ -71,8 +83,53 @@ const isDiscordApp =
     && location.protocol === "https:"
     && /(^|\.)discord\.com$/.test(location.hostname);
 
+/**
+ * Hands the bridge to Evi's renderer, and to nothing else in the page.
+ *
+ * Plugins run in the same world as the renderer, so a bridge left on `window` would let any of them
+ * call main directly (install, save settings, relaunch...). Instead the page gets a one-shot
+ * `window.__eviClaimNative()`: the renderer calls it first thing (src/renderer/native.ts), before any
+ * plugin code is evaluated, and it's gone after that.
+ *
+ * contextBridge.exposeInMainWorld defines non-configurable properties (checked in Electron 37: delete
+ * returns false and they stay on `window` for good), so where it exists the claim function is defined
+ * by a function run in the page's world with executeInMainWorld (Electron 35+), as a configurable
+ * property that deletes itself when called. Older Electrons fall back to exposeInMainWorld: the
+ * function then stays on `window`, but only its first call returns the bridge.
+ */
+function handOver() {
+    let claimed = false;
+    const claim = () => {
+        if (claimed) throw new Error("Evi's bridge was already claimed");
+        claimed = true;
+        return EviNative;
+    };
+
+    if (typeof contextBridge.executeInMainWorld === "function") {
+        contextBridge.executeInMainWorld({
+            func: (claim: () => unknown) => {
+                Object.defineProperty(window, "__eviClaimNative", {
+                    configurable: true,
+                    value() {
+                        delete (window as any).__eviClaimNative;
+                        return claim();
+                    },
+                });
+            },
+            args: [claim],
+        });
+    } else {
+        contextBridge.exposeInMainWorld("__eviClaimNative", claim);
+    }
+    return () => {
+        claimed = true;
+        contextBridge.executeInMainWorld?.({ func: () => void delete (window as any).__eviClaimNative });
+    };
+}
+
 if (isDiscordApp) {
-    contextBridge.exposeInMainWorld("EviNative", EviNative);
-    // Runs in the page's world, ahead of Discord's scripts
-    webFrame.executeJavaScript(ipcRenderer.sendSync(IPC.GET_RENDERER));
+    const lock = handOver();
+    // Runs in the page's world, ahead of Discord's scripts. Whatever happened in there (a renderer
+    // that failed before claiming it), nothing after it gets the bridge.
+    webFrame.executeJavaScript(ipcRenderer.sendSync(IPC.GET_RENDERER)).finally(lock);
 }

@@ -39,9 +39,10 @@ import { ipcMain, WebContents } from "electron";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
 import { basename, dirname, join, resolve } from "path";
 
+import { confirmWithUser } from "./confirm";
 import { downloadHttps } from "./download";
 import { DATA_DIR, PLUGINS_DIR, THEMES_DIR } from "./paths";
-import { hideDevPlugin, pluginLocation, refreshUserPlugin, setRemoved } from "./plugins";
+import { consentToRun, hideDevPlugin, pluginLocation, refreshUserPlugin, setRemoved } from "./plugins";
 import { reloadTheme } from "./themes";
 
 /** Outside the plugins folder, so the plugin watcher never loads a half-written plugin */
@@ -172,7 +173,7 @@ function decodeText(name: string, data: Uint8Array) {
     }
 }
 
-async function install(id: string, allowNative: boolean, report: (p: StoreProgress) => void): Promise<StoreResult> {
+async function install(id: string, sender: WebContents, pageAllowed: boolean, report: (p: StoreProgress) => void): Promise<StoreResult> {
     const entry = await getEntry(id);
     if (entry.minEviVersion && compareVersions(EVI_VERSION, entry.minEviVersion) < 0) {
         throw new Error(`${entry.name} needs Evi ${entry.minEviVersion} or newer, this is ${EVI_VERSION}`);
@@ -183,7 +184,20 @@ async function install(id: string, allowNative: boolean, report: (p: StoreProgre
     if (existing && readMarker(dir)?.id !== id) {
         throw new Error(`A plugin folder named ${id} is already there and wasn't installed from the store. Remove it yourself to install this one.`);
     }
-    if (entry.native && !allowNative) throw new Error(`${entry.name} runs with full access to your computer. Confirm that before installing it.`);
+    // Full access is the user's call, asked from main: the page could be a plugin saying yes for them.
+    // An update of a store install they already trusted doesn't ask again.
+    const trusted = existing && readMarker(dir)?.native === true;
+    const confirmed = entry.native && !trusted;
+    if (confirmed) {
+        if (!await confirmWithUser(sender, {
+            message: `Install ${entry.name} with full access to your computer?`,
+            detail: `${entry.name} by ${entry.authors.join(", ")} runs outside Discord's page. It can read and change files and run programs, like any app you install. Only install it if you trust it.`,
+            confirm: "Install",
+            pageSaid: pageAllowed,
+        })) {
+            throw new Error(`${entry.name} runs with full access to your computer. Confirm that before installing it.`);
+        }
+    }
 
     // Download and verify everything in memory first: any failure leaves the disk untouched
     const names = Object.keys(entry.files) as StoreFileName[];
@@ -239,6 +253,8 @@ async function install(id: string, allowNative: boolean, report: (p: StoreProgre
 
     // Installing a plugin the user removed earlier brings it back for good
     setRemoved(id, false);
+    // The page turns it on once it's in: that's what the user just agreed to, main doesn't ask twice
+    if (confirmed) consentToRun(id);
     // Don't wait for the watcher: the renderer has the plugin by the time this resolves
     refreshUserPlugin(id);
     console.log(`[Evi] Store: ${existing ? "updated" : "installed"} ${id} ${entry.version}`);
@@ -250,7 +266,7 @@ async function install(id: string, allowNative: boolean, report: (p: StoreProgre
  * Its folder is deleted, and it's remembered as removed so Evi's updates don't put it back. A plugin
  * from the dev build output (the repo's own) can't be deleted from here, so it's hidden instead.
  */
-function uninstall(id: string, report: (p: StoreProgress) => void): StoreResult {
+async function uninstall(id: string, sender: WebContents, report: (p: StoreProgress) => void): Promise<StoreResult> {
     const loaded = pluginLocation(id);
     // The folder of a plugin in the user plugins folder, whatever it's named
     const inPlugins = (dir: string) => resolve(dirname(dir)) === resolve(PLUGINS_DIR);
@@ -258,6 +274,16 @@ function uninstall(id: string, report: (p: StoreProgress) => void): StoreResult 
         : existsSync(join(PLUGINS_DIR, id)) ? join(PLUGINS_DIR, id) : undefined;
     if (!dir && loaded?.source !== "dev") throw new Error(`${id} isn't installed`);
     const version = (dir && readMarker(dir)?.version) || loaded?.version || "";
+    // A folder the store didn't make may be the user's own work, with nothing to reinstall it from:
+    // deleting it takes their OK, asked from main so a plugin can't delete it for them
+    if (dir && readMarker(dir)?.id !== id && !await confirmWithUser(sender, {
+        message: `Delete ${loaded?.version ? id : basename(dir)} from your plugins folder?`,
+        detail: `It wasn't installed from the store, so its folder (${dir}) is deleted for good.`,
+        confirm: "Delete",
+        pageSaid: true,
+    })) {
+        throw new Error("Kept it: removing it wasn't confirmed");
+    }
 
     report({ id, phase: "removing", done: 0, total: 1 });
     if (dir) {
@@ -439,8 +465,8 @@ export function initStore() {
 
     ipcMain.handle(IPC.STORE_LIST, () => fetchRegistry());
     ipcMain.handle(IPC.STORE_INSTALL, (e, id: unknown, options?: { allowNative?: unknown; }) =>
-        exclusive(id, id => install(id, options?.allowNative === true, progressTo(e.sender))));
-    ipcMain.handle(IPC.STORE_UNINSTALL, (e, id: unknown) => exclusive(id, id => uninstall(id, progressTo(e.sender))));
+        exclusive(id, id => install(id, e.sender, options?.allowNative === true, progressTo(e.sender))));
+    ipcMain.handle(IPC.STORE_UNINSTALL, (e, id: unknown) => exclusive(id, id => uninstall(id, e.sender, progressTo(e.sender))));
     ipcMain.handle(IPC.STORE_THEME_INSTALL, (e, id: unknown) => exclusive(id, id => installTheme(id, progressTo(e.sender, "theme")), "theme"));
     ipcMain.handle(IPC.STORE_THEME_UNINSTALL, (e, id: unknown) => exclusive(id, id => uninstallTheme(id, progressTo(e.sender, "theme")), "theme"));
     ipcMain.handle(IPC.STORE_IMAGE, (_, url: unknown) => fetchImage(url));

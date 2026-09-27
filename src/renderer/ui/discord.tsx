@@ -188,6 +188,15 @@ export interface NoticeProps {
 }
 
 /**
+ * Discord's focus layer: while it's mounted, focus may go anywhere inside `containerRef` and the
+ * layers under it (Discord's settings screen) stop pulling focus back to themselves.
+ */
+export interface FocusLockProps {
+    containerRef: React.RefObject<HTMLElement | null>;
+    children: React.ReactNode;
+}
+
+/**
  * The component exported by a module whose source contains every snippet. For single-export
  * modules where the component's own code has nothing distinctive but its module does.
  */
@@ -210,6 +219,7 @@ export const DiscordUI = {
     TextArea: native<TextAreaProps>("TextArea", () => filters.componentByCode("showCharacterCount", "autosize", "rows")),
     Select: native<SelectProps<any>>("Select", () => filters.componentByCode("renderOptionLabel", "isSelected", "serialize")),
     Slider: native<SliderProps>("Slider", () => filters.componentByCode("stickToMarkers", "grabberRef")),
+    FocusLock: native<FocusLockProps>("FocusLock", () => filters.byCode("disableReturn", "containerRef", ".children")),
     Button: native<ButtonProps & { Colors?: Record<string, string>; Sizes?: Record<string, string>; Looks?: Record<string, string>; }>(
         "Button", () => filters.byProps("Looks", "Colors", "Sizes"),
     ),

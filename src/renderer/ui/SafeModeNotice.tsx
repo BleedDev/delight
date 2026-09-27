@@ -11,6 +11,7 @@ import { Settings } from "../settings";
 import { Themes } from "../themes";
 import { createRoot, React } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
+import { whenAppReady } from "./appReady";
 import { Button, Icon, IconButton, useExit, useStore } from "./components";
 import { ensureStyles } from "./index";
 
@@ -145,8 +146,8 @@ export function showSafeModeNotice() {
         createRoot(container).render(<Floating />);
     };
     // react-dom/client loads after React and Flux, which is all onCommonReady waits for
-    waitFor(filters.byProps("createRoot"), () => {
+    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
         if (document.body) mount();
         else document.addEventListener("DOMContentLoaded", mount, { once: true });
-    });
+    }));
 }

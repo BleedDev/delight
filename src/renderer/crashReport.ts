@@ -1,6 +1,7 @@
 /**
  * A plain-text report for a plugin that failed: everything a plugin author needs to reproduce it,
  * and nothing personal (no messages, tokens, user ids or file paths beyond the plugin's own id).
+ * Copy crash report and Send to author both use it, so what's sent is exactly what can be copied.
  */
 import { isPluginEnabled } from "@shared/ipc";
 
@@ -11,6 +12,12 @@ import { PluginManager } from "./plugins/manager";
 import { SafeMode } from "./safeMode";
 import { Settings } from "./settings";
 import { Store } from "./store";
+
+/** Discord's build id, "unknown" where Discord doesn't say (it always does in the app) */
+export function discordBuild(): string {
+    const id = (window as any).GLOBAL_ENV?.SENTRY_TAGS?.buildId;
+    return typeof id === "string" && /^[0-9a-z._-]{1,64}$/i.test(id) ? id : "unknown";
+}
 
 export function buildCrashReport(state: PluginState, now = new Date()) {
     const { manifest } = state;
@@ -49,10 +56,11 @@ export function buildCrashReport(state: PluginState, now = new Date()) {
         }
     }
 
+    // Store plugins only: anything else may be someone's own, and its name is theirs to share
     const others = PluginManager.getSnapshot()
-        .filter(p => p.manifest.id !== manifest.id && isPluginEnabled(Settings.data, p.manifest))
+        .filter(p => p.manifest.id !== manifest.id && isPluginEnabled(Settings.data, p.manifest) && Store.installedPlugin(p.manifest.id)?.fromStore)
         .map(p => `${p.manifest.id}@${p.manifest.version ?? "?"}`);
-    lines.push("", `Other enabled plugins: ${others.length ? others.join(", ") : "none"}`);
+    lines.push("", `Other enabled store plugins: ${others.length ? others.join(", ") : "none"}`);
 
     return lines.join("\n");
 }

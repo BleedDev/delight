@@ -1,5 +1,6 @@
 import * as api from "@evi/api";
 import { EviSettings, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import { PulledPlugin, PulledPlugins, pullFor } from "@shared/pulls";
 
 import { Logger } from "../logger";
 import { Native } from "../native";
@@ -27,6 +28,12 @@ export interface PluginState {
     patchesRegistered: boolean;
     /** The renderer bundle as loaded, scanned for what the plugin can touch (ui/PluginPermissions.tsx) */
     code?: string;
+    /**
+     * Evi turned this version off on every install (shared/pulls.ts). It doesn't run whatever its
+     * switch says, and the switch is left alone: it runs again once the pull is lifted or a version
+     * that isn't pulled is installed.
+     */
+    pulled?: PulledPlugin;
 }
 
 const logger = new Logger("Plugins", "#ff6fae");
@@ -34,6 +41,7 @@ const plugins = new Map<string, PluginState>();
 const listeners = new Set<() => void>();
 let snapshot: PluginState[] = [];
 let ready = false;
+let pulls: PulledPlugins = {};
 
 function emit() {
     snapshot = [...plugins.values()].sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
@@ -106,6 +114,18 @@ function disablePatches(state: PluginState) {
     if (state.patchesRegistered) setPatches(state, undefined);
 }
 
+// ---- pulls ------------------------------------------------------------------------------------
+
+/** The pull that keeps this plugin off, if any. Dev builds are the developer's own and never pulled. */
+function pullOf({ manifest, source }: Pick<PluginState, "manifest" | "source">) {
+    return source === "dev" ? undefined : pullFor(pulls, manifest.id, manifest.version);
+}
+
+/** Turned on, and not pulled by Evi */
+function shouldRun(state: PluginState, settings = Settings.data) {
+    return isPluginEnabled(settings, state.manifest) && !state.pulled;
+}
+
 // ---- lifecycle --------------------------------------------------------------------------------
 
 async function start(state: PluginState) {
@@ -153,6 +173,7 @@ function load(payload: PluginPayload): PluginState {
         needsReload: false,
         patchesRegistered: false,
     };
+    state.pulled = pullOf(state);
 
     // Safe mode lists plugins so they can be turned off, but never runs their code, not even top-level
     if (SafeMode.active) {
@@ -168,17 +189,19 @@ function load(payload: PluginPayload): PluginState {
     }
 
     plugins.set(payload.manifest.id, state);
-    if (isPluginEnabled(Settings.data, state.manifest)) enablePatches(state);
+    if (shouldRun(state)) enablePatches(state);
     return state;
 }
 
 function upsert(payload: PluginPayload) {
     const { id } = payload.manifest;
     const previous = plugins.get(id);
-    const enabled = isPluginEnabled(Settings.data, payload.manifest);
+    // A pulled version stays off; a newer one that isn't pulled runs like any other
+    const pulled = pullOf(payload);
+    const enabled = isPluginEnabled(Settings.data, payload.manifest) && !pulled;
 
     if (SafeMode.active) {
-        if (previous) Object.assign(previous, { manifest: payload.manifest, code: payload.code });
+        if (previous) Object.assign(previous, { manifest: payload.manifest, code: payload.code, pulled });
         else load(payload);
         return emit();
     }
@@ -206,10 +229,17 @@ function upsert(payload: PluginPayload) {
     previous.code = payload.code;
     previous.definition = definition;
     previous.error = undefined;
+    previous.pulled = pulled;
 
     // Unchanged patches keep their records; modules patched earlier call $self, which now resolves to the new definition
     if (patchesSignature(definition.patches) !== sameShape && (hadPatches || enabled)) {
         setPatches(previous, enabled ? definition.patches : undefined);
+    } else if (enabled) {
+        // The version it replaces was pulled, so its patches were off
+        enablePatches(previous);
+    } else {
+        // This version is pulled
+        disablePatches(previous);
     }
 
     if (ready && enabled) start(previous);
@@ -226,17 +256,32 @@ function remove(id: string) {
     emit();
 }
 
+/** Native code or Chromium switches: turning it on takes the user's yes in main (main/index.ts) */
+const reachesBeyondPage = ({ native, chromiumSwitches }: PluginManifest) => !!native || Object.keys(chromiumSwitches ?? {}).length > 0;
+
 async function applyEnabled(state: PluginState, enabled: boolean) {
-    if (state.manifest.native) Native.setNativeRunning(state.manifest.id, enabled);
+    const { manifest } = state;
 
     if (enabled) {
-        // On disk before any of its code runs: if it crashes Discord, safe mode can name it
-        Settings.flush();
+        // On disk before any of its code runs: if it crashes Discord, safe mode can name it. And main
+        // starts a native side only for a plugin its own copy of the settings has on, so that goes first.
+        if (!reachesBeyondPage(manifest)) Settings.flush();
+        else if ((await Settings.save()).includes(manifest.id)) {
+            logger.info(`${manifest.name} stays off: turning it on wasn't confirmed`);
+            return;
+        }
+        if (manifest.native) Native.setNativeRunning(manifest.id, true);
         enablePatches(state);
         if (ready) await start(state);
     } else {
         stop(state);
         disablePatches(state);
+        if (manifest.native) {
+            // Main refuses calls to a native side that's off in its settings: tell it now (after the
+            // plugin's own stop had its last calls), not when the debounced save gets there
+            Settings.flush();
+            Native.setNativeRunning(manifest.id, false);
+        }
     }
 }
 
@@ -244,12 +289,14 @@ async function applyEnabled(state: PluginState, enabled: boolean) {
 
 export const PluginManager = {
     /** Evaluate every plugin and register source patches of enabled ones. Runs before Discord's code. */
-    boot(payloads: PluginPayload[]) {
+    boot(payloads: PluginPayload[], pulled: PulledPlugins = {}) {
+        pulls = pulled;
         for (const payload of payloads) load(payload);
         Native.onPluginChange((change: PluginChange) => {
             if (change.type === "upsert") upsert(change.plugin);
             else remove(change.id);
         });
+        Native.onPullsChange?.(next => void PluginManager.setPulls(next));
         emit();
     },
 
@@ -258,7 +305,7 @@ export const PluginManager = {
         ready = true;
         if (SafeMode.active) return emit();
         for (const state of plugins.values()) {
-            if (isPluginEnabled(Settings.data, state.manifest)) await start(state);
+            if (shouldRun(state)) await start(state);
         }
         emit();
     },
@@ -270,7 +317,8 @@ export const PluginManager = {
         Settings.update(d => void ((d.plugins[id] ??= {}).enabled = enabled));
         // Only remembered in safe mode, it applies once the user leaves it
         if (SafeMode.active) return emit();
-        await applyEnabled(state, enabled);
+        // Remembered for a pulled plugin too: it applies once the pull is lifted
+        await applyEnabled(state, shouldRun(state));
         emit();
     },
 
@@ -278,14 +326,52 @@ export const PluginManager = {
     async syncEnabled(previous: EviSettings) {
         if (SafeMode.active) return emit();
         for (const state of plugins.values()) {
-            const enabled = isPluginEnabled(Settings.data, state.manifest);
-            if (enabled !== isPluginEnabled(previous, state.manifest)) await applyEnabled(state, enabled);
+            const enabled = shouldRun(state);
+            if (enabled !== shouldRun(state, previous)) await applyEnabled(state, enabled);
         }
         emit();
     },
 
+    /**
+     * Evi pulled plugins or lifted pulls (main heard from evi.rest): newly pulled ones stop right away,
+     * ones no longer pulled start again if they're turned on. Nobody's switch changes.
+     */
+    async setPulls(next: PulledPlugins) {
+        if (JSON.stringify(next) === JSON.stringify(pulls)) return;
+        pulls = next;
+        for (const state of plugins.values()) {
+            const was = state.pulled;
+            state.pulled = pullOf(state);
+            if (!was === !state.pulled) continue;
+            if (state.pulled) logger.warn(`Evi turned ${state.manifest.name} off: ${state.pulled.reason}`);
+            else logger.info(`Evi lifted the pull on ${state.manifest.name}`);
+            if (SafeMode.active || !isPluginEnabled(Settings.data, state.manifest)) continue;
+            await applyEnabled(state, !state.pulled);
+        }
+        emit();
+    },
+
+    /** What Evi pulled, by plugin id */
+    pulls: () => pulls,
+
     get(id: string) {
         return plugins.get(id);
+    },
+
+    /** The plugin once main has announced it, or undefined if it doesn't arrive within `timeoutMs` */
+    whenLoaded(id: string, timeoutMs = 5000): Promise<PluginState | undefined> {
+        const loaded = plugins.get(id);
+        if (loaded) return Promise.resolve(loaded);
+        return new Promise(resolve => {
+            const done = () => {
+                clearTimeout(timer);
+                listeners.delete(check);
+                resolve(plugins.get(id));
+            };
+            const check = () => void (plugins.has(id) && done());
+            const timer = setTimeout(done, timeoutMs);
+            listeners.add(check);
+        });
     },
 
     /** Stable snapshot for React's useSyncExternalStore */

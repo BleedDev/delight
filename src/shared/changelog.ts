@@ -33,8 +33,35 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.4.0",
+        date: "2026-09-27",
+        cover: "0.4.0",
+        sections: {
+            added: [
+                "**Community plugins in the store.** Plugin authors can now publish their own plugins on evi.rest. Evi's team reads every version before it goes in, and community plugins are labelled so you always know who made what.",
+                "**Verified authors.** Every plugin shows who made it, with a check for verified authors. Click a name to see their other plugins.",
+                "**Send a crash report to the author.** Next to Copy crash report. You see exactly what's sent before it goes, and nothing personal is in it.",
+                "**Know when a plugin is broken.** If a plugin stops working for lots of people after a Discord update, the store and your Plugins list say so, often with a note from its author about the fix.",
+                "**Report a plugin.** Something harmful, fake or broken? Report it from its store page. Reports go to Evi's team.",
+                "**Evi can turn off a bad plugin everywhere.** If a plugin turns out to be harmful, Evi switches it off on every install and tells you why.",
+            ],
+            improved: [
+                "**A What's new that looks like Evi.** The release's cover across the top, and each kind of change under its own label.",
+                "**Popups wait for Discord.** What's new, plugin changelogs and the update notice show once Discord has loaded, not over its loading screen.",
+                "**Supporter badges level up faster.** Prismatic is now one year of support instead of five.",
+                "**Plugin badges in Your badges.** Badges plugins add to profiles, like Last Seen's clock and Platform Indicators' device, are listed in Discord's badge directory too.",
+                "**Safer by design.** Turning on a plugin with full access to your computer always asks you in a system dialog that no plugin can answer for you.",
+            ],
+            fixed: [
+                "Installing a plugin from the store always turns it on. It used to say it had, and sometimes hadn't.",
+                "Dropdowns in a plugin's settings open on the first click. In Discord's settings they often closed again right away.",
+            ],
+        },
+    },
+    {
         version: "0.3.2",
         date: "2026-09-27",
+        cover: "0.3.2",
         sections: {
             improved: [
                 "**Dialogs and menus move like Discord's.** Evi's dialogs, notices and plugin menus now spring open and fade away instead of popping in and vanishing.",
@@ -45,6 +72,7 @@ export const RELEASES: Release[] = [
     {
         version: "0.3.1",
         date: "2026-09-27",
+        cover: "0.3.1",
         sections: {
             added: [
                 "**Evi on macOS and Linux.** Download the installer for your system from the release and run `evi install`. On Linux, run it with sudo.",
@@ -56,7 +84,7 @@ export const RELEASES: Release[] = [
         date: "2026-09-27",
         sections: {
             added: [
-                "**Evi badges are part of Evi.** They show on profiles and next to names for everyone using Evi, and can't be turned off by accident.",
+                "**Evi badges are part of Evi.** They show on profiles for everyone using Evi, and can't be turned off by accident.",
                 "**Hide and reorder your Evi badges** in Discord's own Customize your badges. Everyone sees the change within seconds.",
                 "**Supporter badges that level up.** From Bronze to Prismatic the longer you support Evi, with your progress in Your badges.",
                 "**Update Evi from the app.** Evi says when a new version is out, and one button installs it.",

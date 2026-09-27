@@ -1,11 +1,14 @@
 import type { NativeContext, NativePlugin } from "@evi/api/native";
-import { IPC, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import { EviSettings, IPC, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import { pullFor } from "@shared/pulls";
 import { parseRemovedPlugins, REMOVED_PLUGINS_FILE, RETIRED_PLUGINS, STORE_MARKER } from "@shared/store";
-import { ipcMain, session, webContents } from "electron";
+import { ipcMain, session, WebContents, webContents } from "electron";
 import { existsSync, FSWatcher, readdirSync, readFileSync, renameSync, rmSync, watch, writeFileSync } from "fs";
 import { join, resolve, sep } from "path";
 
+import { confirmWithUser } from "./confirm";
 import { DATA_DIR, PLUGINS_DIR } from "./paths";
+import { currentPulls, onPullsChange } from "./reports";
 import { addRequestFilter } from "./requests";
 import { SafeMode } from "./safeMode";
 import { settings } from "./settings";
@@ -110,6 +113,20 @@ function toPayload({ dir: _, signature: __, ...payload }: LoadedPlugin): PluginP
 
 // ---- native modules ---------------------------------------------------------------------------
 
+/** Turned off by Evi on every install (shared/pulls.ts). Dev builds are the developer's own, never pulled. */
+function isPulled({ manifest, source }: { manifest: PluginManifest; source: Source; }) {
+    return source !== "dev" && !!pullFor(currentPulls(), manifest.id, manifest.version);
+}
+
+/**
+ * Whether main lets a plugin's native side run: turned on in the settings main holds (not what the
+ * page says), not pulled, and not in safe mode. The page only asks; plugins run there too, and one
+ * could otherwise start or call another plugin's native module.
+ */
+function mayRunNative(plugin: LoadedPlugin) {
+    return !SafeMode.active && isPluginEnabled(settings, plugin.manifest) && !isPulled(plugin);
+}
+
 function loadNative(plugin: LoadedPlugin) {
     if (!plugin.manifest.native) return;
 
@@ -129,11 +146,11 @@ function loadNative(plugin: LoadedPlugin) {
 }
 
 function startNative(id: string) {
-    // Plugins are listed in safe mode, but none of their code runs
-    if (SafeMode.active) return;
     const plugin = plugins.get(id);
-    const native = plugin && loadNative(plugin);
-    if (!plugin || !native || native.running) return;
+    // Plugins are listed in safe mode, but none of their code runs. Not even loaded: loading runs its top-level code.
+    if (!plugin || !mayRunNative(plugin)) return;
+    const native = loadNative(plugin);
+    if (!native || native.running) return;
 
     const ctx: NativeContext = {
         pluginId: id,
@@ -248,6 +265,65 @@ function watchRoot(root: string, source: Source) {
     start();
 }
 
+// ---- turning on plugins that reach beyond the page ------------------------------------------------
+
+/**
+ * Plugins the user just said yes to in main (a confirmed store install), with when that runs out.
+ * The page turns them on right after, which doesn't need asking again.
+ */
+const consented = new Map<string, number>();
+const CONSENT_FOR = 2 * 60 * 1000;
+/** Questions on screen, by plugin id: saves that arrive meanwhile wait for the same answer */
+const asking = new Map<string, Promise<boolean>>();
+
+/** The user agreed to run this plugin with full access, in a dialog main showed */
+export function consentToRun(id: string) {
+    consented.set(id, Date.now() + CONSENT_FOR);
+}
+
+/** Native code or Chromium switches: what a plugin gets beyond Discord's page when it's on */
+function reachesBeyondPage(manifest: PluginManifest) {
+    return !!manifest.native || (!!manifest.chromiumSwitches && Object.keys(manifest.chromiumSwitches).length > 0);
+}
+
+/**
+ * Plugins a settings save from the page turns on that reach beyond it. The page can't be trusted to
+ * say the user did that (a plugin could save settings too, then restart Discord), so main asks first.
+ * Only plugins main has loaded: one that isn't there yet is checked when it's installed (the store
+ * asks before installing native code).
+ */
+export function enablesNeedingConsent(prev: EviSettings, next: EviSettings): PluginManifest[] {
+    const now = Date.now();
+    return [...plugins.values()]
+        .map(p => p.manifest)
+        .filter(m => reachesBeyondPage(m) && !isPluginEnabled(prev, m) && isPluginEnabled(next, m) && !((consented.get(m.id) ?? 0) > now));
+}
+
+/** Asks the user, from main, whether to turn a plugin on. One question per plugin at a time. */
+export function askToEnable(manifest: PluginManifest, sender: WebContents | undefined): Promise<boolean> {
+    const pending = asking.get(manifest.id);
+    if (pending) return pending;
+
+    const { name } = manifest;
+    const switches = Object.keys(manifest.chromiumSwitches ?? {}).map(s => `--${s}`).join(", ");
+    const answer = confirmWithUser(sender, manifest.native ? {
+        message: `Turn on ${name}? It runs with full access to your computer.`,
+        detail: `${name} runs outside Discord's page. It can read and change files and run programs, like any app you install. Only turn it on if you trust it.`,
+        confirm: "Turn on",
+        pageSaid: true,
+    } : {
+        message: `Turn on ${name}? It changes how Discord starts.`,
+        detail: `${name} starts Discord with ${switches}, from the next start on. Only turn it on if you trust it.`,
+        confirm: "Turn on",
+        pageSaid: true,
+    }).catch(err => {
+        console.error(`[Evi] Couldn't ask about turning on ${manifest.id}`, err);
+        return false;
+    }).finally(() => asking.delete(manifest.id));
+    asking.set(manifest.id, answer);
+    return answer;
+}
+
 // ---- chromium switches ------------------------------------------------------------------------
 
 /**
@@ -257,13 +333,13 @@ function watchRoot(root: string, source: Source) {
 export function applyChromiumSwitches() {
     if (SafeMode.active) return;
     const { app } = require("electron") as typeof import("electron");
-    for (const { dir } of roots) {
+    for (const { dir, source } of roots) {
         if (!existsSync(dir)) continue;
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
             if (!entry.isDirectory()) continue;
             try {
                 const manifest: PluginManifest = JSON.parse(readFileSync(join(dir, entry.name, "manifest.json"), "utf8"));
-                if (!manifest.chromiumSwitches || !isPluginEnabled(settings, manifest)) continue;
+                if (!manifest.chromiumSwitches || !isPluginEnabled(settings, manifest) || isPulled({ manifest, source })) continue;
                 for (const [name, value] of Object.entries(manifest.chromiumSwitches)) {
                     if (value === true) app.commandLine.appendSwitch(name);
                     else app.commandLine.appendSwitch(name, value);
@@ -311,14 +387,26 @@ export function initPlugins() {
     SafeMode.onEnter(() => {
         for (const id of natives.keys()) stopNative(id);
     });
-
-    ipcMain.handle(IPC.PLUGIN_NATIVE_STATE, (_, id: string, running: boolean) => {
-        running ? startNative(id) : stopNative(id);
+    // Evi pulled a plugin while it runs. Lifting a pull starts it again from the page, like switching it on.
+    onPullsChange(() => {
+        for (const id of natives.keys()) {
+            const plugin = plugins.get(id);
+            if (plugin && isPulled(plugin)) stopNative(id);
+        }
     });
 
-    ipcMain.handle(IPC.PLUGIN_NATIVE_CALL, (_, id: string, method: string, args: unknown[]) => {
-        const plugin = plugins.get(id);
+    // Starting is checked in startNative; stopping is always fine
+    ipcMain.handle(IPC.PLUGIN_NATIVE_STATE, (_, id: unknown, running: unknown) => {
+        if (typeof id !== "string") return;
+        running === true ? startNative(id) : stopNative(id);
+    });
+
+    ipcMain.handle(IPC.PLUGIN_NATIVE_CALL, (_, id: unknown, method: unknown, args: unknown) => {
+        const plugin = typeof id === "string" ? plugins.get(id) : undefined;
         if (SafeMode.active) throw new Error(`Plugin ${id} can't run in safe mode`);
+        if (plugin && isPulled(plugin)) throw new Error(`Plugin ${id} was turned off by Evi`);
+        if (plugin && !isPluginEnabled(settings, plugin.manifest)) throw new Error(`Plugin ${id} is turned off`);
+        if (typeof method !== "string" || !Array.isArray(args)) throw new Error(`Plugin ${id} has no native method ${method}`);
         const native = plugin && loadNative(plugin);
         const fn = native?.module[method];
         if (!native || typeof fn !== "function" || method === "start" || method === "stop") {

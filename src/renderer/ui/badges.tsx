@@ -7,61 +7,32 @@
  *   if they never set one) with an iconSrc, so they get Discord's own sizing, tooltip and layout.
  *   Ones the owner hid are left out.
  * - Discord's badge settings ("Customize your badges", "Your badges"): see badgeSettings.ts.
- * - Chat: the message username takes `decorations[BADGES]`, the elements after the name (role icon,
- *   new member, …). Ours are added to that list.
  *
- * Both are export hooks: no source patches. The /badge command is registered only on an install
- * holding the admin token.
+ * Only on profiles, like Discord's own: nothing next to names in chat. Export hooks, no source
+ * patches. The /badge command is registered only on an install holding the admin token.
  */
 import { arrange, BadgeAdminAction, EVI_PREFIX } from "@shared/badges";
-import type { ReactElement } from "react";
 
-import { Badge, Badges } from "../badges";
+import { Badge, badgeKey, Badges } from "../badges";
 import { PluginContext } from "../plugins/context";
-import { React } from "../webpack/common";
+import { ProfileBadges } from "../profileBadges";
 import { filters, findStore } from "../webpack/find";
 import { currentPrefs, installBadgeSettings } from "./badgeSettings";
-import { DiscordUI } from "./discord";
 
 /** Discord's `(displayProfile, hideLegacyUsername?) => ProfileBadge[]` */
 const profileBadgesFilter = filters.byCode("getBadges()??[]", "hidePersonalInformation");
-/** Discord's profile badge id ("premium_tenure_12_month_v2") to its badge number, as badge settings order them */
+/**
+ * Discord's profile badge id ("premium_tenure_12_month_v2") to its badge number, as badge settings order
+ * them. While you edit your profile, the preview uses it to tell which directory badges are already
+ * shown and adds the rest.
+ */
 const badgeTypeFilter = filters.byCode(".toUpperCase()]", "\"number\"==typeof");
-/** The username in a message header, with decorations = { [SYSTEM_TAG]: …, [BADGES]: [...] } */
-const usernameFilter = filters.componentByCode("withMentionPrefix", "hideSystemTag", "decorations");
-/** Discord's MessageHeaderDecorations.BADGES */
-const BADGES = 1;
 
-const css = `
-.evi-chat-badges { display: inline-flex; gap: 4px; margin-inline-start: 4px; vertical-align: -3px; }
-.evi-chat-badges img { width: 16px; height: 16px; object-fit: contain; }
-.evi-chat-badges[data-compact] { vertical-align: -2px; }
-.evi-chat-badges[data-compact] img { width: 14px; height: 14px; }
-`;
-
-const tooltip = (b: Badge) => b.description ? `${b.name}: ${b.description}` : b.name;
+/** One line, like Discord's: the name, or for a supporter since when (like Nitro's "Subscriber since …") */
+const tooltip = (b: Badge) => b.key === "supporter" && b.description ? b.description : b.name;
 
 /** In Discord's profile badge format */
 const toProfileBadge = (b: Badge) => ({ id: EVI_PREFIX + b.id, description: tooltip(b), iconSrc: b.icon, eviKey: b.key });
-
-function useUserBadges(userId: string | undefined) {
-    React.useSyncExternalStore(Badges.subscribe, Badges.getVersion);
-    return Badges.forUser(userId);
-}
-
-function ChatBadges({ userId, compact }: { userId: string; compact: boolean; }) {
-    const badges = useUserBadges(userId);
-    if (!badges.length) return null;
-    const Tooltip = DiscordUI.Tooltip.get;
-    return (
-        <span className="evi-chat-badges" data-compact={compact ? "" : undefined}>
-            {badges.map(b => {
-                const img = <img src={b.icon} alt={b.name} aria-label={tooltip(b)} draggable={false} />;
-                return Tooltip ? <Tooltip key={b.id} text={tooltip(b)}>{img}</Tooltip> : React.cloneElement(img, { key: b.id, title: tooltip(b) });
-            })}
-        </span>
-    );
-}
 
 let started: PluginContext | undefined;
 
@@ -70,11 +41,17 @@ export function startBadges() {
     if (started) return;
     const ctx = started = new PluginContext({ id: "evi-badges", name: "Badges" }, {});
 
-    ctx.addStyle(css);
     ctx.onDispose(Badges.use());
 
     let badgeType: ((id: string) => number | undefined) | undefined;
     ctx.waitFor(badgeTypeFilter, fn => void (badgeType = fn));
+    // Ours ("evi-supporter-gold") to their directory id ("evi-supporter"): without it the preview
+    // doesn't know they're shown, and draws them twice
+    ctx.hookExport("after", badgeTypeFilter, ({ args, result }) => {
+        const id = args[0];
+        if (result !== undefined || typeof id !== "string" || !id.startsWith(EVI_PREFIX)) return;
+        return EVI_PREFIX + badgeKey(id.slice(EVI_PREFIX.length));
+    });
 
     ctx.hookExport("after", profileBadgesFilter, ({ args, result }) => {
         const userId: string | undefined = args[0]?.userId;
@@ -83,23 +60,16 @@ export function startBadges() {
         const prefs = currentPrefs(userId, isMe);
         const hidden = new Set(prefs.hidden);
         const ours = (isMe ? Badges.allForUser(userId) : Badges.forUser(userId)).filter(b => !hidden.has(b.key));
-        // While you edit, Discord's preview adds badges from its directory, ours included: ours are placed here
+        // Discord's preview may pass ours back in while you edit: ours are placed here
         const theirs = (Array.isArray(result) ? result : []).filter(b => !(typeof b?.id === "string" && b.id.startsWith(EVI_PREFIX)));
-        if (!ours.length) return theirs.length === result?.length ? undefined : theirs;
-        return arrange(theirs, ours.map(toProfileBadge), b => b.eviKey, b => typeof b?.id === "string" ? badgeType?.(b.id) : undefined, prefs.order);
+        // Plugins' badges (ctx.profileBadges) go after everything else
+        const plugins = userId ? ProfileBadges.forUser(userId).map(b => ({ id: EVI_PREFIX + b.id, description: b.description, iconSrc: b.iconSrc, ...b.link && { link: b.link } })) : [];
+        if (!ours.length && !plugins.length) return theirs.length === result?.length ? undefined : theirs;
+        const arranged = ours.length ? arrange(theirs, ours.map(toProfileBadge), b => b.eviKey, b => typeof b?.id === "string" ? badgeType?.(b.id) : undefined, prefs.order) : theirs;
+        return plugins.length ? [...arranged, ...plugins] : arranged;
     });
 
     installBadgeSettings(ctx);
-
-    ctx.hookExport("before", usernameFilter, ({ args }) => {
-        const props = args[0];
-        const userId = props?.message?.author?.id;
-        // Only the message's own header: replies pass decorations without a BADGES slot
-        if (!userId || !props.decorations || !(BADGES in props.decorations)) return;
-        const existing = props.decorations[BADGES];
-        const ours: ReactElement = <ChatBadges key="evi-badges" userId={userId} compact={!!props.compact} />;
-        args[0] = { ...props, decorations: { ...props.decorations, [BADGES]: [...(Array.isArray(existing) ? existing : existing != null ? [existing] : []), ours] } };
-    });
 
     // Managing badges: only on an install holding the admin token, which never leaves main
     void Badges.canManage().then(allowed => {

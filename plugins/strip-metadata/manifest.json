@@ -2,9 +2,13 @@
     "id": "strip-metadata",
     "name": "Strip Metadata",
     "description": "Removes EXIF, GPS location and other hidden metadata from JPEG, PNG and WebP images before you upload them, without re-encoding. Can also give uploads random file names.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": ["Evi"],
     "tags": ["privacy"],
-    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "minEviVersion": "0.3.2",
+    "changelog": [
+        { "version": "1.0.1", "notes": ["Works with Discord's new upload code again: uploads that skip the upload queue are cleaned too, and the \"Can't find 1 part of Discord\" warning is gone."] },
+        { "version": "1.0.0", "notes": ["First release."] }
+    ],
     "enabledByDefault": false
 }

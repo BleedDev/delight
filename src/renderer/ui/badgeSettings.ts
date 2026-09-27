@@ -13,6 +13,7 @@ import { DAY, nextSupporterTier, SUPPORTER_TIERS, supportedDays, supporterTier }
 
 import { Badge, badgeKey, Badges } from "../badges";
 import type { PluginContext } from "../plugins/context";
+import { PLUGIN_BADGE_PREFIX, ProfileBadges } from "../profileBadges";
 import { showToast } from "../toolkit/toasts";
 import { findStore, filters } from "../webpack/find";
 
@@ -78,6 +79,28 @@ function toEntry(userId: string, b: Badge) {
     };
 }
 
+/**
+ * A plugin's profile badge (ctx.profileBadges) as a directory entry. They describe someone right now
+ * (online on desktop, last seen), so they're shown but not earned, and never saved with the order.
+ */
+function pluginEntry(b: ReturnType<typeof ProfileBadges.forUser>[number]) {
+    return {
+        badge_id: PLUGIN_BADGE_PREFIX + b.id,
+        owned: true,
+        hidden: false,
+        is_earnable: false,
+        name: b.name ?? b.description,
+        description: b.description,
+        info_label: `Shown by ${b.plugin}, an Evi plugin`,
+        rarity: RARITY.COMMON,
+        simple_icon_url: b.iconSrc,
+        simple_icon_raster_url: b.iconSrc,
+        complex_icon_static_url: b.iconSrc,
+        tiers: [],
+        progress: [],
+    };
+}
+
 /** What someone's arrangement is right now: while you edit your own profile, the unsaved one */
 export function currentPrefs(userId: string | undefined, isMe: boolean): BadgePrefs {
     const saved = Badges.prefsFor(userId);
@@ -110,18 +133,35 @@ export function installBadgeSettings(ctx: PluginContext) {
         return entries;
     }
 
+    // Plugins answer from live state, so theirs are rebuilt only when what they return changes
+    const pluginCache = new Map<string, { key: string; entries: ReturnType<typeof pluginEntry>[]; }>();
+    function pluginEntriesFor(userId: string) {
+        if (!ProfileBadges.size) return [];
+        const badges = ProfileBadges.forUser(userId);
+        const key = JSON.stringify(badges);
+        const cached = pluginCache.get(userId);
+        if (cached?.key === key) return cached.entries;
+        const entries = badges.map(pluginEntry);
+        pluginCache.set(userId, { key, entries });
+        return entries;
+    }
+
     ctx.waitFor(filters.byStoreName("BadgeDirectoryStore"), (store: any) => {
         ctx.hook.after(store, "getBadges", ({ args, result }) => {
             const userId: string | undefined = args[0] ?? me();
             if (!userId) return;
             const ours = entriesFor(userId);
-            if (!ours.length) return;
-            return arrange(Array.isArray(result) ? result : [], ours, e => e.badge_id.slice(EVI_PREFIX.length), e => typeof e?.badge_id === "number" ? e.badge_id : undefined, Badges.prefsFor(userId).order);
+            const plugins = pluginEntriesFor(userId);
+            if (!ours.length && !plugins.length) return;
+            const theirs = Array.isArray(result) ? result : [];
+            const arranged = ours.length ? arrange(theirs, ours, e => e.badge_id.slice(EVI_PREFIX.length), e => typeof e?.badge_id === "number" ? e.badge_id : undefined, Badges.prefsFor(userId).order) : theirs;
+            return plugins.length ? [...arranged, ...plugins] : arranged;
         });
         ctx.hook.after(store, "getBadgeById", ({ args, result }) => {
             if (result != null || typeof args[0] !== "string" || !args[0].startsWith(EVI_PREFIX)) return;
             const userId: string | undefined = args[1] ?? me();
-            return userId ? entriesFor(userId).find(e => e.badge_id === args[0]) : undefined;
+            if (!userId) return;
+            return args[0].startsWith(PLUGIN_BADGE_PREFIX) ? pluginEntriesFor(userId).find(e => e.badge_id === args[0]) : entriesFor(userId).find(e => e.badge_id === args[0]);
         });
         // Discord's screens re-read the store when it changes: tell them when ours do
         ctx.onDispose(Badges.subscribe(() => store.emitChange?.()));

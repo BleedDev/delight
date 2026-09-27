@@ -7,6 +7,7 @@ import type { UpdateProgress, UpdateStatus } from "@shared/release";
 import { Updates } from "../updates";
 import { createRoot, React } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
+import { whenAppReady } from "./appReady";
 import { Button, Icon, IconButton, Section, Status, SwitchRow, Text, useExit, useStore } from "./components";
 import { ensureStyles } from "./index";
 
@@ -148,7 +149,7 @@ let root: ReturnType<typeof createRoot> | undefined;
 function showUpdateNotice(status: Available) {
     if (!status.installable) return;
     ensureStyles();
-    waitFor(filters.byProps("createRoot"), () => {
+    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
         if (!root) {
             const container = document.createElement("div");
             container.className = "dl-root";
@@ -157,7 +158,7 @@ function showUpdateNotice(status: Available) {
         }
         const close = () => root?.render(null);
         root.render(<FloatingNotice status={status} onClose={close} />);
-    });
+    }));
 }
 
 /** Checks for Evi updates in the background and says when one is out */

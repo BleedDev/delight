@@ -1,10 +1,25 @@
 {
     "id": "last-seen",
     "name": "Last Seen",
-    "description": "See when someone was last online and when they last sent a message, on their profile and next to offline members. Only counts what your client has seen, kept on this device.",
-    "version": "1.0.0",
+    "description": "See when someone was last online, last active and last sent a message: on their profile, next to offline members, in your friends list and in your DMs. Only counts what your client has seen, kept on this device.",
+    "version": "1.1.1",
     "authors": ["Evi"],
     "tags": ["social"],
-    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "minEviVersion": "0.4.0",
+    "changelog": [
+        { "version": "1.1.1", "notes": ["The last seen clock shows in Discord's badge directory (Your badges) too."] },
+        {
+            "version": "1.1.0",
+            "notes": [
+                "Remembers up to 25,000 people, and friends and DM contacts are the last to be forgotten.",
+                "Last active: typing, voice and reactions count too, even when someone looks offline.",
+                "Opening a channel fills in when people last sent a message there, and hovering says where. Click the clock on a profile to jump to it.",
+                "Shows under offline friends in the friends list and under offline people in your DMs.",
+                "Times that are only a guess (someone was online when Discord closed) now say \"in the last 3h\".",
+                "Settings: search everyone remembered, export and import, and clearing asks first and can be undone."
+            ]
+        },
+        { "version": "1.0.0", "notes": ["First release."] }
+    ],
     "enabledByDefault": false
 }

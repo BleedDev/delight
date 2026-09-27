@@ -1,36 +1,45 @@
 /**
- * "What's new in Evi": a copy of Discord's own changelog modal (layout, type and section colors
- * measured from its CSS). Shown once after Evi updates itself, and on demand from the Evi panel.
- * Discord's modal itself can't be used: it renders in Discord's modal layer, under Evi's panel.
+ * "What's new in Evi", in Evi's own look rather than a copy of Discord's changelog: the release's
+ * cover (the same art as its post on evi.rest) across the top, a small "Evi 0.3.2 · date" line over
+ * a headline that fades like the site's, and each kind of change under a labelled pill. Shown once
+ * after Evi updates itself, and on demand from the Evi panel. Plugin changelogs (PluginChangelog.tsx)
+ * use the same shell. It renders in Evi's own layer: Discord's modal layer sits under Evi's panel.
  */
-import { latestRelease, mergeReleases, Release, RELEASES_URL, releasesSince, SECTION_KINDS, SECTION_TITLES } from "@shared/changelog";
+import { latestRelease, mergeReleases, Release, RELEASES_URL, releasesSince, SECTION_KINDS, SectionKind } from "@shared/changelog";
 import type { ReactNode } from "react";
 
 import { Settings } from "../settings";
 import { createRoot, React, ReactDOM } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
-import { Button, cx, Icon, Text, useExit, useModal } from "./components";
+import { whenAppReady } from "./appReady";
+import { cx, FocusLayer, Icon, useExit, useModal } from "./components";
 import { coverUrl } from "./covers";
 import { ensureStyles } from "./index";
 
-// Discord's changelog subtitle is the date, written out: "September 26, 2026"
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "long" });
 
-/** The part of Discord's changelog markdown Evi's notes use: **bold** lead-ins */
+/** The markdown Evi's notes use: **bold** lead-ins and `code` */
 export function inline(text: string) {
-    return text.split(/\*\*(.+?)\*\*/g).map((part, i) => i % 2 ? <strong key={i}>{part}</strong> : part);
+    return text.split(/(\*\*.+?\*\*|`[^`]+`)/g).map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**") && part.length > 4) return <strong key={i}>{part.slice(2, -2)}</strong>;
+        if (part.startsWith("`") && part.endsWith("`") && part.length > 2) return <code key={i}>{part.slice(1, -1)}</code>;
+        return part;
+    });
 }
 
 /**
- * The shell of Discord's changelog modal: a title with the close button, a subtitle, a body that
- * grows dividers above and below only when it has to scroll, and a footer. Evi's own release notes
- * and plugin changelogs (PluginChangelog.tsx) both use it.
+ * The release notes shell: an optional picture across the top with the close button over it, a
+ * small line above the title, a body that grows dividers only when it has to scroll, and a footer.
  */
-export function ChangelogModal({ className, titleId, title, subtitle, onClose, children, footer }: {
+export function ChangelogModal({ className, titleId, title, eyebrow, subtitle, hero, onClose, children, footer }: {
     className: string;
     titleId: string;
     title: ReactNode;
+    /** Small text above the title, like "Evi 0.3.2 · September 27, 2026" */
+    eyebrow?: ReactNode;
     subtitle?: ReactNode;
+    /** Across the top, edge to edge */
+    hero?: ReactNode;
     onClose(): void;
     children: ReactNode;
     /** A function gets `close`, for buttons that close it with the exit animation */
@@ -40,7 +49,6 @@ export function ChangelogModal({ className, titleId, title, subtitle, onClose, c
     const { ref, onKeyDown } = useModal(exit.close);
     const scrollerRef = React.useRef<HTMLDivElement>(null);
     const innerRef = React.useRef<HTMLElement>(null);
-    // Like Discord's modal: dividers above and below the body only when it has to scroll
     const [scrolls, setScrolls] = React.useState(false);
 
     React.useLayoutEffect(() => {
@@ -55,26 +63,22 @@ export function ChangelogModal({ className, titleId, title, subtitle, onClose, c
     return ReactDOM.createPortal(
         <div className="dl-root" {...exit.closingProps}>
             <div className="dl-scrim dl-dialog-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && exit.close()}>
-                <div className={cx("dl-modal evi-modal", className)} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={ref} onKeyDown={onKeyDown}>
-                    <header className="dl-modal-section dl-modal-header">
-                        <div className="dl-modal-header-layout">
-                            <div className="dl-modal-header-main">
-                                <Text tag="h1" variant="heading-lg/semibold" color="text-strong" id={titleId}>{title}</Text>
-                            </div>
-                            <div className="dl-modal-header-trailing">
-                                <Button variant="icon" size="md" icon="closeLarge" aria-label="Close" onClick={exit.close} />
-                            </div>
+                <div className={cx("dl-notes evi-modal", className)} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={ref} onKeyDown={onKeyDown}>
+                    <FocusLayer containerRef={ref}>
+                        {hero && <div className="dl-notes-hero">{hero}</div>}
+                        <button type="button" className="dl-notes-close" aria-label="Close" onClick={exit.close}>
+                            <Icon name="close" size={20} />
+                        </button>
+                        <header className="dl-notes-head" data-hero={hero ? "" : undefined}>
+                            {eyebrow && <p className="dl-notes-eyebrow">{eyebrow}</p>}
+                            <h1 className="dl-notes-title" id={titleId}>{title}</h1>
+                            {subtitle && <p className="dl-notes-subtitle">{subtitle}</p>}
+                        </header>
+                        <div className="dl-notes-body" data-scrolls={scrolls ? "" : undefined} ref={scrollerRef}>
+                            <main className="dl-notes-body-inner" ref={innerRef}>{children}</main>
                         </div>
-                        {subtitle && <Text variant="text-md/normal" color="text-subtle">{subtitle}</Text>}
-                    </header>
-                    <div className={cx("dl-modal-spacer-top", scrolls && "dl-modal-divided")} />
-                    <div className="dl-modal-body" ref={scrollerRef}>
-                        <main className={cx("dl-modal-body-inner", scrolls && "dl-modal-body-scrolls")} ref={innerRef}>
-                            {children}
-                        </main>
-                    </div>
-                    <div className={cx("dl-modal-spacer-bottom", scrolls && "dl-modal-divided")} />
-                    {footer && <footer className="dl-modal-section dl-modal-action-bar">{typeof footer === "function" ? footer(exit.close) : footer}</footer>}
+                        {footer && <footer className="dl-notes-foot">{typeof footer === "function" ? footer(exit.close) : footer}</footer>}
+                    </FocusLayer>
                 </div>
             </div>
         </div>,
@@ -82,35 +86,64 @@ export function ChangelogModal({ className, titleId, title, subtitle, onClose, c
     );
 }
 
+const KIND_LABELS: Record<SectionKind, string> = {
+    added: "New",
+    improved: "Improved",
+    fixed: "Fixed",
+    progress: "In progress",
+};
+
+/** A mark per kind of change, drawn on a 16px grid to sit in the pill */
+function KindMark({ kind }: { kind: SectionKind; }) {
+    const paths: Record<SectionKind, ReactNode> = {
+        // A four-pointed spark
+        added: <path fill="currentColor" d="M8 1.5c.3 0 .55.2.62.49l.6 2.5a2.5 2.5 0 0 0 1.8 1.8l2.49.6a.64.64 0 0 1 0 1.23l-2.5.6a2.5 2.5 0 0 0-1.8 1.8l-.6 2.49a.64.64 0 0 1-1.23 0l-.6-2.5a2.5 2.5 0 0 0-1.8-1.8l-2.49-.6a.64.64 0 0 1 0-1.23l2.5-.6a2.5 2.5 0 0 0 1.8-1.8l.6-2.49A.64.64 0 0 1 8 1.5Z" />,
+        improved: <path fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" d="M8 13V3.5M3.75 7.5 8 3.25l4.25 4.25" />,
+        fixed: <path fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" d="m3.5 8.25 3 3 6-6.5" />,
+        progress: <><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.5" /><path fill="currentColor" d="M8 2.5a5.5 5.5 0 0 1 0 11Z" /></>,
+    };
+    return <svg className="dl-notes-mark" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">{paths[kind]}</svg>;
+}
+
+/** No cover for this release: the version itself on the covers' dot grid */
+function VersionHero({ version }: { version: string; }) {
+    return <div className="dl-notes-hero-art" aria-hidden="true"><span>{version}</span></div>;
+}
+
 export function WhatsNewModal({ releases, onClose }: { releases: Release[]; onClose(): void; }) {
     const notes = mergeReleases(releases);
     const cover = coverUrl(notes.cover);
+    const date = dateFormat.format(new Date(`${notes.date}T00:00:00`));
 
     return (
         <ChangelogModal
             className="dl-whats-new"
             titleId="dl-whats-new-title"
-            title="What’s New in Evi"
-            subtitle={dateFormat.format(new Date(`${notes.date}T00:00:00`))}
+            eyebrow={<>Evi {notes.version}<span aria-hidden="true"> · </span><time dateTime={notes.date}>{date}</time></>}
+            title="What’s new in Evi"
+            hero={cover ? <img className="dl-whats-new-cover" src={cover} alt="" width={1200} height={675} /> : <VersionHero version={notes.version} />}
             onClose={onClose}
-            footer={
-                <div className="dl-whats-new-footer">
-                    <a className="dl-whats-new-social" href={RELEASES_URL} target="_blank" rel="noreferrer noopener" aria-label="Evi on GitHub">
+            footer={close => (
+                <>
+                    <a className="dl-notes-link" href={RELEASES_URL} target="_blank" rel="noreferrer noopener">
                         <Icon name="github" size={16} />
+                        <span>Every release on GitHub</span>
                     </a>
-                    <Text variant="text-xs/normal">Follow us for more updates!</Text>
-                </div>
-            }
+                    <button type="button" className="dl-notes-done" onClick={close}>Got it</button>
+                </>
+            )}
         >
             <div className="dl-whats-new-notes" role="region" aria-label="Changelog content" tabIndex={0}>
-                {cover && <img className="dl-whats-new-cover" src={cover} alt="" width={1200} height={675} />}
                 {SECTION_KINDS.filter(kind => notes.sections[kind]?.length).map(kind => (
-                    <React.Fragment key={kind}>
-                        <Text tag="h2" variant="heading-md/bold" className={`dl-whats-new-title dl-whats-new-${kind}`}>{SECTION_TITLES[kind]}</Text>
+                    <section className="dl-notes-section" data-kind={kind} key={kind} aria-labelledby={`dl-whats-new-${kind}`}>
+                        <h2 className={`dl-whats-new-title dl-whats-new-${kind}`} id={`dl-whats-new-${kind}`}>
+                            <KindMark kind={kind} />
+                            {KIND_LABELS[kind]}
+                        </h2>
                         <ul className="dl-whats-new-list">
                             {notes.sections[kind]!.map(line => <li className="dl-whats-new-item" key={line}>{inline(line)}</li>)}
                         </ul>
-                    </React.Fragment>
+                    </section>
                 ))}
             </div>
         </ChangelogModal>
@@ -155,7 +188,8 @@ export function showWhatsNewIfUpdated() {
 
     startupOpen = true;
     ensureStyles();
-    waitFor(filters.byProps("createRoot"), () => {
+    // Not over Discord's loading screen: once the app is showing
+    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
         const mount = () => {
             const container = document.createElement("div");
             document.body.append(container);
@@ -163,5 +197,5 @@ export function showWhatsNewIfUpdated() {
         };
         if (document.body) mount();
         else document.addEventListener("DOMContentLoaded", mount, { once: true });
-    });
+    }));
 }

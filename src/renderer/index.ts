@@ -3,13 +3,16 @@
  */
 import * as api from "@evi/api";
 import { isPluginEnabled } from "@shared/ipc";
+import { pullFor } from "@shared/pulls";
 
 import { Backup } from "./backup";
+import { startHealthReports } from "./health";
 import { Logger } from "./logger";
 import { Native } from "./native";
 import { diagnosePatches } from "./patching/diagnose";
 import { diagnoseLookups } from "./plugins/lookups";
 import { PluginManager } from "./plugins/manager";
+import { startPullNotices } from "./pulls";
 import { SafeMode } from "./safeMode";
 import { Settings } from "./settings";
 import { Store } from "./store";
@@ -19,6 +22,7 @@ import { Themes } from "./themes";
 import { registerToolkitPatches, Toolkit } from "./toolkit";
 import { installLayerStyles } from "./toolkit/layer";
 import { installHotkey, SettingsUI } from "./ui";
+import { whenAppReady } from "./ui/appReady";
 import { startBadges } from "./ui/badges";
 import { startUpdateChecks } from "./ui/UpdatesTab";
 import { startPluginChangelogs } from "./ui/PluginChangelog";
@@ -61,8 +65,8 @@ const Evi = {
 };
 
 function boot() {
-    // Only present where our preload decided to load us
-    if (!window.EviNative) return;
+    // Only handed over where our preload decided to load us
+    if (!Native) return;
     if (window.Evi) return logger.warn("Already loaded, skipping");
     Object.defineProperty(window, "Evi", { value: Evi, configurable: false, writable: false });
 
@@ -78,8 +82,10 @@ function boot() {
     // Themes first: Quick CSS goes after them in <head>, so it wins
     Themes.init(data.themes);
     QuickCss.init(data.quickCss);
-    if (!SafeMode.active) registerToolkitPatches(data.plugins.filter(p => isPluginEnabled(data.settings, p.manifest)).map(p => p.code));
-    PluginManager.boot(data.plugins);
+    // Plugins Evi pulled never run (shared/pulls.ts), so their code doesn't count either
+    const runs = (p: typeof data.plugins[number]) => isPluginEnabled(data.settings, p.manifest) && (p.source === "dev" || !pullFor(data.pulled, p.manifest.id, p.manifest.version));
+    if (!SafeMode.active) registerToolkitPatches(data.plugins.filter(runs).map(p => p.code));
+    PluginManager.boot(data.plugins, data.pulled);
     installHotkey();
     installSettingsEntry();
 
@@ -98,6 +104,10 @@ function boot() {
             // Plugins that updated since the last start: their changelogs, after Evi's own
             startPluginChangelogs();
             Store.scheduleAutoUpdate();
+            // Store plugins that can't find parts of Discord, told to evi.rest (off in Store settings)
+            whenAppReady(startHealthReports);
+            // Plugins Evi turned off: a toast each, once
+            whenAppReady(startPullNotices);
         }
     });
 

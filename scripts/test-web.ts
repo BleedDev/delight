@@ -40,6 +40,34 @@ plugins.push({
     code: "module.exports = { default: { start(ctx) { ctx.onDispose(ctx.contextMenu(\"__none__\", () => { })); } } };",
     source: "dev",
 });
+// Adds a profile badge through ctx.profileBadges, for one made-up user
+plugins.push({
+    manifest: { id: "badge-user", name: "Badge User", enabledByDefault: true },
+    code: "module.exports = { default: { start(ctx) { ctx.profileBadges(id => id === \"999000000000000001\" ? [{ id: \"test-status\", name: \"Testing\", description: \"Testing right now\", iconSrc: \"data:image/png;base64,iVBORw0KGgo=\" }] : []); } } };",
+    source: "dev",
+});
+// Installed from the store, and waits for something Discord doesn't have: it's reported to
+// evi.rest's plugin health, and its crash report can go to its author
+plugins.push({
+    manifest: { id: "store-lookup", name: "Store Lookup", version: "1.0.0", enabledByDefault: true },
+    code: "const { filters } = require(\"@evi/api\"); module.exports = { default: { start(ctx) { ctx.waitFor(filters.byProps(\"eviHealthTestNeverInDiscord\"), () => { }); } } };",
+    source: "user",
+});
+// Installed from the store, turned on, and pulled by Evi (the kill switch): it must never start.
+// Counts its starts and stops, so the test can see the pull stop it and lifting it start it again.
+plugins.push({
+    manifest: { id: "store-pulled", name: "Link Preview Plus", version: "1.0.0", enabledByDefault: true },
+    code: "module.exports = { default: { start() { window.__test.pulledRuns = (window.__test.pulledRuns ?? 0) + 1; }, stop() { window.__test.pulledStops = (window.__test.pulledStops ?? 0) + 1; } } };",
+    source: "user",
+});
+const PULL_REASON = "It sends the messages you open to a server it doesn't name";
+const PULLED_AT = Date.UTC(2026, 8, 26, 12);
+// Link Preview Plus 1.0.0 (installed; 1.0.1 in the store isn't pulled) and every version of Free Nitro
+const pulled = {
+    "store-pulled": { versions: ["1.0.0"], reason: PULL_REASON, at: PULLED_AT, removed: false },
+    "store-scam": { versions: "all" as const, reason: "It asks for your Discord password", at: PULLED_AT, removed: false },
+};
+
 // Fails to start on purpose, for the crash report. Its error logs are expected, see BROKEN below.
 const BROKEN = "Broken Plugin";
 plugins.push({
@@ -54,6 +82,7 @@ const boot: BootData = {
     // Last saw an older Evi: What's new shows once at startup
     settings: { quickCss: true, plugins: { experiments: { enabled: true } }, enabledThemes: [], lastSeenVersion: "0.0.1", pluginVersionsSeen: { "clear-urls": "0.9.0", "quick-actions": "0.9.0" } },
     plugins,
+    pulled,
     quickCss: "",
     themes: [{
         file: "web-test.css",
@@ -73,6 +102,9 @@ function fakeNative(bootData: BootData) {
     const pluginListeners: ((change: unknown) => void)[] = [];
     const themeListeners: ((change: unknown) => void)[] = [];
     (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[], themeInstalls: [] as unknown[], stars: [] as unknown[], badgeAdmin: [] as unknown[], badgePrefs: [] as unknown[], updateChecks: 0, updateInstalls: 0, bootOk: 0, exitedSafeMode: 0, account: { confirmed: false, started: 0, dashboard: 0 } };
+    Object.assign((window as any).__test, { healthReports: [] as unknown[], crashReports: [] as unknown[], pluginReports: [] as unknown[], pulled: bootData.pulled ?? {} });
+    // Discord deletes window.localStorage once it starts, like Evi the test keeps a reference
+    (window as any).__test.storage = window.localStorage;
     (window as any).EviNative = {
         boot: () => structuredClone(bootData),
         saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
@@ -119,12 +151,20 @@ function fakeNative(bootData: BootData) {
                     }),
                     entry("store-rpc", "Local RPC", "Exposes a local API so other apps can read your current channel.", "0.4.0", true, ["integration"]),
                     entry("store-theme-sync", "Theme Sync", "Follows your system's light and dark mode.", "2.1.0"),
+                    entry("store-lookup", "Store Lookup", "Waits for a part of Discord that isn't there.", "1.0.0", false, ["messages"], { authorIds: ["evi"] }),
+                    // Community plugins: one to install, one Evi pulled at 1.0.0 with a fixed 1.0.1, one pulled for good
+                    entry("store-community", "Emoji Tray", "Keeps your most used emoji one click away.", "1.2.0", false, ["messages"], { authors: ["Mira"], authorIds: ["mira"] }),
+                    entry("store-pulled", "Link Preview Plus", "Bigger link previews in the page's own colors.", "1.0.1", false, ["messages"], {
+                        authors: ["Mira"], authorIds: ["mira"],
+                        changelog: [{ version: "1.0.1", notes: ["Previews no longer go through a server"] }],
+                    }),
+                    entry("store-scam", "Free Nitro", "Unlocks Nitro features at no cost.", "1.0.0", false, [], { authors: ["Nitro Giveaways"] }),
                 ],
                 themes: [
                     theme("midnight", "Midnight", "True black for OLED screens."),
                     theme("paper", "Paper", "Soft light greys."),
                 ],
-                installed: [{ id: "store-quiet", version: "1.2.0", fromStore: true }, { id: "store-theme-sync", version: "2.1.0", fromStore: true }],
+                installed: [{ id: "store-quiet", version: "1.2.0", fromStore: true }, { id: "store-theme-sync", version: "2.1.0", fromStore: true }, { id: "store-lookup", version: "1.0.0", fromStore: true }, { id: "store-pulled", version: "1.0.0", fromStore: true }],
                 installedThemes: [],
             };
         },
@@ -158,6 +198,40 @@ function fakeNative(bootData: BootData) {
         linkAccount: async () => {
             (window as any).__test.account.started++;
             return { ok: true, code: "K7PQ-X3MV" };
+        },
+        // evi.rest: one verified author; Quiet Mode 1.2.0 broken by installs' reports, Store Lookup being looked into
+        getAuthors: async () => ({
+            ok: true,
+            site: "https://evi.rest",
+            authors: { evi: { slug: "evi", name: "Evi", bio: "The people who make Evi.", verified: true, userId: "123456789012345678", avatar: null, links: { github: "https://github.com/BleedDev/evi" }, plugins: ["store-clock", "store-lookup"] } },
+        }),
+        // Pulls ride along with health; __test.setPulls changes them like evi.rest would
+        getHealth: async () => ({
+            ok: true,
+            pulled: (window as any).__test.pulled,
+            plugins: {
+                "store-quiet": { state: "broken", since: Date.now() - 3 * 3600_000, version: "1.2.0", automatic: true, reports: 12 },
+                "store-lookup": { state: "investigating", message: "Fix coming in 1.0.1", setBy: "Evi", since: Date.now() - 5 * 60_000, version: "1.0.0", automatic: false },
+            },
+        }),
+        sendCrashReport: async (input: unknown) => {
+            (window as any).__test.crashReports.push(input);
+            return { ok: true, author: "Evi" };
+        },
+        reportHealth: async (input: unknown) => {
+            (window as any).__test.healthReports.push(input);
+            return { ok: true };
+        },
+        // Main pushes pulls when evi.rest's health answer changes them
+        onPullsChange: (cb: (pulled: unknown) => void) => {
+            (window as any).__test.setPulls = (next: unknown) => {
+                (window as any).__test.pulled = next;
+                cb(next);
+            };
+        },
+        reportPlugin: async (id: string, input: unknown) => {
+            (window as any).__test.pluginReports.push({ id, input });
+            return { ok: true };
         },
         // Stars: counts for two plugins, this install starred Quiet Mode
         getStars: async () => ({ ok: true, counts: { "plugin:store-clock": 41, "plugin:store-quiet": 7 }, mine: ["plugin:store-quiet"] }),
@@ -335,9 +409,9 @@ const whatsNew = await page.waitForSelector(".dl-whats-new[role=dialog]", { time
         version: (window as any).Evi.version,
     };
 }), () => null);
-check("What's new shows once after an update, and remembers the version", !!whatsNew && /What’s New in Evi/.test(whatsNew.text) && whatsNew.headings.includes("New Features") && whatsNew.seen === whatsNew.version, whatsNew);
-check("What's new is roomy (640px), fits the window, and is styled like Discord's changelog", !!whatsNew && whatsNew.width > 600 && whatsNew.width <= 640 && whatsNew.fits && !!whatsNew.headingColor && whatsNew.headingColor !== whatsNew.itemColor, whatsNew);
-check("What's new opens with the release's cover, full width like Discord's changelog video", !!whatsNew?.cover?.loaded && whatsNew.cover.width > 400 && whatsNew.cover.width <= whatsNew.width - 48 && Math.abs(whatsNew.cover.height - whatsNew.cover.width * 675 / 1200) < 1, whatsNew?.cover);
+check("What's new shows once after an update, and remembers the version", !!whatsNew && /What’s new in Evi/.test(whatsNew.text) && whatsNew.headings.includes("New") && whatsNew.seen === whatsNew.version, whatsNew);
+check("What's new is Evi's own (560px, pill headings in their own color), and fits the window", !!whatsNew && whatsNew.width > 540 && whatsNew.width <= 562 && whatsNew.fits && !!whatsNew.headingColor && whatsNew.headingColor !== whatsNew.itemColor, whatsNew);
+check("What's new opens with the release's cover, edge to edge across the top", !!whatsNew?.cover?.loaded && whatsNew.cover.width >= whatsNew.width - 2 && whatsNew.cover.height > 200, whatsNew?.cover);
 await page.screenshot({ path: join(OUT, "ui-whats-new.png") });
 const whatsNewExit = await closesWithExit(".dl-whats-new", () => page.locator(".dl-whats-new").getByRole("button", { name: "Close", exact: true }).click());
 check("What's new closes with Discord's modal exit (shrinks and fades), then leaves the page", whatsNewExit.closing && whatsNewExit.running.includes("evi-modal-out") && whatsNewExit.gone, whatsNewExit);
@@ -1241,8 +1315,8 @@ check("with the plugin off, deletes behave like stock Discord", logger.stockDele
 
 // ---- badges ---------------------------------------------------------------------------------------
 
-// The core (not a plugin) hooks Discord's profile-badges hook and message username. Where the
-// logged-out page has them loaded, the real ones are used; otherwise stand-ins with the same shape
+// The core (not a plugin) hooks Discord's profile-badges hook, and leaves the message username alone
+// (badges are on profiles only). Where the logged-out page has them loaded, the real ones are used; otherwise stand-ins with the same shape
 // (and the code the filters look for) are registered as webpack modules. Discord's own body is swapped
 // out for the call with an "instead" hook (it uses React hooks), so our hooks run around it as in the app.
 const badges = await page.evaluate(async () => {
@@ -1290,23 +1364,11 @@ const badges = await page.evaluate(async () => {
     const stranger = profileTarget.exports[profileTarget.key]({ userId: "876543210987654321" });
     unProfile();
 
-    // Discord's part hands back the props it was rendered with, after the plugin's before-hook
+    // Discord's part hands back the props it was rendered with: the same ones, with nothing of ours in them
     const unUsername = api.hook(usernameTarget.exports, usernameTarget.key, "instead", ({ args }: any) => args[0]);
     const roleIcon = { key: "role-icon" };
     const header = usernameTarget.exports[usernameTarget.key]({ message: { author: { id: uid } }, compact: false, decorations: { 0: null, 1: [roleIcon] } });
-    const reply = usernameTarget.exports[usernameTarget.key]({ message: { author: { id: uid } }, decorations: { 0: "APP" } });
     unUsername();
-
-    // Render what the chat hook added, to see Discord's page actually draw the icon
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = api.createRoot(host);
-    root.render(header.decorations[1][1]);
-    await new Promise(r => setTimeout(r, 300));
-    const img = host.querySelector(".evi-chat-badges img") as HTMLImageElement | null;
-    const rendered = { src: img?.src.slice(0, 22), label: img?.getAttribute("aria-label"), loaded: !!img?.complete && img.naturalWidth > 0 };
-    root.unmount();
-    host.remove();
 
     const command = D.toolkit.getRegisteredCommands().find((c: any) => c.untranslatedName === "badge");
     // Replies are "Only you can see this" bot messages: catch them instead of posting
@@ -1343,11 +1405,7 @@ const badges = await page.evaluate(async () => {
         hooked: { profile: hooked(profileTarget), username: hooked(usernameTarget) },
         profile: profile.map((b: any) => ({ id: b.id, description: b.description, iconSrc: b.iconSrc?.slice(0, 22) })),
         strangerUnchanged: stranger.length === 1 && stranger[0] === discordBadge,
-        chat: header.decorations[1].length,
-        chatKeepsDiscord: header.decorations[1][0] === roleIcon,
-        chatProps: header.decorations[1][1]?.props,
-        replyUnchanged: !(1 in reply.decorations),
-        rendered,
+        chatUnchanged: header.decorations[1].length === 1 && header.decorations[1][0] === roleIcon,
         command: !!command,
         adminCalls: (window as any).__test.badgeAdmin,
         replies,
@@ -1355,18 +1413,16 @@ const badges = await page.evaluate(async () => {
 });
 console.log(`  badges: Discord's own modules loaded here: ${JSON.stringify(badges.real)}`);
 check("Badges: part of Evi, not a plugin that can be turned off or removed", badges.notAPlugin);
-check("Badges: the core hooks Discord's profile badges and message username", badges.hooked.profile && badges.hooked.username, badges.hooked);
+check("Badges: the core hooks Discord's profile badges, not the message username", badges.hooked.profile && !badges.hooked.username, badges.hooked);
 check("Badges: ours go in front of Discord's on a profile, others' profiles untouched; a supporter's says since when",
     JSON.stringify(badges.profile) === JSON.stringify([
-        { id: "evi-dev", description: "Developer: Builds Evi", iconSrc: "data:image/png;base64," },
-        { id: "evi-supporter-gold", description: "Gold Supporter: Supporting Evi since Mar 5, 2026", iconSrc: "data:image/png;base64," },
+        { id: "evi-dev", description: "Developer", iconSrc: "data:image/png;base64," },
+        { id: "evi-supporter-gold", description: "Supporting Evi since Mar 5, 2026", iconSrc: "data:image/png;base64," },
         { id: "hypesquad_house_1", description: "HypeSquad Bravery" },
     ]) && badges.strangerUnchanged, badges.profile);
 check("Badges: a list pushed by main (evi.rest's change stream) shows right away",
     badges.pushed.changed && JSON.stringify(badges.pushed.badges) === JSON.stringify(["Sapphire Supporter: Supporting Evi since Mar 5, 2024"]), badges.pushed);
-check("Badges: added after Discord's own next to a name in chat, not in reply headers",
-    badges.chat === 2 && badges.chatKeepsDiscord && badges.chatProps?.userId === "123456789012345678" && badges.replyUnchanged, { chat: badges.chat, props: badges.chatProps });
-check("Badges: the chat badge renders its icon with a label", badges.rendered.src === "data:image/png;base64," && badges.rendered.label === "Developer: Builds Evi" && badges.rendered.loaded, badges.rendered);
+check("Badges: nothing added next to a name in chat, only on profiles", badges.chatUnchanged);
 check("/badge exists for an admin install and asks main to grant, and to give supporters time",
     badges.command && JSON.stringify(badges.adminCalls) === '[{"action":"grant","userId":"123456789012345678","badgeId":"dev"},{"action":"time","userId":"123456789012345678","days":30}]'
     && JSON.stringify(badges.replies) === JSON.stringify(["done: grant", "/badge create needs badge and name and icon.", "done: time"]), { replies: badges.replies, calls: badges.adminCalls });
@@ -1386,7 +1442,7 @@ const badgeSettings = await page.evaluate(async () => {
             ...Object.fromEntries(levels.map(l => [`supporter-${l}`, { name: `${l} Supporter`, description: "", icon: png }])),
         },
         users: { [me]: ["dev", "supporter-gold"] },
-        supporters: { [me]: Date.now() - 200 * 24 * 60 * 60 * 1000 },
+        supporters: { [me]: Date.now() - 70 * 24 * 60 * 60 * 1000 },
         prefs: {},
     });
 
@@ -1397,6 +1453,30 @@ const badgeSettings = await page.evaluate(async () => {
         const listed = store.getBadges(me).map((b: any) => b.badge_id);
         const supporter = store.getBadgeById("evi-supporter", me);
         const sameEntries = store.getBadges(me)[0] === store.getBadges(me)[0];
+
+        // Editing your profile: Discord's preview merges the profile's badges with the directory's.
+        // Ours must come out once each, in the pending order, with a hidden one left out.
+        const pending = { pendingBadgeDisplayOrder: ["evi-dev", 1, "evi-supporter"], pendingBadgeHiddenBadges: ["evi-supporter"] };
+        const settingsStore = api.findStore("UserProfileSettingsStore");
+        const unPending = api.hook(settingsStore, "getPendingChanges", "instead", () => pending);
+        const profileTarget = api.findExport(api.filters.byCode("getBadges()??[]", "hidePersonalInformation"));
+        const unProfile = api.hook(profileTarget.exports, profileTarget.key, "instead", () => [{ id: "premium", description: "Nitro", icon: "2ba85e8026a8614b640c2837bcdfe21b" }]);
+        const merge = api.findExport(api.filters.byCode("simple_icon_raster_url", "pendingBadgeHiddenBadges", "owned"));
+        let preview: string[] | undefined;
+        try {
+            const shown = profileTarget.exports[profileTarget.key]({ userId: me });
+            if (merge) {
+                const fn = merge.exports[merge.key];
+                const hidden = fn(shown, store.getBadges(me), pending).map((b: any) => b.id);
+                // Unhiding the supporter: shown by us, and not a second time from the directory
+                pending.pendingBadgeHiddenBadges = [];
+                const unhidden = fn(profileTarget.exports[profileTarget.key]({ userId: me }), store.getBadges(me), pending).map((b: any) => b.id);
+                preview = [...hidden, "|", ...unhidden];
+            }
+        } finally {
+            unProfile();
+            unPending();
+        }
 
         // The save: Discord's part goes on (answered here instead of sent), ours go to main
         const http = api.find(api.filters.byProps("get", "post", "put", "patch", "del"));
@@ -1410,7 +1490,7 @@ const badgeSettings = await page.evaluate(async () => {
         const shownToOthers = api.Badges.forUser(me).map((b: any) => b.id);
         const inSettings = store.getBadges(me).map((b: any) => `${b.badge_id}${b.hidden ? " (hidden)" : ""}`);
         return {
-            listed, sameEntries,
+            listed, sameEntries, preview,
             supporter: supporter && { name: supporter.name, current: supporter.current_tier, next: supporter.next_tier, tiers: supporter.tiers.length, owned: supporter.tiers.filter((t: any) => t.owned).map((t: any) => t.name), icon: supporter.simple_icon_url?.slice(0, 22), progress: supporter.progress },
             sent: sent.map(r => r.body),
             prefs: (window as any).__test.badgePrefs,
@@ -1422,15 +1502,41 @@ const badgeSettings = await page.evaluate(async () => {
 });
 check("Badges: ours are in Discord's badge directory (Customize your badges, Your badges), rebuilt only on change",
     JSON.stringify(badgeSettings.listed.slice(0, 2)) === '["evi-dev","evi-supporter"]' && badgeSettings.sameEntries, badgeSettings.listed);
-check("Badges: a supporter is one badge with the levels as tiers, Gold after 200 days",
+check("Badges: a supporter is one badge with the levels as tiers, Gold after 70 days",
     badgeSettings.supporter?.current === "supporter-gold" && badgeSettings.supporter.next === "supporter-emerald" && badgeSettings.supporter.tiers === 8
-    && JSON.stringify(badgeSettings.supporter.owned) === '["Bronze","Silver","Gold"]' && badgeSettings.supporter.progress?.[0]?.threshold === 365, badgeSettings.supporter);
+    && JSON.stringify(badgeSettings.supporter.owned) === '["Bronze","Silver","Gold"]' && badgeSettings.supporter.progress?.[0]?.threshold === 91, badgeSettings.supporter);
+check("Badges: the profile preview while editing shows ours once each, in the pending order",
+    JSON.stringify(badgeSettings.preview) === JSON.stringify(["evi-dev", "premium", "|", "evi-dev", "premium", "evi-supporter-gold"]), badgeSettings.preview);
 check("Badges: saving badge settings sends Discord only its own, and ours to evi.rest",
     JSON.stringify(badgeSettings.sent) === JSON.stringify([{ display_order: [1], hidden_badges: [22] }, { bio: "hi" }])
     && JSON.stringify(badgeSettings.prefs) === JSON.stringify([{ userId: "123456789012345678", prefs: { order: [1, "supporter", "dev"], hidden: ["dev"] } }]), { sent: badgeSettings.sent, prefs: badgeSettings.prefs });
 check("Badges: a hidden one is gone for everyone else, and still in your own badge settings, in your order",
     JSON.stringify(badgeSettings.shownToOthers) === '["supporter-gold"]' && badgeSettings.inSettings.includes("evi-dev (hidden)")
     && badgeSettings.inSettings.indexOf("evi-supporter") < badgeSettings.inSettings.indexOf("evi-dev (hidden)"), { others: badgeSettings.shownToOthers, settings: badgeSettings.inSettings });
+
+// Plugins' badges (ctx.profileBadges): on the profile after everything else, and in the badge directory
+const pluginBadges = await page.evaluate(() => {
+    const { api } = (window as any).Evi;
+    const who = "999000000000000001";
+    const profileTarget = api.findExport(api.filters.byCode("getBadges()??[]", "hidePersonalInformation"));
+    const unProfile = api.hook(profileTarget.exports, profileTarget.key, "instead", () => [{ id: "premium", description: "Nitro", icon: "2ba85e8026a8614b640c2837bcdfe21b" }]);
+    try {
+        const store = api.findStore("BadgeDirectoryStore");
+        const entry = store.getBadgeById("evi-plugin-test-status", who);
+        return {
+            profile: profileTarget.exports[profileTarget.key]({ userId: who }).map((b: any) => b.id),
+            nobodyElse: profileTarget.exports[profileTarget.key]({ userId: "999000000000000002" }).map((b: any) => b.id),
+            directory: store.getBadges(who).map((b: any) => b.badge_id),
+            stable: store.getBadges(who).at(-1) === store.getBadges(who).at(-1),
+            entry: entry && { name: entry.name, label: entry.info_label, icon: !!entry.simple_icon_url },
+        };
+    } finally {
+        unProfile();
+    }
+});
+check("Plugins' profile badges show on the profile and in Discord's badge directory (Your badges)",
+    JSON.stringify(pluginBadges.profile) === '["premium","evi-test-status"]' && JSON.stringify(pluginBadges.nobodyElse) === '["premium"]'
+    && pluginBadges.directory.includes("evi-plugin-test-status") && pluginBadges.stable && pluginBadges.entry?.name === "Testing" && /Badge User/.test(pluginBadges.entry.label), pluginBadges);
 
 // A new version found in the background gets a notice over Discord; skipping it keeps it quiet
 {
@@ -1525,6 +1631,74 @@ check("switch disables plugin and persists", toggled.before === "true" && toggle
 check("unsafe module (Flux store) refuses live replacement, asks for reload", toggled.needsReload && /Flux store/.test(toggled.reason ?? ""), toggled.reason);
 await page.screenshot({ path: join(OUT, "ui-reload-banner.png") });
 
+// The kill switch: a plugin Evi pulled never started, and its row says so and why
+{
+    const pulledRowSelector = 'li[aria-labelledby="dl-plugin-store-pulled"]';
+    const pulledRow = page.locator(pulledRowSelector);
+    await pulledRow.getByText("Turned off by Evi", { exact: true }).waitFor({ timeout: 5000 }).catch(() => { });
+    await pulledRow.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200);
+    await pulledRow.screenshot({ path: join(OUT, "ui-pulled-row.png") });
+    const boot = await page.evaluate(({ sel }) => {
+        const D = (window as any).Evi;
+        const state = D.plugins.get("store-pulled");
+        const sw = document.querySelector<HTMLInputElement>('[aria-labelledby="dl-plugin-store-pulled"][role="switch"]');
+        return {
+            running: state.running,
+            reason: state.pulled?.reason,
+            runs: (window as any).__test.pulledRuns ?? 0,
+            patches: state.patchesRegistered,
+            row: document.querySelector(sel)?.textContent ?? "",
+            switchOff: !!sw && (sw.disabled || sw.getAttribute("aria-disabled") === "true") && (sw.getAttribute("aria-checked") ?? String(sw.checked)) === "false",
+            // Still turned on: lifting the pull brings it back
+            stillOn: D.settings.data.plugins["store-pulled"]?.enabled !== false,
+            told: (window as any).__test.storage.getItem("evi-pull-notices") ?? "",
+        };
+    }, { sel: pulledRowSelector });
+    check("kill switch: a plugin Evi pulled never starts at boot, though it's turned on", !boot.running && boot.runs === 0 && boot.reason === PULL_REASON && !boot.patches && boot.stillOn, boot);
+    check("kill switch: its row says Turned off by Evi, the reason, disables the switch and offers the fixed version",
+        ["Turned off by Evi", `Evi turned it off on every install: ${PULL_REASON}`, "v1.0.1 isn’t affected", "Update to v1.0.1"].every(t => boot.row.includes(t)) && boot.switchOff, boot.row);
+    check("kill switch: the user is told once (remembered per pull)", boot.told.includes(`store-pulled@${PULLED_AT}`), boot.told);
+
+    // Its details say it too, and store plugins can be reported from there
+    await pulledRow.getByRole("button", { name: "Link Preview Plus details" }).click();
+    await page.waitForSelector("#dl-plugin-store-pulled-info", { timeout: 2000 });
+    await page.waitForTimeout(300);
+    const details = await page.evaluate(() => document.querySelector("#dl-plugin-store-pulled-info")?.textContent ?? "");
+    await page.screenshot({ path: join(OUT, "ui-pulled-details.png") });
+    check("kill switch: the plugin's details say why it's off, and offer Report", details.includes(`Evi turned it off on every install: ${PULL_REASON}`) && details.includes("Report"), details.slice(0, 300));
+    await page.keyboard.press("Escape");
+    await page.waitForSelector("#dl-plugin-store-pulled-info", { state: "detached", timeout: 2000 }).catch(() => { });
+
+    // Evi lifts the pull: it starts again, nobody touched its switch
+    await page.evaluate(({ scam }) => (window as any).__test.setPulls({ "store-scam": scam }), { scam: pulled["store-scam"] });
+    await page.waitForFunction(() => (window as any).Evi.plugins.get("store-pulled").running, null, { timeout: 3000 }).catch(() => { });
+    const lifted = await page.evaluate(sel => ({
+        running: (window as any).Evi.plugins.get("store-pulled").running,
+        runs: (window as any).__test.pulledRuns ?? 0,
+        row: document.querySelector(sel)?.textContent ?? "",
+    }), pulledRowSelector);
+    check("kill switch: lifting the pull starts it again", lifted.running && lifted.runs === 1 && !lifted.row.includes("Turned off by Evi"), lifted);
+
+    // A pull arriving while it runs stops it right away, and turning it on doesn't bring it back
+    const repulled = await page.evaluate(async ({ pull, scam }) => {
+        const D = (window as any).Evi;
+        (window as any).__test.setPulls({ "store-pulled": pull, "store-scam": scam });
+        await new Promise(r => setTimeout(r, 300));
+        const stopped = { running: D.plugins.get("store-pulled").running, stops: (window as any).__test.pulledStops ?? 0 };
+        await D.plugins.setEnabled("store-pulled", true);
+        return {
+            ...stopped,
+            afterSwitch: D.plugins.get("store-pulled").running,
+            runs: (window as any).__test.pulledRuns ?? 0,
+            setting: D.settings.data.plugins["store-pulled"]?.enabled,
+            told: (window as any).__test.storage.getItem("evi-pull-notices") ?? "",
+        };
+    }, { pull: { ...pulled["store-pulled"], at: PULLED_AT + 60_000 }, scam: pulled["store-scam"] });
+    check("kill switch: a pull arriving at runtime stops the running plugin; switching it on doesn't start it",
+        !repulled.running && repulled.stops === 1 && !repulled.afterSwitch && repulled.runs === 1 && repulled.setting === true && repulled.told.includes(`store-pulled@${PULLED_AT + 60_000}`), repulled);
+}
+
 // A plugin's settings open in a dialog: the list underneath doesn't move, Escape closes only the dialog
 const dialog = await page.evaluate(async () => {
     const body = document.querySelector(".dl-body") as HTMLElement;
@@ -1540,10 +1714,50 @@ const dialog = await page.evaluate(async () => {
 });
 await page.screenshot({ path: join(OUT, "ui-plugin-settings.png") });
 await page.keyboard.press("Escape");
-await page.waitForTimeout(300);
+// It animates out first: wait for it to leave rather than a fixed time
+await page.waitForSelector("#dl-plugin-fast-lists-settings", { state: "detached", timeout: 2000 }).catch(() => { });
 const afterEscape = await page.evaluate(() => ({ dialog: !!document.querySelector("#dl-plugin-fast-lists-settings"), panel: !!document.querySelector(".dl-panel") }));
 check("plugin settings open in a dialog and the list doesn't move", dialog.open && dialog.fields > 0 && dialog.focused && JSON.stringify(dialog.before) === JSON.stringify(dialog.after), dialog);
 check("Escape closes the settings dialog, not the Evi panel", !afterEscape.dialog && afterEscape.panel, afterEscape);
+
+// Inside Discord's settings screen, Discord's focus lock pulls focus back whenever it leaves. The
+// dialog is rendered into <body>, outside it: without its own focus layer a dropdown lost focus as
+// it opened and closed again. Discord's real lock goes on the panel here, standing in for its settings.
+{
+    const unlock = await page.evaluate(() => {
+        const { api } = (window as any).Evi;
+        const lock = api.findExport(api.filters.byCode("disableReturn", "containerRef", ".children"));
+        if (!lock) return false;
+        const host = document.createElement("div");
+        host.id = "evi-test-settings-lock";
+        document.body.append(host);
+        const root = api.createRoot(host);
+        root.render(api.React.createElement(lock.exports[lock.key], { containerRef: { current: document.querySelector(".dl-panel") } }));
+        (window as any).__unlockSettings = () => { root.unmount(); host.remove(); };
+        return true;
+    });
+    const row = page.locator('li[aria-labelledby="dl-plugin-friend-online-alerts"]');
+    await row.scrollIntoViewIfNeeded();
+    await row.locator('[aria-label="Friend Online Alerts settings"]').click();
+    await page.waitForSelector("#dl-plugin-friend-online-alerts-settings", { timeout: 3000 });
+    const focus = await page.evaluate(async () => {
+        const combobox = document.querySelector<HTMLElement>('#dl-plugin-friend-online-alerts-settings [role="combobox"]');
+        combobox?.focus();
+        await new Promise(r => setTimeout(r, 150));
+        return { combobox: !!combobox, stays: !!combobox && document.activeElement === combobox, active: (document.activeElement as HTMLElement)?.className?.toString().slice(0, 40) };
+    });
+    const box = await page.locator('#dl-plugin-friend-online-alerts-settings [role="combobox"]').first().boundingBox();
+    if (box) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForTimeout(400);
+    const opened = await page.evaluate(() => !!document.querySelector('[role="listbox"]'));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    if (await page.locator("#dl-plugin-friend-online-alerts-settings").count()) await page.keyboard.press("Escape");
+    await page.waitForSelector("#dl-plugin-friend-online-alerts-settings", { state: "detached", timeout: 2000 }).catch(() => { });
+    await page.evaluate(() => (window as any).__unlockSettings?.());
+    check("plugin dropdowns open on the first click inside Discord's settings (the dialog keeps focus under Discord's focus lock)",
+        unlock && focus.stays && opened, { unlock, focus, opened });
+}
 
 // A plugin's details: what it can touch, and its whole changelog
 await page.locator('li[aria-labelledby="dl-plugin-quick-actions"]').getByRole("button", { name: "Quick Actions details" }).click();
@@ -1559,7 +1773,7 @@ await page.waitForTimeout(200);
 await page.locator('li[aria-labelledby="dl-plugin-broken"]').getByRole("button", { name: "Copy crash report" }).click();
 await page.waitForTimeout(200);
 const report = await page.evaluate(() => navigator.clipboard.readText().catch(e => `clipboard: ${e}`));
-check("Copy crash report copies the error, versions and patches", report.startsWith(`Evi crash report: ${BROKEN} (broken)`) && report.includes("kaboom") && /Evi: {6}\S/.test(report) && report.includes("Other enabled plugins:"), report.slice(0, 200));
+check("Copy crash report copies the error, versions and patches", report.startsWith(`Evi crash report: ${BROKEN} (broken)`) && report.includes("kaboom") && /Evi: {6}\S/.test(report) && report.includes("Other enabled store plugins:"), report.slice(0, 200));
 await page.locator('li[aria-labelledby="dl-plugin-broken"]').screenshot({ path: join(OUT, "ui-crash-report.png") });
 
 // Bulk actions: everything off, then undo puts back exactly what was on
@@ -1722,7 +1936,7 @@ const storeList = {
     rpc: await storeCard("store-rpc"),
     sync: await storeCard("store-theme-sync"),
 };
-check("Store view lists plugins with description, authors and version", storeList.clock.includes("Message Clock") && storeList.clock.includes("exact send time") && storeList.clock.includes("v1.0.0 · Evi"), storeList.clock);
+check("Store view lists plugins with description, authors and version", storeList.clock.includes("Message Clock") && storeList.clock.includes("exact send time") && storeList.clock.includes("v1.0.0 · By Evi"), storeList.clock);
 check("Store shows Install, Update + Uninstall, and Installed states", /Install$/.test(storeList.clock) && storeList.quiet.includes("v1.2.0 → v1.3.0") && storeList.quiet.includes("Uninstall") && storeList.sync.includes("Installed"), storeList);
 
 // Stars: counts on every card, one click stars, and it's sent to main
@@ -1736,6 +1950,27 @@ check("Stars: cards show counts, and starring counts once and is sent to main",
     && starsAfter.clock === "Unstar Message Clock, 42 stars" && JSON.stringify(starsAfter.calls) === '[{"kind":"plugin","id":"store-clock","starred":true}]', { starsBefore, starsAfter });
 await page.screenshot({ path: join(OUT, "ui-store-grid.png") });
 check("native plugins carry a badge", storeList.rpc.includes("Native") && !storeList.clock.includes("Native"));
+check("Store cards say when evi.rest knows a plugin is broken", storeList.quiet.includes("Broken since Discord's update") && (await storeCard("store-lookup")).includes("Being looked into") && !storeList.clock.includes("Broken"), storeList.quiet);
+
+// A verified author: a check next to their name, which opens their page
+const verified = await page.locator('[data-store-id="store-lookup"]').getByRole("button", { name: "Evi, verified author" });
+const verifiedCheck = await page.locator('[data-store-id="store-lookup"] .dl-verified').count();
+await verified.click();
+await page.waitForSelector('[data-store-author="evi"]', { timeout: 2000 });
+const authorPage = await page.evaluate(() => {
+    const view = document.querySelector('[data-store-author="evi"]')!;
+    return {
+        text: view.textContent ?? "",
+        site: [...view.querySelectorAll("a")].find(a => a.textContent === "View on evi.rest")?.getAttribute("href"),
+        cards: [...view.querySelectorAll("[data-store-id]")].map(e => e.getAttribute("data-store-id")),
+    };
+});
+await page.screenshot({ path: join(OUT, "ui-store-author.png") });
+check("a verified author has a check and opens their page: bio, links and their plugins",
+    verifiedCheck === 1 && ["Evi", "Verified author", "The people who make Evi.", "GitHub"].every(t => authorPage.text.includes(t))
+    && authorPage.site === "https://evi.rest/author?u=evi" && JSON.stringify(authorPage.cards) === '["store-clock","store-lookup"]', authorPage);
+await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
+await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 2000 });
 
 const filters = await page.evaluate(() => document.querySelector(".dl-store-filters")?.textContent ?? "");
 check("Store filters by updates, installed and category, and sorts", ["All", "Updates", "Installed", "Messages", "Privacy", "Sort"].every(t => filters.includes(t)), filters);
@@ -1748,7 +1983,7 @@ await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
 await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 2000 });
 
 // The detail page: description, screenshots, access, source and changelog
-await page.locator('[data-store-id="store-clock"] .dl-link-button').click();
+await page.locator('[data-store-id="store-clock"] .dl-store-card-link').click();
 await page.waitForSelector('[data-store-detail="store-clock"] .dl-store-shot img', { timeout: 5000 });
 const detail = await page.evaluate(() => document.querySelector('[data-store-detail="store-clock"]')?.textContent ?? "");
 check("Store detail page shows screenshots, access, source and changelog", ["Message Clock", "exact send time", "Runs inside Discord only", "View source", "What’s new", "12 and 24 hour clocks", "Updated"].every(t => detail.includes(t)), detail.slice(0, 300));
@@ -1766,12 +2001,104 @@ check("Store search matches tags", JSON.stringify(searched) === '["store-quiet"]
 await page.fill("#dl-plugin-store-search", "");
 
 const storeButton = (id: string, name: string) => page.locator(`[data-store-id="${id}"]`).getByRole("button", { name, exact: true });
+
+// Official and community: Evi's own say By Evi with the check, everyone else's are marked Community
+{
+    const community = await storeCard("store-community");
+    const scam = await storeCard("store-scam");
+    const scamInstall = await storeButton("store-scam", "Install").count();
+    check("community plugins carry a Community label, Evi's own don't",
+        community.includes("Community") && community.includes("By Mira") && !storeList.clock.includes("Community") && (await page.locator('[data-store-id="store-clock"] .dl-verified').count()) === 1, { community, clock: storeList.clock });
+    check("a version Evi pulled shows Pulled instead of Install", scam.includes("Pulled") && scamInstall === 0, scam);
+
+    const shown = () => page.evaluate(() => [...document.querySelectorAll(".dl-store-grid [data-store-id]")].map(e => e.getAttribute("data-store-id")));
+    await page.locator(".dl-store-filters").getByText(/^Community/).first().click();
+    await page.waitForTimeout(200);
+    const communityOnly = await shown();
+    await page.screenshot({ path: join(OUT, "ui-store-community.png") });
+    await page.locator(".dl-store-filters").getByText(/^Official/).first().click();
+    await page.waitForTimeout(200);
+    const officialOnly = await shown();
+    await page.locator(".dl-store-filters").getByText(/^All/).first().click();
+    await page.waitForTimeout(200);
+    check("the store filters Official and Community plugins",
+        JSON.stringify(communityOnly) === '["store-community","store-scam","store-pulled"]' && officialOnly.length === 5 && !officialOnly.includes("store-community"), { communityOnly, officialOnly });
+
+    // The first install of a community plugin asks first, saying who made it
+    await storeButton("store-community", "Install").click();
+    await page.waitForSelector('[data-store-id="store-community"] .dl-store-confirm', { timeout: 2000 });
+    await page.locator('[data-store-id="store-community"]').screenshot({ path: join(OUT, "ui-store-community-confirm.png") });
+    const ask = await page.evaluate(() => ({
+        text: document.querySelector('[data-store-id="store-community"] .dl-store-confirm')?.textContent ?? "",
+        installs: (window as any).__test.storeInstalls.length,
+    }));
+    check("installing a community plugin the first time asks first",
+        ask.text.includes("Install a community plugin?") && ask.text.includes("Made by Mira, not by Evi. Evi’s team reviewed this version before it went into the store.") && ask.installs === 0, ask);
+    await page.locator('[data-store-id="store-community"] .dl-store-confirm').getByRole("button", { name: "Install", exact: true }).click();
+    await page.waitForTimeout(300);
+    const confirmed = await page.evaluate(() => ({
+        calls: (window as any).__test.storeInstalls.map((c: any) => c.id),
+        remembered: (window as any).__test.storage.getItem("evi-community-installs") ?? "",
+    }));
+    check("confirming installs it, and remembers it asked", JSON.stringify(confirmed.calls) === '["store-community"]' && confirmed.remembered.includes("store-community"), confirmed);
+
+    // Its page says who made it, and it can be reported to Evi's team
+    await page.locator('[data-store-id="store-community"] .dl-store-card-link').click();
+    await page.waitForSelector('[data-store-detail="store-community"]', { timeout: 2000 });
+    await page.waitForTimeout(200);
+    const communityDetail = await page.evaluate(() => document.querySelector('[data-store-detail="store-community"]')?.textContent ?? "");
+    await page.screenshot({ path: join(OUT, "ui-store-community-detail.png") });
+    check("a community plugin's page says who made it and that Evi reviewed it",
+        communityDetail.includes("Community") && communityDetail.includes("Made by Mira, not by Evi. Evi’s team reviewed this version before it went into the store."), communityDetail.slice(0, 300));
+
+    const detail = page.locator('[data-store-detail="store-community"]');
+    await detail.getByRole("button", { name: "Report", exact: true }).click();
+    await page.waitForSelector("#dl-report-store-community", { timeout: 2000 });
+    await page.waitForTimeout(300);
+    const dialog = page.locator("#dl-report-store-community");
+    await dialog.getByLabel("Something else").check();
+    await dialog.getByRole("button", { name: "Send report" }).click();
+    await page.waitForTimeout(150);
+    const refused = await page.evaluate(() => {
+        const box = document.querySelector("#dl-report-store-community")!;
+        return {
+            title: document.querySelector("#dl-report-store-community-title")?.textContent,
+            legend: box.querySelector("fieldset legend")?.textContent,
+            radios: box.querySelectorAll("fieldset input[type=radio]").length,
+            error: box.querySelector("[role=alert]")?.textContent,
+            invalid: box.querySelector("textarea")?.getAttribute("aria-invalid"),
+            focused: document.activeElement?.tagName,
+            text: box.textContent ?? "",
+            sent: (window as any).__test.pluginReports.length,
+        };
+    });
+    await page.screenshot({ path: join(OUT, "ui-report-dialog.png") });
+    check("Report: a dialog with the reasons as a radio group; Something else needs details before it sends",
+        refused.title === "Report Emoji Tray" && refused.legend === "What’s wrong?" && refused.radios === 5 && refused.error === "Say what's wrong" && refused.invalid === "true" && refused.focused === "TEXTAREA"
+        && refused.text.includes("Reports go to Evi’s team, not the author. If this install is linked to your Discord account, they can see who sent it.") && refused.sent === 0, refused);
+    await dialog.locator("textarea").fill("It adds a link to a giveaway site to every message.");
+    await dialog.getByRole("button", { name: "Send report" }).click();
+    await page.waitForSelector("#dl-report-store-community", { state: "detached", timeout: 2000 }).catch(() => { });
+    const sent = await page.evaluate(() => ({
+        calls: (window as any).__test.pluginReports,
+        row: document.querySelector('[data-report="store-community"]')?.textContent ?? "",
+        disabled: [...document.querySelectorAll('[data-report="store-community"] button')].find(b => b.textContent === "Reported")?.hasAttribute("disabled") ?? false,
+    }));
+    await page.locator('[data-report="store-community"]').screenshot({ path: join(OUT, "ui-report-sent.png") });
+    check("Report sends once to main, then says Reported and thanks you",
+        sent.calls.length === 1 && sent.calls[0].id === "store-community" && sent.calls[0].input.reason === "other" && sent.calls[0].input.details === "It adds a link to a giveaway site to every message."
+        && sent.row.includes("Thanks. Evi’s team will look at it.") && sent.disabled, sent);
+
+    await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
+    await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 2000 });
+}
+const installsBeforeClick = await page.evaluate(() => (window as any).__test.storeInstalls.length);
 await storeButton("store-rpc", "Install").click();
 await page.waitForSelector('[data-store-id="store-rpc"] .dl-store-confirm', { timeout: 2000 });
 await page.screenshot({ path: join(OUT, "ui-store-native-confirm.png") });
 const confirmText = await page.evaluate(() => document.querySelector(".dl-store-confirm")?.textContent ?? "");
 const installsBeforeConfirm = await page.evaluate(() => (window as any).__test.storeInstalls.length);
-check("installing a native plugin asks first, explaining full access", /full access to your computer/.test(confirmText) && installsBeforeConfirm === 0, confirmText.slice(0, 120));
+check("installing a native plugin asks first, explaining full access", /full access to your computer/.test(confirmText) && installsBeforeConfirm === installsBeforeClick, confirmText.slice(0, 120));
 await storeButton("store-rpc", "Install with full access").click();
 await page.waitForTimeout(300);
 const nativeInstall = {
@@ -1782,6 +2109,8 @@ check("confirming installs with allowNative and shows the result", nativeInstall
 
 const autoUpdate = await page.evaluate(() => document.querySelector(".dl-tab")?.textContent?.includes("Update automatically"));
 check("Store offers automatic updates", !!autoUpdate);
+const healthSetting = await page.evaluate(() => document.querySelector(".dl-tab")?.textContent?.includes("Help spot broken plugins"));
+check("Store settings can turn off plugin health reports", !!healthSetting);
 const pending = await page.evaluate(() => document.querySelector(".dl-store-update-list")?.textContent ?? "");
 check("the updates banner lists each update with its versions and release notes", /Quiet Mode/.test(pending) && pending.includes("1.2.0 → 1.3.0") && pending.includes("Read states too") && !pending.includes("Typing indicators"), pending);
 await page.locator(".dl-store-updates").screenshot({ path: join(OUT, "ui-store-updates.png") });
@@ -1803,6 +2132,51 @@ const removable = await page.evaluate(() => [...document.querySelectorAll("li.dl
     remove: !!li.querySelector("button[aria-label^='Remove '], button[aria-label^='Uninstall ']"),
 })));
 check("every plugin in the list, shipped with Evi or not, can be removed", removable.length > 5 && removable.every(r => r.remove), removable.filter(r => !r.remove));
+
+// A store plugin evi.rest knows about: the pill, the author's message, and its own problem linked up
+const lookupRowSelector = 'li[aria-labelledby="dl-plugin-store-lookup"]';
+const lookupRow = page.locator(lookupRowSelector);
+// Turn all off and Undo restarted it: its lookup counts as missing once Discord had time to load it,
+// and the list shows that when it next draws
+await page.waitForFunction(() => (window as any).Evi.diagnoseLookups("store-lookup").some((d: any) => d.health === "missing"), null, { timeout: 30_000 }).catch(() => { });
+await page.click("#dl-tab-themes");
+await page.click("#dl-tab-plugins");
+await lookupRow.getByText("Others are seeing this too.", { exact: false }).waitFor({ timeout: 5000 }).catch(() => { });
+const lookupRowText = await page.evaluate(sel => document.querySelector(sel)?.textContent ?? "", lookupRowSelector);
+check("the Plugins list shows what evi.rest knows about a plugin, next to its own problem", ["Being looked into", "Evi: Fix coming in 1.0.1", "Can’t find 1 part of Discord", "Others are seeing this too."].every(t => lookupRowText.includes(t)), lookupRowText.slice(0, 300));
+
+// Send to author: shows the report first, sends it once, then says so
+await lookupRow.getByRole("button", { name: "Send to author" }).click();
+await page.waitForSelector("#dl-crash-send-store-lookup", { timeout: 2000 });
+await page.waitForTimeout(250);
+const askSend = await page.evaluate(() => ({
+    title: document.querySelector("#dl-crash-send-store-lookup-title")?.textContent,
+    report: document.querySelector("#dl-crash-send-store-lookup .dl-crash-text")?.textContent ?? "",
+    text: document.querySelector("#dl-crash-send-store-lookup")?.textContent ?? "",
+    sent: (window as any).__test.crashReports.length,
+}));
+await page.screenshot({ path: join(OUT, "ui-crash-send.png") });
+check("Send to author shows the exact report and who gets it before sending anything",
+    askSend.title === "Send this crash report to Evi?" && askSend.report.startsWith("Evi crash report: Store Lookup (store-lookup)") && askSend.report.includes("missing, props eviHealthTestNeverInDiscord")
+    && askSend.text.includes("It goes to Evi through evi.rest. It has no messages, tokens or account details.") && askSend.text.includes("Don’t ask again") && askSend.sent === 0, askSend);
+await page.locator("#dl-crash-send-store-lookup").getByRole("button", { name: "Send report" }).click();
+await lookupRow.getByText("Sent to Evi").waitFor({ timeout: 3000 }).catch(() => { });
+const sentCrash = await page.evaluate(sel => ({
+    calls: (window as any).__test.crashReports,
+    row: document.querySelector(sel)?.textContent ?? "",
+    again: [...document.querySelectorAll(`${sel} button`)].find(b => b.textContent === "Sent")?.hasAttribute("disabled") ?? false,
+    dialog: !!document.querySelector("#dl-crash-send-store-lookup"),
+}), lookupRowSelector);
+check("Send report sends it once, then the button says Sent",
+    sentCrash.calls.length === 1 && sentCrash.calls[0].plugin === "store-lookup" && sentCrash.calls[0].version === "1.0.0" && sentCrash.calls[0].report === askSend.report
+    && sentCrash.row.includes("Sent to Evi") && sentCrash.again && !sentCrash.dialog, { ...sentCrash, calls: sentCrash.calls.map((c: any) => ({ ...c, report: c.report.slice(0, 60) })) });
+await lookupRow.screenshot({ path: join(OUT, "ui-crash-sent.png") });
+
+// Plugin health: the store plugin that can't find a part of Discord was reported, once, and nothing else
+await page.waitForFunction(() => (window as any).__test.healthReports.length > 0, null, { timeout: 60_000 }).catch(() => { });
+const healthReports = await page.evaluate(() => (window as any).__test.healthReports);
+check("plugin health: a store plugin that can't find a part of Discord is reported to evi.rest, and only it",
+    healthReports.length === 1 && healthReports[0].plugin === "store-lookup" && healthReports[0].version === "1.0.0" && healthReports[0].kind === "lookups" && typeof healthReports[0].discordBuild === "string", healthReports);
 
 // ---- theme store --------------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 import { describe as group, expect, test } from "bun:test";
 
-import { describe, deserialize, formatRelative, observeMessage, observePresence, prune, serialize } from "../plugins/last-seen/track";
+import { describe, deserialize, formatRelative, formatSpan, lineText, merge, observeActivity, observeMessage, observePresence, prune, seenText, serialize } from "../plugins/last-seen/track";
 import type { Tracker } from "../plugins/last-seen/track";
 
 const H = 3600_000;
@@ -35,27 +35,68 @@ group("observePresence", () => {
         observePresence(t, "c", "invisible", 20);
         expect(t.get("c")).toEqual({ online: false, seen: 20 });
     });
+
+    test("a restored approximate time is replaced by the next real observation", () => {
+        const t = deserialize({ v: 2, savedAt: 1000, rows: [["a", 100, 0, 1, 0, "", "", 0]] });
+        expect(t.get("a")).toEqual({ seen: 1000, approx: true });
+        // Not online after the restore, so an offline update isn't a transition
+        expect(observePresence(t, "a", "offline", 2000)).toBe(false);
+        expect(t.get("a")!.approx).toBe(true);
+        observePresence(t, "a", "online", 3000);
+        expect(t.get("a")).toEqual({ online: true, seen: 3000 });
+    });
+});
+
+group("observeActivity", () => {
+    test("keeps the latest activity time", () => {
+        const t: Tracker = new Map();
+        expect(observeActivity(t, "a", 500)).toBe(true);
+        expect(observeActivity(t, "a", 300)).toBe(false);
+        expect(t.get("a")).toEqual({ active: 500 });
+        expect(observeActivity(t, "a", 900)).toBe(true);
+        expect(t.get("a")!.active).toBe(900);
+    });
 });
 
 group("observeMessage", () => {
     test("keeps the latest message time", () => {
         const t: Tracker = new Map();
-        observeMessage(t, "a", 500);
-        observeMessage(t, "a", 300);
+        expect(observeMessage(t, "a", 500)).toBe(true);
+        expect(observeMessage(t, "a", 300)).toBe(false);
         expect(t.get("a")!.message).toBe(500);
-        observeMessage(t, "a", 900);
+        expect(observeMessage(t, "a", 900)).toBe(true);
         expect(t.get("a")!.message).toBe(900);
+    });
+
+    test("stores where, and clears it when a newer message doesn't say", () => {
+        const t: Tracker = new Map();
+        observeMessage(t, "a", 500, { channelId: "c1", messageId: "m1" });
+        expect(t.get("a")).toEqual({ message: 500, channelId: "c1", messageId: "m1" });
+        observeMessage(t, "a", 600, { channelId: "c2" });
+        expect(t.get("a")).toEqual({ message: 600, channelId: "c2" });
+        observeMessage(t, "a", 700);
+        expect(t.get("a")).toEqual({ message: 700 });
+    });
+
+    test("older messages from history neither overwrite nor count as a recent touch", () => {
+        const t: Tracker = new Map();
+        observeMessage(t, "a", 900, { channelId: "c1", messageId: "m1" });
+        observeMessage(t, "b", 100);
+        expect(observeMessage(t, "a", 300, { channelId: "c0", messageId: "m0" })).toBe(false);
+        expect(t.get("a")).toEqual({ message: 900, channelId: "c1", messageId: "m1" });
+        expect([...t.keys()]).toEqual(["a", "b"]);
     });
 });
 
 group("prune", () => {
     test("drops least recently touched first", () => {
         const t: Tracker = new Map();
-        observeMessage(t, "a", 1, 3);
-        observeMessage(t, "b", 2, 3);
-        observeMessage(t, "c", 3, 3);
-        observeMessage(t, "a", 4, 3); // a is now most recent
-        observeMessage(t, "d", 5, 3); // b goes
+        const opts = { cap: 3 };
+        observeMessage(t, "a", 1, {}, opts);
+        observeMessage(t, "b", 2, {}, opts);
+        observeMessage(t, "c", 3, {}, opts);
+        observeMessage(t, "a", 4, {}, opts); // a is now most recent
+        observeMessage(t, "d", 5, {}, opts); // b goes
         expect([...t.keys()]).toEqual(["c", "a", "d"]);
         expect(prune(t, 1)).toBe(2);
         expect([...t.keys()]).toEqual(["d"]);
@@ -63,37 +104,108 @@ group("prune", () => {
 
     test("presence observations prune too", () => {
         const t: Tracker = new Map();
-        for (let i = 0; i < 10; i++) observePresence(t, `u${i}`, "online", i, 5);
+        for (let i = 0; i < 10; i++) observePresence(t, `u${i}`, "online", i, { cap: 5 });
         expect(t.size).toBe(5);
         expect(t.has("u0")).toBe(false);
         expect(t.has("u9")).toBe(true);
     });
+
+    test("protected people are skipped while anyone else can go", () => {
+        const t: Tracker = new Map();
+        const opts = { cap: 3, keep: (id: string) => id === "friend" };
+        observeActivity(t, "friend", 1, opts);
+        for (let i = 0; i < 10; i++) observeActivity(t, `s${i}`, i + 2, opts);
+        expect(t.size).toBe(3);
+        expect([...t.keys()]).toEqual(["friend", "s8", "s9"]);
+    });
+
+    test("protected people go too once everyone left is protected", () => {
+        const t: Tracker = new Map();
+        const opts = { cap: 2, keep: () => true };
+        observeActivity(t, "a", 1, opts);
+        observeActivity(t, "b", 2, opts);
+        observeActivity(t, "c", 3, opts);
+        expect([...t.keys()]).toEqual(["b", "c"]);
+    });
+
+    test("under the cap nothing is removed", () => {
+        const t: Tracker = new Map([["a", { seen: 1 }]]);
+        expect(prune(t, 5)).toBe(0);
+        expect(t.size).toBe(1);
+    });
 });
 
 group("serialize / deserialize", () => {
-    test("round trips and turns stale online flags into last seen at save time", () => {
+    test("round trips and turns stale online flags into approximate last seen at save time", () => {
         const t: Tracker = new Map();
         observePresence(t, "on", "online", 100);
         observePresence(t, "off", "online", 100);
         observePresence(t, "off", "offline", 200);
         observeMessage(t, "msg", 300);
         const saved = serialize(t, 1000);
+        expect(saved.v).toBe(2);
         const back = deserialize(JSON.parse(JSON.stringify(saved)));
-        expect(back.get("on")).toEqual({ seen: 1000 });
+        expect(back.get("on")).toEqual({ seen: 1000, approx: true });
         expect(back.get("off")).toEqual({ seen: 200 });
         expect(back.get("msg")).toEqual({ message: 300 });
         expect([...back.keys()]).toEqual(["on", "off", "msg"]);
     });
 
+    test("round trips activity, where and the approx flag", () => {
+        const t: Tracker = new Map([
+            ["a", { seen: 100, approx: true, active: 150, message: 200, channelId: "c1", messageId: "m1" }],
+            ["b", { active: 50 }],
+        ]);
+        const back = deserialize(JSON.parse(JSON.stringify(serialize(t, 1000))));
+        expect(back.get("a")).toEqual({ seen: 100, approx: true, active: 150, message: 200, channelId: "c1", messageId: "m1" });
+        expect(back.get("b")).toEqual({ active: 50 });
+    });
+
+    test("migrates v1 data", () => {
+        const back = deserialize({ v: 1, savedAt: 500, rows: [["x", 100, 0, 1], ["y", 50, 60, 0], ["z", 0, 70, 0]] });
+        expect(back.get("x")).toEqual({ seen: 500, approx: true });
+        expect(back.get("y")).toEqual({ seen: 50, message: 60 });
+        expect(back.get("z")).toEqual({ message: 70 });
+    });
+
+    test("where is only kept with a message", () => {
+        const back = deserialize({ v: 2, savedAt: 0, rows: [["a", 5, 0, 0, 0, "c1", "m1", 0]] });
+        expect(back.get("a")).toEqual({ seen: 5 });
+    });
+
     test("tolerates junk and applies the cap", () => {
         expect(deserialize(null).size).toBe(0);
         expect(deserialize({ rows: "nope" }).size).toBe(0);
-        const back = deserialize({ v: 1, savedAt: 0, rows: [[1, 2, 3, 0], ["a", 5, 0, 0], ["b", 0, 0, 0], ["c", 0, 7, 0], ["d", 9, 9, 0]] }, 2);
+        const back = deserialize({ v: 1, savedAt: 0, rows: [[1, 2, 3, 0], ["a", 5, 0, 0], ["b", 0, 0, 0], ["c", 0, 7, 0], ["d", 9, 9, 0]] }, { cap: 2 });
         expect([...back.keys()]).toEqual(["c", "d"]);
     });
 });
 
-group("formatRelative", () => {
+group("merge", () => {
+    test("takes newer fields from each side", () => {
+        expect(merge({ seen: 100, message: 50, channelId: "c1" }, { seen: 200, online: true, active: 300 }))
+            .toEqual({ seen: 200, online: true, active: 300, message: 50, channelId: "c1" });
+    });
+
+    test("keeps the older side's newer values", () => {
+        expect(merge({ seen: 500, active: 900, message: 800, channelId: "c1" }, { seen: 100, online: false, active: 10, message: 20, channelId: "c2" }))
+            .toEqual({ seen: 500, active: 900, message: 800, channelId: "c1" });
+    });
+
+    test("a live online observation wins and clears approx", () => {
+        expect(merge({ seen: 1000, approx: true }, { seen: 900, online: true })).toEqual({ seen: 900, online: true });
+    });
+
+    test("a newer message replaces where, dropping ids it doesn't have", () => {
+        expect(merge({ message: 1, channelId: "a", messageId: "m" }, { message: 5 })).toEqual({ message: 5 });
+    });
+
+    test("nothing to merge into", () => {
+        expect(merge(undefined, { message: 5, channelId: "c" })).toEqual({ message: 5, channelId: "c" });
+    });
+});
+
+group("formatRelative / formatSpan", () => {
     const now = 1_000 * D;
     test.each([
         [now - 10_000, "just now"],
@@ -107,6 +219,29 @@ group("formatRelative", () => {
     ])("%p", (then, expected) => {
         expect(formatRelative(then, now)).toBe(expected);
     });
+
+    test("span has no suffix and is null under a minute", () => {
+        expect(formatSpan(now - 3 * H, now)).toBe("3h");
+        expect(formatSpan(now - 30_000, now)).toBeNull();
+    });
+});
+
+group("seenText / lineText", () => {
+    const now = 10 * D;
+    test("exact and approximate last seen", () => {
+        expect(seenText({ seen: now - 3 * H }, now)).toBe("Last seen 3h ago");
+        expect(seenText({ seen: now - 3 * H, approx: true }, now)).toBe("Last seen in the last 3h");
+        expect(seenText({ seen: now - 10_000, approx: true }, now)).toBe("Last seen just now");
+        expect(seenText({ message: now }, now)).toBeNull();
+    });
+
+    test("the newer of last seen and last active", () => {
+        expect(lineText({ seen: now - 3 * H, active: now - H }, now)).toBe("Active 1h ago");
+        expect(lineText({ seen: now - H, active: now - 3 * H }, now)).toBe("Last seen 1h ago");
+        expect(lineText({ active: now - 2 * D }, now)).toBe("Active 2d ago");
+        expect(lineText({ message: now - H }, now)).toBeNull();
+        expect(lineText(undefined, now)).toBeNull();
+    });
 });
 
 group("describe", () => {
@@ -114,8 +249,20 @@ group("describe", () => {
     test("combines last seen and last message", () => {
         expect(describe({ seen: now - 3 * H, message: now - 2 * D }, false, now)).toBe("Last seen 3h ago · Last message 2d ago");
     });
-    test("online now wins over the stored time", () => {
+    test("says where the last message was", () => {
+        expect(describe({ seen: now - 3 * H, message: now - 2 * D }, false, now, "#general")).toBe("Last seen 3h ago · Last message 2d ago in #general");
+    });
+    test("approximate last seen", () => {
+        expect(describe({ seen: now - 3 * H, approx: true }, false, now)).toBe("Last seen in the last 3h");
+    });
+    test("activity only when newer than last seen", () => {
+        expect(describe({ seen: now - 3 * H, active: now - H }, false, now)).toBe("Last seen 3h ago · Active 1h ago");
+        expect(describe({ seen: now - H, active: now - 3 * H }, false, now)).toBe("Last seen 1h ago");
+        expect(describe({ active: now - H }, false, now)).toBe("Active 1h ago");
+    });
+    test("online now wins over the stored time and hides activity", () => {
         expect(describe({ seen: now - 3 * H, message: now - 60_000 }, true, now)).toBe("Online now · Last message 1m ago");
+        expect(describe({ seen: now - 3 * H, active: now - H }, true, now)).toBe("Online now");
         expect(describe(undefined, true, now)).toBe("Online now");
     });
     test("nothing known", () => {
