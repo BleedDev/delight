@@ -2,15 +2,15 @@
  * Store stars, GitHub-style: one star per Evi install per item, counted by the evi.rest server
  * (server/index.ts). Shared by main, the renderer, the server and the tests.
  *
- *   GET    /api/stars                 { counts: { "plugin:fast-lists": 12, … }, mine: ["plugin:fast-lists"] }
- *   PUT    /api/stars/:kind/:id       star it, answers { count }
- *   DELETE /api/stars/:kind/:id       unstar it, answers { count }
+^ *   GET    /v1/stars                 { counts: { "plugin:fast-lists": 12, … }, mine: ["plugin:fast-lists"] }
+ *   PUT    /v1/stars/:kind/:id       star it, answers { count }
+ *   DELETE /v1/stars/:kind/:id       unstar it, answers { count }
  *
  * Requests carry the install's random id in X-Evi-Install; GET without it just has no `mine`.
  */
 import { isPluginId } from "./store";
 
-export const DEFAULT_API_URL = "https://evi.rest/api";
+export const DEFAULT_API_URL = "https://evi.rest/v1";
 
 export type StarKind = "plugin" | "theme";
 

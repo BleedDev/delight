@@ -3,6 +3,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { Native } from "../native";
 import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
+import { AccountTab } from "./AccountTab";
 import { BackupTab } from "./BackupTab";
 import { Button, ErrorBoundary, Icon, IconName, openDialogs, Text, useStore } from "./components";
 import { PatchesTab } from "./PatchesTab";
@@ -10,7 +11,7 @@ import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
 import { ThemesTab } from "./ThemesTab";
-import { releasesSoFar, WhatsNewCard } from "./WhatsNew";
+import { currentRelease, WhatsNewModal } from "./WhatsNew";
 import css from "./styles.css" with { type: "text" };
 
 type View = "closed" | "open" | "closing";
@@ -42,6 +43,7 @@ const tabs: readonly { id: string; label: string; icon?: IconName; Component: ()
     { id: "themes", label: "Themes", icon: "palette", Component: ThemesTab },
     { id: "quickcss", label: "Quick CSS", icon: "code", Component: QuickCssTab },
     { id: "backup", label: "Backup", icon: "download", Component: BackupTab },
+    { id: "account", label: "Account", icon: "link", Component: AccountTab },
     { id: "patches", label: "Patches", icon: "wrench", Component: PatchesTab },
     { id: "patchhelper", label: "Patch Helper", icon: "beaker", Component: PatchHelperTab },
 ];
@@ -54,6 +56,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), texta
 function Panel() {
     const [tab, setTabState] = React.useState(lastTab);
     const [whatsNew, setWhatsNew] = React.useState(false);
+    const release = currentRelease();
     const panelRef = React.useRef<HTMLDivElement>(null);
     const bodyRef = React.useRef<HTMLDivElement>(null);
     const current = tabs.find(t => t.id === tab) ?? tabs[0];
@@ -143,11 +146,7 @@ function Panel() {
                         <ErrorBoundary resetKey={current.id}><current.Component /></ErrorBoundary>
                     </div>
                 </div>
-                {whatsNew && (
-                    <div className="dl-whats-new-overlay" onMouseDown={e => e.target === e.currentTarget && setWhatsNew(false)}>
-                        <WhatsNewCard releases={releasesSoFar()} onClose={() => setWhatsNew(false)} />
-                    </div>
-                )}
+                {whatsNew && release && <WhatsNewModal releases={[release]} onClose={() => setWhatsNew(false)} />}
             </div>
         </div>
     );

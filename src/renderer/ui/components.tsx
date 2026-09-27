@@ -14,7 +14,7 @@ import { Icon, iconComponent, IconName } from "./icons";
 export { Icon, iconComponent };
 export type { IconName };
 
-const cx = (...names: (string | false | undefined)[]) => names.filter(Boolean).join(" ");
+export const cx = (...names: (string | false | undefined)[]) => names.filter(Boolean).join(" ");
 
 // ---- typography -------------------------------------------------------------------------------
 
@@ -572,11 +572,10 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), texta
 export let openDialogs = 0;
 
 /**
- * A dialog over everything, so opening it never moves the page underneath. Rendered into <body>,
- * which also gets it out of Discord's settings scroller when the tab is embedded there.
- * Escape and clicking beside it close it; focus stays inside and goes back where it was after.
+ * What every Evi dialog does: focus moves in on open and back where it was on close, Tab stays
+ * inside, and Escape closes it. Put `ref` and `onKeyDown` on the dialog element.
  */
-export function Dialog({ title, onClose, children, id }: { title: ReactNode; onClose(): void; children: ReactNode; id: string; }) {
+export function useModal(onClose: () => void) {
     const ref = React.useRef<HTMLDivElement>(null);
     const closeRef = React.useRef(onClose);
     closeRef.current = onClose;
@@ -614,10 +613,21 @@ export function Dialog({ title, onClose, children, id }: { title: ReactNode; onC
         }
     };
 
+    return { ref, onKeyDown: trapTab };
+}
+
+/**
+ * A dialog over everything, so opening it never moves the page underneath. Rendered into <body>,
+ * which also gets it out of Discord's settings scroller when the tab is embedded there.
+ * Escape and clicking beside it close it; focus stays inside and goes back where it was after.
+ */
+export function Dialog({ title, onClose, children, id }: { title: ReactNode; onClose(): void; children: ReactNode; id: string; }) {
+    const { ref, onKeyDown } = useModal(onClose);
+
     return ReactDOM.createPortal(
         <div className="dl-root">
             <div className="dl-scrim dl-dialog-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-                <div className="dl-dialog" role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} tabIndex={-1} ref={ref} onKeyDown={trapTab} id={id}>
+                <div className="dl-dialog" role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} tabIndex={-1} ref={ref} onKeyDown={onKeyDown} id={id}>
                     <header className="dl-dialog-head">
                         <Text tag="h2" variant="heading-lg/semibold" color="text-strong" id={`${id}-title`}>{title}</Text>
                         <IconButton icon="close" label="Close" onClick={onClose} />

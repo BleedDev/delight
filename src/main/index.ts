@@ -5,12 +5,14 @@ import { app, ipcMain, Session, session, shell } from "electron";
 import { existsSync, readFileSync, watch, writeFileSync } from "fs";
 import { dirname, join } from "path";
 
+import { initAccount } from "./account";
 import { initBackup } from "./backup";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
 import { applyChromiumSwitches, getPluginPayloads, initPlugins } from "./plugins";
 import { SafeMode } from "./safeMode";
 import { saveSettings, settings } from "./settings";
+import { initBadges } from "./badges";
 import { initStars } from "./stars";
 import { initStore } from "./store";
 import { getThemePayloads, initThemes } from "./themes";
@@ -154,6 +156,8 @@ function setup() {
     initThemes();
     initStore();
     initStars();
+    initAccount();
+    initBadges();
     watchQuickCss();
     persistAcrossUpdates(shimAsar);
 }

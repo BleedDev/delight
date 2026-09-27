@@ -72,7 +72,7 @@ function fakeNative(bootData: BootData) {
     if (window !== window.top) return;
     const pluginListeners: ((change: unknown) => void)[] = [];
     const themeListeners: ((change: unknown) => void)[] = [];
-    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[], themeInstalls: [] as unknown[], stars: [] as unknown[], bootOk: 0, exitedSafeMode: 0 };
+    (window as any).__test = { pluginListeners, themeListeners, savedSettings: null, nativeCalls: [] as unknown[], storeInstalls: [] as unknown[], themeInstalls: [] as unknown[], stars: [] as unknown[], badgeAdmin: [] as unknown[], bootOk: 0, exitedSafeMode: 0, account: { confirmed: false, started: 0, dashboard: 0 } };
     (window as any).EviNative = {
         boot: () => structuredClone(bootData),
         saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
@@ -138,11 +138,29 @@ function fakeNative(bootData: BootData) {
             themeListeners.forEach(cb => cb({ type: "remove", file: `${id}.css` }));
             return { ok: true, id, version: "1.0.0" };
         },
+        // Account link: not linked until the test confirms the code "on the site"
+        accountStatus: async () => ({ ok: true, site: "https://evi.rest", user: (window as any).__test.account.confirmed ? { id: "123456789012345678", username: "evi-tester", globalName: "Evi Tester", avatar: null } : null }),
+        openDashboard: async () => { (window as any).__test.account.dashboard++; },
+        linkAccount: async () => {
+            (window as any).__test.account.started++;
+            return { ok: true, code: "K7PQ-X3MV" };
+        },
         // Stars: counts for two plugins, this install starred Quiet Mode
         getStars: async () => ({ ok: true, counts: { "plugin:store-clock": 41, "plugin:store-quiet": 7 }, mine: ["plugin:store-quiet"] }),
         setStar: async (kind: string, id: string, starred: boolean) => {
             (window as any).__test.stars.push({ kind, id, starred });
             return { ok: true, starred, count: id === "store-clock" ? (starred ? 42 : 41) : 0 };
+        },
+        // Badges: one user with the Developer badge, icons already turned into data URLs by main
+        getBadges: async () => ({
+            ok: true,
+            badges: { dev: { name: "Developer", description: "Builds Evi", icon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" } },
+            users: { "123456789012345678": ["dev"] },
+        }),
+        badgeAdminAvailable: async () => true,
+        badgeAdmin: async (input: any) => {
+            (window as any).__test.badgeAdmin.push(input);
+            return { ok: true, message: `done: ${input.action}` };
         },
         // A 1x1 PNG, like main hands back after checking the registry lists the URL
         storeImage: async (url: string) => url.startsWith("https://example.com/")
@@ -248,6 +266,35 @@ check("found createRoot", core.createRoot === "function");
 check("found Flux dispatcher", core.dispatcherSubs > 10, { subscriptions: core.dispatcherSubs });
 check("found UserStore by name", core.userStore === "function");
 check("enabled plugins started", ["clear-urls", "experiments", "no-track"].every(id => core.running.includes(id)), core.running);
+
+// ---- what's new (first: it's a modal, so it covers the page until closed) -----------------------
+
+const whatsNew = await page.waitForSelector(".dl-whats-new[role=dialog]", { timeout: 10_000 }).then(() => page.evaluate(async () => {
+    const modal = document.querySelector(".dl-whats-new")!;
+    const heading = modal.querySelector(".dl-whats-new-title");
+    return {
+        text: modal.textContent ?? "",
+        headings: [...modal.querySelectorAll(".dl-whats-new-title")].map(h => h.textContent),
+        headingColor: heading ? getComputedStyle(heading).color : null,
+        itemColor: getComputedStyle(modal.querySelector(".dl-whats-new-item")!).color,
+        width: modal.getBoundingClientRect().width,
+        cover: await (async () => {
+            const img = modal.querySelector<HTMLImageElement>(".dl-whats-new-cover");
+            if (!img) return null;
+            const loaded = await img.decode().then(() => img.naturalWidth > 0, () => false);
+            return { loaded, width: img.getBoundingClientRect().width, height: img.getBoundingClientRect().height };
+        })(),
+        fits: modal.getBoundingClientRect().bottom <= innerHeight,
+        seen: (window as any).Evi.settings.data.lastSeenVersion,
+        version: (window as any).Evi.version,
+    };
+}), () => null);
+check("What's new shows once after an update, and remembers the version", !!whatsNew && /What’s New in Evi/.test(whatsNew.text) && whatsNew.headings.includes("New Features") && whatsNew.seen === whatsNew.version, whatsNew);
+check("What's new is roomy (640px), fits the window, and is styled like Discord's changelog", !!whatsNew && whatsNew.width > 600 && whatsNew.width <= 640 && whatsNew.fits && !!whatsNew.headingColor && whatsNew.headingColor !== whatsNew.itemColor, whatsNew);
+check("What's new opens with the release's cover, full width like Discord's changelog video", !!whatsNew?.cover?.loaded && whatsNew.cover.width > 400 && whatsNew.cover.width <= whatsNew.width - 48 && Math.abs(whatsNew.cover.height - whatsNew.cover.width * 675 / 1200) < 1, whatsNew?.cover);
+await page.screenshot({ path: join(OUT, "ui-whats-new.png") });
+await page.locator(".dl-whats-new").getByRole("button", { name: "Close", exact: true }).click();
+check("What's new closes", !(await page.$(".dl-whats-new")));
 
 // ---- flux ---------------------------------------------------------------------------------------
 
@@ -566,7 +613,8 @@ check("/evi listed as a non-text built-in like /nick (Discord never sends its re
 check("/evi replies ephemerally (Only you can see this), returns nothing for Discord to send", toolkit.result == null && JSON.stringify(toolkit.commandToast) === '["1","Command reply test"]', toolkit.commandToast);
 check("message menu shows the plugin's item next to Discord's", toolkit.rendered.includes("Native item") && toolkit.rendered.some((t: string) => t.includes("Copy Message ID (Evi)")), toolkit.renderError ?? toolkit.rendered);
 check("menu item gets the message from menu props and copies its id", toolkit.copied === "123456789" && toolkit.copyToast?.type === "success", { copied: toolkit.copied, toast: toolkit.copyToast });
-check("stopping the plugin removes its command and the command hook", !toolkit.listAfter.includes("evi") && toolkit.commandsRestored);
+// The shared hook comes off with the last command; Badges' /badge (an admin install) keeps it on here
+check("stopping the plugin removes its command, and the command hook with the last one", !toolkit.listAfter.includes("evi") && toolkit.commandsRestored === !toolkit.listAfter.some((n: string) => n === "badge"));
 check("the shared Menu hook stays while another plugin still uses menus", !toolkit.menuRestored);
 await page.screenshot({ path: join(OUT, "toolkit-toast.png") });
 
@@ -1015,17 +1063,119 @@ check("disabling clears the log, unmounts tags and history, removes the tint", l
     && logger.stopped.rowBackground === "rgba(0, 0, 0, 0)" && !logger.stopped.style, { before: logger.beforeStop, after: logger.stopped });
 check("with the plugin off, deletes behave like stock Discord", logger.stockDelete);
 
-// ---- what's new -----------------------------------------------------------------------------------
+// ---- badges ---------------------------------------------------------------------------------------
 
-const whatsNew = await page.waitForSelector(".dl-safe-float .dl-whats-new", { timeout: 10_000 }).then(() => page.evaluate(() => ({
-    text: document.querySelector(".dl-whats-new")?.textContent ?? "",
-    seen: (window as any).Evi.settings.data.lastSeenVersion,
-    version: (window as any).Evi.version,
-})), () => null);
-check("What's new shows once after an update, and remembers the version", !!whatsNew && /What’s new in Evi/.test(whatsNew.text) && whatsNew.text.includes(`Evi ${whatsNew.version}`) && whatsNew.seen === whatsNew.version, whatsNew);
-await page.screenshot({ path: join(OUT, "ui-whats-new.png") });
-await page.locator(".dl-safe-float .dl-whats-new").getByRole("button", { name: "Got it" }).click();
-check("What's new closes", !(await page.$(".dl-safe-float .dl-whats-new")));
+// The plugin hooks Discord's profile-badges hook and message username. Where the logged-out page has
+// them loaded, the real ones are used; otherwise stand-ins with the same shape (and the code the
+// filters look for) are registered as webpack modules. Discord's own body is swapped out for the
+// call with an "instead" hook (it uses React hooks), so the plugin's hooks run around it as in the app.
+const badges = await page.evaluate(async () => {
+    const D = (window as any).Evi;
+    const { api } = D;
+    const wreq = api.getWreq();
+    const profileFilter = api.filters.byCode("getBadges()??[]", "hidePersonalInformation");
+    const usernameFilter = api.filters.componentByCode("withMentionPrefix", "hideSystemTag", "decorations");
+    const real = { profile: !!api.findExport(profileFilter), username: !!api.findExport(usernameFilter) };
+
+    const standIns: Record<string, (m: any, e: any, n: any) => void> = {};
+    if (!real.profile) {
+        standIns[990001] = (_m: any, e: any, n: any) => {
+            n.d(e, { A: () => c });
+            function c(e: any) {
+                const hide = "hidePersonalInformation";
+                return hide ? e?.getBadges()??[] : [];
+            }
+        };
+    }
+    if (!real.username) {
+        standIns[990002] = (_m: any, e: any, n: any) => {
+            n.d(e, { A: () => F });
+            function F(e: any) {
+                const { withMentionPrefix, hideSystemTag, decorations } = e;
+                return { withMentionPrefix, hideSystemTag, decorations };
+            }
+        };
+    }
+    if (Object.keys(standIns).length) {
+        (window as any).webpackChunkdiscord_app.push([[Symbol("evi-badges-test")], standIns]);
+        for (const id of Object.keys(standIns)) wreq(id);
+        await new Promise(r => setTimeout(r, 300));
+    }
+
+    const profileTarget = api.findExport(profileFilter);
+    const usernameTarget = api.findExport(usernameFilter);
+    const hooked = (t: any) => !!t && api.getUnhooked(t.exports[t.key]) !== t.exports[t.key];
+
+    const uid = "123456789012345678";
+    const discordBadge = { id: "hypesquad_house_1", description: "HypeSquad Bravery", icon: "8a88d63823d8a71cd5e390baa45efa02" };
+    // Discord's part answers with its own badge list; the plugin's after-hook runs on top
+    const unProfile = api.hook(profileTarget.exports, profileTarget.key, "instead", () => [discordBadge]);
+    const profile = profileTarget.exports[profileTarget.key]({ userId: uid });
+    const stranger = profileTarget.exports[profileTarget.key]({ userId: "876543210987654321" });
+    unProfile();
+
+    // Discord's part hands back the props it was rendered with, after the plugin's before-hook
+    const unUsername = api.hook(usernameTarget.exports, usernameTarget.key, "instead", ({ args }: any) => args[0]);
+    const roleIcon = { key: "role-icon" };
+    const header = usernameTarget.exports[usernameTarget.key]({ message: { author: { id: uid } }, compact: false, decorations: { 0: null, 1: [roleIcon] } });
+    const reply = usernameTarget.exports[usernameTarget.key]({ message: { author: { id: uid } }, decorations: { 0: "APP" } });
+    unUsername();
+
+    // Render what the chat hook added, to see Discord's page actually draw the icon
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = api.createRoot(host);
+    root.render(header.decorations[1][1]);
+    await new Promise(r => setTimeout(r, 300));
+    const img = host.querySelector(".evi-chat-badges img") as HTMLImageElement | null;
+    const rendered = { src: img?.src.slice(0, 22), label: img?.getAttribute("aria-label"), loaded: !!img?.complete && img.naturalWidth > 0 };
+    root.unmount();
+    host.remove();
+
+    const command = D.toolkit.getRegisteredCommands().find((c: any) => c.untranslatedName === "badge");
+    // Replies are "Only you can see this" bot messages: catch them instead of posting
+    const replies: string[] = [];
+    if (command) {
+        const botActions = api.findByProps("sendBotMessage", "sendMessage");
+        const send = botActions.sendBotMessage;
+        botActions.sendBotMessage = (_c: string, text: string) => void replies.push(text);
+        try {
+            await command.execute([{ name: "action", type: 3, value: "grant" }, { name: "badge", type: 3, value: "dev" }, { name: "user", type: 6, value: uid }], { channel: { id: "1" } });
+            await command.execute([{ name: "action", type: 3, value: "create" }], { channel: { id: "1" } });
+            await new Promise(r => setTimeout(r, 100));
+        } finally {
+            botActions.sendBotMessage = send;
+        }
+    }
+
+    return {
+        real,
+        hooked: { profile: hooked(profileTarget), username: hooked(usernameTarget) },
+        profile: profile.map((b: any) => ({ id: b.id, description: b.description, iconSrc: b.iconSrc?.slice(0, 22) })),
+        strangerUnchanged: stranger.length === 1 && stranger[0] === discordBadge,
+        chat: header.decorations[1].length,
+        chatKeepsDiscord: header.decorations[1][0] === roleIcon,
+        chatProps: header.decorations[1][1]?.props,
+        replyUnchanged: !(1 in reply.decorations),
+        rendered,
+        command: !!command,
+        adminCalls: (window as any).__test.badgeAdmin,
+        replies,
+    };
+});
+console.log(`  badges: Discord's own modules loaded here: ${JSON.stringify(badges.real)}`);
+check("Badges: the plugin hooks Discord's profile badges and message username", badges.hooked.profile && badges.hooked.username, badges.hooked);
+check("Badges: ours go in front of Discord's on a profile, others' profiles untouched",
+    JSON.stringify(badges.profile) === JSON.stringify([
+        { id: "evi-dev", description: "Developer: Builds Evi", iconSrc: "data:image/png;base64," },
+        { id: "hypesquad_house_1", description: "HypeSquad Bravery" },
+    ]) && badges.strangerUnchanged, badges.profile);
+check("Badges: added after Discord's own next to a name in chat, not in reply headers",
+    badges.chat === 2 && badges.chatKeepsDiscord && badges.chatProps?.userId === "123456789012345678" && badges.replyUnchanged, { chat: badges.chat, props: badges.chatProps });
+check("Badges: the chat badge renders its icon with a label", badges.rendered.src === "data:image/png;base64," && badges.rendered.label === "Developer: Builds Evi" && badges.rendered.loaded, badges.rendered);
+check("/badge exists for an admin install and asks main to grant",
+    badges.command && JSON.stringify(badges.adminCalls) === '[{"action":"grant","userId":"123456789012345678","badgeId":"dev"}]'
+    && JSON.stringify(badges.replies) === JSON.stringify(["done: grant", "/badge create needs badge and name and icon."]), { replies: badges.replies, calls: badges.adminCalls });
 
 // ---- UI -----------------------------------------------------------------------------------------
 
@@ -1034,6 +1184,32 @@ await page.waitForSelector(".dl-panel", { timeout: 5000 });
 await page.waitForTimeout(300);
 await page.screenshot({ path: join(OUT, "ui-plugins.png") });
 check("Ctrl+Shift+D opens the panel", true);
+
+// No scrollbars in Evi's UI, and nothing reserves room for one
+const scrollbars = await page.evaluate(() => [".dl-sidebar", ".dl-body"].map(sel => {
+    const el = document.querySelector<HTMLElement>(sel)!;
+    return { sel, width: getComputedStyle(el).scrollbarWidth, gutter: el.offsetWidth - el.clientWidth - parseFloat(getComputedStyle(el).borderLeftWidth) - parseFloat(getComputedStyle(el).borderRightWidth) };
+}));
+check("Evi's panel shows no scrollbars", scrollbars.every(s => s.width === "none" && s.gutter === 0), scrollbars);
+
+// The Account tab: link this install with a code confirmed on the site, then who it's linked to
+{
+    await page.click("#dl-tab-account");
+    const body = page.locator(".dl-body");
+    await body.getByText("Link to your account").waitFor({ timeout: 3000 });
+    await page.screenshot({ path: join(OUT, "ui-account.png") });
+    await body.getByText("Link to your account").click();
+    await page.waitForSelector(".dl-account-code", { timeout: 3000 });
+    const code = await page.textContent(".dl-account-code");
+    await page.screenshot({ path: join(OUT, "ui-account-code.png") });
+    await page.evaluate(() => { (window as any).__test.account.confirmed = true; });
+    await body.getByText("Linked as @evi-tester").waitFor({ timeout: 6000 });
+    await page.screenshot({ path: join(OUT, "ui-account-linked.png") });
+    await body.getByText("Open dashboard").click();
+    const account = await page.evaluate(() => (window as any).__test.account);
+    check("Account tab links this install: code, then who it's linked to, then the dashboard", code === "K7PQ-X3MV" && account.started === 1 && account.dashboard === 1, { code, account });
+    await page.click("#dl-tab-plugins");
+}
 
 const toggled = await page.evaluate(async () => {
     // Discord's switch is a real checkbox input (checked), ours a button (aria-checked)

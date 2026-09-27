@@ -1,57 +1,96 @@
 /**
- * "What's new in Evi": shown once after Evi updates itself, floating over Discord like the safe mode
- * notice, and on demand from the Evi panel's footer.
+ * "What's new in Evi": a copy of Discord's own changelog modal (layout, type and section colors
+ * measured from its CSS). Shown once after Evi updates itself, and on demand from the Evi panel.
+ * Discord's modal itself can't be used: it renders in Discord's modal layer, under Evi's panel.
  */
-import { Release, RELEASES, releasesSince } from "@shared/changelog";
-import { compareVersions } from "@shared/store";
+import { latestRelease, mergeReleases, Release, RELEASES_URL, releasesSince, SECTION_KINDS, SECTION_TITLES } from "@shared/changelog";
 
 import { Settings } from "../settings";
-import { createRoot, React } from "../webpack/common";
+import { createRoot, React, ReactDOM } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
-import { Button, IconButton, Text } from "./components";
+import { Button, cx, Icon, Text, useModal } from "./components";
+import { coverUrl } from "./covers";
 import { ensureStyles } from "./index";
 
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+// Discord's changelog subtitle is the date, written out: "September 26, 2026"
+const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "long" });
 
-export function ReleaseNotes({ releases }: { releases: Release[]; }) {
-    return (
-        <ol className="dl-changelog">
-            {releases.map(r => (
-                <li key={r.version}>
-                    <div className="dl-row-title">
-                        <Text variant="text-sm/semibold" color="text-strong" tabular>Evi {r.version}</Text>
-                        <Text variant="text-xs/normal" color="text-muted">{dateFormat.format(new Date(`${r.date}T00:00:00`))}</Text>
+/** The part of Discord's changelog markdown Evi's notes use: **bold** lead-ins */
+function inline(text: string) {
+    return text.split(/\*\*(.+?)\*\*/g).map((part, i) => i % 2 ? <strong key={i}>{part}</strong> : part);
+}
+
+export function WhatsNewModal({ releases, onClose }: { releases: Release[]; onClose(): void; }) {
+    const { ref, onKeyDown } = useModal(onClose);
+    const notes = mergeReleases(releases);
+    const cover = coverUrl(notes.cover);
+    const scrollerRef = React.useRef<HTMLDivElement>(null);
+    const innerRef = React.useRef<HTMLElement>(null);
+    // Like Discord's modal: dividers above and below the body only when it has to scroll
+    const [scrolls, setScrolls] = React.useState(false);
+
+    React.useLayoutEffect(() => {
+        const scroller = scrollerRef.current, inner = innerRef.current;
+        if (!scroller || !inner) return;
+        const observer = new ResizeObserver(() => setScrolls(inner.getBoundingClientRect().height > scroller.getBoundingClientRect().height));
+        observer.observe(scroller);
+        observer.observe(inner);
+        return () => observer.disconnect();
+    }, []);
+
+    return ReactDOM.createPortal(
+        <div className="dl-root">
+            <div className="dl-scrim dl-dialog-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+                <div className="dl-modal dl-whats-new" role="dialog" aria-modal="true" aria-labelledby="dl-whats-new-title" tabIndex={-1} ref={ref} onKeyDown={onKeyDown}>
+                    <header className="dl-modal-section dl-modal-header">
+                        <div className="dl-modal-header-layout">
+                            <div className="dl-modal-header-main">
+                                <Text tag="h1" variant="heading-lg/semibold" color="text-strong" id="dl-whats-new-title">What’s New in Evi</Text>
+                            </div>
+                            <div className="dl-modal-header-trailing">
+                                <Button variant="icon" size="md" icon="closeLarge" aria-label="Close" onClick={onClose} />
+                            </div>
+                        </div>
+                        <Text variant="text-md/normal" color="text-subtle">{dateFormat.format(new Date(`${notes.date}T00:00:00`))}</Text>
+                    </header>
+                    <div className={cx("dl-modal-spacer-top", scrolls && "dl-modal-divided")} />
+                    <div className="dl-modal-body" ref={scrollerRef}>
+                        <main className={cx("dl-modal-body-inner", scrolls && "dl-modal-body-scrolls")} ref={innerRef}>
+                            <div className="dl-whats-new-notes" role="region" aria-label="Changelog content" tabIndex={0}>
+                                {cover && <img className="dl-whats-new-cover" src={cover} alt="" width={1200} height={675} />}
+                                {SECTION_KINDS.filter(kind => notes.sections[kind]?.length).map(kind => (
+                                    <React.Fragment key={kind}>
+                                        <Text tag="h2" variant="heading-md/bold" className={`dl-whats-new-title dl-whats-new-${kind}`}>{SECTION_TITLES[kind]}</Text>
+                                        <ul className="dl-whats-new-list">
+                                            {notes.sections[kind]!.map(line => <li className="dl-whats-new-item" key={line}>{inline(line)}</li>)}
+                                        </ul>
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </main>
                     </div>
-                    <ul>{r.highlights.map(h => <li key={h}><Text variant="text-sm/normal" color="text-subtle">{h}</Text></li>)}</ul>
-                </li>
-            ))}
-        </ol>
+                    <div className={cx("dl-modal-spacer-bottom", scrolls && "dl-modal-divided")} />
+                    <footer className="dl-modal-section dl-modal-action-bar">
+                        <div className="dl-whats-new-footer">
+                            <a className="dl-whats-new-social" href={RELEASES_URL} target="_blank" rel="noreferrer noopener" aria-label="Evi on GitHub">
+                                <Icon name="github" size={16} />
+                            </a>
+                            <Text variant="text-xs/normal">Follow us for more updates!</Text>
+                        </div>
+                    </footer>
+                </div>
+            </div>
+        </div>,
+        document.body,
     );
 }
 
-export function WhatsNewCard({ releases, onClose }: { releases: Release[]; onClose(): void; }) {
-    return (
-        <section className="dl-whats-new" aria-labelledby="dl-whats-new-title" role="dialog">
-            <div className="dl-whats-new-head">
-                <Text tag="h2" variant="heading-lg/bold" color="text-strong" id="dl-whats-new-title">What’s new in Evi</Text>
-                <IconButton icon="close" label="Close what’s new" onClick={onClose} />
-            </div>
-            <div className="dl-whats-new-body">
-                <ReleaseNotes releases={releases} />
-            </div>
-            <div className="dl-toolbar">
-                <Button variant="accent" onClick={onClose}>Got it</Button>
-            </div>
-        </section>
-    );
-}
+/** The newest release notes up to this version, for the panel's "What's new" link */
+export const currentRelease = () => latestRelease(EVI_VERSION);
 
-/** Every release up to this one, for the panel's "What's new" link */
-export const releasesSoFar = () => RELEASES.filter(r => compareVersions(r.version, EVI_VERSION) <= 0);
-
-function Floating({ releases }: { releases: Release[]; }) {
+function Startup({ releases }: { releases: Release[]; }) {
     const [open, setOpen] = React.useState(true);
-    return open ? <div className="dl-safe-float"><WhatsNewCard releases={releases} onClose={() => setOpen(false)} /></div> : null;
+    return open ? <WhatsNewModal releases={releases} onClose={() => setOpen(false)} /> : null;
 }
 
 /**
@@ -71,9 +110,8 @@ export function showWhatsNewIfUpdated() {
     waitFor(filters.byProps("createRoot"), () => {
         const mount = () => {
             const container = document.createElement("div");
-            container.className = "dl-root";
             document.body.append(container);
-            createRoot(container).render(<Floating releases={releases} />);
+            createRoot(container).render(<Startup releases={releases} />);
         };
         if (document.body) mount();
         else document.addEventListener("DOMContentLoaded", mount, { once: true });
