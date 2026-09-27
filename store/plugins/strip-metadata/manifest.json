@@ -1,0 +1,22 @@
+{
+    "id": "strip-metadata",
+    "name": "Strip Metadata",
+    "description": "Removes EXIF, GPS location and other hidden metadata from JPEG, PNG and WebP images before you upload them, without re-encoding. Can also give uploads random file names.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "privacy"
+    ],
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
+}

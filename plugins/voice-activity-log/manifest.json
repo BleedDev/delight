@@ -1,0 +1,10 @@
+{
+    "id": "voice-activity-log",
+    "name": "Voice Activity Log",
+    "description": "Logs who joins and leaves the voice channel you're in, with times and how long they stayed. Open it from the Voice Connected panel or with /vclog. Memory only.",
+    "version": "1.0.0",
+    "authors": ["Evi"],
+    "tags": ["voice"],
+    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "enabledByDefault": false
+}

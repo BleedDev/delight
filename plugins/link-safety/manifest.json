@@ -1,0 +1,10 @@
+{
+    "id": "link-safety",
+    "name": "Link Safety",
+    "description": "Checks links before they open and warns you about likely scams: masked links that lie about where they go, lookalike domains like dlscord.com or steamcommunlty.com, hidden tricks in the address, free Nitro bait and links to programs.",
+    "version": "1.0.0",
+    "authors": ["Evi"],
+    "tags": ["privacy", "security"],
+    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "enabledByDefault": false
+}

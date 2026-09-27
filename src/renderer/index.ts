@@ -8,14 +8,19 @@ import { Backup } from "./backup";
 import { Logger } from "./logger";
 import { Native } from "./native";
 import { diagnosePatches } from "./patching/diagnose";
+import { diagnoseLookups } from "./plugins/lookups";
 import { PluginManager } from "./plugins/manager";
 import { SafeMode } from "./safeMode";
 import { Settings } from "./settings";
 import { Store } from "./store";
+import { Updates } from "./updates";
 import { QuickCss } from "./styles";
 import { Themes } from "./themes";
 import { registerToolkitPatches, Toolkit } from "./toolkit";
 import { installHotkey, SettingsUI } from "./ui";
+import { startBadges } from "./ui/badges";
+import { startUpdateChecks } from "./ui/UpdatesTab";
+import { startPluginChangelogs } from "./ui/PluginChangelog";
 import { showSafeModeNotice } from "./ui/SafeModeNotice";
 import { installSettingsEntry } from "./ui/settingsEntry";
 import { showWhatsNewIfUpdated } from "./ui/WhatsNew";
@@ -41,10 +46,12 @@ const Evi = {
     store: Store,
     ui: SettingsUI,
     diagnosePatches,
+    diagnoseLookups,
     stats,
     pendingWaiters,
     toolkit: Toolkit,
     safeMode: SafeMode,
+    updates: Updates,
     get wreq() {
         return wreq;
     },
@@ -76,11 +83,17 @@ function boot() {
     onCommonReady(() => {
         if (!SafeMode.active) logger.info("Discord core modules ready, starting plugins");
         PluginManager.startAll().then(() => SafeMode.scheduleBootOk());
+        // Part of Evi itself, not a plugin: on for everyone. Safe mode keeps even this off.
+        if (!SafeMode.active) startBadges();
+        // Even in safe mode: a new version may be the fix
+        startUpdateChecks();
         if (SafeMode.active) {
             showSafeModeNotice();
         } else {
             // Waits for a normal start: safe mode has its own notice to show, and nothing to update
             showWhatsNewIfUpdated();
+            // Plugins that updated since the last start: their changelogs, after Evi's own
+            startPluginChangelogs();
             Store.scheduleAutoUpdate();
         }
     });

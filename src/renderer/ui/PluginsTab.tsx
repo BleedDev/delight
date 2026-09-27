@@ -3,12 +3,14 @@ import { isPluginEnabled } from "@shared/ipc";
 import { buildCrashReport, copyText } from "../crashReport";
 import { Native } from "../native";
 import { getPatchRecords } from "../patching/source";
+import { diagnoseLookups, isLookupProblem, LookupDiagnosis } from "../plugins/lookups";
 import { PluginManager, PluginState } from "../plugins/manager";
 import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
 import { Store } from "../store";
 import { React } from "../webpack/common";
 import { Badge, Button, Dialog, EmptyState, FilterChips, IconButton, List, Notice, SearchField, SettingField, Status, Switch, Text, useStore } from "./components";
+import { PluginDetailsButton } from "./PluginPermissions";
 import { SafeModeNotice } from "./SafeModeNotice";
 import { StoreBanner, StoreView } from "./Store";
 
@@ -36,12 +38,25 @@ function PatchSummary({ id }: { id: string; }) {
 
     const applied = records.filter(r => r.state === "applied").length;
     const failed = records.filter(r => r.state === "failed" || r.state === "partial").length;
-    const text = records.length === 1
-        ? applied ? "Patch applied" : failed ? "Patch failed" : "Patch waiting"
-        : `${applied} of ${records.length} patches applied`;
 
-    if (failed) return <Status tone="danger">{text}</Status>;
-    return <Status tone={applied === records.length ? "success" : "muted"} quiet>{text}</Status>;
+    if (failed) {
+        return <Status tone="danger">{records.length === 1 ? "Patch failed" : `${failed} of ${records.length} patches failed`}</Status>;
+    }
+    // Waiting patches target code Discord only loads when it's first needed (a voice call, a settings
+    // page...). They apply right as it loads, so they're as fine as applied ones
+    const waiting = records.length - applied;
+    const text = records.length === 1
+        ? applied ? "Patch applied" : "Patch applies when needed"
+        : waiting ? `${applied} patches applied, ${waiting} when needed` : `${applied} patches applied`;
+    return <Status tone="success" quiet>{text}</Status>;
+}
+
+/** Parts of Discord the plugin waited for that never showed up: it runs, but without them */
+function LookupSummary({ problems }: { problems: LookupDiagnosis[]; }) {
+    if (!problems.length) return null;
+    const broken = problems.some(d => d.health === "broken");
+    const n = problems.length;
+    return <Status tone={broken ? "danger" : "warning"}>{`Can’t find ${n === 1 ? "1 part" : `${n} parts`} of Discord`}</Status>;
 }
 
 function PluginSettings({ state }: { state: PluginState; }) {
@@ -102,6 +117,7 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
     const entry = Store.getSnapshot().plugins.find(p => p.id === manifest.id);
     const op = Store.getSnapshot().ops[manifest.id];
     const busy = op?.type === "busy";
+    const lookupProblems = state.running ? diagnoseLookups(manifest.id).filter(d => isLookupProblem(d.health)) : [];
     const statuses = state.error || state.needsReload || state.running || enabled || action === "update" || op;
 
     // Full-access updates go through the plugin's store page, which asks first
@@ -128,6 +144,7 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
                                 {state.running && !state.error && <Status tone="success" quiet>Running</Status>}
                                 {paused && <Status tone="muted">Paused in safe mode</Status>}
                                 {enabled && <PatchSummary id={manifest.id} />}
+                                <LookupSummary problems={lookupProblems} />
                             </span>
                         )}
                     </div>
@@ -135,14 +152,13 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
                 </div>
                 <div className="dl-row-controls">
                     {action === "update" && <Button variant="accent" icon="download" disabled={busy} onClick={update}>Update</Button>}
-                    {fromStore && (
-                        <IconButton
-                            icon="trash"
-                            label={`Uninstall ${manifest.name}`}
-                            aria-expanded={confirmingUninstall}
-                            onClick={() => setConfirmingUninstall(!confirmingUninstall)}
-                        />
-                    )}
+                    <IconButton
+                        icon="trash"
+                        label={`${fromStore ? "Uninstall" : "Remove"} ${manifest.name}`}
+                        aria-expanded={confirmingUninstall}
+                        onClick={() => setConfirmingUninstall(!confirmingUninstall)}
+                    />
+                    <PluginDetailsButton state={state} />
                     {withSettings && (
                         <IconButton
                             icon="settings"
@@ -156,8 +172,15 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
                 </div>
             </div>
             {confirmingUninstall && (
-                <div className="dl-store-confirm dl-uninstall" role="group" aria-label={`Uninstall ${manifest.name}`}>
-                    <p className="dl-hint">Uninstall {manifest.name}? Its files are removed. Its settings stay, so reinstalling picks up where you left off.</p>
+                <div className="dl-store-confirm dl-uninstall" role="group" aria-label={`${fromStore ? "Uninstall" : "Remove"} ${manifest.name}`}>
+                    <p className="dl-hint">
+                        {fromStore
+                            ? <>Uninstall {manifest.name}? Its files are removed. Its settings stay, so reinstalling picks up where you left off.</>
+                            : <>
+                                Remove {manifest.name}? {state.source === "dev" ? "It’s part of the dev build, so it’s hidden rather than deleted." : "Its files are deleted."}{" "}
+                                Evi won’t bring it back when it updates. Its settings stay{entry ? ", and you can install it again from the Store" : ""}.
+                            </>}
+                    </p>
                     <div className="dl-toolbar">
                         <Button
                             variant="danger"
@@ -167,14 +190,24 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
                                 Store.uninstall(manifest.id);
                             }}
                         >
-                            Uninstall
+                            {fromStore ? "Uninstall" : "Remove"}
                         </Button>
                         <Button onClick={() => setConfirmingUninstall(false)}>Cancel</Button>
                     </div>
                 </div>
             )}
             {state.error && <pre className="dl-error">{state.error}</pre>}
-            {state.error && <CrashReport state={state} />}
+            {!state.error && lookupProblems.length > 0 && (
+                <>
+                    <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">
+                        {lookupProblems.some(d => d.health === "broken")
+                            ? "Discord probably changed these after an update. The plugin still runs, but the parts that need them won’t work:"
+                            : "Not found in what Discord has loaded so far. If you’ve already used the parts of Discord this plugin changes, Discord probably changed them:"}
+                    </Text>
+                    {lookupProblems.map((d, i) => <pre key={i} className="dl-error">{d.target}</pre>)}
+                </>
+            )}
+            {(state.error || lookupProblems.length > 0) && <CrashReport state={state} />}
             {state.needsReload && state.reloadReason && (
                 <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">Couldn’t apply live because {state.reloadReason}.</Text>
             )}

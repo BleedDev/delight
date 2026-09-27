@@ -1,7 +1,8 @@
 import type { NativeContext, NativePlugin } from "@evi/api/native";
 import { IPC, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import { parseRemovedPlugins, REMOVED_PLUGINS_FILE, RETIRED_PLUGINS, STORE_MARKER } from "@shared/store";
 import { ipcMain, session, webContents } from "electron";
-import { existsSync, FSWatcher, readdirSync, readFileSync, watch } from "fs";
+import { existsSync, FSWatcher, readdirSync, readFileSync, renameSync, rmSync, watch, writeFileSync } from "fs";
 import { join, resolve, sep } from "path";
 
 import { DATA_DIR, PLUGINS_DIR } from "./paths";
@@ -31,12 +32,69 @@ if (devPlugins) roots.push({ dir: devPlugins, source: "dev" });
 const plugins = new Map<string, LoadedPlugin>();
 const natives = new Map<string, NativeInstance>();
 
+// ---- removed and retired plugins --------------------------------------------------------------
+
+const REMOVED_FILE = join(DATA_DIR, REMOVED_PLUGINS_FILE);
+let removed: Set<string> | undefined;
+
+function removedPlugins() {
+    if (!removed) {
+        try {
+            removed = parseRemovedPlugins(readFileSync(REMOVED_FILE, "utf8"));
+        } catch {
+            removed = new Set();
+        }
+    }
+    return removed;
+}
+
+/** Remembers (or forgets) that the user removed a plugin, so Evi's updates don't bring it back */
+export function setRemoved(id: string, isRemoved: boolean) {
+    const list = removedPlugins();
+    if (list.has(id) === isRemoved) return;
+    if (isRemoved) list.add(id);
+    else list.delete(id);
+    try {
+        writeFileSync(REMOVED_FILE + ".tmp", JSON.stringify([...list].sort(), null, 4));
+        renameSync(REMOVED_FILE + ".tmp", REMOVED_FILE);
+    } catch (err) {
+        console.error("[Evi] Couldn't save the removed plugins list", err);
+    }
+}
+
+/**
+ * Whether a plugin read from disk should be skipped: an official one that's now part of Evi (unless
+ * the store installed it), or, in the dev build output, one the user removed. The dev output is the
+ * repo's own build, so it can't be deleted from here; it's hidden instead.
+ */
+function skipped(id: string, dir: string, source: Source) {
+    if (RETIRED_PLUGINS.includes(id) && !existsSync(join(dir, STORE_MARKER))) return true;
+    return source === "dev" && removedPlugins().has(id);
+}
+
+/** Where a loaded plugin came from, for removing it */
+export function pluginLocation(id: string) {
+    const plugin = plugins.get(id);
+    return plugin && { dir: plugin.dir, source: plugin.source, version: plugin.manifest.version };
+}
+
+/** Takes a dev build plugin out of the page, after it's been marked removed */
+export function hideDevPlugin(id: string) {
+    const plugin = plugins.get(id);
+    if (plugin?.source !== "dev") return;
+    stopNative(id);
+    natives.delete(id);
+    plugins.delete(id);
+    broadcast({ type: "remove", id });
+}
+
 function readPlugin(dir: string, source: Source): LoadedPlugin | null {
     const manifestPath = join(dir, "manifest.json");
     if (!existsSync(manifestPath)) return null;
 
     try {
         const manifest: PluginManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+        if (skipped(manifest.id, dir, source)) return null;
         const code = readFileSync(join(dir, manifest.main ?? "index.js"), "utf8");
         const native = manifest.native ? readFileSync(join(dir, manifest.native), "utf8") : "";
         return { manifest, code, source, dir, signature: JSON.stringify(manifest) + code + native };
@@ -228,6 +286,12 @@ export function getPluginPayloads() {
 }
 
 export function initPlugins() {
+    // Left over from before these became part of Evi; a store-installed copy stays
+    for (const id of RETIRED_PLUGINS) {
+        const dir = join(PLUGINS_DIR, id);
+        if (existsSync(dir) && !existsSync(join(dir, STORE_MARKER))) rmSync(dir, { recursive: true, force: true });
+    }
+
     for (const { dir, source } of roots) {
         if (!existsSync(dir)) continue;
         for (const entry of readdirSync(dir, { withFileTypes: true })) {

@@ -8,7 +8,9 @@ import { definePlugin, Dispatcher, FluxAction } from "@evi/api";
  * The editor keeps its own text, the draft store is only the saved copy, so batching changes
  * nothing you see. Safety rules:
  *  - a newer draft for the same channel replaces the pending one
- *  - DRAFT_CLEAR (sending a message) cancels whatever is pending for that channel first
+ *  - DRAFT_SAVE and DRAFT_CLEAR cancel whatever is pending for that channel first: they're newer.
+ *    Sending a message clears the box with DRAFT_SAVE "", so without this the pending draft would
+ *    land after the send and bring the sent text back into the box.
  *  - pending drafts are written immediately when the plugin stops or the page closes
  */
 
@@ -46,7 +48,7 @@ export default definePlugin({
                 return Promise.resolve();
             }
 
-            if (action?.type === "DRAFT_CLEAR") {
+            if (action?.type === "DRAFT_SAVE" || action?.type === "DRAFT_CLEAR") {
                 const previous = pending.get(keyOf(action));
                 if (previous) {
                     clearTimeout(previous.timer);

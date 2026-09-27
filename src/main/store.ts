@@ -8,6 +8,7 @@
  * sees half a plugin.
  */
 import { imageDataUrl } from "@shared/images";
+import { cleanSwitches, StorePreviewResult } from "@shared/pluginPermissions";
 import { IPC, PluginManifest } from "@shared/ipc";
 import {
     compareVersions,
@@ -36,11 +37,11 @@ import {
 import { MAX_THEME_BYTES, whyNotCss } from "@shared/themes";
 import { ipcMain, WebContents } from "electron";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
-import { join } from "path";
+import { basename, dirname, join, resolve } from "path";
 
 import { downloadHttps } from "./download";
 import { DATA_DIR, PLUGINS_DIR, THEMES_DIR } from "./paths";
-import { refreshUserPlugin } from "./plugins";
+import { hideDevPlugin, pluginLocation, refreshUserPlugin, setRemoved } from "./plugins";
 import { reloadTheme } from "./themes";
 
 /** Outside the plugins folder, so the plugin watcher never loads a half-written plugin */
@@ -236,27 +237,41 @@ async function install(id: string, allowNative: boolean, report: (p: StoreProgre
         rmSync(staged, { recursive: true, force: true });
     }
 
+    // Installing a plugin the user removed earlier brings it back for good
+    setRemoved(id, false);
     // Don't wait for the watcher: the renderer has the plugin by the time this resolves
     refreshUserPlugin(id);
     console.log(`[Evi] Store: ${existing ? "updated" : "installed"} ${id} ${entry.version}`);
     return { ok: true, id, version: entry.version };
 }
 
+/**
+ * Removes any plugin: from the store, one Evi ships with, or one dropped into the plugins folder.
+ * Its folder is deleted, and it's remembered as removed so Evi's updates don't put it back. A plugin
+ * from the dev build output (the repo's own) can't be deleted from here, so it's hidden instead.
+ */
 function uninstall(id: string, report: (p: StoreProgress) => void): StoreResult {
-    const dir = join(PLUGINS_DIR, id);
-    const marker = readMarker(dir);
-    if (!existsSync(dir)) throw new Error(`${id} isn't installed`);
-    if (marker?.id !== id) throw new Error(`${id} wasn't installed from the store, remove its folder yourself`);
+    const loaded = pluginLocation(id);
+    // The folder of a plugin in the user plugins folder, whatever it's named
+    const inPlugins = (dir: string) => resolve(dirname(dir)) === resolve(PLUGINS_DIR);
+    const dir = loaded?.source === "user" && inPlugins(loaded.dir) ? loaded.dir
+        : existsSync(join(PLUGINS_DIR, id)) ? join(PLUGINS_DIR, id) : undefined;
+    if (!dir && loaded?.source !== "dev") throw new Error(`${id} isn't installed`);
+    const version = (dir && readMarker(dir)?.version) || loaded?.version || "";
 
     report({ id, phase: "removing", done: 0, total: 1 });
-    mkdirSync(STAGING_DIR, { recursive: true });
-    // One rename takes the whole plugin away at once, then the leftovers are deleted at leisure
-    const trash = tempName(id, "removed");
-    renameSync(dir, trash);
-    refreshUserPlugin(id);
-    rmSync(trash, { recursive: true, force: true });
-    console.log(`[Evi] Store: uninstalled ${id}`);
-    return { ok: true, id, version: marker.version };
+    if (dir) {
+        mkdirSync(STAGING_DIR, { recursive: true });
+        // One rename takes the whole plugin away at once, then the leftovers are deleted at leisure
+        const trash = tempName(id, "removed");
+        renameSync(dir, trash);
+        refreshUserPlugin(basename(dir));
+        rmSync(trash, { recursive: true, force: true });
+    }
+    setRemoved(id, true);
+    hideDevPlugin(id);
+    console.log(`[Evi] Store: removed ${id}`);
+    return { ok: true, id, version };
 }
 
 // ---- themes -----------------------------------------------------------------------------------
@@ -343,6 +358,59 @@ async function fetchImage(url: unknown): Promise<StoreImageResult> {
     return pending;
 }
 
+// ---- previews ---------------------------------------------------------------------------------
+
+const previews = new Map<string, Promise<StorePreviewResult>>();
+
+/**
+ * A plugin's manifest and renderer code before it's installed, so its store page can say what it
+ * can touch. The same download and checks as an install (registry hashes, manifest), and nothing is
+ * written anywhere. Only plugins the registry lists: the page can't fetch anything else with this.
+ */
+async function previewPlugin(id: unknown): Promise<StorePreviewResult> {
+    if (!isPluginId(id)) return { ok: false, error: "That isn't a valid plugin id" };
+    let entry: RegistryEntry;
+    try {
+        entry = await getEntry(id);
+    } catch (err) {
+        return { ok: false, error: (err as Error).message };
+    }
+
+    const key = `${id}:${entry.files["manifest.json"].sha256}:${entry.files["index.js"].sha256}`;
+    let pending = previews.get(key);
+    if (!pending) {
+        const text = async (name: "manifest.json" | "index.js") => {
+            const file = entry.files[name];
+            const download = await downloadHttps(file.url, MAX_FILE_BYTES, { what: name, cache: "no-store" });
+            if (!download.ok) throw new Error(`${name}: ${download.error}`);
+            const badHash = await whyNotHash(name, download.body, file.sha256);
+            if (badHash) throw new Error(badHash);
+            return decodeText(name, download.body);
+        };
+        pending = (async (): Promise<StorePreviewResult> => {
+            try {
+                const [manifestText, code] = await Promise.all([text("manifest.json"), text("index.js")]);
+                let manifest: any;
+                try {
+                    manifest = JSON.parse(manifestText);
+                } catch {
+                    throw new Error("manifest.json isn't valid JSON");
+                }
+                const badManifest = whyNotManifest(manifest, entry);
+                if (badManifest) throw new Error(badManifest);
+                return { ok: true, code, manifest: { native: entry.native, chromiumSwitches: cleanSwitches(manifest.chromiumSwitches) } };
+            } catch (err) {
+                return { ok: false, error: (err as Error)?.message ?? String(err) };
+            }
+        })();
+        // A few recent ones: going back and forth between store pages doesn't download again
+        if (previews.size >= 20) previews.delete(previews.keys().next().value!);
+        previews.set(key, pending);
+        pending.then(r => !r.ok && previews.delete(key));
+    }
+    return pending;
+}
+
 /** Runs one operation per item at a time and turns thrown errors into results */
 async function exclusive(id: unknown, run: (id: string) => Promise<StoreResult> | StoreResult, kind = "plugin"): Promise<StoreResult> {
     if (!isPluginId(id)) return { ok: false, error: `That isn't a valid ${kind} id` };
@@ -376,4 +444,5 @@ export function initStore() {
     ipcMain.handle(IPC.STORE_THEME_INSTALL, (e, id: unknown) => exclusive(id, id => installTheme(id, progressTo(e.sender, "theme")), "theme"));
     ipcMain.handle(IPC.STORE_THEME_UNINSTALL, (e, id: unknown) => exclusive(id, id => uninstallTheme(id, progressTo(e.sender, "theme")), "theme"));
     ipcMain.handle(IPC.STORE_IMAGE, (_, url: unknown) => fetchImage(url));
+    ipcMain.handle(IPC.STORE_PREVIEW, (_, id: unknown) => previewPlugin(id));
 }

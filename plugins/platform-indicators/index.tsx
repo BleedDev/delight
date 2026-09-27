@@ -1,0 +1,198 @@
+/**
+ * Which devices someone is on: desktop, mobile, web or a console. Each is a small outline icon in
+ * Discord's muted icon color with a status dot cut into its corner, like the dot on an avatar.
+ *
+ * - Where from: PresenceStore.getClientStatus(userId) is Discord's own `{ desktop?, mobile?, web?,
+ *   embedded? }` of statuses per device, the same data behind its mobile phone icon. Your own come
+ *   from SessionsStore, one session per logged-in client.
+ * - Profiles: added to Discord's profile badges (the same hook Evi's badges use), so they get
+ *   Discord's own tooltip and layout.
+ * - Chat: added to the message header's badge decorations, after the name.
+ * - Member list: a source patch adds them to the row's `decorators` (the crown, bot tag and boost
+ *   icons), which Discord's member row renders after the name.
+ */
+import { Components, definePlugin, filters, getStore, React } from "@evi/api";
+import type { PluginContext } from "@evi/api";
+
+/** Discord's `(displayProfile, hideLegacyUsername?) => ProfileBadge[]` */
+const profileBadgesFilter = filters.byCode("getBadges()??[]", "hidePersonalInformation");
+/** The username in a message header, with decorations = { [SYSTEM_TAG]: …, [BADGES]: [...] } */
+const usernameFilter = filters.componentByCode("withMentionPrefix", "hideSystemTag", "decorations");
+/** Discord's MessageHeaderDecorations.BADGES */
+const BADGES = 1;
+
+type Platform = "desktop" | "mobile" | "web" | "embedded";
+type Status = "online" | "idle" | "dnd";
+
+const PLATFORMS: Platform[] = ["desktop", "mobile", "web", "embedded"];
+const NAMES: Record<Platform, string> = { desktop: "desktop", mobile: "mobile", web: "the web", embedded: "a console" };
+const STATUS_NAMES: Record<Status, string> = { online: "Online", idle: "Idle", dnd: "Do Not Disturb" };
+/** Discord's status colors */
+const COLORS: Record<Status, string> = { online: "#23a55a", idle: "#f0b232", dnd: "#f23f43" };
+/** Discord's muted icon color, for profiles where the icon is an image and can't inherit it */
+const MUTED = "#949ba4";
+
+/** Outline glyphs on a 24px grid, 2px strokes */
+const GLYPHS: Record<Platform, string> = {
+    desktop: `<rect x="2.5" y="3.5" width="19" height="12.5" rx="2.5"/><path d="M12 16v4.5M8 20.5h8"/>`,
+    mobile: `<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10.5 18.5h3"/>`,
+    web: `<circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19"/><path d="M12 2.5c2.6 2.7 3.9 5.9 3.9 9.5s-1.3 6.8-3.9 9.5c-2.6-2.7-3.9-5.9-3.9-9.5S9.4 5.2 12 2.5Z"/>`,
+    embedded: `<path d="M7.5 6.5h9a5 5 0 0 1 4.9 4l.9 4.6a3.2 3.2 0 0 1-5.6 2.6L15 15.5H9l-1.7 2.2a3.2 3.2 0 0 1-5.6-2.6l.9-4.6a5 5 0 0 1 4.9-4Z"/><path d="M7.5 10v3M6 11.5h3"/><path d="M15.5 11h.01M17.5 13h.01"/>`,
+};
+
+/** The icon as SVG markup; the glyph is cut away around the status dot so the dot reads on any background */
+function svg(p: Platform, s: Status, glyph: string, maskId: string) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">`
+        + `<mask id="${maskId}"><rect width="24" height="24" fill="white"/><circle cx="19.5" cy="19.5" r="6" fill="black"/></mask>`
+        + `<g mask="url(#${maskId})" fill="none" stroke="${glyph}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${GLYPHS[p]}</g>`
+        + `<circle cx="19.5" cy="19.5" r="4" fill="${COLORS[s]}"/></svg>`;
+}
+
+const iconSrc = (p: Platform, s: Status) => `data:image/svg+xml,${encodeURIComponent(svg(p, s, MUTED, "m"))}`;
+
+const settings = {
+    showOnProfiles: { type: "boolean", label: "On profiles", description: "Next to the badges on someone's profile.", default: true },
+    showInChat: { type: "boolean", label: "In chat", description: "After the name on each message.", default: true },
+    showInMemberList: { type: "boolean", label: "In the member list", description: "After each name in a server's member list.", default: true },
+    showOwn: { type: "boolean", label: "Your own devices", description: "Show which of your own clients are online too.", default: true },
+} as const;
+
+let context: PluginContext<typeof settings> | undefined;
+
+const store = (name: string) => {
+    try {
+        return getStore(name);
+    } catch {
+        return undefined;
+    }
+};
+
+const ownId = () => store("UserStore")?.getCurrentUser?.()?.id as string | undefined;
+
+/** The devices someone is on right now, in a stable order */
+function devicesOf(userId: string | undefined): [Platform, Status][] {
+    if (!userId) return [];
+    let statuses: Partial<Record<string, string>> | undefined;
+    if (userId === ownId()) {
+        if (!context?.settings.get("showOwn")) return [];
+        // One session per logged-in client; the active status applies to all of them
+        const status = (store("PresenceStore")?.getStatus?.(userId) ?? "online") as string;
+        statuses = {};
+        for (const s of Object.values(store("SessionsStore")?.getSessions?.() ?? {}) as any[]) {
+            const client = s?.clientInfo?.client;
+            if (typeof client === "string") statuses[client] = status;
+        }
+    } else {
+        statuses = store("PresenceStore")?.getClientStatus?.(userId);
+    }
+    return PLATFORMS.flatMap(p => {
+        const s = statuses?.[p];
+        return s === "online" || s === "idle" || s === "dnd" ? [[p, s] as [Platform, Status]] : [];
+    });
+}
+
+const tooltip = (p: Platform, s: Status) => `${STATUS_NAMES[s]} on ${NAMES[p]}`;
+
+/** Bumped on every presence or settings change, so the icons re-render when someone switches devices */
+let version = 0;
+const listeners = new Set<() => void>();
+const bump = () => {
+    version++;
+    listeners.forEach(l => l());
+};
+
+function useVersion() {
+    React.useSyncExternalStore(
+        cb => {
+            listeners.add(cb);
+            return () => void listeners.delete(cb);
+        },
+        () => version,
+    );
+}
+
+function Icon({ platform, status }: { platform: Platform; status: Status; }) {
+    // Inline, so the glyph takes the surrounding icon color; each needs its own mask id
+    const id = `evi-platform-${React.useId().replace(/:/g, "")}`;
+    return <span className="evi-platform-icon" aria-label={tooltip(platform, status)} role="img" dangerouslySetInnerHTML={{ __html: svg(platform, status, "currentColor", id) }} />;
+}
+
+function Indicators({ userId, where }: { userId: string; where: "chat" | "members"; }) {
+    useVersion();
+    if (!context?.settings.get(where === "chat" ? "showInChat" : "showInMemberList")) return null;
+    const devices = devicesOf(userId);
+    if (!devices.length) return null;
+    const Tooltip = Components.Tooltip;
+    return (
+        <span className="evi-platforms" data-where={where}>
+            {devices.map(([p, s]) => {
+                const icon = <Icon platform={p} status={s} />;
+                return Tooltip
+                    ? <Tooltip key={p} text={tooltip(p, s)}><span>{icon}</span></Tooltip>
+                    : <span key={p} title={tooltip(p, s)}>{icon}</span>;
+            })}
+        </span>
+    );
+}
+
+const css = `
+.evi-platforms { display: inline-flex; align-items: center; gap: 3px; margin-inline-start: 4px; color: var(--icon-muted, #949ba4); vertical-align: -3px; }
+.evi-platforms[data-where="members"] { vertical-align: middle; }
+.evi-platforms > span { display: inline-flex; }
+.evi-platform-icon { display: inline-flex; width: 16px; height: 16px; }
+.evi-platform-icon svg { width: 100%; height: 100%; }
+`;
+
+export default definePlugin({
+    settings,
+
+    patches: [
+        {
+            // The member row: decorators:(0,i.jsx)(er,{user:p,isOwner:u,…}) → [that, ours]
+            find: "lostPermissionTooltipText",
+            replace: {
+                match: /decorators:(\(0,\i\.jsx\)\(\i,\{user:(\i),isOwner:[^}]*\}\))/,
+                with: "decorators:[$1,$self.memberIndicators($2)]",
+            },
+        },
+    ],
+
+    memberIndicators(user: { id?: string; bot?: boolean; } | null | undefined) {
+        if (!user?.id || user.bot) return null;
+        return <Indicators key="evi-platforms" userId={user.id} where="members" />;
+    },
+
+    start(ctx) {
+        context = ctx;
+        ctx.addStyle(css);
+
+        const presence = store("PresenceStore");
+        presence?.addChangeListener?.(bump);
+        ctx.onDispose(() => presence?.removeChangeListener?.(bump));
+        ctx.settings.onChange(bump);
+        bump();
+
+        ctx.hookExport("after", profileBadgesFilter, ({ args, result }) => {
+            if (!ctx.settings.get("showOnProfiles")) return;
+            const devices = devicesOf(args[0]?.userId);
+            if (!devices.length) return;
+            const ours = devices.map(([p, s]) => ({ id: `evi-platform-${p}`, description: tooltip(p, s), iconSrc: iconSrc(p, s) }));
+            return [...(Array.isArray(result) ? result : []), ...ours];
+        });
+
+        ctx.hookExport("before", usernameFilter, ({ args }) => {
+            const props = args[0];
+            const userId = props?.message?.author?.id;
+            // Only the message's own header: replies pass decorations without a BADGES slot
+            if (!userId || !props.decorations || !(BADGES in props.decorations) || props.message?.author?.bot) return;
+            const existing = props.decorations[BADGES];
+            const ours = <Indicators key="evi-platforms" userId={userId} where="chat" />;
+            args[0] = { ...props, decorations: { ...props.decorations, [BADGES]: [...(Array.isArray(existing) ? existing : existing != null ? [existing] : []), ours] } };
+        });
+    },
+
+    stop() {
+        context = undefined;
+        bump();
+    },
+});

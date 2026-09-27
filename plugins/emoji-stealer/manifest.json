@@ -1,0 +1,10 @@
+{
+    "id": "emoji-stealer",
+    "name": "Emoji Stealer",
+    "description": "Right-click a custom emoji, reaction or sticker to add it to one of your servers, with a name check and the slots each server has left. Also copies emoji links and IDs.",
+    "version": "1.0.0",
+    "authors": ["Evi"],
+    "tags": ["utility"],
+    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "enabledByDefault": false
+}

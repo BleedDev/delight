@@ -2,12 +2,15 @@
  * The store, for plugins and themes alike: a banner on top of the Plugins and Themes tabs, the
  * listing it opens (search, categories, sorting, Update all, auto-update) and a detail page per item.
  */
+import { entriesBetween } from "@shared/pluginChangelog";
 import { ListingInfo, ListingSort, RegistryEntry, sortListings, ThemeEntry } from "@shared/store";
 
 import { Settings } from "../settings";
 import { Store, StoreKind, StoreOp, UpdateAllResult } from "../store";
 import { React } from "../webpack/common";
 import { Badge, Button, Dropdown, EmptyState, FilterChips, Icon, List, Notice, SearchField, Status, SwitchRow, Text, useStore } from "./components";
+import { PluginChangelogSetting } from "./PluginChangelog";
+import { StorePluginPermissions } from "./PluginPermissions";
 
 const words = {
     plugin: { one: "plugin", many: "plugins", Store: "Plugin Store", back: "Installed plugins" },
@@ -99,7 +102,10 @@ export function StoreBanner({ kind, onOpen }: { kind: StoreKind; onOpen(): void;
                 </Text>
                 <Text variant="text-xs/medium" color="text-muted" tabular role="status">{summary}</Text>
             </div>
-            <Button variant="accent" size="md" id={`dl-open-${kind}-store`} onClick={onOpen}>{updates ? "See updates" : "Browse"}</Button>
+            <div className="dl-row-controls">
+                <Button size="md" icon="refresh" disabled={state.status === "loading"} onClick={() => Store.refresh()}>Refresh</Button>
+                <Button variant="accent" size="md" id={`dl-open-${kind}-store`} onClick={onOpen}>{updates ? "See updates" : "Browse"}</Button>
+            </div>
         </section>
     );
 }
@@ -159,6 +165,8 @@ function useItemActions(item: Item) {
     const buttons = (
         <>
             {item.fromStore && <Button disabled={busy} onClick={() => item.uninstall()}>Uninstall</Button>}
+            {/* Plugins Evi shipped with, or put in the folder by hand: removable here too */}
+            {!item.fromStore && item.kind === "plugin" && item.action === "local" && <Button disabled={busy} onClick={() => item.uninstall()}>Remove</Button>}
             {item.action === "install" && <Button variant="accent" icon="download" disabled={busy || confirming} onClick={install}>Install</Button>}
             {item.action === "update" && <Button variant="accent" icon="download" disabled={busy || confirming} onClick={install}>Update</Button>}
         </>
@@ -238,6 +246,55 @@ function StoreCard({ item, onOpen }: { item: Item; onOpen(): void; }) {
     );
 }
 
+const NOTES_SHOWN = 3;
+
+/** One pending update: what it is, old → new version, what changed, and its own Update button */
+function UpdateRow({ item }: { item: Item; }) {
+    const [expanded, setExpanded] = React.useState(false);
+    const { entry, installedVersion } = item;
+    const entries = installedVersion ? entriesBetween(entry.changelog, installedVersion, entry.version) : [];
+    const notes = entries.flatMap(e => e.notes.map(note => ({ version: e.version, note })));
+    const shown = expanded ? notes : notes.slice(0, NOTES_SHOWN);
+    const busy = item.op?.type === "busy";
+    const multiVersion = entries.length > 1;
+
+    return (
+        <li className="dl-store-update">
+            <div className="dl-store-update-head">
+                <Text variant="text-sm/semibold" color="text-strong">{entry.name}</Text>
+                <span className="dl-store-update-version">
+                    {installedVersion ? `${installedVersion} → ${entry.version}` : entry.version}
+                </span>
+                {item.native && <Badge tone="warning">Native</Badge>}
+                <span className="dl-grow" />
+                {/* Full-access plugins go through Update all, which asks first */}
+                {!item.native && (
+                    <Button size="sm" disabled={busy} onClick={() => void item.install()} aria-label={`Update ${entry.name}`}>
+                        {busy ? "Updating…" : "Update"}
+                    </Button>
+                )}
+            </div>
+            {notes.length
+                ? (
+                    <ul className="dl-store-update-notes">
+                        {shown.map(({ version, note }, i) => (
+                            <li key={i}>
+                                {multiVersion && <span className="dl-store-update-note-version">{version}</span>}
+                                {note}
+                            </li>
+                        ))}
+                    </ul>
+                )
+                : <p className="dl-hint">No release notes for this version.</p>}
+            {notes.length > NOTES_SHOWN && (
+                <button type="button" className="dl-link-button" onClick={() => setExpanded(e => !e)} aria-expanded={expanded}>
+                    {expanded ? "Show less" : `Show ${notes.length - NOTES_SHOWN} more`}
+                </button>
+            )}
+        </li>
+    );
+}
+
 /** Update all, with one question for the full-access plugins among the updates */
 function UpdateAll({ kind, items }: { kind: StoreKind; items: Item[]; }) {
     const state = useStore(Store.subscribe, Store.getSnapshot);
@@ -275,6 +332,9 @@ function UpdateAll({ kind, items }: { kind: StoreKind; items: Item[]; }) {
                     {state.updatingAll === kind ? "Updating…" : "Update all"}
                 </Button>
             </div>
+            <ul className="dl-store-update-list" aria-label="Pending updates">
+                {updates.map(item => <UpdateRow key={item.entry.id} item={item} />)}
+            </ul>
             {asking && (
                 <div className="dl-store-confirm" role="group" aria-label="Full access updates">
                     <p className="dl-store-confirm-title"><Icon name="warning" size={20} />{native.map(i => i.entry.name).join(", ")} {native.length === 1 ? "runs" : "run"} with full access to your computer</p>
@@ -402,6 +462,7 @@ export function StoreView({ kind, onBack, initialId }: { kind: StoreKind; onBack
                         onChange={Store.setAutoUpdate}
                     />
                 </li>
+                {kind === "plugin" && <PluginChangelogSetting />}
             </List>
 
             {state.registryUrl && (
@@ -497,6 +558,7 @@ function StoreDetail({ item, onBack }: { item: Item; onBack(): void; }) {
                     </Text>
                 </div>
             </section>
+            {kind === "plugin" && <StorePluginPermissions id={entry.id} version={entry.version} native={item.native} headingId={`${headingId}-permissions`} />}
 
             {entry.source && (
                 <div>

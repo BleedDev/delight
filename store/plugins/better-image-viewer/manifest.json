@@ -1,0 +1,31 @@
+{
+    "id": "better-image-viewer",
+    "name": "Better Image Viewer",
+    "description": "Discord's image viewer, but the arrows go through every image in the channel instead of stopping at the end of the message you clicked.",
+    "version": "2.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "utility"
+    ],
+    "changelog": [
+        {
+            "version": "2.0.0",
+            "notes": [
+                "Uses Discord's own image viewer again instead of replacing it, so zooming, saving, copying, forwarding and the right-click menu work as usual.",
+                "Arrows in the viewer now go through every loaded image in the channel.",
+                "Spoilers, sensitive media and images from blocked users are left out.",
+                "Removed the custom viewer, its rotate and zoom buttons and its settings."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
+}

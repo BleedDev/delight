@@ -62,6 +62,13 @@ const themesDir = join(dirname(filesDir), "themes");
 const SOURCE = "https://github.com/BleedDev/evi/tree/main";
 const today = new Date().toISOString().slice(0, 10);
 
+/**
+ * Each version of a file gets its own address: a CDN in front of the store (Cloudflare) caches files
+ * for hours, and would otherwise keep serving the old version under the new hash, failing installs.
+ * The server ignores the query.
+ */
+const versioned = (url: string, sha256: string) => `${url}?v=${sha256.slice(0, 12)}`;
+
 // Publish dates survive a rebuild: only a new version gets a new date
 const previous = new Map<string, { version: string; updatedAt?: string; }>();
 try {
@@ -85,7 +92,8 @@ for (const id of ids) {
     for (const name of STORE_FILES) {
         const path = join(dir, name);
         if (!existsSync(path)) continue;
-        files[name] = { url: `${base}/${id}/${name}`, sha256: await sha256Hex(readFileSync(path)) };
+        const sha256 = await sha256Hex(readFileSync(path));
+        files[name] = { url: versioned(`${base}/${id}/${name}`, sha256), sha256 };
     }
 
     const entry = {
@@ -145,7 +153,7 @@ for (const name of themeFiles) {
         screenshots: [],
         changelog: [],
         minEviVersion: pkg.version,
-        file: { url: `${themesBase}/${storeThemeFile(id)}`, sha256: await sha256Hex(raw) },
+        file: { url: versioned(`${themesBase}/${storeThemeFile(id)}`, await sha256Hex(raw)), sha256: await sha256Hex(raw) },
     });
     cpSync(join(themesSrc, name), join(themesDir, storeThemeFile(id)));
 }

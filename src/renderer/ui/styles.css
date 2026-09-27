@@ -1202,6 +1202,60 @@
 
 .dl-store-updates-head > svg { flex: none; color: var(--dl-text-positive); }
 
+/* What each pending update is: name, old → new version and its release notes */
+.dl-store-update-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--dl-border-group);
+}
+
+.dl-store-update {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding-block: 10px;
+}
+
+.dl-store-update + .dl-store-update { border-top: 1px solid var(--dl-border-group); }
+
+.dl-store-update-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    align-self: stretch;
+    min-block-size: 32px;
+}
+
+.dl-store-update-version {
+    font-family: var(--dl-font-code);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--dl-text-subtle);
+}
+
+.dl-store-update-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding-inline-start: 18px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--dl-text-subtle);
+    text-wrap: pretty;
+}
+
+.dl-store-update-note-version {
+    margin-inline-end: 6px;
+    font-family: var(--dl-font-code);
+    font-size: 12px;
+    color: var(--dl-text-muted);
+}
+
 
 /* The store's listing: a grid of cards, each one opening the item's page */
 .dl-store-grid {
@@ -1534,7 +1588,7 @@
 .dl-modal:focus { outline: none; }
 
 /* Wider and taller than Discord's changelog, so a whole release reads without scrolling */
-.dl-modal.dl-whats-new {
+.dl-modal:is(.dl-whats-new, .dl-plugin-whats-new) {
     inline-size: min(640px, calc(100% - 48px));
     max-block-size: min(880px, calc(100vh - 48px));
 }
@@ -1605,7 +1659,7 @@
 .dl-whats-new-notes:focus { outline: none; }
 
 /* An uppercase heading in the section's color, trailed by a rule in the same color */
-.dl-whats-new .dl-whats-new-title {
+:is(.dl-whats-new, .dl-plugin-whats-new) .dl-whats-new-title {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -1622,7 +1676,7 @@
 }
 
 /* A release without a picture starts right at its first heading */
-.dl-whats-new .dl-whats-new-title:first-child { margin-block-start: 0; }
+:is(.dl-whats-new, .dl-plugin-whats-new) .dl-whats-new-title:first-child { margin-block-start: 0; }
 
 .dl-whats-new-title::after {
     content: "";
@@ -1633,7 +1687,7 @@
 }
 
 .dl-whats-new .dl-whats-new-added { color: var(--dl-text-positive); }
-.dl-whats-new .dl-whats-new-improved { color: var(--dl-text-brand); }
+:is(.dl-whats-new, .dl-plugin-whats-new) .dl-whats-new-improved { color: var(--dl-text-brand); }
 .dl-whats-new .dl-whats-new-fixed { color: var(--dl-text-critical); }
 .dl-whats-new .dl-whats-new-progress { color: var(--dl-text-warning); }
 
@@ -1698,6 +1752,131 @@
 }
 
 .dl-store-confirm-title svg { color: var(--dl-text-warning); flex-shrink: 0; }
+
+/* ---- plugin changelogs (PluginChangelog.tsx): Evi's "What's new" modal, one section per plugin -- */
+
+.dl-plugin-whats-new-plugin + .dl-plugin-whats-new-plugin { margin-block-start: 8px; }
+
+.dl-plugin-whats-new .dl-plugin-whats-new-version { margin: 16px 0 0; }
+
+.dl-plugin-whats-new .dl-whats-new-title + .dl-plugin-whats-new-version,
+.dl-plugin-whats-new-plugin > .dl-plugin-whats-new-version:first-child { margin-block-start: 8px; }
+
+.dl-plugin-whats-new-plugin:first-child > .dl-plugin-whats-new-version:first-child { margin-block-start: 0; }
+
+.dl-plugin-whats-new-footer {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    min-inline-size: 0;
+}
+
+/* ---- plugin permissions (PluginPermissions.tsx) ---------------------------------------------- */
+
+.dl-perms {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dl-perms-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+}
+
+.dl-perms-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-perms-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+.dl-perms-item + .dl-perms-item { border-block-start: 1px solid var(--dl-border-divider); }
+
+.dl-perms-item > svg { flex: none; margin-block-start: 2px; }
+.dl-perms-item[data-risk="low"] > svg { color: var(--dl-text-positive); }
+.dl-perms-item[data-risk="medium"] > svg { color: var(--dl-text-warning); }
+.dl-perms-item[data-risk="high"] > svg { color: var(--dl-text-critical); }
+
+/* Full access to the computer stands out from everything else on the list */
+.dl-perms-item[data-risk="high"] {
+    background: var(--dl-bg-critical);
+    box-shadow: inset 2px 0 0 var(--dl-text-critical);
+}
+.dl-perms-item[data-risk="high"]:first-child { border-start-start-radius: var(--dl-radius-group); border-start-end-radius: var(--dl-radius-group); }
+.dl-perms-item[data-risk="high"]:last-child { border-end-start-radius: var(--dl-radius-group); border-end-end-radius: var(--dl-radius-group); }
+
+.dl-perms-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-inline-size: 0;
+}
+
+.dl-perms-text p { margin: 0; max-inline-size: 72ch; text-wrap: pretty; }
+
+.dl-perms-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+}
+
+/* Risk is a word, never only a color */
+.dl-perms-risk {
+    padding-inline: 6px;
+    border-radius: var(--dl-radius-round);
+    background: var(--dl-badge-bg);
+    color: var(--dl-text-subtle);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.dl-perms-risk[data-risk="medium"] { background: var(--dl-bg-warning); color: var(--dl-text-warning); }
+.dl-perms-risk[data-risk="high"] { background: var(--dl-bg-critical); color: var(--dl-text-critical); }
+
+.dl-perms-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dl-perms-detail {
+    max-inline-size: 100%;
+    padding: 1px 6px;
+    border-radius: var(--radius-xs, 4px);
+    background: var(--dl-bg-emphasis);
+    color: var(--dl-text-subtle);
+    font-family: var(--dl-font-code);
+    font-size: 12px;
+    line-height: 18px;
+    overflow-wrap: anywhere;
+}
+
+.dl-perms-note { margin: 0; max-inline-size: 72ch; text-wrap: pretty; }
+
+.dl-plugin-details > p { margin: 0; }
 
 /* ---- end store --------------------------------------------------------------------------- */
 
@@ -1820,3 +1999,49 @@
 .dl-dialog-body::-webkit-scrollbar {
     display: none;
 }
+
+/* ==== Updates tab and notice (UpdatesTab.tsx) ================================================ */
+
+.dl-update-mark {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    inline-size: 40px;
+    block-size: 40px;
+    border-radius: 50%;
+    background: var(--dl-bg-panel);
+    color: var(--dl-text-strong);
+}
+
+.dl-update .dl-update-mark {
+    inline-size: auto;
+    block-size: auto;
+    background: none;
+}
+
+/* The same card as safe mode's, without the warning colors: an update is good news */
+.dl-safe.dl-update {
+    border-color: var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-update-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-inline-size: 72ch;
+}
+
+.dl-update-notes-list {
+    margin: 0;
+    padding-inline-start: 20px;
+    list-style: disc;
+    color: var(--dl-text-default);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.dl-update-notes-list li + li { margin-block-start: 4px; }
+
+/* ==== end updates ============================================================================ */

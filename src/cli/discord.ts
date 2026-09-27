@@ -2,16 +2,12 @@ import { existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 
 import { readAsarFile } from "../shared/asar";
+import { Flavor, FLAVORS } from "../shared/release";
 import { LEGACY_SHIM_MARKERS, ORIGINAL_ASAR, SHIM_MARKER } from "../shared/shim";
 
-export const FLAVORS = {
-    stable: "Discord",
-    ptb: "DiscordPTB",
-    canary: "DiscordCanary",
-    development: "DiscordDevelopment",
-} as const;
-
-export type Flavor = keyof typeof FLAVORS;
+// Shared with the app's updater, which works out which Discord it runs in
+export { FLAVORS };
+export type { Flavor };
 
 export type InjectionState = "clean" | "evi" | "other-mod";
 

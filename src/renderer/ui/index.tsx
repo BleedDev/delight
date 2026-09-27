@@ -11,6 +11,7 @@ import { PatchHelperTab } from "./PatchHelperTab";
 import { PluginsTab } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
 import { ThemesTab } from "./ThemesTab";
+import { UpdatesTab } from "./UpdatesTab";
 import { currentRelease, WhatsNewModal } from "./WhatsNew";
 import css from "./styles.css" with { type: "text" };
 
@@ -44,6 +45,7 @@ const tabs: readonly { id: string; label: string; icon?: IconName; Component: ()
     { id: "quickcss", label: "Quick CSS", icon: "code", Component: QuickCssTab },
     { id: "backup", label: "Backup", icon: "download", Component: BackupTab },
     { id: "account", label: "Account", icon: "link", Component: AccountTab },
+    { id: "updates", label: "Updates", icon: "download", Component: UpdatesTab },
     { id: "patches", label: "Patches", icon: "wrench", Component: PatchesTab },
     { id: "patchhelper", label: "Patch Helper", icon: "beaker", Component: PatchHelperTab },
 ];

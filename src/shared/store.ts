@@ -40,6 +40,25 @@ export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 /** Marks a plugin folder as installed by the store, only those can be updated or uninstalled from it */
 export const STORE_MARKER = ".evi-store.json";
 
+/**
+ * Plugins the user removed, as a JSON array of ids in the data folder. Evi ships its official plugins
+ * and puts them back on every install and update; this is how a removed one stays removed. Installing
+ * it from the store again takes it off the list.
+ */
+export const REMOVED_PLUGINS_FILE = "removed-plugins.json";
+
+/** Official plugins that became part of Evi itself: old copies on disk are deleted, never loaded */
+export const RETIRED_PLUGINS: readonly string[] = ["badges"];
+
+export function parseRemovedPlugins(text: string): Set<string> {
+    try {
+        const list = JSON.parse(text);
+        return new Set(Array.isArray(list) ? list.filter(isPluginId) : []);
+    } catch {
+        return new Set();
+    }
+}
+
 export const STORE_FILES = ["manifest.json", "index.js", "native.js"] as const;
 export type StoreFileName = (typeof STORE_FILES)[number];
 

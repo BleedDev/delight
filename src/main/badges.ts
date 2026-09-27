@@ -3,19 +3,23 @@
  * page can't load images from other hosts), cached on disk so badges show from the first frame even
  * when the server is slow or down.
  *
+ * Live: while Discord is open, main listens on evi.rest's change stream and refetches the list the
+ * moment it changes, then pushes it to the page. If the stream can't be had, the page still polls.
+ *
  * Admin actions (the /badge command) need evi-admin.json in the data folder, { "token": "…" }. The
  * token stays in main: the page can only ask for one of a few fixed actions.
  */
-import { BadgeAdminAction, BadgeAdminResult, BadgesDocument, BadgesResult, isDiscordId, parseBadges } from "@shared/badges";
+import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
 import { imageDataUrl, imageType } from "@shared/images";
 import { IPC } from "@shared/ipc";
 import { isPluginId } from "@shared/store";
-import { ipcMain } from "electron";
+import { SUPPORTER_TIERS } from "@shared/supporter";
+import { ipcMain, net, webContents } from "electron";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { downloadHttps } from "./download";
-import { apiRequest, apiUrl } from "./evirest";
+import { apiRequest, apiUrl, getInstallId } from "./evirest";
 import { DATA_DIR } from "./paths";
 
 const CACHE_FILE = join(DATA_DIR, "cache", "badges.json");
@@ -32,6 +36,7 @@ interface Cache {
 
 let cache: Cache | undefined;
 let pending: Promise<BadgesResult> | undefined;
+let streaming = false;
 
 function readCache(): Cache | undefined {
     try {
@@ -89,7 +94,7 @@ function forPage({ doc, icons }: Cache): BadgesResult {
         const shown = ids.filter(id => id in badges);
         if (shown.length) users[user] = shown;
     }
-    return { ok: true, badges, users };
+    return { ok: true, badges, users, supporters: doc.supporters, prefs: doc.prefs };
 }
 
 async function refresh(): Promise<BadgesResult> {
@@ -102,6 +107,7 @@ async function refresh(): Promise<BadgesResult> {
             const icons = await fetchIcons(doc, cache?.icons ?? {});
             cache = { etag: res.etag, doc, icons };
             writeCache(cache);
+            broadcast(forPage(cache));
         }
     } catch (err) {
         console.warn("[Evi] Badges: using the cached list,", (err as Error).message);
@@ -120,6 +126,80 @@ function getBadges(cachedOnly = false): Promise<BadgesResult> {
     return pending;
 }
 
+/** Every Discord window gets the new list, not just the one that asked */
+function broadcast(result: BadgesResult) {
+    for (const wc of webContents.getAllWebContents()) {
+        if (!wc.isDestroyed()) wc.send(IPC.BADGES_CHANGED, result);
+    }
+}
+
+// ---- change stream ----------------------------------------------------------------------------
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+/** Everyone reconnects at once after a server restart: spread them out */
+const jitter = (ms: number) => ms / 2 + Math.random() * ms;
+
+/** One connection's life: resolves when it ends, after at least one event, or throws */
+async function listen() {
+    const res = await net.fetch(`${apiUrl()}/badges/events`, {
+        headers: { "Accept": "text/event-stream", "X-Evi-Install": getInstallId() },
+        cache: "no-store",
+    });
+    if (!res.ok || !res.body) throw Object.assign(new Error(`The change stream answered ${res.status}`), { status: res.status });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let lastData = Date.now();
+    // Pings arrive every 25 s: a silent minute means the connection died without saying so
+    const watchdog = setInterval(() => {
+        if (Date.now() - lastData > 70_000) void reader.cancel();
+    }, 10_000);
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) return;
+            lastData = Date.now();
+            buffer += decoder.decode(value, { stream: true });
+            if (buffer.length > 64 * 1024) throw new Error("The change stream sent too much at once");
+            const end = buffer.lastIndexOf("\n\n");
+            if (end < 0) continue;
+            const etags = parseBadgeEvents(buffer.slice(0, end));
+            buffer = buffer.slice(end + 2);
+            const latest = etags.at(-1);
+            // A change: fetch it after a moment, so thousands of installs don't all ask in the same instant
+            // Cloudflare may hand the ETag on as a weak one (W/"…") after compressing
+            if (latest && latest !== cache?.etag?.replace(/^W\//, "")) void sleep(Math.random() * 2000).then(() => getBadges());
+        }
+    } finally {
+        clearInterval(watchdog);
+    }
+}
+
+async function stream() {
+    if (streaming) return;
+    streaming = true;
+    let failures = 0;
+    while (true) {
+        const opened = Date.now();
+        try {
+            await listen();
+        } catch (err) {
+            // No stream on this server (an older one): polling covers it, look again much later
+            if ((err as { status?: number; }).status === 404) {
+                await sleep(jitter(30 * 60 * 1000));
+                continue;
+            }
+            console.warn("[Evi] Badges: change stream dropped,", (err as Error).message);
+        }
+        // A connection that lasted a while was healthy: start the backoff over
+        failures = Date.now() - opened > 60_000 ? 0 : failures + 1;
+        await sleep(jitter(Math.min(5_000 * 2 ** failures, 5 * 60 * 1000)));
+        // Whatever changed while we were away
+        void getBadges();
+    }
+}
+
 // ---- admin ------------------------------------------------------------------------------------
 
 function adminToken() {
@@ -135,7 +215,7 @@ async function admin(input: BadgeAdminAction): Promise<BadgeAdminResult> {
     const token = adminToken();
     if (!token) return { ok: false, error: "This install has no admin token (evi-admin.json in the data folder)" };
     const auth = { Authorization: `Bearer ${token}` };
-    const call = (method: "GET" | "PUT" | "DELETE", path: string, body?: unknown) =>
+    const call = (method: "GET" | "PUT" | "POST" | "DELETE", path: string, body?: unknown) =>
         apiRequest(method, `/admin${path}`, { headers: { ...auth, ...(body !== undefined && { "Content-Type": "application/json" }) }, body: body === undefined ? undefined : JSON.stringify(body) });
 
     const done = (message: string) => {
@@ -174,6 +254,22 @@ async function admin(input: BadgeAdminAction): Promise<BadgeAdminResult> {
                 await call(input.action === "grant" ? "PUT" : "DELETE", `/users/${input.userId}/badges/${input.badgeId}`);
                 return done(input.action === "grant" ? `Gave \`${input.badgeId}\` to <@${input.userId}>.` : `Took \`${input.badgeId}\` from <@${input.userId}>.`);
             }
+            case "supporter": {
+                if (!isDiscordId(input.userId)) return { ok: false, error: "Pick a user" };
+                const { json } = await call("PUT", `/supporters/${input.userId}`);
+                return done(`<@${input.userId}> is a supporter: ${level(json?.level)}, ${json?.days ?? 0} days.`);
+            }
+            case "time": {
+                if (!isDiscordId(input.userId)) return { ok: false, error: "Pick a user" };
+                if (!Number.isSafeInteger(input.days) || !input.days) return { ok: false, error: "Days is a whole number, like 30 or -7" };
+                const { json } = await call("POST", `/supporters/${input.userId}/time`, { days: input.days });
+                return done(`${input.days > 0 ? "Gave" : "Took"} ${Math.abs(input.days)} days ${input.days > 0 ? "to" : "from"} <@${input.userId}>: ${level(json?.level)}, ${json?.days ?? 0} days.`);
+            }
+            case "unsupport": {
+                if (!isDiscordId(input.userId)) return { ok: false, error: "Pick a user" };
+                await call("DELETE", `/supporters/${input.userId}`);
+                return done(`<@${input.userId}> isn't a supporter any more.`);
+            }
             default:
                 return { ok: false, error: "Unknown badge action" };
         }
@@ -182,8 +278,30 @@ async function admin(input: BadgeAdminAction): Promise<BadgeAdminResult> {
     }
 }
 
+/** Your own arrangement, from Discord's badge settings; evi.rest checks this install is linked to that account */
+async function setPrefs(userId: unknown, prefs: Partial<BadgePrefs> | undefined): Promise<BadgePrefsResult> {
+    if (!isDiscordId(userId) || !prefs || typeof prefs !== "object") return { ok: false, error: "Nothing to save" };
+    const body = { userId, ...(Array.isArray(prefs.order) && { order: prefs.order }), ...(Array.isArray(prefs.hidden) && { hidden: prefs.hidden }) };
+    try {
+        await apiRequest("PUT", "/me/badges", { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    } catch (err) {
+        return { ok: false, error: (err as Error).message };
+    }
+    // The stream brings the new list too; this gets it here first
+    if (cache) cache.etag = null;
+    void getBadges();
+    return { ok: true };
+}
+
+const level = (badge: unknown) => `**${SUPPORTER_TIERS.find(t => t.badge === badge)?.name ?? "Supporter"}**`;
+
 export function initBadges() {
-    ipcMain.handle(IPC.BADGES_GET, (_, cachedOnly: unknown) => getBadges(cachedOnly === true));
+    ipcMain.handle(IPC.BADGES_GET, (_, cachedOnly: unknown) => {
+        // Discord is showing badges: from now on, hear about changes as they happen
+        void stream();
+        return getBadges(cachedOnly === true);
+    });
     ipcMain.handle(IPC.BADGES_ADMIN_AVAILABLE, () => !!adminToken());
     ipcMain.handle(IPC.BADGES_ADMIN, (_, input: BadgeAdminAction) => admin(input));
+    ipcMain.handle(IPC.BADGES_SET_PREFS, (_, userId: unknown, prefs: Partial<BadgePrefs>) => setPrefs(userId, prefs));
 }

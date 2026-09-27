@@ -1,0 +1,23 @@
+{
+    "id": "hide-blocked",
+    "name": "Hide Blocked Completely",
+    "description": "Blocked users' messages disappear from chat instead of sitting behind \"N blocked messages\". Ignored users too, and optionally replies to them, the member list and voice channels. /hideblocked toggles it.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "privacy",
+        "messages"
+    ],
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
+}

@@ -79,6 +79,25 @@ describe("message logger log", () => {
         expect(log.counts()).toEqual({ deleted: 0, edited: 0, channels: 0 });
     });
 
+    test("clearChannels forgets only those channels and returns what was kept deleted in them", () => {
+        const log = new MessageLog();
+        log.markDeleted("a", "1");
+        log.addEdit("a", "2", v("x"));
+        log.markDeleted("b", "3");
+        log.addEdit("c", "4", v("y"));
+        let calls = 0;
+        log.subscribe(() => calls++);
+
+        expect(log.counts(["a", "c", "missing"])).toEqual({ deleted: 1, edited: 2, channels: 2 });
+        expect(log.clearChannels(["a", "c", "missing"])).toEqual([{ channelId: "a", id: "1" }]);
+        expect(log.channelIds()).toEqual(["b"]);
+        expect(log.counts()).toEqual({ deleted: 1, edited: 0, channels: 1 });
+        expect(calls).toBe(1);
+
+        expect(log.clearChannels(["a"])).toEqual([]);
+        expect(calls).toBe(1);
+    });
+
     test("remove forgets one message and notifies", () => {
         const log = new MessageLog();
         let calls = 0;

@@ -1,0 +1,23 @@
+{
+    "id": "voice-message-download",
+    "name": "Voice Message Download",
+    "description": "Adds Download Voice Message to the message menu of voice messages, saving the recording as an .ogg file.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "messages",
+        "utility"
+    ],
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "main": "index.js"
+}

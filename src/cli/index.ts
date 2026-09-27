@@ -4,13 +4,14 @@
  * evi status
  * evi update     [--check] [--flavor ...] [--restart]
  */
-import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 import { parseArgs } from "util";
 
 import pkg from "../../package.json";
 import { readAsarFile } from "../shared/asar";
 import { createShimAsar, ORIGINAL_ASAR } from "../shared/shim";
+import { parseRemovedPlugins, REMOVED_PLUGINS_FILE, RETIRED_PLUGINS, STORE_MARKER } from "../shared/store";
 import { DiscordInstall, findInstalls, FLAVORS, injectionState, isDiscordRunning, killDiscord, startDiscord } from "./discord";
 import { cleanupPreviousUpdate, COMPILED, downloadVerified, fetchLatestRelease, isNewer, replaceExecutable, UpdateError } from "./update";
 
@@ -91,12 +92,20 @@ async function prepareCore(): Promise<{ corePath: string; devPluginsDir?: string
     for (const [file, content] of Object.entries(embed.core)) writeFileSync(join(coreDir, file), content);
     writeFileSync(join(coreDir, "package.json"), JSON.stringify({ type: "commonjs" }));
 
-    // Official plugins are refreshed, user plugins in other folders are never touched
+    // Official plugins are refreshed, except ones the user removed; user plugins in other folders are never touched
+    const removed = existsSync(join(DATA_DIR, REMOVED_PLUGINS_FILE)) ? parseRemovedPlugins(readFileSync(join(DATA_DIR, REMOVED_PLUGINS_FILE), "utf8")) : new Set<string>();
     for (const [id, files] of Object.entries(embed.plugins)) {
+        if (removed.has(id)) continue;
         const dir = join(DATA_DIR, "plugins", id);
         rmSync(dir, { recursive: true, force: true });
         mkdirSync(dir, { recursive: true });
         for (const [file, content] of Object.entries(files)) writeFileSync(join(dir, file), content);
+    }
+
+    // Official plugins that are now part of Evi itself would show up twice
+    for (const id of RETIRED_PLUGINS) {
+        const dir = join(DATA_DIR, "plugins", id);
+        if (!existsSync(join(dir, STORE_MARKER))) rmSync(dir, { recursive: true, force: true });
     }
 
     return { corePath: join(coreDir, "main.js") };

@@ -2,6 +2,50 @@
     "schema": 1,
     "plugins": [
         {
+            "id": "better-image-viewer",
+            "name": "Better Image Viewer",
+            "description": "Discord's image viewer, but the arrows go through every image in the channel instead of stopping at the end of the message you clicked.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "2.0.0",
+            "tags": [
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/better-image-viewer/manifest.json?v=9a796b922b4c",
+                    "sha256": "9a796b922b4cca1ce2ab713c1363de4b0763603a2202f55646f6770c8fc7b4c6"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/better-image-viewer/index.js?v=e22e09fd51dc",
+                    "sha256": "e22e09fd51dc38e86a4a6b0e0a367f2b21c675c81e84f62d14d6fd090c3976a4"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/better-image-viewer",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "2.0.0",
+                    "notes": [
+                        "Uses Discord's own image viewer again instead of replacing it, so zooming, saving, copying, forwarding and the right-click menu work as usual.",
+                        "Arrows in the viewer now go through every loaded image in the channel.",
+                        "Spoilers, sensitive media and images from blocked users are left out.",
+                        "Removed the custom viewer, its rotate and zoom buttons and its settings."
+                    ]
+                },
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
             "id": "clear-urls",
             "name": "Clear URLs",
             "description": "Removes tracking parameters like utm_source and si from links before you send them.",
@@ -26,6 +70,41 @@
             },
             "updatedAt": "2026-09-26",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/clear-urls",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "emoji-stealer",
+            "name": "Emoji Stealer",
+            "description": "Right-click a custom emoji, reaction or sticker to add it to one of your servers, with a name check and the slots each server has left. Also copies emoji links and IDs.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/emoji-stealer/manifest.json?v=0870301500cd",
+                    "sha256": "0870301500cdc06b6a7dc19d3475de41e5c64ea2e7511576400acc982740b873"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/emoji-stealer/index.js?v=bdd24a2025bf",
+                    "sha256": "bdd24a2025bf985ad00dcc1e07a735700fd7812de535d4b01e8b28bffacf889f"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/emoji-stealer",
             "screenshots": [],
             "changelog": [
                 {
@@ -107,6 +186,136 @@
             ]
         },
         {
+            "id": "friend-online-alerts",
+            "name": "Friend Online Alerts",
+            "description": "Get told when the people you pick come online, with a toast, a desktop notification or a sound. Optionally when they go offline, start a game or start streaming.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "social"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/friend-online-alerts/manifest.json?v=021255ce6fb7",
+                    "sha256": "021255ce6fb73f60d97002dbccf27d453d74d70dc4632981cee48848910c864f"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/friend-online-alerts/index.js?v=01d11574fa6a",
+                    "sha256": "01d11574fa6a635463fb815f21f3854c240ce2529add3ab48ddcd0ff429b03e2"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/friend-online-alerts",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "game-activity-toggle",
+            "name": "Game Activity Toggle",
+            "description": "Show or hide the game you're playing with one click: a gamepad button next to mute and deafen, or /gameactivity.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "privacy"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/game-activity-toggle/manifest.json?v=c22c9864be55",
+                    "sha256": "c22c9864be55b896ae0a28bf2fd28ab6a0e45115d7fd2073d2437ddf6727feb9"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/game-activity-toggle/index.js?v=680ed2593dbf",
+                    "sha256": "680ed2593dbf5b57cb0c75b5b49f673f0ce167c43cb32a1b790fd4cf4b65a348"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/game-activity-toggle",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "gif-folders",
+            "name": "GIF Folders",
+            "description": "Sort your favourite GIFs into folders. All shows every favourite, Unsorted the ones not in a folder yet, and each folder its own. Right-click a GIF to add it to one, and drag the GIF picker's corner to resize it.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.2.1",
+            "tags": [
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/gif-folders/manifest.json?v=0ba598df8ccc",
+                    "sha256": "0ba598df8cccfd8c0df9ce0d31047c775da0cb50922a16b342b71cde87792a1f"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/gif-folders/index.js?v=ada0ee9a6b21",
+                    "sha256": "ada0ee9a6b211655011d9bff8f5de302da458c7f262a4f82c58ad5f2d0b967c4"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/gif-folders",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.2.1",
+                    "notes": [
+                        "All shows every favourite again, and the Unsorted tab (now on by default) shows only the GIFs that aren't in a folder.",
+                        "Removed the Hide foldered GIFs from All setting and its Show in All and search options: Unsorted does that job."
+                    ]
+                },
+                {
+                    "version": "1.2.0",
+                    "notes": [
+                        "New setting: Hide foldered GIFs from All. Once a GIF is in a folder it only shows there; tick Show in All on a folder's right-click menu to keep that folder's GIFs in All.",
+                        "New setting: Search still finds hidden GIFs, so searching in All still turns them up.",
+                        "New setting: Unsorted tab, listing the favourites that aren't in any folder yet.",
+                        "New setting: One folder per GIF, so adding a GIF to a folder moves it there.",
+                        "New setting: Show counts next to tab names.",
+                        "Fixed: tab text turned black on hover."
+                    ]
+                },
+                {
+                    "version": "1.1.0",
+                    "notes": [
+                        "Resize the GIF picker by dragging its corner. Double-click the corner to reset; the size is remembered.",
+                        "Fixed: what you typed while naming or renaming a folder didn't show."
+                    ]
+                },
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
             "id": "gpu-boost",
             "name": "GPU Zero-Copy",
             "description": "Lets the GPU read rendered tiles directly instead of copying them first (Chromium's zero-copy uploads), which can help high refresh rate displays. Discord already has GPU rendering on; this is the one extra switch it leaves off. Takes effect after restarting Discord.",
@@ -142,32 +351,220 @@
             ]
         },
         {
+            "id": "hide-blocked",
+            "name": "Hide Blocked Completely",
+            "description": "Blocked users' messages disappear from chat instead of sitting behind \"N blocked messages\". Ignored users too, and optionally replies to them, the member list and voice channels. /hideblocked toggles it.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "privacy",
+                "messages"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/hide-blocked/manifest.json?v=f4b4ca7100d5",
+                    "sha256": "f4b4ca7100d57d8bd3b5dd0a0821a8c8c81625e56dd7e4385f81ebddb6177a2d"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/hide-blocked/index.js?v=c6633c9ddf8b",
+                    "sha256": "c6633c9ddf8bb6d8332babe3134f85db17f4a1c11d168c50ad684d09e6444a80"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/hide-blocked",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "hide-personal-info",
+            "name": "Hide Personal Info",
+            "description": "Blurs your email, phone, billing details, connected accounts, session locations and IPs in User Settings, for streams and screenshots. Hover or click to reveal.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "privacy"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/hide-personal-info/manifest.json?v=5237eef823fa",
+                    "sha256": "5237eef823fa26be5058586b27acad4294d4d026e0c04095a57f5d3db6765dc0"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/hide-personal-info/index.js?v=f57aa14eda17",
+                    "sha256": "f57aa14eda17680614abbbfaa0084bd45f4964c22fb05c0c80acd79e44c045c2"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/hide-personal-info",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "inline-translate",
+            "name": "Inline Translate",
+            "description": "Translate messages right under them, from the message menu or the hover toolbar. Can translate other languages automatically as they arrive.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "messages",
+                "utility"
+            ],
+            "native": true,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/inline-translate/manifest.json?v=669ce2d7043f",
+                    "sha256": "669ce2d7043ffd7c99171846864ba8c391615d85edda3e66ebfd65702c2e4ea0"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/inline-translate/index.js?v=002d931bb72d",
+                    "sha256": "002d931bb72d89c117c64558ebb7f7e3c4d022a7f31c7d2b36fdea5d2d2d8eac"
+                },
+                "native.js": {
+                    "url": "https://evi.rest/store/plugins/inline-translate/native.js?v=3a2b891f9f14",
+                    "sha256": "3a2b891f9f1497c98cf5028e8e8d6c3f82d2af16565bfa53ec5bff8037b61370"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/inline-translate",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "last-seen",
+            "name": "Last Seen",
+            "description": "See when someone was last online and when they last sent a message, on their profile and next to offline members. Only counts what your client has seen, kept on this device.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "social"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/last-seen/manifest.json?v=b34ab3aedbcb",
+                    "sha256": "b34ab3aedbcb879fee8e7e9abf0774c91b4660f3fb4e96712607314e81794984"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/last-seen/index.js?v=95bb4fd93b32",
+                    "sha256": "95bb4fd93b320df408944bcdd3a03287c98ca614189deeeb28d7637eb91d4923"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/last-seen",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "link-safety",
+            "name": "Link Safety",
+            "description": "Checks links before they open and warns you about likely scams: masked links that lie about where they go, lookalike domains like dlscord.com or steamcommunlty.com, hidden tricks in the address, free Nitro bait and links to programs.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "privacy",
+                "security"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/link-safety/manifest.json?v=733ac396c90b",
+                    "sha256": "733ac396c90b860a4d4b2ad0526b4782ec4a47de20671a1e186298a2f172e076"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/link-safety/index.js?v=0317f801fb76",
+                    "sha256": "0317f801fb7692a1b452f44375503baf706c8f86ff8f511dc17e840e18bc5fcb"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/link-safety",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
             "id": "message-logger",
             "name": "Message Logger",
             "description": "Deleted messages stay in the chat, marked as deleted, and edited messages show what they said before. Kept in memory only: nothing is saved, and it's all gone when Discord restarts.",
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "version": "1.1.0",
             "tags": [
                 "messages"
             ],
             "native": false,
-            "minEviVersion": "0.1.0",
+            "minEviVersion": "0.2.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/message-logger/manifest.json",
-                    "sha256": "5ebdd2981e2b1f3eb46091c24d6b7d41114c9c197e1a35faaaec7d219e738c8d"
+                    "url": "https://evi.rest/store/plugins/message-logger/manifest.json?v=6d36166e19cd",
+                    "sha256": "6d36166e19cd0b56fab9eb44f3ee8df2c2ac0cf658caeaf6a10d6be76341df7f"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/message-logger/index.js",
-                    "sha256": "db44e2cf1cb56b8c484543df9f4575b9acf144b9ff425b39d83257381c5330de"
+                    "url": "https://evi.rest/store/plugins/message-logger/index.js?v=c615d59132ff",
+                    "sha256": "c615d59132ff61d7b6f51b84e087ea2144f24baa86ddc577fc693e49747e66f3"
                 }
             },
-            "updatedAt": "2026-09-26",
+            "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/message-logger",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.0",
+                    "notes": [
+                        "Right-click a channel, thread, DM or server to clear just its logged messages, without opening settings."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -216,6 +613,89 @@
             ]
         },
         {
+            "id": "permissions-viewer",
+            "name": "Permissions Viewer",
+            "description": "Adds View Permissions to user, role, channel and server menus: see every permission someone has in a channel and which role or overwrite granted or denied it.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.1.0",
+            "tags": [
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/permissions-viewer/manifest.json?v=bdb81a64f51c",
+                    "sha256": "bdb81a64f51c73af4b6de073ad668f71c99b5d1227d3a45f02522c98e1717e2f"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/permissions-viewer/index.js?v=17ea53e33f42",
+                    "sha256": "17ea53e33f4207e60b6e73c8cd59bebc4496be54029e9fb22c9dd99eef804316"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/permissions-viewer",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.1.0",
+                    "notes": [
+                        "A cleaner dialog: permissions are grouped by category, with Granted and Not granted filters, search, and role-colored sources."
+                    ]
+                },
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "platform-indicators",
+            "name": "Platform Indicators",
+            "description": "Shows whether someone is on desktop, mobile, web or a console: on their profile, next to their name in chat and in the member list.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.1.0",
+            "tags": [
+                "appearance"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/platform-indicators/manifest.json?v=e73d4e60d1f7",
+                    "sha256": "e73d4e60d1f729b836f0d3c1e8288b0876857d3ccbd1a3bf9f9396ba7e8d4585"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/platform-indicators/index.js?v=2b477500fda6",
+                    "sha256": "2b477500fda6f03f170b99b9a814624b6e77b58a8d1a97c12ec2a85a30c3aa74"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/platform-indicators",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.1.0",
+                    "notes": [
+                        "New icons: a clean outline per device with a status dot, like the one on avatars.",
+                        "Shows in the member list too, with its own setting."
+                    ]
+                },
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
             "id": "quick-actions",
             "name": "Quick Actions",
             "description": "Adds Copy Message Link, Copy Raw Text, Copy Message ID, Search Image (Google Lens, Yandex, TinEye) and Translate with Google to the message menu.",
@@ -243,6 +723,118 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/quick-actions",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "read-all",
+            "name": "Read All",
+            "description": "Mark every server as read in one click, with a button above the server list, /readall, or the server right-click menu. DMs too if you want.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/read-all/manifest.json?v=ef18898fcaa6",
+                    "sha256": "ef18898fcaa64854c01dfd2933befc97dda3d6960e924c1e9a9ab054031b0c90"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/read-all/index.js?v=af2be229d09f",
+                    "sha256": "af2be229d09f2929f36c38fa55c1726e5583d058c8289a2980c6ddc44299690c"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/read-all",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "relationship-notifier",
+            "name": "Relationship Notifier",
+            "description": "Tells you when someone removes you as a friend, declines your friend request, or removes you from a group DM or server. Kept in memory only: nothing is saved, and the log is gone when Discord restarts.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "social"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/relationship-notifier/manifest.json?v=6426f9972078",
+                    "sha256": "6426f997207840eef5f776c9a8df9fb559f31e4de896ed52c991532335eb5d87"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/relationship-notifier/index.js?v=ecc7dc11074e",
+                    "sha256": "ecc7dc11074e91c738f88ec12387d7dbb77d7ed13c1bf4f7c892b0ad81fb7f6d"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/relationship-notifier",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "show-hidden-channels",
+            "name": "Show Hidden Channels",
+            "description": "Shows the channels you can't view in the channel list, with a lock. Opening one shows its topic, settings and who can see it, never its messages.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.1",
+            "tags": [
+                "servers",
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/show-hidden-channels/manifest.json?v=0c258b3ad168",
+                    "sha256": "0c258b3ad16858c4538be85efb669feaa4e2c7745ae845aaeb63428072552ab8"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/show-hidden-channels/index.js?v=c76649584109",
+                    "sha256": "c76649584109583e19567cfab2b6f952bf6c4308389af70c249e978fd06f7fde"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/show-hidden-channels",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Fixes Discord freezing when the plugin is on."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -294,7 +886,7 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "version": "1.0.1",
             "tags": [
                 "performance"
             ],
@@ -302,16 +894,163 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/smooth-typing/manifest.json",
-                    "sha256": "e012888699fbdacafa8c02d9dd502c056fc89f5e84d6a2e370198f6ccf9bef11"
+                    "url": "https://evi.rest/store/plugins/smooth-typing/manifest.json?v=76718fad40c3",
+                    "sha256": "76718fad40c356e4d19c0175501442fdda6b60db041215edc62997e883295df6"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/smooth-typing/index.js",
-                    "sha256": "7fa6e010074f07b3f5d2d557e41755abdb2e6e000f13c915771f9376c379e62f"
+                    "url": "https://evi.rest/store/plugins/smooth-typing/index.js?v=4d608adf47a7",
+                    "sha256": "4d608adf47a7354ee2f10c2ea4835365817d9183b72ce36c43b6b6a9f8bf7687"
                 }
             },
-            "updatedAt": "2026-09-26",
+            "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/smooth-typing",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Fixed a message you just sent sometimes coming back into the text box, when you sent it right after typing."
+                    ]
+                },
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "snippets",
+            "name": "Snippets",
+            "description": "Saved replies. Pick one from the chat bar or send it with /snip, with placeholders like {user} and {date}. Right-click a message to save it as a snippet.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "messages",
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/snippets/manifest.json?v=ff27b156ad05",
+                    "sha256": "ff27b156ad0537195f986a248dfd6483815e87a7d52d3304678444d92cb1ba43"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/snippets/index.js?v=c3476e9aa4c4",
+                    "sha256": "c3476e9aa4c442d7bb7a55f7af8e3a4dde02f4d8604816e39967d60c15a85eb4"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/snippets",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "streamer-mode-plus",
+            "name": "Streamer Mode+",
+            "description": "Blurs your DMs, servers, chat images and more while you stream, with hover to reveal. Turns on when you go live, with Discord's Streamer Mode, or by hotkey and /streamerplus.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "privacy"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/streamer-mode-plus/manifest.json?v=50c8c5bec49d",
+                    "sha256": "50c8c5bec49def720aa0464c81f4c12cbb66cde75229a635aa3cc628d1706ccf"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/streamer-mode-plus/index.js?v=8af404a6b0aa",
+                    "sha256": "8af404a6b0aa1db1aeef8d27519925fe198a0f6551f34c06543e7b3707215731"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/streamer-mode-plus",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "strip-metadata",
+            "name": "Strip Metadata",
+            "description": "Removes EXIF, GPS location and other hidden metadata from JPEG, PNG and WebP images before you upload them, without re-encoding. Can also give uploads random file names.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "privacy"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/strip-metadata/manifest.json?v=c8154f567451",
+                    "sha256": "c8154f5674516088cf0bd468ead9a11497c7d728d3ba8e90337d50bfea196d3e"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/strip-metadata/index.js?v=eb5dd0121cf7",
+                    "sha256": "eb5dd0121cf7e7305321cbe7ea597485332cbfe1d51d98947f9040b6b7e14ab0"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/strip-metadata",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "timezones",
+            "name": "Timezones",
+            "description": "Set someone's timezone from their right-click menu and see their local time next to their name in chat, on their profile and in the member list. Kept on this device.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "social"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/timezones/manifest.json?v=fb47f9659926",
+                    "sha256": "fb47f9659926f454420cf6a1ca6c6b5305674fea5937cde6820d384b46ae2945"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/timezones/index.js?v=7c40893ae99a",
+                    "sha256": "7c40893ae99a6afc2612c129a15387c6866a83440ffcceda7e84431157f434ad"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/timezones",
             "screenshots": [],
             "changelog": [
                 {
@@ -356,6 +1095,147 @@
                     ]
                 }
             ]
+        },
+        {
+            "id": "video-controls-plus",
+            "name": "Video Controls+",
+            "description": "Playback speed from 0.25x to 3x, loop, frame stepping and picture-in-picture for videos in chat, plus YouTube-style keyboard shortcuts while you hover a video.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "media"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/video-controls-plus/manifest.json?v=f936ef88473b",
+                    "sha256": "f936ef88473baf86acbb2e0391db56a98732603d5ddb1b12b20d1109f8d69b62"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/video-controls-plus/index.js?v=9a82c862ff2b",
+                    "sha256": "9a82c862ff2bc83965562bc2f4aee3f1ca0a9b382f9581705bf4162e6aba520f"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/video-controls-plus",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "voice-activity-log",
+            "name": "Voice Activity Log",
+            "description": "Logs who joins and leaves the voice channel you're in, with times and how long they stayed. Open it from the Voice Connected panel or with /vclog. Memory only.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "voice"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/voice-activity-log/manifest.json?v=d4b2131987aa",
+                    "sha256": "d4b2131987aae686f20661b4f524bbfcdce1cd01c01a6ff04be67be2ae3ca0bc"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/voice-activity-log/index.js?v=fa0e78fae9e8",
+                    "sha256": "fa0e78fae9e83df6c6c8309adbf88cc0693d5527725ab3b6b35c51088902bc19"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/voice-activity-log",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "voice-message-download",
+            "name": "Voice Message Download",
+            "description": "Adds Download Voice Message to the message menu of voice messages, saving the recording as an .ogg file.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "messages",
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/voice-message-download/manifest.json?v=6e8c3e2e3704",
+                    "sha256": "6e8c3e2e3704484572f70fb030aeea2b470a33c62fa7a8051ef0973dd6854064"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/voice-message-download/index.js?v=9416e9929ae9",
+                    "sha256": "9416e9929ae9d88461e5941d17ce7bf94607b4d6b03bbc8047d7af2f8c9485ff"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/voice-message-download",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "volume-booster",
+            "name": "Volume Booster",
+            "description": "Turn people up past Discord's 200% limit. The volume slider in a user's menu and on stream tiles goes up to 400% by default, or up to 1000% if you set it higher.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "voice"
+            ],
+            "native": false,
+            "minEviVersion": "0.2.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/volume-booster/manifest.json?v=9156be8244a5",
+                    "sha256": "9156be8244a5c3c0fbeed01b89738f3c4018508f1300622beb01ce6531de5afc"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/volume-booster/index.js?v=9a5b93eb37a9",
+                    "sha256": "9a5b93eb37a9db2ab2b6dbda3fd6800e8404b1cfa3f206031b9350f783b57038"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/volume-booster",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ]
         }
     ],
     "themes": [
@@ -366,20 +1246,20 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "version": "1.1.0",
             "tags": [
                 "dark",
                 "oled",
                 "minimal"
             ],
-            "updatedAt": "2026-09-26",
+            "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/themes/midnight.css",
             "screenshots": [],
             "changelog": [],
             "minEviVersion": "0.1.0",
             "file": {
                 "url": "https://evi.rest/store/themes/midnight.css",
-                "sha256": "0ed2ce23e6d5ea3761aeca0c55e7d72caa61c7f0bec82bc274bb2e87e77b6acd"
+                "sha256": "d1e1dddacf8294f3299ff5e2053abe774dd426147cde7ab418e1be8176532ee6"
             }
         }
     ]
