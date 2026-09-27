@@ -6,6 +6,7 @@
  * use the same shell. It renders in Evi's own layer: Discord's modal layer sits under Evi's panel.
  */
 import { latestRelease, mergeReleases, Release, RELEASES_URL, releasesSince, SECTION_KINDS, SectionKind } from "@shared/changelog";
+import { versionCover } from "@shared/versionCover";
 import type { ReactNode } from "react";
 
 import { I18n, t, useLocale } from "../i18n";
@@ -100,9 +101,10 @@ function KindMark({ kind }: { kind: SectionKind; }) {
     return <svg className="dl-notes-mark" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">{paths[kind]}</svg>;
 }
 
-/** No cover for this release: the version itself on the covers' dot grid */
+/** No cover bundled for this release: its version drawn in dots, like the covers on evi.rest */
 function VersionHero({ version }: { version: string; }) {
-    return <div className="dl-notes-hero-art" aria-hidden="true"><span>{version}</span></div>;
+    const src = React.useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(versionCover(version))}`, [version]);
+    return <img className="dl-whats-new-cover" src={src} alt="" width={1200} height={675} />;
 }
 
 export function WhatsNewModal({ releases, onClose }: { releases: Release[]; onClose(): void; }) {
