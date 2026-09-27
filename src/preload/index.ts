@@ -1,5 +1,7 @@
 import type { ImportMode } from "@shared/backup";
 import { AddThemeResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, EviSettings, IPC, OpenPathTarget, PluginChange, ThemeChange } from "@shared/ipc";
+import type { AccountLinkResult, AccountStatus } from "@shared/account";
+import type { BadgeAdminAction, BadgeAdminResult, BadgesResult } from "@shared/badges";
 import type { StarKind, StarResult, StarsResult } from "@shared/stars";
 import type { StoreImageResult, StoreListing, StoreProgress, StoreResult } from "@shared/store";
 import { contextBridge, ipcRenderer, webFrame } from "electron";
@@ -29,6 +31,12 @@ const EviNative = {
     storeImage: (url: string): Promise<StoreImageResult> => ipcRenderer.invoke(IPC.STORE_IMAGE, url),
     getStars: (): Promise<StarsResult> => ipcRenderer.invoke(IPC.STARS_GET),
     setStar: (kind: StarKind, id: string, starred: boolean): Promise<StarResult> => ipcRenderer.invoke(IPC.STARS_SET, kind, id, starred),
+    getBadges: (cachedOnly = false): Promise<BadgesResult> => ipcRenderer.invoke(IPC.BADGES_GET, cachedOnly),
+    accountStatus: (): Promise<AccountStatus> => ipcRenderer.invoke(IPC.ACCOUNT_STATUS),
+    linkAccount: (): Promise<AccountLinkResult> => ipcRenderer.invoke(IPC.ACCOUNT_LINK),
+    openDashboard: (): Promise<void> => ipcRenderer.invoke(IPC.ACCOUNT_DASHBOARD),
+    badgeAdminAvailable: (): Promise<boolean> => ipcRenderer.invoke(IPC.BADGES_ADMIN_AVAILABLE),
+    badgeAdmin: (input: BadgeAdminAction): Promise<BadgeAdminResult> => ipcRenderer.invoke(IPC.BADGES_ADMIN, input),
     onStoreProgress(cb: (progress: StoreProgress) => void) {
         ipcRenderer.on(IPC.STORE_PROGRESS, (_, progress) => cb(progress));
     },

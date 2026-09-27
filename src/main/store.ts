@@ -7,6 +7,7 @@
  * and a finished plugin folder is moved into place with a single rename, so the plugin watcher never
  * sees half a plugin.
  */
+import { imageDataUrl } from "@shared/images";
 import { IPC, PluginManifest } from "@shared/ipc";
 import {
     compareVersions,
@@ -313,15 +314,6 @@ function uninstallTheme(id: string, report: (p: StoreProgress) => void): StoreRe
 
 // ---- screenshots ------------------------------------------------------------------------------
 
-/** Only raster formats, recognised by their first bytes rather than what the server claims */
-function imageType(data: Uint8Array) {
-    const starts = (...bytes: number[]) => bytes.every((b, i) => data[i] === b);
-    if (starts(0x89, 0x50, 0x4e, 0x47)) return "image/png";
-    if (starts(0xff, 0xd8, 0xff)) return "image/jpeg";
-    if (starts(0x47, 0x49, 0x46, 0x38)) return "image/gif";
-    if (starts(0x52, 0x49, 0x46, 0x46) && String.fromCharCode(...data.slice(8, 12)) === "WEBP") return "image/webp";
-}
-
 const images = new Map<string, Promise<StoreImageResult>>();
 
 /**
@@ -341,9 +333,8 @@ async function fetchImage(url: unknown): Promise<StoreImageResult> {
         pending = (async (): Promise<StoreImageResult> => {
             const download = await downloadHttps(url, MAX_IMAGE_BYTES, { what: "The image" });
             if (!download.ok) return download;
-            const type = imageType(download.body);
-            if (!type) return { ok: false, error: "Not a PNG, JPEG, GIF or WebP image" };
-            return { ok: true, dataUrl: `data:${type};base64,${Buffer.from(download.body).toString("base64")}` };
+            const dataUrl = imageDataUrl(download.body);
+            return dataUrl ? { ok: true, dataUrl } : { ok: false, error: "Not a PNG, JPEG, GIF or WebP image" };
         })();
         images.set(url, pending);
         // Failures aren't remembered, the next look tries again

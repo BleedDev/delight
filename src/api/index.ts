@@ -2,6 +2,9 @@
  * The module plugins import as "@evi/api". At runtime it is the live object below, handed to
  * plugins through their `require`; for type checking, tsconfig maps the import to this file.
  */
+export { Badges } from "../renderer/badges";
+export type { Badge } from "../renderer/badges";
+export type { BadgeAdminAction } from "../shared/badges";
 export { Logger } from "../renderer/logger";
 export { getUnhooked, hook } from "../renderer/patching/hooks";
 export type { HookCallback, HookContext, HookKind } from "../renderer/patching/hooks";
@@ -41,6 +44,8 @@ export const Components = {
     get Select() { return DiscordUI.Select.get; },
     get Slider() { return DiscordUI.Slider.get; },
     get Button() { return DiscordUI.Button.get; },
+    /** Discord's tooltip: <Tooltip text="…">{element}</Tooltip> */
+    get Tooltip() { return DiscordUI.Tooltip.get; },
 };
 
 /** Discord's __webpack_require__, undefined until the runtime has loaded */

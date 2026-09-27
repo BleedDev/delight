@@ -5,5 +5,17 @@ userplugins/*
 *.exe
 test-results/
 
+# Site
+site/.next/
+site/out/
+site/next-env.d.ts
+
 # evi.rest local database
 server/data/
+.covers/
+
+# Local secrets (Discord OAuth etc.), never committed
+.env
+.env.*
+!.env.example
+site/*.tsbuildinfo

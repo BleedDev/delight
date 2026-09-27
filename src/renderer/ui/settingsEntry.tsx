@@ -10,6 +10,7 @@ import type { ComponentType } from "react";
 import { Logger } from "../logger";
 import { hook } from "../patching/hooks";
 import { findExport, filters, waitFor } from "../webpack/find";
+import { AccountTab } from "./AccountTab";
 import { BackupTab } from "./BackupTab";
 import { ErrorBoundary } from "./components";
 import { ensureStyles } from "./index";
@@ -42,6 +43,8 @@ const iconPaths = {
     patchHelper: "M8.7 6.3a1 1 0 0 1 0 1.4L4.4 12l4.3 4.3a1 1 0 1 1-1.4 1.4l-5-5a1 1 0 0 1 0-1.4l5-5a1 1 0 0 1 1.4 0zm6.6 0a1 1 0 0 1 1.4 0l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4l4.3-4.3-4.3-4.3a1 1 0 0 1 0-1.4z",
     // Archive box
     backup: "M5 3h14a2 2 0 0 1 2 2v3H3V5a2 2 0 0 1 2-2zm-1 7h16v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9zm5 3a1 1 0 0 0 0 2h6a1 1 0 1 0 0-2H9z",
+    // Person
+    account: "M12 3a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 11c4.4 0 8 2.2 8 5v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1c0-2.8 3.6-5 8-5z",
     patches: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z",
 };
 
@@ -80,6 +83,7 @@ function buildSection(types: NodeTypes): LayoutNode {
         entry("themes", "Themes", iconPaths.themes, ThemesTab),
         entry("quickcss", "Quick CSS", iconPaths.css, QuickCssTab),
         entry("backup", "Backup", iconPaths.backup, BackupTab),
+        entry("account", "Account", iconPaths.account, AccountTab),
         entry("patches", "Patches", iconPaths.patches, PatchesTab),
         entry("patchhelper", "Patch Helper", iconPaths.patchHelper, PatchHelperTab),
     ];

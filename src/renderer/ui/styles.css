@@ -12,6 +12,7 @@
     --dl-text-positive: var(--text-feedback-positive, var(--text-positive, #23a55a));
     --dl-text-warning: var(--text-feedback-warning, var(--text-warning, #f0b232));
     --dl-text-critical: var(--text-feedback-critical, var(--text-danger, #f23f43));
+    --dl-text-brand: var(--text-brand, #949cf7);
     --dl-text-on-accent: #fff;
 
     --dl-interactive: var(--interactive-text-default, var(--interactive-normal, #b5bac1));
@@ -20,6 +21,7 @@
 
     --dl-bg-scrim: var(--background-scrim, rgb(0 0 0 / 0.7));
     --dl-bg-panel: var(--background-base-lower, var(--background-primary, #1e1f22));
+    --dl-bg-modal: var(--background-surface-high, var(--modal-background, #242429));
     --dl-bg-sidebar: var(--background-base-lowest, var(--background-secondary, #2b2d31));
     --dl-bg-group: var(--background-mod-subtle, rgb(151 151 159 / 0.12));
     --dl-bg-group-head: var(--background-mod-muted, rgb(151 151 159 / 0.08));
@@ -234,7 +236,6 @@
     min-block-size: 0;
     overflow-y: auto;
     padding: 0 32px 32px;
-    scrollbar-gutter: stable;
 }
 
 /* Inside Discord's settings panel: Discord provides the title, chrome and padding */
@@ -801,6 +802,7 @@
 .dl-text[data-variant$="/normal"] { font-weight: 400; }
 .dl-text[data-variant$="/medium"] { font-weight: 500; }
 .dl-text[data-variant$="/semibold"] { font-weight: 600; }
+.dl-text[data-variant$="/bold"] { font-weight: 700; }
 .dl-text[data-color="text-strong"] { color: var(--dl-text-strong); }
 .dl-text[data-color="text-subtle"] { color: var(--dl-text-subtle); }
 .dl-text[data-color="text-muted"] { color: var(--dl-text-muted); }
@@ -1510,45 +1512,162 @@
 
 /* ---- what's new ---------------------------------------------------------------------------- */
 
-.dl-whats-new {
+/*
+ * A copy of Discord's changelog modal. The shell is its modal at size "md", padding "sm" (measured
+ * from its CSS): 480px wide, 24px side padding, header and footer sections padded 16px above and 8px
+ * below, and the body between two spacers that grow a divider when the body scrolls.
+ */
+.dl-modal {
+    --dl-modal-padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 16px 20px 20px;
+    inline-size: min(480px, 100%);
+    max-block-size: min(800px, 100%);
+    padding-block: 8px 16px;
     border-radius: var(--dl-radius-group);
     border: 1px solid var(--dl-border-divider);
-    background: var(--dl-bg-panel);
+    background: var(--dl-bg-modal);
+    box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
+    color: var(--dl-text-default);
 }
 
-.dl-whats-new-head {
+.dl-modal:focus { outline: none; }
+
+/* Wider and taller than Discord's changelog, so a whole release reads without scrolling */
+.dl-modal.dl-whats-new {
+    inline-size: min(640px, calc(100% - 48px));
+    max-block-size: min(880px, calc(100vh - 48px));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-modal { animation: dl-panel-in var(--dl-duration-base) ease-out; }
+}
+
+.dl-modal-section {
+    flex: none;
+    padding: 16px var(--dl-modal-padding) 8px;
+}
+
+.dl-modal-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-wrap: break-word;
+}
+
+.dl-modal-header-layout { display: flex; }
+
+.dl-modal-header-main { flex: 1; min-inline-size: 0; }
+
+.dl-modal .dl-modal-header-main > h1 { margin: 0; }
+
+/* The close button sits 8px from the modal's top and end edges */
+.dl-modal-header-trailing {
+    display: flex;
+    flex: none;
+    align-items: flex-start;
+    margin-block-start: -16px;
+    margin-inline-end: calc(8px - var(--dl-modal-padding));
+    padding-inline-start: 12px;
+}
+
+.dl-modal-spacer-top { flex: none; padding-block-start: 16px; }
+.dl-modal-spacer-bottom { flex: none; padding-block-end: 8px; }
+.dl-modal-spacer-top.dl-modal-divided { border-block-end: 1px solid var(--dl-border-divider); }
+.dl-modal-spacer-bottom.dl-modal-divided { border-block-start: 1px solid var(--dl-border-divider); }
+
+.dl-modal-body {
+    flex: 0 1 auto;
+    min-block-size: 1px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.dl-modal-body-inner {
+    display: block;
+    padding-inline: var(--dl-modal-padding);
+    overflow-wrap: break-word;
+}
+
+.dl-modal-body-scrolls { padding-block: 12px; }
+
+.dl-modal-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--dl-modal-padding) 8px;
+}
+
+/* ---- what's new: Discord's changelog content ------------------------------------------------ */
+
+.dl-whats-new-notes { padding-block-end: 20px; }
+
+.dl-whats-new-notes:focus { outline: none; }
+
+/* An uppercase heading in the section's color, trailed by a rule in the same color */
+.dl-whats-new .dl-whats-new-title {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 4px;
+    margin: 24px 0 0;
+    text-transform: uppercase;
 }
 
-.dl-whats-new-head > h2 { flex: 1; margin: 0; }
-
-.dl-whats-new-body {
-    max-block-size: min(420px, 60vh);
-    overflow-y: auto;
+/* In Discord's place for its video: the release's blog cover, 24px above the first heading */
+.dl-whats-new-cover {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    border-radius: var(--radius-xs, 4px);
 }
 
-/* Inside the Evi panel: over the content, closed by clicking beside it */
-.dl-panel { position: relative; }
+/* A release without a picture starts right at its first heading */
+.dl-whats-new .dl-whats-new-title:first-child { margin-block-start: 0; }
 
-.dl-whats-new-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    background: var(--dl-bg-scrim);
+.dl-whats-new-title::after {
+    content: "";
+    flex: 1 1 auto;
+    block-size: 1px;
+    opacity: 0.6;
+    background-color: currentColor;
 }
 
-.dl-whats-new-overlay > .dl-whats-new {
-    inline-size: min(520px, 100%);
-    box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
+.dl-whats-new .dl-whats-new-added { color: var(--dl-text-positive); }
+.dl-whats-new .dl-whats-new-improved { color: var(--dl-text-brand); }
+.dl-whats-new .dl-whats-new-fixed { color: var(--dl-text-critical); }
+.dl-whats-new .dl-whats-new-progress { color: var(--dl-text-warning); }
+
+.dl-whats-new-list {
+    margin: 4px 0 4px 20px;
+    padding: 0;
+    list-style: disc;
+}
+
+.dl-whats-new-item {
+    margin-block-end: 16px;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.25;
+}
+
+.dl-whats-new-footer {
+    display: flex;
+    flex: 1;
+    min-inline-size: 0;
+}
+
+.dl-whats-new-social {
+    display: flex;
+    margin-inline-end: 16px;
+    border-radius: 4px;
+    color: var(--primary-300, #b5bac1);
+}
+
+.theme-light .dl-whats-new-social { color: var(--primary-500, #4e5058); }
+
+.dl-whats-new-social:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
 }
 
 .dl-version-link:hover { text-decoration-color: var(--dl-text-muted); }
@@ -1632,4 +1751,72 @@
     margin: 0;
     padding: 0;
     background: none;
+}
+
+/* ---- account ------------------------------------------------------------------------------- */
+
+.dl-account-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--dl-border-group);
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-account-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.dl-account-avatar {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    /* Shows as a plain circle if Discord's image can't load */
+    background: var(--dl-bg-emphasis);
+    color: transparent;
+}
+
+.dl-account-waiting {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.dl-account-code {
+    font-family: var(--font-code, ui-monospace, Consolas, monospace);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--dl-text-strong);
+    user-select: all;
+}
+
+.dl-account-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* No scrollbars in Evi's own UI: the wheel, trackpad and keyboard still scroll everything */
+.dl-sidebar,
+.dl-body,
+.dl-code,
+.dl-modal-body,
+.dl-dialog-body {
+    scrollbar-width: none;
+}
+
+.dl-sidebar::-webkit-scrollbar,
+.dl-body::-webkit-scrollbar,
+.dl-code::-webkit-scrollbar,
+.dl-modal-body::-webkit-scrollbar,
+.dl-dialog-body::-webkit-scrollbar {
+    display: none;
 }

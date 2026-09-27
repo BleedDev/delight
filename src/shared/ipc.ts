@@ -39,6 +39,14 @@ export const IPC = {
     /** store stars: every count plus this install's own, and starring or unstarring one item */
     STARS_GET: "evi:stars-get",
     STARS_SET: "evi:stars-set",
+    /** badges with their icons as data URLs; whether this install may manage them; managing them */
+    BADGES_GET: "evi:badges-get",
+    BADGES_ADMIN_AVAILABLE: "evi:badges-admin-available",
+    BADGES_ADMIN: "evi:badges-admin",
+    /** who this install is linked to on evi.rest; starting a link (opens the site to confirm it) */
+    ACCOUNT_STATUS: "evi:account-status",
+    ACCOUNT_LINK: "evi:account-link",
+    ACCOUNT_DASHBOARD: "evi:account-dashboard",
     /** main -> renderer: download / install progress of a store operation */
     STORE_PROGRESS: "evi:store-progress",
     OPEN_PATH: "evi:open-path",
