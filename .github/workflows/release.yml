@@ -71,8 +71,14 @@ jobs:
           unzip -q rcodesign.zip -d rcodesign
           echo "RCODESIGN=$(find "$PWD/rcodesign" -name rcodesign.exe)" >> "$GITHUB_ENV"
 
-      # Every installer and its .sha256
+      # Every installer and its .sha256. Bun downloads the other systems' runtimes and moves them
+      # into its cache; on the runner the checkout is on D: and the cache and temp on C:, and those
+      # moves fail ("Failed to extract executable"). Keep all of it on the checkout's drive.
       - run: bun scripts/build.ts --release
+        env:
+          BUN_INSTALL_CACHE_DIR: ${{ runner.temp }}/bun-cache
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
       - run: bun scripts/test-cli.ts --exe
       - run: cat dist/*.sha256
 
