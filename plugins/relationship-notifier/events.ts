@@ -40,6 +40,36 @@ export interface Lookup {
     guildName(guildId: string): string | undefined;
 }
 
+/**
+ * A Lookup over Discord's stores that finds each store only when a question needs it. Most actions
+ * that reach `decide` (a server channel deleted, a server going unavailable) are settled by one
+ * store, so the others aren't looked up for them.
+ */
+export function storeLookup(store: (name: string) => any): Lookup {
+    const cache = new Map<string, any>();
+    const get = (name: string) => {
+        if (!cache.has(name)) cache.set(name, store(name));
+        return cache.get(name);
+    };
+    return {
+        get currentUserId() {
+            return get("UserStore")?.getCurrentUser?.()?.id;
+        },
+        relationshipType: id => get("RelationshipStore")?.getRelationshipType?.(id),
+        userName: id => {
+            const nick = get("RelationshipStore")?.getNickname?.(id);
+            if (nick) return nick;
+            const user = get("UserStore")?.getUser?.(id);
+            return user ? user.globalName ?? user.global_name ?? user.username : undefined;
+        },
+        channel: id => {
+            const channel = get("ChannelStore")?.getChannel?.(id);
+            return channel ? { type: channel.type, name: channel.name, recipients: channel.recipients } : undefined;
+        },
+        guildName: id => get("GuildStore")?.getGuild?.(id)?.name,
+    };
+}
+
 export type Scope = "relationship" | "channel" | "guild";
 
 /** How long something you did yourself waits for Discord's matching event */

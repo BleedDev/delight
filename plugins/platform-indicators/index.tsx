@@ -170,8 +170,18 @@ function diff(all = false) {
     }
 }
 
-/** Several presence changes in one dispatch are checked once */
-const diffSoon = () => void (diffTimer ??= setTimeout(diff, 0));
+/**
+ * How long presence changes are gathered before the icons on screen are checked. PresenceStore
+ * changes with every presence update in every server, dozens of times a second in big ones: each
+ * check reads every icon's person again, so they're batched instead of run once per update.
+ */
+const DIFF_DELAY_MS = 250;
+
+/** Checks the icons on screen soon, once for all the presence changes until then */
+const diffSoon = () => {
+    if (!listeners.size) return;
+    diffTimer ??= setTimeout(diff, DIFF_DELAY_MS);
+};
 
 function useDevice(userId: string) {
     const sub = React.useCallback((cb: () => void) => subscribe(userId, cb), [userId]);

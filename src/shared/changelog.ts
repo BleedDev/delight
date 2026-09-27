@@ -33,6 +33,22 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.6.0",
+        date: "2026-09-27",
+        sections: {
+            improved: [
+                "**No more stutters from Evi.** Finding Discord's parts used to search all of Discord's code, 10 to 20 ms at a time, and a missing one was searched again every second. Now it's found once, and every later look is instant.",
+                "**Plugins do their heavy work in small pieces,** between everything else: Fast Lists, Read All, GIF Folders and Last Seen's saving no longer hold Discord up.",
+                "**Show Hidden Channels remembers who can see what,** instead of asking again for every channel on every redraw.",
+                "**Faster Message Logger, Inline Translate, Platform Indicators, Voice Activity Log, Relationship Notifier, Hide Blocked, Timezones, Friend Online Alerts, Streamer Mode+, Silent Typing and Snippets.**",
+                "The background plugin health check is much lighter.",
+            ],
+            fixed: [
+                "**A plugin Evi turns off everywhere goes off within seconds,** with a notice, instead of at the next half-hourly check or restart.",
+            ],
+        },
+    },
+    {
         version: "0.5.3",
         date: "2026-09-27",
         sections: {
@@ -202,4 +218,18 @@ export function mergeReleases(releases: Release[]): Release {
     }
     const cover = releases.find(r => r.cover)?.cover;
     return { version: releases[0].version, date: releases[0].date, ...cover && { cover }, sections };
+}
+
+const NOTES_HEADINGS: Record<SectionKind, string> = { added: "New", improved: "Improved", fixed: "Fixed", progress: "In progress" };
+
+/**
+ * A release's notes as the markdown on its GitHub release, which Evi's Updates tab, `evi update` and
+ * evi.rest's releases page all show. Written by the release workflow (scripts/release-notes.ts), so
+ * the entry here is the only place a release's notes are written.
+ */
+export function releaseMarkdown(release: Release) {
+    return SECTION_KINDS
+        .filter(kind => release.sections[kind]?.length)
+        .map(kind => `## ${NOTES_HEADINGS[kind]}\n${release.sections[kind]!.map(line => `- ${line}`).join("\n")}`)
+        .join("\n\n") + "\n";
 }

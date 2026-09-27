@@ -142,6 +142,16 @@ describe("skip rules", () => {
         expect(translatableText("<@1> **mira** esto! https://x.com 😀")).toBe("mira esto");
     });
 
+    test("answers stay right when asked again and after the cache fills up", () => {
+        for (let round = 0; round < 2; round++) {
+            expect(isTranslatable("hola amigo")).toBe(true);
+            expect(isTranslatable("`code only`")).toBe(false);
+        }
+        for (let i = 0; i < 1500; i++) expect(isTranslatable(`${i} ${i % 2 ? "ok" : "!"}`)).toBe(i % 2 === 1);
+        expect(isTranslatable("hola amigo")).toBe(true);
+        expect(isTranslatable("`code only`")).toBe(false);
+    });
+
     test("script hints only rule out what certainly doesn't match", () => {
         expect(mightBeIn("hello there", ["ja", "ko"])).toBe(false);
         expect(mightBeIn("こんにちは", ["ja"])).toBe(true);

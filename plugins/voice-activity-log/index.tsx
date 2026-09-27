@@ -3,14 +3,15 @@ import type { CloseLayer, FluxAction, PluginContext } from "@evi/api";
 
 import {
     describe, FILTERS, filterEntries, formatClock, formatDuration, formatLine, formatSessions, KindFilter, LogEntry, Move, PATCHES,
-    Session, shouldToast, snapshotOf, stayNote, VoiceLog,
+    Session, shouldToast, snapshotOf, stayNote, touchesSession, VoiceLog,
 } from "./log";
 
 /**
  * Logs who comes and goes in the voice channel you're in. No polling:
  *  - a Flux subscription on VOICE_STATE_UPDATES (and PASSIVE_UPDATE_V2) runs after the stores
  *    applied the action, so VoiceStateStore.getVoiceStatesForChannel is already up to date. The
- *    payload's oldChannelId / channelId tell a move from a join or leave;
+ *    payload's oldChannelId / channelId tell a move from a join or leave. Updates about other channels
+ *    are skipped without reading the stores (touchesSession);
  *  - a SelectedChannelStore change listener catches you joining, switching or leaving, which
  *    start and end sessions (getVoiceChannelId).
  * Diffing and wording live in log.ts. The "log" button sits in the Voice Connected panel, left of
@@ -447,9 +448,23 @@ export default definePlugin({
             context = undefined;
         });
 
-        const onVoiceStates = (action: FluxAction) => sync(movesOf(action));
+        /** The session you're in, while you're still in its channel: updates elsewhere can't change it */
+        const settled = () => {
+            const session = current.current;
+            const channelId = (selectedChannels ??= store("SelectedChannelStore"))?.getVoiceChannelId?.() ?? null;
+            return session && session.channelId === channelId ? session : undefined;
+        };
+        const onVoiceStates = (action: FluxAction) => {
+            const session = settled();
+            if (session && !touchesSession(action.voiceStates, session.channelId, session.snapshot, selfId())) return;
+            sync(movesOf(action));
+        };
         ctx.flux.subscribe("VOICE_STATE_UPDATES", onVoiceStates);
-        ctx.flux.subscribe("PASSIVE_UPDATE_V2", () => sync());
+        ctx.flux.subscribe("PASSIVE_UPDATE_V2", (action: FluxAction) => {
+            const session = settled();
+            if (session && session.guildId && action.guildId && action.guildId !== session.guildId) return;
+            sync();
+        });
 
         // You joining, switching or leaving. Only a different channel counts: the store also emits
         // while voice states are being reloaded, and those are diffed on VOICE_STATE_UPDATES

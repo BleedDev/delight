@@ -153,8 +153,9 @@ function setWatchList(list: string[]) {
     bump();
 }
 
-function watched(id: string) {
-    return !!ctx && isWatched(id, watchList(), ctx.settings.get("watchAllFriends"), isFriend, selfId());
+/** `list`: the watch list, read once by callers checking many people (it's validated on each read) */
+function watched(id: string, list: ReadonlySet<string> | readonly string[] = watchList()) {
+    return !!ctx && isWatched(id, list, ctx.settings.get("watchAllFriends"), isFriend, selfId());
 }
 
 function toggle(id: string) {
@@ -245,8 +246,10 @@ function flush() {
     if (!ctx) return pending.clear();
     const now = Date.now();
     const cfg = config();
+    // A presence burst can hold thousands of people: read the list once, not once each
+    const list = new Set(watchList());
     for (const id of pending) {
-        if (!watched(id)) continue;
+        if (!watched(id, list)) continue;
         for (const alert of engine.observe(id, snapshot(id), now, cfg)) deliver(alert);
     }
     pending.clear();

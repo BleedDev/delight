@@ -102,6 +102,8 @@ function pluginEntry(b: ReturnType<typeof ProfileBadges.forUser>[number]) {
     };
 }
 
+const sameItems = (a: readonly unknown[], b: readonly unknown[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+
 /** Discord's stores, found once: the badge hooks run on every profile render */
 let profileSettingsStore: any;
 let userStore: any;
@@ -151,6 +153,8 @@ export function installBadgeSettings(ctx: PluginContext) {
         return entries;
     }
 
+    const directoryCache = new Map<string, { theirs: readonly any[]; ours: any[]; plugins: any[]; order: BadgePrefs["order"]; list: any[]; }>();
+
     ctx.waitFor(filters.byStoreName("BadgeDirectoryStore"), (store: any) => {
         ctx.hook.after(store, "getBadges", ({ args, result }) => {
             const userId: string | undefined = args[0] ?? me();
@@ -159,8 +163,15 @@ export function installBadgeSettings(ctx: PluginContext) {
             const plugins = pluginEntriesFor(userId);
             if (!ours.length && !plugins.length) return;
             const theirs = Array.isArray(result) ? result : [];
-            const arranged = ours.length ? arrange(theirs, ours, e => e.badge_id.slice(EVI_PREFIX.length), e => typeof e?.badge_id === "number" ? e.badge_id : undefined, Badges.prefsFor(userId).order) : theirs;
-            return plugins.length ? [...arranged, ...plugins] : arranged;
+            const order = Badges.prefsFor(userId).order;
+            // Discord's badge screens compare the list by identity: while nothing changed, the same array goes back
+            const previous = directoryCache.get(userId);
+            if (previous && previous.ours === ours && previous.plugins === plugins && previous.order === order && sameItems(previous.theirs, theirs)) return previous.list;
+            const arranged = ours.length ? arrange(theirs, ours, e => e.badge_id.slice(EVI_PREFIX.length), e => typeof e?.badge_id === "number" ? e.badge_id : undefined, order) : theirs;
+            const list = plugins.length ? [...arranged, ...plugins] : arranged;
+            if (directoryCache.size >= 200) directoryCache.clear();
+            directoryCache.set(userId, { theirs, ours, plugins, order, list });
+            return list;
         });
         ctx.hook.after(store, "getBadgeById", ({ args, result }) => {
             if (result != null || typeof args[0] !== "string" || !args[0].startsWith(EVI_PREFIX)) return;

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { Replacement, SourcePatch } from "../src/renderer/patching/source";
 import { canonicalizeMatch, matchesFind } from "../src/renderer/patching/source";
 import {
-    BLOCKED_GROUP, filterMessages, filterVoiceStates, hiddenKind, IGNORED_GROUP, isHiddenUser, PATCHES, REPLY_TYPE, repliesToHidden,
+    BLOCKED_GROUP, createReplyTracker, filterMessages, filterVoiceStates, hiddenKind, IGNORED_GROUP, isHiddenUser, PATCHES, REPLY_TYPE, repliesToHidden,
     shouldHideMemberRow, shouldHideMessage,
 } from "../plugins/hide-blocked/filter";
 import type { HideOptions, Lookups, MessageLike, RelationshipLike } from "../plugins/hide-blocked/filter";
@@ -175,6 +175,33 @@ function makeSelf(options: HideOptions, lookups: Lookups = {}) {
         get versionCalls() { return versionCalls; },
     };
 }
+
+describe("hide blocked: reply tracker", () => {
+    test("a referenced-message change only counts when a message the stream asked about changed", () => {
+        const store = new Map<string, { message?: MessageLike | null; }>();
+        const tracker = createReplyTracker(ref => store.get(ref.message_id!));
+        const ref = { channel_id: "c", message_id: "1" };
+        // Asked while it wasn't loaded yet
+        expect(tracker.referenced(ref)).toBeUndefined();
+        // Something else anywhere loaded: nothing to rebuild
+        store.set("2", { message: { id: "2" } });
+        expect(tracker.changed()).toBe(false);
+        // The one asked about loaded: rebuild once
+        const loaded = { message: { id: "1", author: { id: "blocked" } } };
+        store.set("1", loaded);
+        expect(tracker.changed()).toBe(true);
+        expect(tracker.changed()).toBe(false);
+        // Deleted: rebuild again
+        store.delete("1");
+        expect(tracker.changed()).toBe(true);
+    });
+
+    test("stays bounded", () => {
+        const tracker = createReplyTracker(() => undefined, 3);
+        for (let i = 0; i < 10; i++) tracker.referenced({ channel_id: "c", message_id: String(i) });
+        expect(tracker.size).toBeLessThanOrEqual(3);
+    });
+});
 
 describe("hide blocked: channel stream patch", () => {
     const blocked = (m: FakeMessage) => ({ ...m, blocked: true });

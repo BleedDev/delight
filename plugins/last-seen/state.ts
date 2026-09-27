@@ -5,7 +5,7 @@
 import { getStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
-import { DEFAULT_CAP, describe, isIgnored, isOnlineStatus, lineText, PRUNE_SLACK, serialize } from "./track";
+import { DEFAULT_CAP, describe, isIgnored, isOnlineStatus, lineText, pack, PRUNE_SLACK } from "./track";
 import type { Entry, Options, Tracker } from "./track";
 
 export const settings = {
@@ -281,7 +281,7 @@ export async function save() {
     if (!state.dirty || !state.loaded) return;
     state.dirty = false;
     try {
-        await dbPut(serialize(state.tracker, Date.now()));
+        await dbPut(pack(state.tracker, Date.now()));
     } catch (e) {
         state.dirty = true;
         state.context?.logger.error("Couldn't save", e);

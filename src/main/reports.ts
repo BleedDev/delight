@@ -26,6 +26,7 @@ import { app, ipcMain, webContents } from "electron";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
+import { onPullsAnnounced } from "./badges";
 import { apiRequest, apiUrl } from "./evirest";
 import { DATA_DIR, PLUGINS_DIR } from "./paths";
 
@@ -210,5 +211,8 @@ export function initReports() {
     void app.whenReady().then(() => {
         setTimeout(() => void getHealth(), PULLS_FIRST_AFTER);
         setInterval(() => void getHealth(), PULLS_EVERY);
+        // evi.rest says so the moment a plugin is pulled: asked for within a few seconds, spread out so
+        // every install doesn't ask in the same instant
+        onPullsAnnounced(() => void new Promise(resolve => setTimeout(resolve, Math.random() * 5000)).then(() => getHealth()));
     });
 }

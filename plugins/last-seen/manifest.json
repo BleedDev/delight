@@ -2,11 +2,12 @@
     "id": "last-seen",
     "name": "Last Seen",
     "description": "See when someone was last online, last active and last sent a message: on their profile, next to offline members, in your friends list and in your DMs. Only counts what your client has seen, kept on this device.",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "authors": ["Evi"],
     "tags": ["social"],
     "minEviVersion": "0.4.0",
     "changelog": [
+        { "version": "1.1.3", "notes": ["Faster: saving what it has seen no longer makes Discord hitch every 30 seconds with a lot of people remembered."] },
         { "version": "1.1.2", "notes": ["Faster: opening channels and DMs no longer waits on Last Seen, and a change only redraws the lines of the person it is about."] },
         { "version": "1.1.1", "notes": ["The last seen clock shows in Discord's badge directory (Your badges) too."] },
         {

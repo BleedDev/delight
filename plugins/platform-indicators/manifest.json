@@ -2,11 +2,12 @@
     "id": "platform-indicators",
     "name": "Platform Indicators",
     "description": "Shows whether someone is on desktop, mobile, web or a console: on their profile, next to their name in chat and in the member list.",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "authors": ["Evi"],
     "tags": ["appearance"],
     "minEviVersion": "0.4.0",
     "changelog": [
+        { "version": "1.2.2", "notes": ["Faster: in busy servers, presence updates are checked together a few times a second instead of one by one."] },
         { "version": "1.2.1", "notes": ["Faster: an icon only redraws when that person switches devices, and places you turned off get no icons at all."] },
         { "version": "1.2.0", "notes": ["One icon per person, for the device they're actually on. A web session left open in the background no longer shows next to their desktop app.", "The device shows in Discord's badge directory (Your badges) too."] },
         { "version": "1.1.0", "notes": ["New icons: a clean outline per device with a status dot, like the one on avatars.", "Shows in the member list too, with its own setting."] },

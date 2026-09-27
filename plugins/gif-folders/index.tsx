@@ -564,7 +564,13 @@ export default definePlugin({
         ctx = context;
         state = parseState(storage()?.get(STORAGE_KEY));
         active = null;
-        prune();
+        // Drops GIFs that are no longer favourites. When the browser is idle: finding Discord's
+        // settings store the first time walks every loaded module, and opening the picker prunes too
+        const idle = typeof requestIdleCallback === "function"
+            ? requestIdleCallback(() => ctx === context && prune(), { timeout: 10_000 })
+            : undefined;
+        if (idle !== undefined) context.onDispose(() => cancelIdleCallback(idle));
+        else prune();
         // The picker re-filters when these change
         context.settings.onChange(notify);
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { BULK_ACK_LIMIT, chunk, collectUnread, countGuilds, summary, toAck } from "../plugins/read-all/collect";
+import { BULK_ACK_LIMIT, chunk, collectUnread, collectUnreadSteps, countGuilds, summary, toAck } from "../plugins/read-all/collect";
 import type { ReadStores } from "../plugins/read-all/collect";
 
 const ch = (id: string) => ({ id });
@@ -68,6 +68,21 @@ describe("read all: collecting", () => {
         expect(asked).toEqual(["c"]);
         // Without the option (marking read), every channel is still checked
         expect(collectUnread(stores).map(r => r.channelId)).toEqual(["a", "c"]);
+    });
+
+    test("the stepped count pauses after each server it looks at and ends with the same result", () => {
+        const stores = makeStores({ a: { unread: true }, v: { mentions: 2 }, c: { unread: true }, t2: { unread: true }, dm1: { unread: true } });
+        const steps = collectUnreadSteps(stores, { includeDms: true });
+        let pauses = 0;
+        let step = steps.next();
+        for (; !step.done; step = steps.next()) pauses++;
+        expect(pauses).toBe(3);
+        expect(step.value).toEqual(collectUnread(stores, { includeDms: true }));
+        // Servers skipped as read cost no pause
+        stores.GuildReadStateStore = { hasUnread: id => id === "g2", getMentionCount: () => 0 };
+        const skipping = collectUnreadSteps(stores, { skipReadGuilds: true });
+        expect(skipping.next().done).toBe(false);
+        expect(skipping.next().done).toBe(true);
     });
 
     test("skipReadGuilds: mentions count, muted-inclusive check preferred, unknown means look", () => {

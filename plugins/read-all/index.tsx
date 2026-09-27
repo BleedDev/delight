@@ -1,8 +1,8 @@
 import { Components, definePlugin, Dispatcher, findStore, Menu, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
-import { chunk, collectUnread, countGuilds, summary, toAck } from "./collect";
-import type { ReadStores } from "./collect";
+import { chunk, collectUnread, collectUnreadSteps, countGuilds, summary, toAck } from "./collect";
+import type { ReadStores, UnreadChannel } from "./collect";
 
 /**
  * Marking read is Discord's own BULK_ACK action, the one "Mark as read" on a folder dispatches:
@@ -15,7 +15,8 @@ import type { ReadStores } from "./collect";
  * [home and DMs, separator, servers], and ours goes in right before the servers. It's a round icon
  * like the servers around it, and only shows while something is unread: the count is recomputed
  * once ReadStateStore has been quiet for 1.5 seconds and the browser is idle, so a burst of
- * messages costs one pass, not one each. That pass skips servers GuildReadStateStore says are read.
+ * messages costs one pass, not one each. That pass skips servers GuildReadStateStore says are read,
+ * and goes a few servers per idle moment, so it never holds up a frame.
  */
 
 type Settings = typeof settings;
@@ -75,19 +76,51 @@ async function readAllWithToast() {
 
 /** Unread channels right now, kept up to date while the plugin runs */
 let unreadCount = 0;
+/** The "Server list button" setting, kept here so the button doesn't redraw on every settings write */
+let showButton = true;
 const listeners = new Set<() => void>();
 let recountTimer: ReturnType<typeof setTimeout> | undefined;
 let cancelIdle: (() => void) | undefined;
+/** A count in progress, spread over idle moments, and whether the stores changed since it began */
+let counting: Generator<void, UnreadChannel[], void> | undefined;
+let countAgain = false;
+/** Longest a count runs before waiting for the next idle moment */
+const SLICE_MS = 5;
 
-/** Servers Discord says have nothing unread are skipped: only the rest have their channels counted */
-function recount() {
-    recountTimer = undefined;
-    cancelIdle = undefined;
-    const s = stores();
-    const next = s && context ? collectUnread(s, { includeDms: context.settings.get("includeDms"), skipReadGuilds: true }).length : 0;
+function setUnreadCount(next: number) {
     if (next === unreadCount) return;
     unreadCount = next;
     listeners.forEach(l => l());
+}
+
+/**
+ * Servers Discord says have nothing unread are skipped: only the rest have their channels counted.
+ * Runs a few servers per idle moment, so hundreds of unread servers never hold up a frame.
+ */
+function recount(deadline?: IdleDeadline) {
+    cancelIdle = undefined;
+    const s = stores();
+    if (!s || !context) {
+        counting = undefined;
+        return setUnreadCount(0);
+    }
+    counting ??= collectUnreadSteps(s, { includeDms: context.settings.get("includeDms"), skipReadGuilds: true });
+    const until = performance.now() + Math.min(SLICE_MS, Math.max(1, deadline?.timeRemaining?.() ?? SLICE_MS));
+    for (; ;) {
+        const step = counting.next();
+        if (step.done) {
+            counting = undefined;
+            setUnreadCount(step.value.length);
+            // Something changed while counting: servers counted early may be out of date
+            if (countAgain) {
+                countAgain = false;
+                cancelIdle = whenIdle(recount);
+            }
+            return;
+        }
+        if (performance.now() >= until) break;
+    }
+    cancelIdle = whenIdle(recount);
 }
 
 /**
@@ -98,12 +131,12 @@ const RECOUNT_AFTER = 1500;
 const RECOUNT_WITHIN = 5000;
 let firstChange = 0;
 
-function whenIdle(fn: () => void): () => void {
+function whenIdle(fn: (deadline?: IdleDeadline) => void): () => void {
     if (typeof requestIdleCallback === "function") {
         const handle = requestIdleCallback(fn, { timeout: 1000 });
         return () => cancelIdleCallback(handle);
     }
-    const handle = setTimeout(fn, 0);
+    const handle = setTimeout(() => fn(), 0);
     return () => clearTimeout(handle);
 }
 
@@ -115,18 +148,19 @@ function scheduleRecount() {
     clearTimeout(recountTimer);
     recountTimer = setTimeout(() => {
         recountTimer = undefined;
+        if (counting) countAgain = true;
         cancelIdle ??= whenIdle(recount);
     }, RECOUNT_AFTER);
 }
 
-function useUnreadCount() {
-    return React.useSyncExternalStore(
-        cb => {
-            listeners.add(cb);
-            return () => void listeners.delete(cb);
-        },
-        () => unreadCount,
-    );
+const subscribe = (cb: () => void) => {
+    listeners.add(cb);
+    return () => void listeners.delete(cb);
+};
+
+/** What the button shows: the unread count, or 0 when it's hidden. Only a change redraws it. */
+function useButtonCount() {
+    return React.useSyncExternalStore(subscribe, () => showButton ? unreadCount : 0);
 }
 
 const CheckIcon = () => (
@@ -136,9 +170,8 @@ const CheckIcon = () => (
 );
 
 function ReadAllButton() {
-    const { showButton } = context!.settings.use();
-    const count = useUnreadCount();
-    if (!showButton || count === 0) return null;
+    const count = useButtonCount();
+    if (count === 0) return null;
 
     const label = `Mark ${count} ${count === 1 ? "channel" : "channels"} as read`;
     const button = (
@@ -197,6 +230,8 @@ export default definePlugin({
             recountTimer = undefined;
             cancelIdle?.();
             cancelIdle = undefined;
+            counting = undefined;
+            countAgain = false;
             cachedStores = undefined;
             unreadCount = 0;
             listeners.forEach(l => l());
@@ -206,8 +241,16 @@ export default definePlugin({
         const watched = ["ReadStateStore", "GuildStore"].map(name => findStore(name)).filter(Boolean);
         for (const store of watched) store.addChangeListener?.(scheduleRecount);
         ctx.onDispose(() => watched.forEach(store => store.removeChangeListener?.(scheduleRecount)));
-        ctx.settings.onChange(scheduleRecount);
-        recount();
+        showButton = ctx.settings.get("showButton");
+        ctx.settings.onChange(values => {
+            if (values.showButton !== showButton) {
+                showButton = values.showButton;
+                listeners.forEach(l => l());
+            }
+            scheduleRecount();
+        });
+        // The first count waits for an idle moment too: Discord is busy starting up
+        cancelIdle = whenIdle(recount);
 
         ctx.command({
             name: "readall",

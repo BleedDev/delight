@@ -1,6 +1,6 @@
 import { definePlugin, findStore, React } from "@evi/api";
 
-import { filterVoiceStates, PATCHES, shouldHideMemberRow, shouldHideMessage } from "./filter";
+import { createReplyTracker, filterVoiceStates, PATCHES, shouldHideMemberRow, shouldHideMessage } from "./filter";
 import type { HideOptions, Lookups, MessageLike, RelationshipLike } from "./filter";
 
 /**
@@ -57,11 +57,13 @@ interface Listenable {
 let relationships: RelationshipLike & Listenable | undefined;
 let referencedStore: Listenable & { getMessageByReference?(ref: unknown): { message?: MessageLike | null; } | undefined; } | undefined;
 
+const replies = createReplyTracker(ref => referencedStore?.getMessageByReference?.(ref));
+
 const lookups: Lookups = {
     get relationships() {
         return relationships;
     },
-    referenced: ref => referencedStore?.getMessageByReference?.(ref),
+    referenced: replies.referenced,
 };
 
 /** Bumped whenever what's hidden may have changed; patched components re-render on it */
@@ -118,7 +120,8 @@ export default definePlugin({
         // Discord refreshes message records itself when someone is blocked, but the reply check and
         // the lists read the stores directly, so they rebuild on these
         const onRelationships = () => void (options?.active && bump());
-        const onReferenced = () => void (options?.active && options.replies && bump());
+        // Only when a replied-to message the stream asked about changed, not for every message anywhere
+        const onReferenced = () => void (options?.active && options.replies && replies.changed() && bump());
         relationships?.addChangeListener?.(onRelationships);
         referencedStore?.addChangeListener?.(onReferenced);
 
@@ -143,6 +146,7 @@ export default definePlugin({
             options = undefined;
             relationships = undefined;
             referencedStore = undefined;
+            replies.clear();
             bump();
         });
         bump();

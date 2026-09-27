@@ -13,8 +13,7 @@ import { isVersion } from "@shared/store";
 import { discordBuild } from "./crashReport";
 import { Logger } from "./logger";
 import { Native } from "./native";
-import { diagnosePatches } from "./patching/diagnose";
-import { getPatchRecords } from "./patching/source";
+import { hasPatchProblems } from "./patching/diagnose";
 import { diagnoseLookups, isLookupProblem, LOOKUP_GRACE_MS } from "./plugins/lookups";
 import { PluginManager, PluginState } from "./plugins/manager";
 import { SafeMode } from "./safeMode";
@@ -55,12 +54,12 @@ function writeMemory(memory: HealthMemory) {
 }
 
 /** What's wrong with a plugin right now, if anything. Worst first: not starting, then patches, then lookups. */
-function problemOf(state: PluginState, patches: () => ReturnType<typeof diagnosePatches>): HealthKind | undefined {
+function problemOf(state: PluginState): HealthKind | undefined {
     const { id } = state.manifest;
     if (!isPluginEnabled(Settings.data, state.manifest)) return;
     if (state.error && !state.running) return "start";
     if (!state.running) return;
-    if (getPatchRecords(id).length && patches().some(d => d.plugin === id && (d.health === "failed" || d.health === "partial" || d.health === "broken"))) return "patches";
+    if (hasPatchProblems(id)) return "patches";
     if (diagnoseLookups(id).some(d => isLookupProblem(d.health))) return "lookups";
 }
 
@@ -71,12 +70,9 @@ export async function checkHealth() {
     if (checking || SafeMode.active || Settings.data.healthReports === false || !Native.reportHealth) return;
     checking = true;
     try {
-        // Patch diagnosis reads every module's source: only when a plugin with patches asks for it
-        let diagnosed: ReturnType<typeof diagnosePatches> | undefined;
-        const patches = () => (diagnosed ??= diagnosePatches());
         const found = PluginManager.getSnapshot()
             .filter(p => p.source !== "dev")
-            .map(p => ({ state: p, kind: problemOf(p, patches) }))
+            .map(p => ({ state: p, kind: problemOf(p) }))
             .filter((p): p is { state: PluginState; kind: HealthKind; } => !!p.kind);
         if (!found.length) return;
 

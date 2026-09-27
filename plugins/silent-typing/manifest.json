@@ -2,9 +2,9 @@
     "id": "silent-typing",
     "name": "Silent Typing",
     "description": "Others don't see \"is typing…\" while you type. Toggle it with /silenttyping or the keyboard button in the chat bar.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": ["Evi"],
     "tags": ["privacy", "messages"],
-    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "changelog": [{ "version": "1.0.1", "notes": ["Typing stays smooth even if Discord changes its chat bar buttons: the button no longer searches Discord's code on every keystroke."] }, { "version": "1.0.0", "notes": ["First release."] }],
     "enabledByDefault": false
 }

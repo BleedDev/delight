@@ -1,7 +1,7 @@
 import { describe as group, expect, test } from "bun:test";
 
 import {
-    describe, deserialize, formatRelative, formatSpan, isIgnored, lineText, merge, observeActivity, observeMessage, observePresence, prune, seenText, serialize,
+    describe, deserialize, formatRelative, formatSpan, isIgnored, lineText, merge, observeActivity, observeMessage, observePresence, pack, prune, seenText, serialize,
 } from "../plugins/last-seen/track";
 import type { Tracker } from "../plugins/last-seen/track";
 
@@ -249,6 +249,39 @@ group("serialize / deserialize", () => {
         expect(deserialize({ rows: "nope" }).size).toBe(0);
         const back = deserialize({ v: 1, savedAt: 0, rows: [[1, 2, 3, 0], ["a", 5, 0, 0], ["b", 0, 0, 0], ["c", 0, 7, 0], ["d", 9, 9, 0]] }, { cap: 2 });
         expect([...back.keys()]).toEqual(["c", "d"]);
+    });
+});
+
+group("pack (the stored format)", () => {
+    test("round trips everything serialize does, in the same order", () => {
+        const t: Tracker = new Map([
+            ["1", { seen: 100, approx: true, active: 150, message: 200, channelId: "c1", messageId: "m1" }],
+            ["2", { active: 50 }],
+            ["3", { seen: 70, online: true }],
+            ["4", { message: 1_700_000_000_123 }],
+        ]);
+        const packed = pack(t, 1000);
+        expect(packed.v).toBe(3);
+        expect(packed.seen).toBeInstanceOf(Float64Array);
+        const back = deserialize(structuredClone(packed));
+        expect([...back.keys()]).toEqual(["1", "2", "3", "4"]);
+        expect(back).toEqual(deserialize(JSON.parse(JSON.stringify(serialize(t, 1000)))));
+        expect(back.get("3")).toEqual({ seen: 1000, approx: true });
+        expect(back.get("4")).toEqual({ message: 1_700_000_000_123 });
+    });
+
+    test("empty, junk and ids that would misalign the columns", () => {
+        expect(deserialize(pack(new Map(), 5)).size).toBe(0);
+        expect(deserialize({ v: 3, ids: "1,2", seen: [1, 2] }).size).toBe(0);
+        expect(deserialize({ v: 3, ids: "1", seen: new Float64Array(2), message: new Float64Array(2), active: new Float64Array(2), flags: new Uint8Array(2) }).size).toBe(0);
+        const t: Tracker = new Map([["a,b", { seen: 1 }], ["c", { seen: 2, message: 3, channelId: "x,y" }], ["d", { seen: 4 }]]);
+        const back = deserialize(pack(t, 10));
+        expect([...back.entries()]).toEqual([["d", { seen: 4 }]]);
+    });
+
+    test("applies the cap", () => {
+        const t: Tracker = new Map([["a", { seen: 1 }], ["b", { seen: 2 }], ["c", { seen: 3 }]]);
+        expect([...deserialize(pack(t, 10), { cap: 2 }).keys()]).toEqual(["b", "c"]);
     });
 });
 

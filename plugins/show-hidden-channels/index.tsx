@@ -17,7 +17,7 @@
 import { Components, definePlugin, React } from "@evi/api";
 
 import { lockScreenCss, renderLockScreen, setChannelBeginHeader } from "./LockScreen";
-import { cssClasses, isHiddenChannel, Permissions, setContext, setting, settings, store } from "./shared";
+import { canConnect, cssClasses, isHiddenChannel, permissionChanges, Permissions, setContext, setting, settings, store, watchPermissions } from "./shared";
 
 const channelListClasses = cssClasses("modeSelected", "modeMuted", "unread", "icon");
 
@@ -62,7 +62,6 @@ interface Filtered {
     result: Record<string, any>;
 }
 const filteredChannels = new WeakMap<object, Filtered>();
-let permissionChanges = 0;
 
 /** The server a getChannels result is for */
 function guildOf(channels: Record<string, any>): string | undefined {
@@ -531,10 +530,10 @@ export default definePlugin({
     showLockIcon: (channel: any) => setting("showMode") === "lock" && isHiddenChannel(channel),
     hideUnread: (channel: any) => setting("hideUnreads") && isHiddenChannel(channel),
     showUnreadWhileMuted: (channel: any) => !setting("hideUnreads") && mutedStyle(channel),
-    canConnect: (channel: any) => !!store("PermissionStore")?.can(Permissions.CONNECT, channel),
+    canConnect,
 
     swapViewChannelWithConnectPermission(mergedPermissions: bigint, channel: any) {
-        if (!store("PermissionStore")?.can(Permissions.CONNECT, channel)) {
+        if (!canConnect(channel)) {
             mergedPermissions &= ~Permissions.VIEW_CHANNEL;
             mergedPermissions |= Permissions.CONNECT;
         }
@@ -544,15 +543,16 @@ export default definePlugin({
     resolveGuildChannels(channels: Record<string, any>, includeHidden: boolean) {
         if (includeHidden || !channels || typeof channels !== "object") return channels;
         const cached = filteredChannels.get(channels);
-        if (cached?.stamp === permissionChanges) return cached.result;
+        const stamp = permissionChanges();
+        if (cached?.stamp === stamp) return cached.result;
         const key = permissionKey(guildOf(channels));
         if (cached && key !== undefined && cached.key === key) {
-            cached.stamp = permissionChanges;
+            cached.stamp = stamp;
             return cached.result;
         }
         const fresh = filterChannels(channels);
         const result = cached && sameChannels(cached.result, fresh) ? cached.result : fresh;
-        filteredChannels.set(channels, { stamp: permissionChanges, key, result });
+        filteredChannels.set(channels, { stamp, key, result });
         return result;
     },
 
@@ -574,11 +574,8 @@ export default definePlugin({
     start(ctx) {
         setContext(ctx);
         // A permission change can hide or reveal channels without GuildChannelStore handing out a new
-        // object: cached results are checked again (see filteredChannels)
-        const permissions = store("PermissionStore");
-        const changed = () => void permissionChanges++;
-        permissions?.addChangeListener?.(changed);
-        ctx.onDispose(() => permissions?.removeChangeListener?.(changed));
+        // object: cached results are checked again (see filteredChannels and isHiddenChannel)
+        ctx.onDispose(watchPermissions());
     },
 
     stop() {

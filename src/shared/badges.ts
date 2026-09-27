@@ -125,6 +125,11 @@ export function parseBadges(json: unknown): BadgesDocument | undefined {
     return clean;
 }
 
+/** Whether an SSE chunk says pulled plugins changed (a `pulls` event): the list is asked for then */
+export function hasPullsEvent(block: string) {
+    return block.split(/\r?\n\r?\n/).some(event => event.split(/\r?\n/).some(line => line.startsWith("event:") && line.slice(6).trim() === "pulls"));
+}
+
 /** The `badges` events in an SSE chunk, as the etag each one carries */
 export function parseBadgeEvents(block: string): string[] {
     const etags: string[] = [];

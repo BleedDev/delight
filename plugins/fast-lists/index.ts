@@ -63,41 +63,103 @@ function findScroller(list: Element): HTMLElement | null {
  * With 185 servers that is 184 compositor layers, and every icon overlapping one gets promoted too.
  * The same transform in 2D looks identical, keeps every animation, and needs no layer. Rules are
  * found by what they do, not by Discord's hashed class names.
+ *
+ * That means reading every rule of Discord's stylesheets (tens of thousands), which took a third of
+ * a second in one go. So it runs in idle time, a few milliseconds per slice, and the result is kept
+ * for as long as the page has the same stylesheets: a re-rendered server list reuses it.
  */
-function flattenRules(root: Element) {
-    const inside = [...root.querySelectorAll("*")];
-    const flatten = (value: string) => value
-        .replace(/translate3d\(\s*([^,]+),\s*([^,]+),\s*0(?:px)?\s*\)/g, "translate($1, $2)")
-        .replace(/\s*translateZ\(\s*0(?:px)?\s*\)/g, "")
-        .trim() || "none";
+const flatten = (value: string) => value
+    .replace(/translate3d\(\s*([^,]+),\s*([^,]+),\s*0(?:px)?\s*\)/g, "translate($1, $2)")
+    .replace(/\s*translateZ\(\s*0(?:px)?\s*\)/g, "")
+    .trim() || "none";
+
+const LAYER_HACK = /translateZ\(\s*0|translate3d\([^)]*,\s*0(?:px)?\s*\)/;
+
+/** Idle time used per slice: long enough to get through a few thousand rules, short enough to never drop a frame */
+const SLICE_MS = 4;
+
+let flattened: { sheets: number; css: string; } | undefined;
+
+/**
+ * Works out the flattening rules for the server list at `root` in idle slices, then calls `done`
+ * with them. Returns a function that cancels it.
+ */
+function flattenRules(root: Element, done: (css: string) => void): () => void {
+    const sheetCount = document.styleSheets.length;
+    if (flattened?.sheets === sheetCount) {
+        done(flattened.css);
+        return () => { };
+    }
 
     const css: string[] = [];
-    const visit = (list: CSSRuleList) => {
-        for (const rule of list) {
-            if (rule instanceof CSSStyleRule) {
-                const transform = rule.style.getPropertyValue("transform");
-                if (!transform || !/translateZ\(\s*0|translate3d\([^)]*,\s*0(?:px)?\s*\)/.test(transform)) continue;
-                let applies = false;
-                try {
-                    applies = inside.some(el => el.matches(rule.selectorText));
-                } catch { }
-                if (!applies) continue;
-                // Scoped to the server list and one step more specific, so it wins without !important
-                const selector = rule.selectorText.split(",").map(part => `[data-list-id="guildsnav"] ${part.trim()}`).join(", ");
-                css.push(`${selector} { transform: ${flatten(transform)}; }`);
-            } else if ("cssRules" in rule) {
-                visit((rule as CSSGroupingRule).cssRules);
-            }
+    const sheets = [...document.styleSheets];
+    // Rule lists still to read, innermost last
+    const stack: { rules: CSSRuleList; next: number; }[] = [];
+
+    /** Returns true when the rule is a group whose rules are to be read next, in source order */
+    const visit = (rule: CSSRule) => {
+        if (rule instanceof CSSStyleRule) {
+            const transform = rule.style.getPropertyValue("transform");
+            if (!transform || !LAYER_HACK.test(transform)) return false;
+            let applies = false;
+            try {
+                applies = root.querySelector(rule.selectorText) !== null;
+            } catch { }
+            if (!applies) return false;
+            // Scoped to the server list and one step more specific, so it wins without !important
+            const selector = rule.selectorText.split(",").map(part => `[data-list-id="guildsnav"] ${part.trim()}`).join(", ");
+            css.push(`${selector} { transform: ${flatten(transform)}; }`);
+        } else if ("cssRules" in rule) {
+            stack.push({ rules: (rule as CSSGroupingRule).cssRules, next: 0 });
+            return true;
         }
+        return false;
     };
-    for (const sheet of document.styleSheets) {
-        try {
-            visit(sheet.cssRules);
-        } catch {
-            // Cross-origin sheets can't be read, Discord's own are same-origin
+
+    /** Reads rules until the deadline; true once every sheet is read */
+    const step = (deadline: number) => {
+        while (performance.now() < deadline) {
+            const top = stack[stack.length - 1];
+            if (!top) {
+                const sheet = sheets.shift();
+                if (!sheet) return true;
+                try {
+                    stack.push({ rules: sheet.cssRules, next: 0 });
+                } catch {
+                    // Cross-origin sheets can't be read, Discord's own are same-origin
+                }
+                continue;
+            }
+            if (top.next >= top.rules.length) {
+                stack.pop();
+                continue;
+            }
+            // A few hundred rules between clock reads
+            const end = Math.min(top.next + 200, top.rules.length);
+            while (top.next < end && !visit(top.rules[top.next++]));
         }
-    }
-    return css.join("\n");
+        return false;
+    };
+
+    return inIdleSlices(step, () => {
+        flattened = { sheets: sheetCount, css: css.join("\n") };
+        done(flattened.css);
+    });
+}
+
+/** Runs `step(deadline)` in idle slices of SLICE_MS until it returns true, then calls `finish`. Returns a cancel function. */
+function inIdleSlices(step: (deadline: number) => boolean, finish: () => void): () => void {
+    let cancelled = false;
+    const schedule = (fn: () => void) => typeof requestIdleCallback === "function"
+        ? requestIdleCallback(fn, { timeout: 1000 })
+        : setTimeout(fn, 16);
+    const run = () => {
+        if (cancelled) return;
+        if (step(performance.now() + SLICE_MS)) finish();
+        else schedule(run);
+    };
+    schedule(run);
+    return () => void (cancelled = true);
 }
 
 /**
@@ -225,12 +287,15 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
     scroller?.addEventListener("scroll", onScroll, { passive: true });
 
     let flat: HTMLStyleElement | undefined;
-    if (kind.flattenPills) {
-        flat = document.createElement("style");
-        flat.id = "evi-fl-flatten";
-        flat.textContent = flattenRules(list);
-        document.head.append(flat);
-    }
+    const stopFlattening = kind.flattenPills
+        ? flattenRules(list, css => {
+            if (disposed || !css) return;
+            flat = document.createElement("style");
+            flat.id = "evi-fl-flatten";
+            flat.textContent = css;
+            document.head.append(flat);
+        })
+        : undefined;
 
     sync();
 
@@ -240,6 +305,7 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
         stale: () => !scroller && !!findScroller(list),
         dispose() {
             disposed = true;
+            stopFlattening?.();
             visibility?.disconnect();
             mutations.disconnect();
             scroller?.removeEventListener("scroll", onScroll);

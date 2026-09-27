@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { arrange, isDiscordId, oursFromDiscord, parseBadgeEvents, parseBadges, splitSettings } from "../src/shared/badges";
+import { arrange, hasPullsEvent, isDiscordId, oursFromDiscord, parseBadgeEvents, parseBadges, splitSettings } from "../src/shared/badges";
 import { isSupporterBadge, nextSupporterTier, SUPPORTER_TIERS, supportedDays, supporterTier } from "../src/shared/supporter";
 import { imageDataUrl, imageType } from "../src/shared/images";
 import { sameBadges } from "../src/renderer/profileBadges";
@@ -126,6 +126,13 @@ describe("hiding and ordering in Discord's badge settings", () => {
 });
 
 describe("change stream events", () => {
+    test("a pulls event is spotted, among others or alone", () => {
+        expect(hasPullsEvent(["event: badges", "data: {}", "", "event: pulls", "data: {}"].join("\n"))).toBe(true);
+        expect(hasPullsEvent(["event: pulls", "data: {}"].join("\r\n"))).toBe(true);
+        expect(hasPullsEvent([": ping", "", "event: badges", "data: {}"].join("\n"))).toBe(false);
+        expect(hasPullsEvent("data: pulls")).toBe(false);
+    });
+
     test("reads the etags of badges events, ignoring the rest", () => {
         expect(parseBadgeEvents(`retry: 15000\nevent: badges\ndata: {"etag":"\\"a\\""}\n\n: ping\n\nevent: other\ndata: {"etag":"x"}\n\nevent: badges\r\ndata: {"etag":"\\"b\\""}`)).toEqual(["\"a\"", "\"b\""]);
         expect(parseBadgeEvents("event: badges\ndata: not json")).toEqual([]);

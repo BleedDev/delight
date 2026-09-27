@@ -1,12 +1,14 @@
-# Builds the installers (evi.exe, macOS and Linux) and attaches them to a DRAFT release. Nothing is ever published automatically:
-# a maintainer reviews the draft on GitHub and presses "Publish release", which is what
-# `evi update` picks up (it only sees published, non-prerelease releases).
+# Builds the installers (evi.exe, macOS and Linux, Evi Setup), tests them and publishes the release.
+# Its notes come from the version's entry in src/shared/changelog.ts (scripts/release-notes.ts), so
+# there's nothing to write or press on GitHub. Evi's Updates tab, `evi update`, Evi Setup and
+# evi.rest's releases and download pages all pick it up from there by themselves.
 #
-# A version with a dash (v0.5.0-beta.1) is drafted as a prerelease that never becomes "Latest":
+# A version with a dash (v0.5.0-beta.1) is published as a prerelease that never becomes "Latest":
 # only people who turned on beta versions (or run `evi update --beta`) get it.
 #
 # Run it from the Actions tab with a version, or push a tag: git tag v0.2.0 && git push origin v0.2.0
-# Either way the version has to match package.json, since that's what the exe reports.
+# Either way the version has to match package.json, since that's what the exe reports, and have an
+# entry in src/shared/changelog.ts: the run stops before building without one.
 name: Release
 
 on:
@@ -61,6 +63,9 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
+      # The release's notes, from its entry in src/shared/changelog.ts: fails right away without one
+      - run: bun scripts/release-notes.ts "${{ steps.version.outputs.version }}" > notes.md && cat notes.md
+
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: bunx tsc --noEmit
@@ -92,7 +97,8 @@ jobs:
       - run: bun scripts/test-installer.ts
       - run: cat dist/*.sha256
 
-      - name: Create draft release
+      # Published straight away: everything above built and tested what's uploaded
+      - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
@@ -102,11 +108,11 @@ jobs:
             echo "::error::A release or draft for $TAG already exists. Delete it first to rebuild."
             exit 1
           fi
-          prerelease=()
-          if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease --latest=false); fi
+          flags=(--latest)
+          if [[ "$VERSION" == *-* ]]; then flags=(--prerelease --latest=false); fi
           # Named one by one: evi-linux-* would also match the .sha256 files, uploading them twice
           gh release create "$TAG" dist/evi.exe dist/evi-macos-{arm64,x64} dist/evi-linux-{x64,arm64} dist/evi-core.json dist/Evi-Setup.exe dist/*.sha256 \
-            --draft "${prerelease[@]}" \
+            "${flags[@]}" \
             --target "$GITHUB_SHA" \
             --title "Evi $VERSION" \
-            --generate-notes
+            --notes-file notes.md

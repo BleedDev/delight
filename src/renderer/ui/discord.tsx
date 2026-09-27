@@ -11,15 +11,24 @@ import { wreq } from "../webpack/runtime";
 
 const logger = new Logger("DiscordUI", "#5865f2");
 
+/** How often a control that isn't there is searched for again, besides waiting for new modules */
+const MISS_RETRY_MS = 10_000;
+
 function native<P>(name: string, filter: () => any): { readonly get: ComponentType<P> | undefined; } {
     let resolved: ComponentType<P> | undefined;
     let waiting = false;
+    let missedAt = -Infinity;
     return {
         get get() {
             if (resolved || !wreq) return resolved;
+            // A search walks every loaded module, and plugins read these while rendering (a tooltip per
+            // channel row): while one is missing, new modules are watched instead of searched each time
+            if (performance.now() - missedAt < MISS_RETRY_MS) return undefined;
             resolved = find(filter());
+            if (resolved) return resolved;
+            missedAt = performance.now();
             // Discord loads some controls lazily: use ours until its chunk arrives, then switch over
-            if (!resolved && !waiting) {
+            if (!waiting) {
                 waiting = true;
                 logger.info(`${name} not loaded yet, using Evi's own until it is`);
                 waitFor(filter(), value => void (resolved = value));

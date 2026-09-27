@@ -71,6 +71,21 @@ export interface Move {
     to?: string | null;
 }
 
+/**
+ * Whether a VOICE_STATE_UPDATES payload can change what's logged for the session in `channelId`:
+ * someone joining, leaving or already in it, or you. Discord sends these for every voice channel
+ * you can see, so most are about other channels and can be skipped without reading the stores.
+ */
+export function touchesSession(voiceStates: readonly any[] | null | undefined, channelId: string, snapshot: Snapshot, selfId?: string): boolean {
+    if (!Array.isArray(voiceStates)) return true;
+    for (const vs of voiceStates) {
+        const userId = vs?.userId;
+        if (!userId || userId === selfId || userId in snapshot) return true;
+        if (vs.channelId === channelId || vs.oldChannelId === channelId) return true;
+    }
+    return false;
+}
+
 export interface RawEvent {
     kind: EntryKind;
     userId: string;

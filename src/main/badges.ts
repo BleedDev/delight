@@ -9,7 +9,7 @@
  * Admin actions (the /badge command) need evi-admin.json in the data folder, { "token": "…" }. The
  * token stays in main: the page can only ask for one of a few fixed actions.
  */
-import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
+import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, hasPullsEvent, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
 import { imageDataUrl, imageType } from "@shared/images";
 import { IPC } from "@shared/ipc";
 import { isPluginId } from "@shared/store";
@@ -137,6 +137,13 @@ function broadcast(result: BadgesResult) {
 // ---- change stream ----------------------------------------------------------------------------
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/** Told when the stream says pulled plugins changed, and after it reconnects (one may have been missed) */
+const pullsListeners = new Set<() => void>();
+export function onPullsAnnounced(listener: () => void) {
+    pullsListeners.add(listener);
+}
+const announcePulls = () => pullsListeners.forEach(listener => listener());
 /** Everyone reconnects at once after a server restart: spread them out */
 const jitter = (ms: number) => ms / 2 + Math.random() * ms;
 
@@ -165,7 +172,9 @@ async function listen() {
             if (buffer.length > 64 * 1024) throw new Error("The change stream sent too much at once");
             const end = buffer.lastIndexOf("\n\n");
             if (end < 0) continue;
-            const etags = parseBadgeEvents(buffer.slice(0, end));
+            const chunk = buffer.slice(0, end);
+            if (hasPullsEvent(chunk)) announcePulls();
+            const etags = parseBadgeEvents(chunk);
             buffer = buffer.slice(end + 2);
             const latest = etags.at(-1);
             // A change: fetch it after a moment, so thousands of installs don't all ask in the same instant
@@ -198,6 +207,7 @@ async function stream() {
         await sleep(jitter(Math.min(5_000 * 2 ** failures, 5 * 60 * 1000)));
         // Whatever changed while we were away
         void getBadges();
+        announcePulls();
     }
 }
 

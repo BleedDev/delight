@@ -33,16 +33,27 @@ function toggle() {
     return enabled ? "Silent typing is on: others won't see you typing." : "Silent typing is off.";
 }
 
-let containerClass: string | undefined;
-/** Wrapper class of Discord's apps button, from its CSS module { buttonContainer, button, buttonActive, ... } */
-function getContainerClass() {
-    containerClass ??= Object.values(find(v =>
-        typeof v === "object" && Object.values(v).some(c => typeof c === "string" && c.startsWith("channelAppLauncherButtonPopoutIconAnimation_")),
-    ) ?? {}).find((c): c is string => typeof c === "string" && c.startsWith("buttonContainer_"));
-    return containerClass;
+/**
+ * A webpack lookup, kept once found. Each search walks every loaded module, and the chat bar renders
+ * on every keystroke, so a miss (Discord renamed it) is searched again at most every 10 seconds.
+ */
+function lookup<T>(search: () => T | undefined): () => T | undefined {
+    let value: T | undefined;
+    let missedAt = -Infinity;
+    return () => {
+        if (value !== undefined || performance.now() - missedAt < 10_000) return value;
+        value = search();
+        if (value === undefined) missedAt = performance.now();
+        return value;
+    };
 }
 
-let ChatButton: ComponentType<any> | undefined;
+/** Wrapper class of Discord's apps button, from its CSS module { buttonContainer, button, buttonActive, ... } */
+const getContainerClass = lookup(() => Object.values(find(v =>
+    typeof v === "object" && Object.values(v).some(c => typeof c === "string" && c.startsWith("channelAppLauncherButtonPopoutIconAnimation_")),
+) ?? {}).find((c): c is string => typeof c === "string" && c.startsWith("buttonContainer_")));
+
+const getChatButton = lookup<ComponentType<any>>(() => find(chatButtonFilter));
 
 function KeyboardIcon({ off }: { off: boolean; }) {
     return (
@@ -65,7 +76,7 @@ function KeyboardIcon({ off }: { off: boolean; }) {
 function SilentTypingButton() {
     const { enabled } = context!.settings.use();
     const label = enabled ? "Silent typing on (click to turn off)" : "Silent typing off (click to turn on)";
-    ChatButton ??= find(chatButtonFilter);
+    const ChatButton = getChatButton();
     const icon = <KeyboardIcon off={enabled} />;
 
     return (

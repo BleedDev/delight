@@ -88,7 +88,9 @@ function options(): BlurOptions {
 function applyClasses(classes: string[]) {
     const body = document.body;
     for (const c of applied) if (!classes.includes(c)) body.classList.remove(c);
-    for (const c of classes) body.classList.add(c);
+    // Only what's missing: re-writing <body>'s class on every channel switch or stream update made
+    // the browser check the whole page's styles again for nothing
+    for (const c of classes) if (!body.classList.contains(c)) body.classList.add(c);
     applied = classes;
 }
 

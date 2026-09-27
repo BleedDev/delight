@@ -3,8 +3,9 @@
  * blog's covers and the dotted "evi" on evi.rest. Every dot on a regular grid samples an intensity
  * field (0..1) and gets bigger and brighter with it.
  *
- * Shared by the site (site/scripts/covers.ts writes the covers it serves) and Evi, which draws a
- * release's cover itself when it has none bundled, so every version gets one without anyone adding it.
+ * Shared by evi.rest (server/src/covers.ts draws /v1/releases/covers/<version>.svg for the releases
+ * page), the site's blog cover script, and Evi, which draws a release's cover itself when it has none
+ * bundled. Every version gets one without anyone adding it.
  */
 
 export const COVER_W = 1200, COVER_H = 675;

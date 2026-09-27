@@ -61,11 +61,12 @@ const CACHE_SIZE = 500;
 
 const accessoriesFilter = filters.byCode("channelMessageProps:{message:", "isAutomodBlockedMessage:");
 const renderedContentFilter = filters.byCode('"useMessageRenderedContent"', "hideSimpleEmbedContent");
+/** Discord's `markup` CSS module. Plain-string code hints: a regex over every module's source costs far more. */
 const markupFilter: Filter = Object.assign(
     (v: any) => !!v && typeof v === "object" && !Array.isArray(v)
         && Object.values(v).some(c => typeof c === "string" && /^markup_+[\da-f]+$/.test(c))
         && Object.values(v).some(c => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)),
-    { $code: [/"markup_+[\da-f]+"/] },
+    { $code: ['"markup_', '"codeContainer_'] },
 );
 
 type RenderedContent = (message: any, options: Record<string, unknown>) => { content: React.ReactNode; };
@@ -422,8 +423,9 @@ export default definePlugin({
         });
 
         ctx.addStyle(css);
-        ctx.waitFor(renderedContentFilter, fn => void (useRenderedContent = fn));
-        ctx.waitFor(markupFilter, classes => {
+        // Kept from an earlier start: no need to search every module again
+        if (!useRenderedContent) ctx.waitFor(renderedContentFilter, fn => void (useRenderedContent = fn));
+        if (!markupClass) ctx.waitFor(markupFilter, classes => {
             markupClass = Object.values(classes).find((c): c is string => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
         });
 
@@ -458,9 +460,12 @@ export default definePlugin({
         };
         locale?.addChangeListener?.(onLocale);
         ctx.onDispose(() => locale?.removeChangeListener?.(onLocale));
-        // Another account: your own messages are someone else's now
-        ctx.flux.subscribe("CONNECTION_OPEN", () => {
-            me = undefined;
+        // Another account: your own messages are someone else's now. A reconnect to the same one
+        // (waking up, a network blip) changes nothing, so every message isn't redrawn for it
+        ctx.flux.subscribe("CONNECTION_OPEN", action => {
+            const previous = me;
+            me = typeof action.user?.id === "string" ? action.user.id : undefined;
+            if (me !== undefined && me === previous) return;
             runtime.invalidate();
         });
         ctx.onDispose(() => void (me = undefined));

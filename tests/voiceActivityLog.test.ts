@@ -4,7 +4,7 @@ import type { Replacement } from "../src/renderer/patching/source";
 import { canonicalizeMatch, matchesFind } from "../src/renderer/patching/source";
 import {
     DEFAULT_OPTIONS, describe as describeEntry, diffSnapshots, filterEntries, formatClock, formatDuration, formatLine, formatSessions, LogEntry,
-    MemberState, PATCHES, shouldToast, snapshotOf, Snapshot, stayNote, SyncInput, toMemberState, VoiceLog,
+    MemberState, PATCHES, shouldToast, snapshotOf, Snapshot, stayNote, SyncInput, toMemberState, touchesSession, VoiceLog,
 } from "../plugins/voice-activity-log/log";
 
 const quiet: MemberState = { muted: false, deafened: false, streaming: false, video: false };
@@ -297,5 +297,27 @@ describe("patch", () => {
             out = out.replace(re, (r.with as string).replaceAll("$self", "S"));
         }
         expect(out).toContain("className:O$.nL,children:[S?.renderButton?.(i),r&&!c?(0,L.jsx)(Rx,{channel:i}):null,(0,L.jsx)(Rc,{channel:i})]");
+    });
+});
+
+describe("touchesSession", () => {
+    const here = snap("a", "b");
+
+    test("updates about other channels are skipped", () => {
+        expect(touchesSession([{ userId: "x", channelId: "vc2", oldChannelId: null }, { userId: "y", channelId: null, oldChannelId: "vc3" }], "vc1", here, "me")).toBe(false);
+    });
+
+    test("joins, leaves, moves and state changes in the channel count", () => {
+        expect(touchesSession([{ userId: "x", channelId: "vc1" }], "vc1", here, "me")).toBe(true);
+        expect(touchesSession([{ userId: "x", channelId: "vc2", oldChannelId: "vc1" }], "vc1", here, "me")).toBe(true);
+        // Someone who was here, without an oldChannelId: a leave or a mute
+        expect(touchesSession([{ userId: "a", channelId: null }], "vc1", here, "me")).toBe(true);
+        expect(touchesSession([{ userId: "x", channelId: "vc2" }, { userId: "b", channelId: "vc1", selfMute: true }], "vc1", here, "me")).toBe(true);
+    });
+
+    test("your own updates and payloads it can't read always count", () => {
+        expect(touchesSession([{ userId: "me", channelId: "vc2" }], "vc1", here, "me")).toBe(true);
+        expect(touchesSession([{ channelId: "vc2" }], "vc1", here, "me")).toBe(true);
+        expect(touchesSession(undefined, "vc1", here, "me")).toBe(true);
     });
 });

@@ -174,26 +174,67 @@ export const findByProps = <T = any>(...props: string[]) => find<T>(filters.byPr
 export const findByCode = <T = any>(...code: CodeMatcher[]) => find<T>(filters.byCode(...code));
 export const findComponent = <T = any>(...code: CodeMatcher[]) => find<T>(filters.componentByCode(...code));
 /**
- * Stores found so far, by name. Finding one walks every loaded module (~10k), and plugins ask on
- * every message, row render and presence update, so each is looked up once. Safe to keep: stores are
- * singletons, and live replacement never re-runs a module that holds one (patching/live.ts).
- * A store that isn't loaded yet is looked for again, at most once a second.
+ * Stores by name. Plugins ask on every message, row render and presence update, and finding one
+ * walks every loaded module (~10k, 10-20 ms), so the first lookup walks once and files every store it
+ * passes, and modules that run after that file theirs as they load: every later lookup, for any store,
+ * is a map read. Safe to keep: stores are singletons, and live replacement never re-runs a module
+ * that holds one (patching/live.ts).
+ * A store that still isn't there is searched for the old way at most once a second, and only once more
+ * modules have run since: a store Discord renamed would otherwise cost a full walk every second, forever.
  */
 const stores = new Map<string, unknown>();
-const missing = new Map<string, number>();
+const missing = new Map<string, { at: number; modules: number; }>();
 const MISS_RETRY_MS = 1000;
+let storesIndexed = false;
+
+/** Files a Flux store under its names (see filters.byStoreName). The first one of a name wins, like find. */
+function fileStore(value: any) {
+    try {
+        if (!isSearchable(value) || typeof value !== "object" || !("_dispatchToken" in value)) return;
+        const displayName = value.constructor?.displayName;
+        if (typeof displayName === "string" && !stores.has(displayName)) stores.set(displayName, value);
+        const name = typeof value.getName === "function" ? value.getName() : undefined;
+        if (typeof name === "string" && !stores.has(name)) stores.set(name, value);
+    } catch { }
+}
+
+function fileStores(exports: any) {
+    if (!isSearchable(exports)) return;
+    fileStore(exports);
+    if (typeof exports !== "object") return;
+    for (const key in exports) {
+        let value;
+        try {
+            value = exports[key];
+        } catch {
+            continue;
+        }
+        fileStore(value);
+    }
+}
+
+function indexStores(wreq: WebpackRequire) {
+    storesIndexed = true;
+    for (const id in wreq.c) fileStores(wreq.c[id]?.exports);
+    moduleListeners.add(exports => fileStores(exports));
+}
 
 export function findStore<T = any>(name: string): T | undefined {
     const cached = stores.get(name);
     if (cached) return cached as T;
-    const missedAt = missing.get(name);
-    if (missedAt !== undefined && performance.now() - missedAt < MISS_RETRY_MS) return undefined;
+    if (!storesIndexed) {
+        indexStores(requireWreq());
+        const indexed = stores.get(name);
+        if (indexed) return indexed as T;
+    }
+    const miss = missing.get(name);
+    if (miss && (miss.modules === stats.modules || performance.now() - miss.at < MISS_RETRY_MS)) return undefined;
     const store = find<T>(filters.byStoreName(name));
     if (store) {
         stores.set(name, store);
         missing.delete(name);
     } else {
-        missing.set(name, performance.now());
+        missing.set(name, { at: performance.now(), modules: stats.modules });
     }
     return store;
 }

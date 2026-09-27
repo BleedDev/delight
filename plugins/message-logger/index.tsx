@@ -24,13 +24,28 @@ const SELF_DELETE_WINDOW = 60_000;
 
 const accessoriesFilter = filters.byCode("channelMessageProps:{message:", "isAutomodBlockedMessage:");
 const renderedContentFilter = filters.byCode('"useMessageRenderedContent"', "hideSimpleEmbedContent");
-/** The CSS module with Discord's `markup` class, which styles rendered message content */
+/**
+ * The CSS module with Discord's `markup` class, which styles rendered message content. Its code hint
+ * is plain strings: a regex tested against every module's source costs far more.
+ */
 const markupFilter: Filter = Object.assign(
     (v: any) => !!v && typeof v === "object" && !Array.isArray(v)
         && Object.values(v).some(c => typeof c === "string" && /^markup_+[\da-f]+$/.test(c))
         && Object.values(v).some(c => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)),
-    { $code: [/"markup_+[\da-f]+"/] },
+    { $code: ['"markup_', '"codeContainer_'] },
 );
+/** Discord's message actions. The code hint lets the search skip every module that can't define them. */
+const messageActionsFilter = Object.assign(filters.byProps("deleteMessage", "editMessage", "sendMessage"), { $code: ["deleteMessage", "editMessage", "sendMessage"] });
+
+/**
+ * A Flux store: from Evi's store cache when it's already been found (no search at all), otherwise
+ * as soon as it loads
+ */
+function withStore(ctx: PluginContext<any>, name: string, callback: (store: any) => void) {
+    const found = findStore(name);
+    if (found) callback(found);
+    else ctx.waitFor(filters.byStoreName(name), callback);
+}
 
 type RenderedContent = (message: any, options: Record<string, unknown>) => { content: React.ReactNode; };
 
@@ -206,7 +221,7 @@ function install(ctx: Ctx, log: MessageLog, store: any) {
     ctx.onDispose(invalidate);
 
     let users: any;
-    ctx.waitFor(filters.byStoreName("UserStore"), s => void (users = s));
+    withStore(ctx, "UserStore", s => void (users = s));
 
     const logFilters = () => ({
         currentUserId: users?.getCurrentUser?.()?.id,
@@ -216,7 +231,7 @@ function install(ctx: Ctx, log: MessageLog, store: any) {
 
     // Deletes you start: Discord's deleteMessage(channelId, messageId, local)
     const selfDeletes = new Map<string, number>();
-    ctx.hookExport("before", filters.byProps("deleteMessage", "editMessage", "sendMessage"), "deleteMessage", ({ args }) => {
+    ctx.hookExport("before", messageActionsFilter, "deleteMessage", ({ args }) => {
         const now = Date.now();
         for (const [key, at] of selfDeletes) if (now - at > SELF_DELETE_WINDOW) selfDeletes.delete(key);
         selfDeletes.set(`${args[0]}:${args[1]}`, now);
@@ -343,9 +358,10 @@ export default definePlugin({
         const log = new MessageLog({ perChannel: ctx.settings.get("limit") });
         ctx.addStyle(css);
 
-        ctx.waitFor(filters.byStoreName("MessageStore"), store => install(ctx, log, store));
-        ctx.waitFor(renderedContentFilter, fn => void (useRenderedContent = fn));
-        ctx.waitFor(markupFilter, classes => {
+        withStore(ctx, "MessageStore", store => install(ctx, log, store));
+        // Kept from an earlier start: no need to search every module again
+        if (!useRenderedContent) ctx.waitFor(renderedContentFilter, fn => void (useRenderedContent = fn));
+        if (!markupClass) ctx.waitFor(markupFilter, classes => {
             markupClass = Object.values(classes).find((c): c is string => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
         });
 

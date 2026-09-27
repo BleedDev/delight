@@ -143,15 +143,21 @@ export function describeDiff(theirOffset: number, yourOffset: number): string {
 
 // ---- Formatting ---------------------------------------------------------------------------------
 
-/** Whether a locale writes times with AM/PM */
+const uses12h = new Map<string, boolean>();
+
+/** Whether a locale writes times with AM/PM. Remembered: a new formatter per visible time was slow. */
 export function localeUses12h(locale: string | undefined): boolean {
+    const key = locale || "en-US";
+    let found = uses12h.get(key);
+    if (found !== undefined) return found;
     try {
-        const o = new Intl.DateTimeFormat(locale || "en-US", { hour: "numeric" }).resolvedOptions() as Intl.ResolvedDateTimeFormatOptions & { hourCycle?: string; };
-        if (o.hourCycle) return o.hourCycle === "h11" || o.hourCycle === "h12";
-        return !!o.hour12;
+        const o = new Intl.DateTimeFormat(key, { hour: "numeric" }).resolvedOptions() as Intl.ResolvedDateTimeFormatOptions & { hourCycle?: string; };
+        found = o.hourCycle ? o.hourCycle === "h11" || o.hourCycle === "h12" : !!o.hour12;
     } catch {
-        return false;
+        found = false;
     }
+    uses12h.set(key, found);
+    return found;
 }
 
 export interface FormatOptions {

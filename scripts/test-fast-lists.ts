@@ -22,7 +22,7 @@ await page.setContent(`<!doctype html><style>
     body { margin: 0; }
     .scroller { height: 600px; overflow-y: auto; width: 72px; }
     .listItem { position: relative; height: 48px; margin-bottom: 8px; }
-    .pill { position: absolute; left: 0; width: 4px; height: 8px; background: white; }
+    .pill { position: absolute; left: 0; width: 4px; height: 8px; background: white; transform: translateX(0) translateZ(0); }
     img { width: 48px; height: 48px; display: block; }
 </style>
 <nav><ul data-list-id="guildsnav" class="scroller"><div class="list"></div></ul></nav>
@@ -113,6 +113,9 @@ const results = await page.evaluate(async (pluginCode) => {
     // Measured: containment on visible rows made frames slower, so they must stay plain
     const visibleRow = [...document.querySelectorAll<HTMLElement>(".dl-fl-row:not(.dl-fl-far)")][0];
     out.visibleRowContain = visibleRow ? getComputedStyle(visibleRow).contain : "missing";
+    // The pills' GPU-layer hack is flattened once the stylesheets have been read in idle time
+    for (let i = 0; i < 40 && !document.getElementById("evi-fl-flatten"); i++) await new Promise(r => setTimeout(r, 50));
+    out.pillTransform = getComputedStyle(document.querySelector(".pill")!).transform;
     let worst = 0;
     for (let i = 0; i < 120; i++) {
         (window as any).__setScroll(sc, sc.scrollTop + 120);
@@ -231,7 +234,7 @@ const results = await page.evaluate(async (pluginCode) => {
     disposers.splice(0).reverse().forEach(fn => fn());
     await frame();
     out.afterDisable = counts();
-    out.styleRemoved = ![...document.querySelectorAll("style")].some(s => s.textContent?.includes("dl-fl"));
+    out.styleRemoved = ![...document.querySelectorAll("style")].some(s => s.textContent?.includes("dl-fl")) && !document.getElementById("evi-fl-flatten");
     return out;
 }, code);
 
@@ -246,6 +249,7 @@ const r = results as any;
 check("marks every server and folder row", r.rowsMarked === 185, r.rowsMarked);
 check("hides rows far out of view", r.skipFarAtTop > 50, r.skipFarAtTop);
 check("visible rows get no containment (measured slower)", r.visibleRowContain === "none", r.visibleRowContain);
+check("pills' translateZ(0) is flattened to 2D", !!r.pillTransform && !r.pillTransform.startsWith("matrix3d"), r.pillTransform);
 check("no visible row is ever hidden, scrolling or jumping", r.skipWorstHiddenVisible === 0, r.skipWorstHiddenVisible);
 check("skipping doesn't change the list's size", r.skipKeepsLayout);
 check("opened folder's servers are picked up", r.folderChildrenHandled);

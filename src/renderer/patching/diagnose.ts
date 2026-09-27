@@ -44,3 +44,18 @@ export function diagnosePatches(): PatchDiagnosis[] {
         return { ...record, health, candidates };
     });
 }
+
+/**
+ * Whether any of a plugin's patches is failed, partial or broken, as diagnosePatches would say.
+ * Health checks run this in the background: applied and failed patches need no module search, and
+ * a waiting one stops at the first module that matches instead of reading every module for every
+ * patch of every plugin, which held up Discord for seconds on a big client.
+ */
+export function hasPatchProblems(plugin: string): boolean {
+    const records = getPatchRecords(plugin);
+    if (records.some(r => r.state === "failed" || r.state === "partial")) return true;
+    const pending = records.filter(r => r.state === "pending");
+    if (!pending.length) return false;
+    const sources = moduleSources();
+    return pending.some(r => !sources.some(([, src]) => matchesFind(src, r.patch.find)));
+}

@@ -169,34 +169,111 @@ export function serialize(tracker: Tracker, now: number): Saved {
 const num = (v: unknown) => (typeof v === "number" && v > 0 ? v : 0);
 const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
 
+/** One saved person back into the tracker; nothing is added for someone with nothing known */
+function restore(tracker: Tracker, savedAt: number, id: string, seen: unknown, message: unknown, online: unknown, active: unknown, channelId: unknown, messageId: unknown, approx: unknown) {
+    const entry: Entry = {};
+    const s = num(seen);
+    if (online && savedAt > s) {
+        entry.seen = savedAt;
+        entry.approx = true;
+    } else if (s) {
+        entry.seen = s;
+        if (approx) entry.approx = true;
+    }
+    if (num(active)) entry.active = num(active);
+    if (num(message)) {
+        entry.message = num(message);
+        if (str(channelId)) entry.channelId = str(channelId);
+        if (str(messageId)) entry.messageId = str(messageId);
+    }
+    if (entry.seen || entry.message || entry.active) tracker.set(id, entry);
+}
+
 /**
- * Restores saved data (v1 or v2). Anyone who was online when it was saved was, as far as we know,
+ * v3, the format kept in IndexedDB: one column per field, numbers in typed arrays and ids joined
+ * into one string each. Saving copies the data into the database (a structured clone, on the main
+ * thread); tens of thousands of little row arrays took several milliseconds every 30 seconds, a
+ * few strings and typed arrays copy in one go. Exports stay v2 (serialize), which reads as JSON.
+ */
+export interface Packed {
+    v: 3;
+    savedAt: number;
+    /** Snowflakes joined with "," */
+    ids: string;
+    seen: Float64Array;
+    message: Float64Array;
+    active: Float64Array;
+    /** 1: online, 2: approx */
+    flags: Uint8Array;
+    /** Joined with ",", "" where unknown */
+    channelIds: string;
+    messageIds: string;
+}
+
+const SEP = ",";
+
+export function pack(tracker: Tracker, now: number): Packed {
+    const n = tracker.size;
+    const seen = new Float64Array(n), message = new Float64Array(n), active = new Float64Array(n), flags = new Uint8Array(n);
+    const ids: string[] = [], channelIds: string[] = [], messageIds: string[] = [];
+    let i = 0;
+    for (const [id, e] of tracker) {
+        const channelId = e.channelId ?? "", messageId = e.messageId ?? "";
+        // Ids are snowflakes; anything with the separator in it (a hand-edited import) would misalign the columns
+        if (id.includes(SEP) || channelId.includes(SEP) || messageId.includes(SEP)) continue;
+        ids.push(id);
+        channelIds.push(channelId);
+        messageIds.push(messageId);
+        seen[i] = e.seen ?? 0;
+        message[i] = e.message ?? 0;
+        active[i] = e.active ?? 0;
+        flags[i] = (e.online ? 1 : 0) | (e.approx ? 2 : 0);
+        i++;
+    }
+    return {
+        v: 3,
+        savedAt: now,
+        ids: ids.join(SEP),
+        seen: i < n ? seen.slice(0, i) : seen,
+        message: i < n ? message.slice(0, i) : message,
+        active: i < n ? active.slice(0, i) : active,
+        flags: i < n ? flags.slice(0, i) : flags,
+        channelIds: channelIds.join(SEP),
+        messageIds: messageIds.join(SEP),
+    };
+}
+
+function unpack(saved: Partial<Packed>, tracker: Tracker) {
+    const { seen, message, active, flags } = saved;
+    if (!(seen instanceof Float64Array) || !(message instanceof Float64Array) || !(active instanceof Float64Array) || !(flags instanceof Uint8Array)) return;
+    const n = seen.length;
+    if (!n || typeof saved.ids !== "string") return;
+    const ids = saved.ids.split(SEP);
+    const channelIds = typeof saved.channelIds === "string" ? saved.channelIds.split(SEP) : [];
+    const messageIds = typeof saved.messageIds === "string" ? saved.messageIds.split(SEP) : [];
+    if (ids.length !== n || message.length !== n || active.length !== n || flags.length !== n) return;
+    const savedAt = num(saved.savedAt);
+    for (let i = 0; i < n; i++) {
+        if (!ids[i]) continue;
+        restore(tracker, savedAt, ids[i], seen[i], message[i], flags[i] & 1, active[i], channelIds[i], messageIds[i], flags[i] & 2);
+    }
+}
+
+/**
+ * Restores saved data (v1, v2 or v3). Anyone who was online when it was saved was, as far as we know,
  * last seen then: the "online" flag is stale after a restart, so it becomes an approximate timestamp.
  */
 export function deserialize(data: unknown, opts: Options = {}): Tracker {
     const tracker: Tracker = new Map();
-    const saved = data as { savedAt?: unknown; rows?: unknown; } | null | undefined;
-    if (!saved || !Array.isArray(saved.rows)) return tracker;
-    const savedAt = num(saved.savedAt);
-    for (const row of saved.rows) {
-        if (!Array.isArray(row) || typeof row[0] !== "string") continue;
-        const [id, seen, message, online, active, channelId, messageId, approx] = row;
-        const entry: Entry = {};
-        const s = num(seen);
-        if (online && savedAt > s) {
-            entry.seen = savedAt;
-            entry.approx = true;
-        } else if (s) {
-            entry.seen = s;
-            if (approx) entry.approx = true;
+    const saved = data as { v?: unknown; savedAt?: unknown; rows?: unknown; } | null | undefined;
+    if (saved?.v === 3) unpack(saved as Partial<Packed>, tracker);
+    else if (saved && Array.isArray(saved.rows)) {
+        const savedAt = num(saved.savedAt);
+        for (const row of saved.rows) {
+            if (!Array.isArray(row) || typeof row[0] !== "string") continue;
+            const [id, seen, message, online, active, channelId, messageId, approx] = row;
+            restore(tracker, savedAt, id, seen, message, online, active, channelId, messageId, approx);
         }
-        if (num(active)) entry.active = num(active);
-        if (num(message)) {
-            entry.message = num(message);
-            if (str(channelId)) entry.channelId = str(channelId);
-            if (str(messageId)) entry.messageId = str(messageId);
-        }
-        if (entry.seen || entry.message || entry.active) tracker.set(id, entry);
     }
     prune(tracker, opts.cap, opts.keep, opts.slack);
     return tracker;

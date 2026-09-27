@@ -102,6 +102,48 @@ export function shouldHideMessage(message: MessageLike | null | undefined, colla
     return options.replies && repliesToHidden(message, lookups, options);
 }
 
+type Reference = NonNullable<MessageLike["messageReference"]>;
+
+/**
+ * The replied-to messages the stream asked about, and what it got. ReferencedMessageStore changes
+ * for messages anywhere, and each change used to rebuild the open channel's whole stream; now only
+ * a change to a message the stream actually asked about (loaded, edited, deleted) does.
+ */
+export function createReplyTracker(read: NonNullable<Lookups["referenced"]>, max = 5000) {
+    const asked = new Map<string, { ref: Reference; message: MessageLike | null | undefined; }>();
+    const targetOf = (ref: Reference) => {
+        try {
+            return read(ref)?.message;
+        } catch {
+            return undefined;
+        }
+    };
+    return {
+        /** Lookups.referenced, remembering what it answered */
+        referenced(ref: Reference) {
+            const result = read(ref);
+            if (asked.size >= max) asked.clear();
+            asked.set(`${ref.channel_id}:${ref.message_id}`, { ref, message: result?.message });
+            return result;
+        },
+        /** Whether any message asked about is different now */
+        changed() {
+            let changed = false;
+            for (const entry of asked.values()) {
+                const now = targetOf(entry.ref);
+                if (now === entry.message) continue;
+                entry.message = now;
+                changed = true;
+            }
+            return changed;
+        },
+        clear: () => asked.clear(),
+        get size() {
+            return asked.size;
+        },
+    };
+}
+
 /** Reference semantics for the stream patch: the messages left once hidden ones are dropped */
 export function filterMessages<M extends MessageLike>(messages: Iterable<M>, collapse: (message: M) => unknown, lookups: Lookups, options: HideOptions): M[] {
     const kept: M[] = [];

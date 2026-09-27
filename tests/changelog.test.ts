@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import pkg from "../package.json";
-import { latestRelease, mergeReleases, Release, RELEASES, releasesSince, SECTION_KINDS } from "../src/shared/changelog";
+import { latestRelease, mergeReleases, Release, releaseMarkdown, RELEASES, releasesSince, SECTION_KINDS } from "../src/shared/changelog";
 import { COVERS } from "../src/renderer/ui/covers";
 import { compareVersions, isVersion } from "../src/shared/store";
 
@@ -49,5 +49,16 @@ describe("what's new", () => {
         }
         for (let i = 1; i < RELEASES.length; i++) expect(compareVersions(RELEASES[i - 1].version, RELEASES[i].version)).toBe(1);
         expect(RELEASES.some(r => r.version === pkg.version)).toBe(true);
+    });
+});
+
+describe("release notes for GitHub", () => {
+    test("each kind of change under its heading, in order, lines as written", () => {
+        const md = releaseMarkdown({ version: "9.9.9", date: "2026-01-01", sections: { fixed: ["A fix."], added: ["**New thing.** It does things."] } });
+        expect(md).toBe("## New\n- **New thing.** It does things.\n\n## Fixed\n- A fix.\n");
+    });
+
+    test("every release so far has notes to publish", () => {
+        for (const r of RELEASES) expect(releaseMarkdown(r).startsWith("## ")).toBe(true);
     });
 });

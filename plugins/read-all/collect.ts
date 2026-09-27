@@ -74,6 +74,18 @@ function channelOf(value: unknown): ChannelLike | undefined {
 
 /** Every unread channel (or one with mentions) across servers, and DMs when asked */
 export function collectUnread(stores: ReadStores, options: CollectOptions = {}): UnreadChannel[] {
+    const steps = collectUnreadSteps(stores, options);
+    for (; ;) {
+        const step = steps.next();
+        if (step.done) return step.value;
+    }
+}
+
+/**
+ * collectUnread one server at a time: it pauses after each server, so the count can be spread over
+ * idle moments instead of blocking a frame with hundreds of servers. Returns the result when done.
+ */
+export function* collectUnreadSteps(stores: ReadStores, options: CollectOptions = {}): Generator<void, UnreadChannel[], void> {
     const { ReadStateStore: rs } = stores;
     const seen = new Set<string>();
     const out: UnreadChannel[] = [];
@@ -96,6 +108,7 @@ export function collectUnread(stores: ReadStores, options: CollectOptions = {}):
         for (const byId of Object.values(threads)) {
             for (const thread of Object.values(byId ?? {})) consider(channelOf(thread), guildId);
         }
+        yield;
     }
 
     if (options.includeDms) stores.ChannelStore?.getSortedPrivateChannels?.()?.forEach(channel => consider(channel, null));

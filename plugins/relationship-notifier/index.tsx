@@ -1,7 +1,7 @@
 import { Components, definePlugin, Dispatcher, filters, findStore, React } from "@evi/api";
 import type { FluxAction, HookContext, PluginContext } from "@evi/api";
 
-import { decide, Lookup, NotificationKind, NotificationLog, RelationshipNotification, Tracker } from "./events";
+import { decide, NotificationKind, NotificationLog, RelationshipNotification, storeLookup, Tracker } from "./events";
 
 /**
  * Tells you when someone removes you as a friend, declines your friend request, or removes you
@@ -34,29 +34,6 @@ function store(name: string): any {
     } catch {
         return undefined;
     }
-}
-
-function createLookup(): Lookup {
-    const users = store("UserStore");
-    const relationships = store("RelationshipStore");
-    const channels = store("ChannelStore");
-    const guilds = store("GuildStore");
-    const userName = (id: string): string | undefined => {
-        const nick = relationships?.getNickname?.(id);
-        if (nick) return nick;
-        const user = users?.getUser?.(id);
-        return user ? user.globalName ?? user.global_name ?? user.username : undefined;
-    };
-    return {
-        currentUserId: users?.getCurrentUser?.()?.id,
-        relationshipType: id => relationships?.getRelationshipType?.(id),
-        userName,
-        channel: id => {
-            const channel = channels?.getChannel?.(id);
-            return channel ? { type: channel.type, name: channel.name, recipients: channel.recipients } : undefined;
-        },
-        guildName: id => guilds?.getGuild?.(id)?.name,
-    };
 }
 
 /** Hooks each of `methods` that exists on the export, marking its first argument as your own action */
@@ -140,7 +117,7 @@ export default definePlugin({
             const action = args[0] as FluxAction;
             if (!action || !TYPES.has(action.type)) return;
             try {
-                const entry = decide(action, createLookup(), tracker);
+                const entry = decide(action, storeLookup(store), tracker);
                 if (entry) report(entry);
             } catch (e) {
                 ctx.logger.error("Couldn't check", action.type, e);

@@ -191,10 +191,22 @@ export function translatableText(text: string): string {
         .trim();
 }
 
-/** Worth sending: at least two letters once code blocks, links, mentions and emoji are gone */
+/** Answers of isTranslatable by message content, oldest first */
+const translatable = new Map<string, boolean>();
+const TRANSLATABLE_CACHE_SIZE = 1000;
+
+/**
+ * Worth sending: at least two letters once code blocks, links, mentions and emoji are gone.
+ * The hover bar and the message menu ask on every render, so each content's answer is kept.
+ */
 export function isTranslatable(text: string | undefined | null): boolean {
     if (!text) return false;
-    return (translatableText(text).match(/\p{L}/gu)?.length ?? 0) >= 2;
+    let answer = translatable.get(text);
+    if (answer !== undefined) return answer;
+    answer = /\p{L}[^]*\p{L}/u.test(translatableText(text));
+    if (translatable.size >= TRANSLATABLE_CACHE_SIZE) translatable.delete(translatable.keys().next().value!);
+    translatable.set(text, answer);
+    return answer;
 }
 
 // --- Scripts: cheap hints before asking Google ---------------------------------------------------

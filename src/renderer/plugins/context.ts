@@ -49,24 +49,43 @@ export class PluginSettings<S extends SettingsSchema> {
         return values as SettingsValues<S>;
     }
 
+    private current?: SettingsValues<S>;
+
+    /**
+     * Current values, the same object until one of this plugin's settings changes. Every Evi settings
+     * write (another plugin saving its data, a toggle) notifies every subscriber, so this is what
+     * keeps those writes from re-rendering and re-running every plugin's settings consumers.
+     */
+    readonly snapshot = (): SettingsValues<S> => {
+        const next = this.all;
+        if (this.current && sameValues(this.current, next)) return this.current;
+        return this.current = next;
+    };
+
     /** Calls back with the new values whenever this plugin's settings change. Removed on stop. */
     onChange(callback: (values: SettingsValues<S>) => void) {
-        let last = JSON.stringify(this.all);
+        let last = this.snapshot();
         const unsubscribe = Settings.subscribe(() => {
-            const now = JSON.stringify(this.all);
+            const now = this.snapshot();
             if (now === last) return;
             last = now;
+            // A copy: callbacks may keep or change what they're given, React shares `now`
             callback(this.all);
         });
         this.onDispose(unsubscribe);
         return unsubscribe;
     }
 
-    /** React hook: current values, re-renders on change */
+    /** React hook: current values, re-renders only when one of them changes */
     use(): SettingsValues<S> {
-        React.useSyncExternalStore(Settings.subscribe, () => Settings.data);
-        return this.all;
+        return React.useSyncExternalStore(Settings.subscribe, this.snapshot);
     }
+}
+
+/** Setting values are primitives: equal key by key is equal */
+function sameValues(a: Record<string, unknown>, b: Record<string, unknown>) {
+    for (const key in b) if (!Object.is(a[key], b[key])) return false;
+    return true;
 }
 
 /**

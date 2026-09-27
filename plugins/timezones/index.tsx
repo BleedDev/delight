@@ -408,13 +408,23 @@ export default definePlugin({
             );
         });
 
+        // Discord's badge row compares the list by identity: the same array goes back until their
+        // badges or the time shown change
+        const badgeLists = new Map<string, { result: unknown; description: string; iconSrc: string; list: unknown[]; }>();
         ctx.hookExport("after", profileBadgesFilter, ({ args, result }) => {
             if (!ctx.settings.get("showOnProfiles")) return;
-            const zone = zoneOf(args[0]?.userId);
-            if (!zone || !isValidZone(zone)) return;
+            const userId: string | undefined = args[0]?.userId;
+            const zone = zoneOf(userId);
+            if (!userId || !zone || !isValidZone(zone)) return;
             const now = new Date();
-            const badge = { id: "evi-timezone", description: tooltipText(describeAt(zone, now)), iconSrc: clockIcon(zone, now) };
-            return [...(Array.isArray(result) ? result : []), badge];
+            const description = tooltipText(describeAt(zone, now));
+            const iconSrc = clockIcon(zone, now);
+            const cached = badgeLists.get(userId);
+            if (cached && cached.result === result && cached.description === description && cached.iconSrc === iconSrc) return cached.list;
+            const list = [...(Array.isArray(result) ? result : []), { id: "evi-timezone", description, iconSrc }];
+            if (badgeLists.size >= 100) badgeLists.clear();
+            badgeLists.set(userId, { result, description, iconSrc, list });
+            return list;
         });
 
         ctx.hookExport("before", usernameFilter, ({ args }) => {

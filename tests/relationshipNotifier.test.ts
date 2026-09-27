@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-    ChannelSnapshot, decide, DEDUPE_WINDOW, GROUP_DM, groupName, Lookup, NotificationLog, RelationshipType, SELF_WINDOW, Tracker,
+    ChannelSnapshot, decide, DEDUPE_WINDOW, GROUP_DM, groupName, Lookup, NotificationLog, RelationshipType, SELF_WINDOW, storeLookup, Tracker,
 } from "../plugins/relationship-notifier/events";
 
 const ME = "me";
@@ -183,5 +183,41 @@ describe("relationship notifier: log", () => {
         off();
         log.add(entry("b"));
         expect(calls).toBe(2);
+    });
+});
+
+describe("relationship notifier: store lookup", () => {
+    function stores() {
+        const asked: string[] = [];
+        const all: Record<string, any> = {
+            UserStore: { getCurrentUser: () => ({ id: ME }), getUser: (id: string) => id === "a" ? { globalName: "Alice" } : undefined },
+            RelationshipStore: { getRelationshipType: () => RelationshipType.FRIEND, getNickname: () => undefined },
+            ChannelStore: { getChannel: (id: string) => id === "g" ? { type: GROUP_DM, name: "Pals", recipients: ["a"] } : { type: 0, name: "general" } },
+            GuildStore: { getGuild: (id: string) => id === "s" ? { name: "Server" } : undefined },
+        };
+        return { asked, store: (name: string) => (asked.push(name), all[name]) };
+    }
+
+    test("a server channel being deleted only looks up ChannelStore", () => {
+        const { asked, store } = stores();
+        expect(decide({ type: "CHANNEL_DELETE", channel: { id: "text" } }, storeLookup(store), new Tracker())).toBeNull();
+        expect(asked).toEqual(["ChannelStore"]);
+    });
+
+    test("an unavailable server looks nothing up", () => {
+        const { asked, store } = stores();
+        expect(decide({ type: "GUILD_DELETE", guild: { id: "s", unavailable: true } }, storeLookup(store), new Tracker())).toBeNull();
+        expect(asked).toEqual([]);
+    });
+
+    test("each store is looked up once per action, and answers like before", () => {
+        const { asked, store } = stores();
+        const entry = decide({ type: "RELATIONSHIP_REMOVE", relationship: { id: "a", type: RelationshipType.FRIEND } }, storeLookup(store), new Tracker());
+        expect(entry?.text).toBe("Alice removed you as a friend");
+        expect(asked.sort()).toEqual(["RelationshipStore", "UserStore"]);
+        const lookup = storeLookup(store);
+        expect(lookup.currentUserId).toBe(ME);
+        expect(lookup.guildName("s")).toBe("Server");
+        expect(lookup.channel("g")).toEqual({ type: GROUP_DM, name: "Pals", recipients: ["a"] });
     });
 });

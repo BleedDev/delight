@@ -10,8 +10,8 @@
  * - Messages: MESSAGE_CREATE stamps "last message" and where; LOAD_MESSAGES_SUCCESS (opening or
  *   scrolling a channel) backfills it from history.
  * - Presences and history are recorded when the browser is idle, never inside Discord's dispatch.
- * - Storage: IndexedDB (Discord removes window.localStorage), one record, written at most every
- *   30 seconds and on stop/unload. Capped at 25000 people, least recently seen dropped first (a
+ * - Storage: IndexedDB (Discord removes window.localStorage), one record kept as columns (track.ts
+ *   pack), written at most every 30 seconds and on stop/unload. Capped at 25000 people, least recently seen dropped first (a
  *   few hundred at a time), friends and DM contacts last.
  * - Profiles: a clock badge through ctx.profileBadges, also listed in Discord's badge directory;
  *   hovering shows the full summary, clicking jumps to their last message.
@@ -190,7 +190,8 @@ export default definePlugin({
             if (!state.context) return;
             refreshOwnId();
             invalidateKeep();
-            setTimeout(seed, 1000);
+            // Walks every presence Discord has: once it has settled, when the browser is idle
+            setTimeout(() => whenIdle(() => void (state.context && seed())), 1000);
         },
         // Who counts as a friend or DM contact, for pruning
         RELATIONSHIP_ADD: invalidateKeep,
