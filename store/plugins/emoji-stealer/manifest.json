@@ -2,14 +2,33 @@
     "id": "emoji-stealer",
     "name": "Emoji Stealer",
     "description": "Right-click a custom emoji, reaction or sticker to add it to one of your servers, with a name check and the slots each server has left. Also copies emoji links and IDs.",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "authors": [
         "Evi"
     ],
     "tags": [
         "utility"
     ],
+    "minEviVersion": "0.3.2",
+    "permissions": {
+        "network": [
+            "cdn.discordapp.com",
+            "media.discordapp.net"
+        ]
+    },
     "changelog": [
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Says what it needs (contacting cdn.discordapp.com and media.discordapp.net), and Evi holds it to that."
+            ]
+        },
+        {
+            "version": "1.0.1",
+            "notes": [
+                "The Add to Server dialog opens and closes with Discord's own animation."
+            ]
+        },
         {
             "version": "1.0.0",
             "notes": [

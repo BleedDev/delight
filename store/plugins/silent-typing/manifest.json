@@ -2,7 +2,7 @@
     "id": "silent-typing",
     "name": "Silent Typing",
     "description": "Others don't see \"is typing…\" while you type. Toggle it with /silenttyping or the keyboard button in the chat bar.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "authors": [
         "Evi"
     ],
@@ -10,7 +10,14 @@
         "privacy",
         "messages"
     ],
+    "permissions": {},
     "changelog": [
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
         {
             "version": "1.0.1",
             "notes": [

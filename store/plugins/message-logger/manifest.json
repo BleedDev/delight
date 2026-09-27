@@ -2,14 +2,23 @@
     "id": "message-logger",
     "name": "Message Logger",
     "description": "Deleted messages stay in the chat, marked as deleted, and edited messages show what they said before. Kept in memory only: nothing is saved, and it's all gone when Discord restarts.",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "authors": [
         "Evi"
     ],
     "tags": [
         "messages"
     ],
+    "permissions": {
+        "readMessages": true
+    },
     "changelog": [
+        {
+            "version": "1.1.2",
+            "notes": [
+                "Says what it needs (reading messages), and Evi holds it to that."
+            ]
+        },
         {
             "version": "1.1.1",
             "notes": [

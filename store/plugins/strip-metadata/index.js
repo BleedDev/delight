@@ -270,9 +270,9 @@ var settings = {
 };
 var MAX_IMAGE_BYTES = 100 * 1024 * 1024;
 var IMAGE_NAME = /\.(jpe?g|jfif|png|apng|webp)$/i;
-var METHODS = ["addFiles", "addFile", "setFile", "instantBatchUpload"];
+var METHODS = ["addFiles", "addFile", "setFile"];
 var uploadActions = import_api.filters.byProps("addFiles", "clearAll");
-var uploadHandler = import_api.filters.byProps("instantBatchUpload");
+var uploadEntry = import_api.filters.byCode("INSTANT_UPLOAD", "requireConfirm");
 var context;
 var cleaned = new WeakSet;
 async function cleanFile(file) {
@@ -330,6 +330,19 @@ function hasFiles(args) {
   collectFiles(args, found);
   return found.some((f) => !cleaned.has(f.file));
 }
+function interceptEntry(call) {
+  const ctx = context;
+  const [files, ...rest] = call.args;
+  const list = files && typeof files === "object" && typeof files.length === "number" ? Array.from(files) : [];
+  if (!ctx || !ctx.settings.get("stripImages") && !ctx.settings.get("randomNames") || !list.some((f) => f instanceof File && !cleaned.has(f))) {
+    return call.callOriginal(...call.args);
+  }
+  const clean = list.map((f) => f instanceof File ? cleanFile(f).catch((err) => {
+    context?.logger.error("Couldn't clean", f.name, err);
+    return f;
+  }) : f);
+  return Promise.all(clean).then((files2) => call.callOriginal(files2, ...rest));
+}
 function interceptUpload(call) {
   const ctx = context;
   if (!ctx || !ctx.settings.get("stripImages") && !ctx.settings.get("randomNames") || !hasFiles(call.args)) {
@@ -342,17 +355,12 @@ var strip_metadata_default = import_api.definePlugin({
   start(ctx) {
     context = ctx;
     ctx.onDispose(() => void (context = undefined));
-    const hooked = new WeakSet;
-    for (const filter of [uploadActions, uploadHandler]) {
-      ctx.waitFor(filter, (actions) => {
-        if (hooked.has(actions))
-          return;
-        hooked.add(actions);
-        for (const method of METHODS) {
-          if (typeof actions[method] === "function")
-            ctx.hook.instead(actions, method, interceptUpload);
-        }
-      });
-    }
+    ctx.hookExport("instead", uploadEntry, interceptEntry);
+    ctx.waitFor(uploadActions, (actions) => {
+      for (const method of METHODS) {
+        if (typeof actions[method] === "function")
+          ctx.hook.instead(actions, method, interceptUpload);
+      }
+    });
   }
 });

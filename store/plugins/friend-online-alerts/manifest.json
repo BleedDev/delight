@@ -2,14 +2,21 @@
     "id": "friend-online-alerts",
     "name": "Friend Online Alerts",
     "description": "Get told when the people you pick come online, with a toast, a desktop notification or a sound. Optionally when they go offline, start a game or start streaming.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "authors": [
         "Evi"
     ],
     "tags": [
         "social"
     ],
+    "permissions": {},
     "changelog": [
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
         {
             "version": "1.0.1",
             "notes": [

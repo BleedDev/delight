@@ -2,7 +2,7 @@
     "id": "link-safety",
     "name": "Link Safety",
     "description": "Checks links before they open and warns you about likely scams: masked links that lie about where they go, lookalike domains like dlscord.com or steamcommunlty.com, hidden tricks in the address, free Nitro bait and links to programs.",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "authors": [
         "Evi"
     ],
@@ -10,7 +10,21 @@
         "privacy",
         "security"
     ],
+    "minEviVersion": "0.3.2",
+    "permissions": {},
     "changelog": [
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
+        {
+            "version": "1.0.1",
+            "notes": [
+                "The warning opens and closes with Discord's own animation."
+            ]
+        },
         {
             "version": "1.0.0",
             "notes": [

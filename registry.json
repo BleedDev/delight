@@ -11,16 +11,16 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "2.0.1",
+            "version": "2.0.2",
             "tags": [
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.5.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/better-image-viewer/manifest.json?v=4eeec5336965",
-                    "sha256": "4eeec5336965a0fb75e9330b639e7782dafe60f56049051a2f4efce7566fafa2"
+                    "url": "https://evi.rest/store/plugins/better-image-viewer/manifest.json?v=1f76b1bdd62c",
+                    "sha256": "1f76b1bdd62ca0d39a2c1d79729e8fbb7e80c6d13539a5433a500884e5b45988"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/better-image-viewer/index.js?v=87c96cdadccf",
@@ -31,6 +31,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/better-image-viewer",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "2.0.2",
+                    "notes": [
+                        "Says what it needs (reading messages), and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "2.0.1",
                     "notes": [
@@ -52,7 +58,57 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": true,
+                "sendMessages": false,
+                "changeSettings": false
+            }
+        },
+        {
+            "id": "calm-name-effects",
+            "name": "Calm Name Effects",
+            "description": "Halves the work of opening a chat. Nitro name styles like Prism, Neon and Gummy replay their animation every time a chat opens, on every message at once, which keeps Discord busy for seconds. Names keep their colours and effects, and animate while you hover them.",
+            "authors": [
+                "Evi"
+            ],
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "performance"
+            ],
+            "native": false,
+            "minEviVersion": "0.1.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/calm-name-effects/manifest.json?v=8b9cba6473fa",
+                    "sha256": "8b9cba6473fa8a9424dfa4503ba0ee26ce4b4b0633bde7bfc34ab87f41006165"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/calm-name-effects/index.js?v=3757cab9cc0c",
+                    "sha256": "3757cab9cc0c8dac07f8f61c1078a735422a5725fc7023033d8da6429859e7d5"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/calm-name-effects",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "claude",
@@ -116,24 +172,78 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "privacy"
             ],
             "native": false,
-            "minEviVersion": "0.1.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/clear-urls/manifest.json",
-                    "sha256": "d359a74b88b0300e4a7da27fef8ce91745404fb859c9c1caa877d75e7eaf69de"
+                    "url": "https://evi.rest/store/plugins/clear-urls/manifest.json?v=90060815bdea",
+                    "sha256": "90060815bdeaad5e8bf9b31b009f37574b29205a12e7101b6d004d0e140b7fd2"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/clear-urls/index.js",
+                    "url": "https://evi.rest/store/plugins/clear-urls/index.js?v=c41ea7dcf50a",
                     "sha256": "c41ea7dcf50a8cb658b6f49e1588e98cf467efefe5d4fb3bc9d58309ed73d9c6"
                 }
             },
-            "updatedAt": "2026-09-26",
+            "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/clear-urls",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Says what it needs (reading messages), and Evi holds it to that."
+                    ]
+                },
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": true,
+                "sendMessages": false,
+                "changeSettings": false
+            }
+        },
+        {
+            "id": "dm-categories",
+            "name": "DM Categories",
+            "description": "Sort your DMs into categories like Friends, Work or Gaming, each a collapsible section at the top of your DM list. Right-click a DM or group DM to add it to one. Collapsed categories still show the DM you have open and any with unread messages.",
+            "authors": [
+                "Evi"
+            ],
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "social",
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.7.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/dm-categories/manifest.json?v=b5a9307278ac",
+                    "sha256": "b5a9307278ac51afb5bc131d1dde02df4cdf713afd2d0f03551d7881646dbaf1"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/dm-categories/index.js?v=fde4640a008c",
+                    "sha256": "fde4640a008c7ada9f168776f896e2b4f0700a69538351527368b0e96f967ca2"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/dm-categories",
             "screenshots": [],
             "changelog": [
                 {
@@ -143,9 +253,12 @@
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "emoji-stealer",
@@ -154,7 +267,10 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.1",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.2",
             "tags": [
                 "utility"
             ],
@@ -162,8 +278,8 @@
             "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/emoji-stealer/manifest.json?v=5e307dc5a34a",
-                    "sha256": "5e307dc5a34acfc184eabcab2049c4fc52f937150dcd018dfe675588ead3cbeb"
+                    "url": "https://evi.rest/store/plugins/emoji-stealer/manifest.json?v=83dff1ed1233",
+                    "sha256": "83dff1ed12332a2caa73d8c632c6bc953d52f0a1c69011ca3c7e59c038228487"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/emoji-stealer/index.js?v=4beccb345fce",
@@ -174,6 +290,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/emoji-stealer",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Says what it needs (contacting cdn.discordapp.com and media.discordapp.net), and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -187,9 +309,15 @@
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [
+                    "cdn.discordapp.com",
+                    "media.discordapp.net"
+                ],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "experiments",
@@ -198,26 +326,35 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "developer"
             ],
             "native": false,
-            "minEviVersion": "0.1.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/experiments/manifest.json",
-                    "sha256": "312f00419b09393c3b793776cb3729c0e502394b398fba3297f0e0c11aec2c0d"
+                    "url": "https://evi.rest/store/plugins/experiments/manifest.json?v=d941dcd56ea7",
+                    "sha256": "d941dcd56ea72431ba779d1d223c40b216a576b7be7fa35be00fbb5e5208160c"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/experiments/index.js",
+                    "url": "https://evi.rest/store/plugins/experiments/index.js?v=42113179b036",
                     "sha256": "42113179b03641b507c8ad4d300cf75db5a343a701492191ee98356027caa1be"
                 }
             },
-            "updatedAt": "2026-09-26",
+            "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/experiments",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -225,9 +362,12 @@
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "fast-lists",
@@ -239,16 +379,16 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "2.0.1",
+            "version": "2.0.2",
             "tags": [
                 "performance"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/fast-lists/manifest.json?v=d2ac9ba369e2",
-                    "sha256": "d2ac9ba369e24be72ff6eccab472c9fea12f9929da81980a1e5f936d9fb5a549"
+                    "url": "https://evi.rest/store/plugins/fast-lists/manifest.json?v=44c3b7599d9e",
+                    "sha256": "44c3b7599d9e8112d54f9e9bb813b4727bacd0abbf0cf81a72c954362ed96893"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/fast-lists/index.js?v=e312bfc1fc0c",
@@ -259,6 +399,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/fast-lists",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "2.0.2",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "2.0.1",
                     "notes": [
@@ -271,7 +417,13 @@
                         "Servers, messages and members far out of view skip rendering work instead of being removed, so nothing flickers or jumps."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "friend-online-alerts",
@@ -283,16 +435,16 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.1",
+            "version": "1.0.2",
             "tags": [
                 "social"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/friend-online-alerts/manifest.json?v=b9a95b8b1e2a",
-                    "sha256": "b9a95b8b1e2a9a563ae7e79ebece95cf64d4cf543587d94b7c661fc1b0b8c8ac"
+                    "url": "https://evi.rest/store/plugins/friend-online-alerts/manifest.json?v=b4f582cb4d5b",
+                    "sha256": "b4f582cb4d5bdf2c1887cdcc156179fa10d5769e653a92a4d18dc9b9cc73c40d"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/friend-online-alerts/index.js?v=af9e5a8db4c2",
@@ -303,6 +455,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/friend-online-alerts",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -315,7 +473,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "game-activity-toggle",
@@ -324,16 +488,19 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "privacy"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/game-activity-toggle/manifest.json?v=c22c9864be55",
-                    "sha256": "c22c9864be55b896ae0a28bf2fd28ab6a0e45115d7fd2073d2437ddf6727feb9"
+                    "url": "https://evi.rest/store/plugins/game-activity-toggle/manifest.json?v=e82e3751e403",
+                    "sha256": "e82e3751e403d0c149073cc40b2bc30fd24355552edb6cc91a0bfdf201d3a1f8"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/game-activity-toggle/index.js?v=680ed2593dbf",
@@ -345,15 +512,24 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Says what it needs (changing your settings), and Evi holds it to that."
+                    ]
+                },
+                {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": true
+            }
         },
         {
             "id": "gif-folders",
@@ -365,16 +541,16 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.2.2",
+            "version": "1.2.3",
             "tags": [
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/gif-folders/manifest.json?v=624810639a8b",
-                    "sha256": "624810639a8bf48bb97574b3a033fd7e0243133f605a01d5d05f104c17145eae"
+                    "url": "https://evi.rest/store/plugins/gif-folders/manifest.json?v=388fcdb519d5",
+                    "sha256": "388fcdb519d5d3f83f9537480bec84d129164896a11d9825e3523b76fc50fa52"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/gif-folders/index.js?v=c7f599477594",
@@ -385,6 +561,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/gif-folders",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.2.3",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.2.2",
                     "notes": [
@@ -422,7 +604,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "gpu-boost",
@@ -431,26 +619,35 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "performance"
             ],
             "native": true,
-            "minEviVersion": "0.1.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/gpu-boost/manifest.json",
-                    "sha256": "16b8bf49cc5a3dfb95c6416f2d71021120e3a3e38ccfc26cac7fdd3110d40184"
+                    "url": "https://evi.rest/store/plugins/gpu-boost/manifest.json?v=31b10af2d885",
+                    "sha256": "31b10af2d88587ed4fc981e36c7478e1ca44c3a4c7b1a9fcd98a9f8b68b55806"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/gpu-boost/index.js",
+                    "url": "https://evi.rest/store/plugins/gpu-boost/index.js?v=352ec04f0e14",
                     "sha256": "352ec04f0e14e33cc0e508ecd373b42258fdfc078ee22c08021dd64f530f5fef"
                 }
             },
-            "updatedAt": "2026-09-26",
+            "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/gpu-boost",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -458,9 +655,12 @@
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "hide-blocked",
@@ -472,17 +672,17 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.1",
+            "version": "1.0.2",
             "tags": [
                 "privacy",
                 "messages"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/hide-blocked/manifest.json?v=f79f6ddfae0b",
-                    "sha256": "f79f6ddfae0baa661f0c6dfddea7d8c8619d104015b4086e049a3879803d2d7f"
+                    "url": "https://evi.rest/store/plugins/hide-blocked/manifest.json?v=6a3891a05115",
+                    "sha256": "6a3891a05115ca39b9420b8fd075ee4d995d79d7fa51d2b25a5eef8841e06ad4"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/hide-blocked/index.js?v=abf0135442be",
@@ -493,6 +693,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/hide-blocked",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Says what it needs (reading messages), and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -505,7 +711,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": true,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "hide-personal-info",
@@ -514,16 +726,19 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "privacy"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/hide-personal-info/manifest.json?v=5237eef823fa",
-                    "sha256": "5237eef823fa26be5058586b27acad4294d4d026e0c04095a57f5d3db6765dc0"
+                    "url": "https://evi.rest/store/plugins/hide-personal-info/manifest.json?v=1e13f4984c6a",
+                    "sha256": "1e13f4984c6aff417b1a35c8dafb9b9edadf5ddb2a803c76e42a99d9cd6b6edd"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/hide-personal-info/index.js?v=f57aa14eda17",
@@ -535,15 +750,24 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
+                {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "inline-translate",
@@ -555,17 +779,17 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.2",
+            "version": "1.0.3",
             "tags": [
                 "messages",
                 "utility"
             ],
             "native": true,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/inline-translate/manifest.json?v=c409674437c3",
-                    "sha256": "c409674437c38ae84303a7664698e78e21ac83bcfe9166a27ae7f676dfb01da3"
+                    "url": "https://evi.rest/store/plugins/inline-translate/manifest.json?v=42b3946326d8",
+                    "sha256": "42b3946326d8fc8fddeacdf4a6ce4ff50a4a8a028f969af59a711d47850c4faa"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/inline-translate/index.js?v=8c709a793a9f",
@@ -580,6 +804,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/inline-translate",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.3",
+                    "notes": [
+                        "Says what it needs (contacting translate.googleapis.com and reading messages), and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.2",
                     "notes": [
@@ -598,7 +828,15 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [
+                    "translate.googleapis.com"
+                ],
+                "readMessages": true,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "last-seen",
@@ -610,7 +848,7 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.1.3",
+            "version": "1.1.4",
             "tags": [
                 "social"
             ],
@@ -618,8 +856,8 @@
             "minEviVersion": "0.4.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/last-seen/manifest.json?v=42bbc87fd138",
-                    "sha256": "42bbc87fd138bef78eda3bcb08a4cffaaefcf718c8371e447c932b031c902f24"
+                    "url": "https://evi.rest/store/plugins/last-seen/manifest.json?v=0d1f7fddce12",
+                    "sha256": "0d1f7fddce12ffe87c7ab5406e16f4fad34c86671089e8efcecfa170e1a0fc5b"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/last-seen/index.js?v=739d4cc6a122",
@@ -630,6 +868,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/last-seen",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.4",
+                    "notes": [
+                        "Says what it needs (reading messages), and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.1.3",
                     "notes": [
@@ -665,7 +909,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": true,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "link-safety",
@@ -674,7 +924,10 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.1",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.2",
             "tags": [
                 "privacy",
                 "security"
@@ -683,8 +936,8 @@
             "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/link-safety/manifest.json?v=a0060346a4e8",
-                    "sha256": "a0060346a4e859f797571746c4f6926ea5622826469333921ad09b68d6e93fdf"
+                    "url": "https://evi.rest/store/plugins/link-safety/manifest.json?v=9c317a50c959",
+                    "sha256": "9c317a50c959fd70bba48689b0b9322ac14c43a4106f90b3242f5fa9fe2bdec0"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/link-safety/index.js?v=7cbceb44c47e",
@@ -695,6 +948,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/link-safety",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -708,9 +967,12 @@
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "message-logger",
@@ -722,16 +984,16 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.1.1",
+            "version": "1.1.2",
             "tags": [
                 "messages"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/message-logger/manifest.json?v=83fc8f5b70dd",
-                    "sha256": "83fc8f5b70dd2617873603f7dab3b76f04b31d7e9ac43d243e39a89a508a4a99"
+                    "url": "https://evi.rest/store/plugins/message-logger/manifest.json?v=d9565b1a7253",
+                    "sha256": "d9565b1a7253db148fb5730c13c8dbdb97323168d4fc1170c2a02a688f028188"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/message-logger/index.js?v=3b8747b94f87",
@@ -742,6 +1004,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/message-logger",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.2",
+                    "notes": [
+                        "Says what it needs (reading messages), and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.1.1",
                     "notes": [
@@ -760,7 +1028,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": true,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "no-track",
@@ -769,30 +1043,39 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "privacy"
             ],
             "native": true,
-            "minEviVersion": "0.1.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/no-track/manifest.json",
-                    "sha256": "b26123d81cf3e6a4c3e2e99b1b3c492a650b6818f0e87fe9f3048f27da18d08c"
+                    "url": "https://evi.rest/store/plugins/no-track/manifest.json?v=f13e1b245b00",
+                    "sha256": "f13e1b245b002b7d996e916fe68e09818b10796d144495f321538db97b4bc9ee"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/no-track/index.js",
+                    "url": "https://evi.rest/store/plugins/no-track/index.js?v=99179b7f246c",
                     "sha256": "99179b7f246c5a06262a691f73bec81cbf7fd6f13b030040f1110cdf091b7370"
                 },
                 "native.js": {
-                    "url": "https://evi.rest/store/plugins/no-track/native.js",
+                    "url": "https://evi.rest/store/plugins/no-track/native.js?v=e5bf3cb955ec",
                     "sha256": "e5bf3cb955ec5ecd34c43ac49a9678e3077cdda0338737ad12583680ebc17224"
                 }
             },
-            "updatedAt": "2026-09-26",
+            "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/no-track",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -800,9 +1083,12 @@
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "permissions-viewer",
@@ -811,7 +1097,10 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.1.1",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.1.2",
             "tags": [
                 "utility"
             ],
@@ -819,8 +1108,8 @@
             "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/permissions-viewer/manifest.json?v=b362277748ab",
-                    "sha256": "b362277748abe21feff8da6e48fcd8ad24e995823f6b09a9ef4253053e72a093"
+                    "url": "https://evi.rest/store/plugins/permissions-viewer/manifest.json?v=bc7b7fd6616e",
+                    "sha256": "bc7b7fd6616e7b5a416d8b6f64d1d11e67eded004630222cae77b872b12d5381"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/permissions-viewer/index.js?v=0856782ed152",
@@ -831,6 +1120,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/permissions-viewer",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.2",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.1.1",
                     "notes": [
@@ -850,9 +1145,12 @@
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "platform-indicators",
@@ -864,7 +1162,7 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.2.2",
+            "version": "1.2.3",
             "tags": [
                 "appearance"
             ],
@@ -872,18 +1170,24 @@
             "minEviVersion": "0.4.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/platform-indicators/manifest.json?v=e365b93eefd6",
-                    "sha256": "e365b93eefd6f40e491bc56ad2659452de82e8db540fb2fe02766c4adbb646d3"
+                    "url": "https://evi.rest/store/plugins/platform-indicators/manifest.json?v=44d303456c69",
+                    "sha256": "44d303456c6909ceca4557978a2f405264e2f7e276e8dcde4d9ca84b5624b11b"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/platform-indicators/index.js?v=41cd6115b242",
-                    "sha256": "41cd6115b242b56b4132f458fba9e4b54a14df7dc4d879ea0461312ac03f1ba4"
+                    "url": "https://evi.rest/store/plugins/platform-indicators/index.js?v=467141705e27",
+                    "sha256": "467141705e2792356168a78ff2bf14171045c9012b9af5f3cf51d093229a14df"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/platform-indicators",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.2.3",
+                    "notes": [
+                        "The icon no longer grows to fill the whole message in places Evi's styles don't reach, like pop-out chats."
+                    ]
+                },
                 {
                     "version": "1.2.2",
                     "notes": [
@@ -916,7 +1220,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "quick-actions",
@@ -925,27 +1235,36 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "messages",
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.1.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/quick-actions/manifest.json",
-                    "sha256": "fd7fdc3f91c5b65908258fe619be4a6a18c01255f57e1fcb3fe0c3fdd9ca9017"
+                    "url": "https://evi.rest/store/plugins/quick-actions/manifest.json?v=cf61d3354bd3",
+                    "sha256": "cf61d3354bd358a91307b4d61313dcaec978530948174a739f8863ddc9622ccd"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/quick-actions/index.js",
+                    "url": "https://evi.rest/store/plugins/quick-actions/index.js?v=59077c0a018f",
                     "sha256": "59077c0a018f34aec1499fa699a135ee1f03eb7b434cd220999aaba3aaaaf8ef"
                 }
             },
-            "updatedAt": "2026-09-26",
+            "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/quick-actions",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -953,9 +1272,12 @@
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "read-all",
@@ -967,16 +1289,16 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.2",
+            "version": "1.0.3",
             "tags": [
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/read-all/manifest.json?v=9fb0ab71543b",
-                    "sha256": "9fb0ab71543b6beb1b69ff29b054a394f8da199934b746b838d71dc255096a7e"
+                    "url": "https://evi.rest/store/plugins/read-all/manifest.json?v=3e06b59ca2c3",
+                    "sha256": "3e06b59ca2c3f85d2264a141cf0e7d562d92501fd5dc4b2af0a226e5714f4b6b"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/read-all/index.js?v=79f5bbfe6bf4",
@@ -987,6 +1309,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/read-all",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.3",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.2",
                     "notes": [
@@ -1005,7 +1333,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "relationship-notifier",
@@ -1017,16 +1351,16 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.1",
+            "version": "1.0.2",
             "tags": [
                 "social"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/relationship-notifier/manifest.json?v=a679a49d467c",
-                    "sha256": "a679a49d467c866d4e969d0e720a081f08148ae5f7083ae0a5747c9e09cc1f2e"
+                    "url": "https://evi.rest/store/plugins/relationship-notifier/manifest.json?v=73d5f9359fd3",
+                    "sha256": "73d5f9359fd3cc450b92030711797238562068e36d8e5397a2d9ecbf1a6c2bbb"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/relationship-notifier/index.js?v=4ff07ec2bbc4",
@@ -1038,6 +1372,12 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Says what it needs (reading messages), and Evi holds it to that."
+                    ]
+                },
+                {
                     "version": "1.0.1",
                     "notes": [
                         "Faster: when a channel or server goes away, only what's needed to tell whether it concerns you is looked up."
@@ -1047,6 +1387,50 @@
                     "version": "1.0.0",
                     "notes": [
                         "First release."
+                    ]
+                }
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": true,
+                "sendMessages": false,
+                "changeSettings": false
+            }
+        },
+        {
+            "id": "send-timestamps",
+            "name": "Send Timestamps",
+            "description": "Send timestamps everyone sees in their own timezone. Pick any date from the calendar button in the chat bar, or type a time in backticks like `17:30`.",
+            "authors": [
+                "Kaz"
+            ],
+            "authorIds": [
+                "kazdevger"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "messages"
+            ],
+            "native": false,
+            "minEviVersion": "0.4.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/send-timestamps/3cf9a2579915/manifest.json?v=c56794c304e9",
+                    "sha256": "c56794c304e9b5abd493f8e99ccadd1ff13c65e5fdddebf1197d3e572c0c53bd"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/send-timestamps/3cf9a2579915/index.js?v=a5bce18e6752",
+                    "sha256": "a5bce18e67526b4b8bc21d78095de700f2d527b30a0e5dce396bfcd090de5d9b"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/Vendicated/Vencord/tree/main/src/plugins/sendTimestamps",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "Ported from Vencord."
                     ]
                 }
             ]
@@ -1061,17 +1445,17 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.3",
+            "version": "1.0.4",
             "tags": [
                 "servers",
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/show-hidden-channels/manifest.json?v=74e5d2f68b4d",
-                    "sha256": "74e5d2f68b4d68e8fefb172ab66916085e5c87af2403119ec8147ffccf59a169"
+                    "url": "https://evi.rest/store/plugins/show-hidden-channels/manifest.json?v=3cb3ba02510b",
+                    "sha256": "3cb3ba02510b699b175351734dc3484e6569b202184a503cb9768f84a2093620"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/show-hidden-channels/index.js?v=4a2cd30bc055",
@@ -1082,6 +1466,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/show-hidden-channels",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.4",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.3",
                     "notes": [
@@ -1106,7 +1496,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "silent-typing",
@@ -1118,17 +1514,17 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.1",
+            "version": "1.0.2",
             "tags": [
                 "privacy",
                 "messages"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/silent-typing/manifest.json?v=1515792865cf",
-                    "sha256": "1515792865cf4c3c6045b43085f834aac4abd8dcfcf2377ed01ddba7d2fc58af"
+                    "url": "https://evi.rest/store/plugins/silent-typing/manifest.json?v=985ac65cff85",
+                    "sha256": "985ac65cff854ec98120db9df9679bd90e4204cb1389f7fbb42e3aeeabb36ec8"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/silent-typing/index.js?v=a990dd40a84f",
@@ -1139,6 +1535,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/silent-typing",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -1151,7 +1553,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "smooth-caret",
@@ -1201,7 +1609,7 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.2",
+            "version": "1.0.3",
             "tags": [
                 "performance"
             ],
@@ -1209,8 +1617,8 @@
             "minEviVersion": "0.1.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/smooth-typing/manifest.json?v=21a9564f6ad2",
-                    "sha256": "21a9564f6ad2c6725a3f47f033860d4198cd205ae025f4fea309874562df1a5b"
+                    "url": "https://evi.rest/store/plugins/smooth-typing/manifest.json?v=d38847e3f368",
+                    "sha256": "d38847e3f368a9b8bb1d484465d655e7aa4c230b9d0f9620e6b14d199c97b010"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/smooth-typing/index.js?v=6faa527bea74",
@@ -1221,6 +1629,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/smooth-typing",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.3",
+                    "notes": [
+                        "Says what it needs (reading messages), and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.2",
                     "notes": [
@@ -1239,7 +1653,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": true,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "snippets",
@@ -1251,7 +1671,7 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.2",
+            "version": "1.0.3",
             "tags": [
                 "messages",
                 "utility"
@@ -1260,8 +1680,8 @@
             "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/snippets/manifest.json?v=2a289089243e",
-                    "sha256": "2a289089243e86c0490564e941b595b5c2d31e4f4906e2d7b3ce6d4d15b058a8"
+                    "url": "https://evi.rest/store/plugins/snippets/manifest.json?v=bca18b92d5d3",
+                    "sha256": "bca18b92d5d3436adc6aab6e95dfdf403b7f1f24bef86ec5f2af203b01026525"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/snippets/index.js?v=65c85ece082a",
@@ -1272,6 +1692,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/snippets",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.3",
+                    "notes": [
+                        "Says what it needs (sending messages), and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.2",
                     "notes": [
@@ -1290,7 +1716,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": true,
+                "changeSettings": false
+            }
         },
         {
             "id": "streamer-mode-plus",
@@ -1302,16 +1734,16 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.1",
+            "version": "1.0.2",
             "tags": [
                 "privacy"
             ],
             "native": false,
-            "minEviVersion": "0.6.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/streamer-mode-plus/manifest.json?v=d19340f6e230",
-                    "sha256": "d19340f6e230f8e5d2d160ca9d29e0c7e576d54d7210919d4026f8dca86027c9"
+                    "url": "https://evi.rest/store/plugins/streamer-mode-plus/manifest.json?v=5aa92ee24f97",
+                    "sha256": "5aa92ee24f97c19944ab9646f31c1a5dc89f3fd3dfcb4ab20be21a9b188f494e"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/streamer-mode-plus/index.js?v=330c61bca1c7",
@@ -1322,6 +1754,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/streamer-mode-plus",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -1334,7 +1772,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "strip-metadata",
@@ -1346,7 +1790,7 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.1",
+            "version": "1.0.2",
             "tags": [
                 "privacy"
             ],
@@ -1354,8 +1798,8 @@
             "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/strip-metadata/manifest.json?v=e665975e18a0",
-                    "sha256": "e665975e18a0ec4ff1186b2230b2872bf2d2a947d6678a2bbf6c7e7e2cf7bba9"
+                    "url": "https://evi.rest/store/plugins/strip-metadata/manifest.json?v=0453b643f136",
+                    "sha256": "0453b643f1362c5f6be98de528d878d8b7ca227221ef702fea27bae5dd1a30ed"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/strip-metadata/index.js?v=2a0e7a74ec1b",
@@ -1366,6 +1810,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/strip-metadata",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -1378,7 +1828,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "timezones",
@@ -1390,7 +1846,7 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.2",
+            "version": "1.0.3",
             "tags": [
                 "social"
             ],
@@ -1398,8 +1854,8 @@
             "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/timezones/manifest.json?v=b5f786318bff",
-                    "sha256": "b5f786318bffcb9cbce513abda456763953d8e151cff531057a4372cb70600fa"
+                    "url": "https://evi.rest/store/plugins/timezones/manifest.json?v=7a5688063fcc",
+                    "sha256": "7a5688063fcce876536b04714c85c2211ae00bcf004df53a94a821031c2b5ac3"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/timezones/index.js?v=4b9b26ddedca",
@@ -1410,6 +1866,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/timezones",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.3",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.2",
                     "notes": [
@@ -1428,6 +1890,51 @@
                         "First release."
                     ]
                 }
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
+        },
+        {
+            "id": "user-voice-show",
+            "name": "User Voice Show",
+            "description": "Shows a speaker next to anyone in a voice channel: in chat, the member list, your DMs, the friends list and on profiles. Click it to open the channel, double-click to join.",
+            "authors": [
+                "Kaz"
+            ],
+            "authorIds": [
+                "kazdevger"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "voice",
+                "social"
+            ],
+            "native": false,
+            "minEviVersion": "0.4.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/user-voice-show/6242aa38ebfa/manifest.json?v=14752a4ffb11",
+                    "sha256": "14752a4ffb11580ad7489b7bef8911a014e4e73524af1b8e59ff62fee4e4d5e8"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/user-voice-show/6242aa38ebfa/index.js?v=c35092ffe2a7",
+                    "sha256": "c35092ffe2a76019311d5bc79b76bf1d76571546caf5dbb6e794cfa494165c42"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/Vendicated/Vencord/tree/main/src/plugins/userVoiceShow",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "Ported from Vencord's UserVoiceShow. Original authors: Nuckyz and LordElias."
+                    ]
+                }
             ]
         },
         {
@@ -1437,7 +1944,10 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.1",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.2",
             "tags": [
                 "media"
             ],
@@ -1445,8 +1955,8 @@
             "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/video-controls-plus/manifest.json?v=a2888b72d77b",
-                    "sha256": "a2888b72d77b558a6085f19a8b26fb701b1f9ff4ab59764d55289d4422f98950"
+                    "url": "https://evi.rest/store/plugins/video-controls-plus/manifest.json?v=bdb2f15759bd",
+                    "sha256": "bdb2f15759bd4aaa0c592c3a9aa0438e21c21b297bac677cf43722d4d7200f92"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/video-controls-plus/index.js?v=16b2c03432b8",
@@ -1457,6 +1967,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/video-controls-plus",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -1470,9 +1986,60 @@
                     ]
                 }
             ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
+        },
+        {
+            "id": "view-icons",
+            "name": "View Icons",
+            "description": "See avatars, banners, server icons and group DM icons at full size in Discord's image viewer, from their right-click menu. A person's avatars and banners open together, so the arrows go through all of them. Hover the menu item to download the original or copy its link.",
+            "authors": [
+                "Evi"
+            ],
             "authorIds": [
                 "evi"
-            ]
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "social",
+                "utility"
+            ],
+            "native": false,
+            "minEviVersion": "0.7.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/view-icons/manifest.json?v=56f4d5804afd",
+                    "sha256": "56f4d5804afd577c730d80344a8fffc497ccf8feda149da6768f6d9bb2eead78"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/view-icons/index.js?v=07114dbf1ad9",
+                    "sha256": "07114dbf1ad97209d0007494e2211f400bc91debb59654c5c5deb3256423db0f"
+                }
+            },
+            "updatedAt": "2026-09-27",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/view-icons",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ],
+            "permissions": {
+                "network": [
+                    "cdn.discordapp.com",
+                    "discord.com"
+                ],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "voice-activity-log",
@@ -1484,7 +2051,7 @@
             "authorIds": [
                 "evi"
             ],
-            "version": "1.1.3",
+            "version": "1.1.4",
             "tags": [
                 "voice"
             ],
@@ -1492,8 +2059,8 @@
             "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/voice-activity-log/manifest.json?v=4524b02053d5",
-                    "sha256": "4524b02053d5a647e0d47ec376394351073de2eaf0142bae2df8f018be7ef480"
+                    "url": "https://evi.rest/store/plugins/voice-activity-log/manifest.json?v=52683880a839",
+                    "sha256": "52683880a839207e9c9fe376046fb4c4dbe983a5e29454ac8283f563c9d623d7"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/voice-activity-log/index.js?v=3fc8ba44e3a6",
@@ -1504,6 +2071,12 @@
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/voice-activity-log",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.4",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
                 {
                     "version": "1.1.3",
                     "notes": [
@@ -1536,7 +2109,13 @@
                         "First release."
                     ]
                 }
-            ]
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "voice-message-download",
@@ -1545,17 +2124,20 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "messages",
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/voice-message-download/manifest.json?v=6e8c3e2e3704",
-                    "sha256": "6e8c3e2e3704484572f70fb030aeea2b470a33c62fa7a8051ef0973dd6854064"
+                    "url": "https://evi.rest/store/plugins/voice-message-download/manifest.json?v=7edbfe9a05c9",
+                    "sha256": "7edbfe9a05c9a8147528481e59d0bb1dd4a44a6f6af601ffca34f6a3d73e52ca"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/voice-message-download/index.js?v=9416e9929ae9",
@@ -1567,15 +2149,27 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Says what it needs (contacting cdn.discordapp.com and media.discordapp.net), and Evi holds it to that."
+                    ]
+                },
+                {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [
+                    "cdn.discordapp.com",
+                    "media.discordapp.net"
+                ],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         },
         {
             "id": "volume-booster",
@@ -1584,16 +2178,19 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "voice"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.7.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/volume-booster/manifest.json?v=9156be8244a5",
-                    "sha256": "9156be8244a5c3c0fbeed01b89738f3c4018508f1300622beb01ce6531de5afc"
+                    "url": "https://evi.rest/store/plugins/volume-booster/manifest.json?v=b115aba91ff9",
+                    "sha256": "b115aba91ff92f372db67c978000efeb796c5d48ff335cd867d7504eb5565b0d"
                 },
                 "index.js": {
                     "url": "https://evi.rest/store/plugins/volume-booster/index.js?v=9a5b93eb37a9",
@@ -1605,15 +2202,24 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+                    ]
+                },
+                {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
                     ]
                 }
             ],
-            "authorIds": [
-                "evi"
-            ]
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         }
     ],
     "themes": [

@@ -1,0 +1,29 @@
+{
+    "id": "view-icons",
+    "name": "View Icons",
+    "description": "See avatars, banners, server icons and group DM icons at full size in Discord's image viewer, from their right-click menu. A person's avatars and banners open together, so the arrows go through all of them. Hover the menu item to download the original or copy its link.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "social",
+        "utility"
+    ],
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "permissions": {
+        "network": [
+            "cdn.discordapp.com",
+            "discord.com"
+        ]
+    },
+    "enabledByDefault": false,
+    "main": "index.js"
+}

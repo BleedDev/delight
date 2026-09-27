@@ -2,7 +2,7 @@
     "id": "snippets",
     "name": "Snippets",
     "description": "Saved replies. Pick one from the chat bar or send it with /snip, with placeholders like {user} and {date}. Right-click a message to save it as a snippet.",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "authors": [
         "Evi"
     ],
@@ -11,7 +11,16 @@
         "utility"
     ],
     "minEviVersion": "0.3.2",
+    "permissions": {
+        "sendMessages": true
+    },
     "changelog": [
+        {
+            "version": "1.0.3",
+            "notes": [
+                "Says what it needs (sending messages), and Evi holds it to that."
+            ]
+        },
         {
             "version": "1.0.2",
             "notes": [

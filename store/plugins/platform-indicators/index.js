@@ -58,7 +58,7 @@ var GLYPHS = {
   embedded: `<path d="M7.5 6.5h9a5 5 0 0 1 4.9 4l.9 4.6a3.2 3.2 0 0 1-5.6 2.6L15 15.5H9l-1.7 2.2a3.2 3.2 0 0 1-5.6-2.6l.9-4.6a5 5 0 0 1 4.9-4Z"/><path d="M7.5 10v3M6 11.5h3"/><path d="M15.5 11h.01M17.5 13h.01"/>`
 };
 function svg(p, s, glyph, maskId) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">` + `<mask id="${maskId}"><rect width="24" height="24" fill="white"/><circle cx="19.5" cy="19.5" r="6" fill="black"/></mask>` + `<g mask="url(#${maskId})" fill="none" stroke="${glyph}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${GLYPHS[p]}</g>` + `<circle cx="19.5" cy="19.5" r="4" fill="${COLORS[s]}"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">` + `<mask id="${maskId}"><rect width="24" height="24" fill="white"/><circle cx="19.5" cy="19.5" r="6" fill="black"/></mask>` + `<g mask="url(#${maskId})" fill="none" stroke="${glyph}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${GLYPHS[p]}</g>` + `<circle cx="19.5" cy="19.5" r="4" fill="${COLORS[s]}"/></svg>`;
 }
 var iconSrcs = new Map;
 var iconSrc = (p, s) => {
@@ -173,6 +173,7 @@ function Icon({ platform, status }) {
   const id = `evi-platform-${import_api.React.useId().replace(/:/g, "")}`;
   return /* @__PURE__ */ jsx_runtime.jsx("span", {
     className: "evi-platform-icon",
+    style: { width: 16, height: 16 },
     "aria-label": tooltip(platform, status),
     role: "img",
     dangerouslySetInnerHTML: { __html: svg(platform, status, "currentColor", id) }

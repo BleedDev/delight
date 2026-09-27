@@ -2,7 +2,7 @@
     "id": "platform-indicators",
     "name": "Platform Indicators",
     "description": "Shows whether someone is on desktop, mobile, web or a console: on their profile, next to their name in chat and in the member list.",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "authors": [
         "Evi"
     ],
@@ -10,7 +10,14 @@
         "appearance"
     ],
     "minEviVersion": "0.4.0",
+    "permissions": {},
     "changelog": [
+        {
+            "version": "1.2.3",
+            "notes": [
+                "The icon no longer grows to fill the whole message in places Evi's styles don't reach, like pop-out chats."
+            ]
+        },
         {
             "version": "1.2.2",
             "notes": [

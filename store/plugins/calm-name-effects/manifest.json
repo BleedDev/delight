@@ -1,0 +1,24 @@
+{
+    "id": "calm-name-effects",
+    "name": "Calm Name Effects",
+    "description": "Halves the work of opening a chat. Nitro name styles like Prism, Neon and Gummy replay their animation every time a chat opens, on every message at once, which keeps Discord busy for seconds. Names keep their colours and effects, and animate while you hover them.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "performance"
+    ],
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "minEviVersion": "0.1.0",
+    "permissions": {},
+    "enabledByDefault": true,
+    "main": "index.js"
+}

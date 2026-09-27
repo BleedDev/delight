@@ -806,31 +806,25 @@ function linkText(event, props) {
 }
 function openWarning(analysis, onOpen, onCancel) {
   closeOpen?.();
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = import_api.createRoot(container);
   let settled = false;
-  const close = () => {
-    if (closeOpen === close)
-      closeOpen = undefined;
-    root.unmount();
-    container.remove();
-  };
-  const finish = (open) => {
+  const finish = (open, options) => {
     if (settled)
       return;
     settled = true;
-    close();
+    close(options);
     try {
       (open ? onOpen : onCancel)();
     } catch {}
   };
-  closeOpen = () => finish(false);
-  root.render(/* @__PURE__ */ jsx_runtime.jsx(Warning, {
+  const cancel = (options) => finish(false, options);
+  const close = import_api.openLayer(() => /* @__PURE__ */ jsx_runtime.jsx(Warning, {
     analysis,
     onOpen: () => finish(true),
     onBack: () => finish(false)
-  }));
+  }), {
+    onClosed: () => void (closeOpen === cancel && (closeOpen = undefined))
+  });
+  closeOpen = cancel;
 }
 function Warning({ analysis, onOpen, onBack }) {
   const backRef = import_api.React.useRef(null);
@@ -878,10 +872,10 @@ function Warning({ analysis, onOpen, onBack }) {
     });
   }
   return /* @__PURE__ */ jsx_runtime.jsx("div", {
-    className: "evi-ls-scrim",
+    className: "evi-ls-scrim evi-scrim",
     onMouseDown: (e) => e.target === e.currentTarget && onBack(),
     children: /* @__PURE__ */ jsx_runtime.jsxs("div", {
-      className: "evi-ls-modal",
+      className: "evi-ls-modal evi-modal",
       "data-level": analysis.level,
       role: "alertdialog",
       "aria-modal": "true",
@@ -1062,7 +1056,7 @@ var link_safety_default = import_api.definePlugin({
     running = true;
     ctx.onDispose(() => {
       running = false;
-      closeOpen?.();
+      closeOpen?.({ instant: true });
     });
   }
 });

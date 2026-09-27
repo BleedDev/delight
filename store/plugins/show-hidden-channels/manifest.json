@@ -2,7 +2,7 @@
     "id": "show-hidden-channels",
     "name": "Show Hidden Channels",
     "description": "Shows the channels you can't view in the channel list, with a lock. Opening one shows its topic, settings and who can see it, never its messages.",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "authors": [
         "Evi"
     ],
@@ -10,7 +10,14 @@
         "servers",
         "utility"
     ],
+    "permissions": {},
     "changelog": [
+        {
+            "version": "1.0.4",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
         {
             "version": "1.0.3",
             "notes": [

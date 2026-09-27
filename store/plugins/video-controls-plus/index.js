@@ -450,7 +450,7 @@ function buildOverlay() {
   sep.className = "evi-vcp-sep";
   strip.append(button("frameBack", withShortcut("Previous frame", ","), svg(ICONS.frameBack)), speedButton, button("frameForward", withShortcut("Next frame", "."), svg(ICONS.frameForward)), sep, loopButton, pipButton);
   menu = document.createElement("div");
-  menu.className = "evi-vcp-menu";
+  menu.className = "evi-vcp-menu evi-popout";
   menu.setAttribute("role", "menu");
   menu.setAttribute("aria-label", "Playback speed");
   menu.hidden = true;
@@ -530,7 +530,19 @@ function setMenu(open, refocus) {
   if (!menu || !speedButton)
     return;
   menuOpen = open;
-  menu.hidden = !open;
+  if (open) {
+    menu.removeAttribute("data-closing");
+    menu.hidden = false;
+  } else if (!menu.hidden) {
+    const el = menu;
+    el.setAttribute("data-closing", "");
+    import_api.exitDone(el).then(() => {
+      if (menuOpen || !el.hasAttribute("data-closing"))
+        return;
+      el.removeAttribute("data-closing");
+      el.hidden = true;
+    });
+  }
   speedButton.setAttribute("aria-expanded", String(open));
   if (open) {
     sync();
@@ -764,8 +776,7 @@ var video_controls_plus_default = import_api.definePlugin({
         .evi-vcp-menu { position: absolute; top: 46px; right: 8px; display: grid; grid-template-columns: repeat(5, auto); gap: 2px;
             padding: 4px; border-radius: var(--radius-sm, 8px); pointer-events: auto;
             background: var(--background-floating, var(--background-surface-highest, #111214)); color: var(--text-default, var(--text-normal, #dbdee1));
-            border: 1px solid var(--border-subtle, rgb(255 255 255 / 0.08)); box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 0.24));
-            animation: evi-vcp-in 0.12s ease-out; }
+            border: 1px solid var(--border-subtle, rgb(255 255 255 / 0.08)); box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 0.24)); }
         .evi-vcp-menu[hidden] { display: none; }
         .evi-vcp-item { min-width: 48px; height: 28px; padding: 0 6px; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
         .evi-vcp-item:hover { background: var(--background-modifier-hover, rgb(255 255 255 / 0.08)); }
@@ -775,9 +786,8 @@ var video_controls_plus_default = import_api.definePlugin({
             font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             opacity: 0; transition: opacity 0.15s ease-out; }
         .evi-vcp-flash[data-shown="true"] { opacity: 1; transition-duration: 0.05s; }
-        @keyframes evi-vcp-in { from { opacity: 0; transform: translateY(-4px); } }
         @media (prefers-reduced-motion: reduce) {
-            .evi-vcp, .evi-vcp[data-visible="false"], .evi-vcp-strip, .evi-vcp-btn, .evi-vcp-item, .evi-vcp-flash, .evi-vcp-menu { transition: none; animation: none; }
+            .evi-vcp, .evi-vcp[data-visible="false"], .evi-vcp-strip, .evi-vcp-btn, .evi-vcp-item, .evi-vcp-flash { transition: none; }
         }
     `,
   start(context) {

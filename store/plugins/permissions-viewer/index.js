@@ -267,22 +267,14 @@ function byCategory(items) {
 var closeOpen;
 function openDialog(subject, sections) {
   closeOpen?.();
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = import_api.createRoot(container);
-  const close = () => {
-    if (closeOpen !== close)
-      return;
-    closeOpen = undefined;
-    root.unmount();
-    container.remove();
-  };
-  closeOpen = close;
-  root.render(/* @__PURE__ */ jsx_runtime.jsx(Dialog, {
+  const close = import_api.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(Dialog, {
     subject,
     sections,
-    onClose: close
-  }));
+    onClose: () => close2()
+  }), {
+    onClosed: () => void (closeOpen === close && (closeOpen = undefined))
+  });
+  closeOpen = close;
 }
 function Dialog({ subject, sections, onClose }) {
   const [selected, setSelected] = import_api.React.useState(sections[0]?.key);
@@ -318,10 +310,10 @@ function Dialog({ subject, sections, onClose }) {
   const labels = current?.overwrite ? ["Allowed", "Denied"] : ["Granted", "Not granted"];
   const filters = [["all", "All", items.length], ["allow", labels[0], granted], ["off", labels[1], items.length - granted]];
   return /* @__PURE__ */ jsx_runtime.jsx("div", {
-    className: "evi-pv-scrim",
+    className: "evi-pv-scrim evi-scrim",
     onMouseDown: (e) => e.target === e.currentTarget && onClose(),
     children: /* @__PURE__ */ jsx_runtime.jsxs("div", {
-      className: "evi-pv-modal",
+      className: "evi-pv-modal evi-modal",
       role: "dialog",
       "aria-modal": "true",
       "aria-labelledby": "evi-pv-title",
@@ -909,12 +901,6 @@ var css = `
   .evi-pv-seg button:hover:not([aria-pressed="true"]) { color: var(--interactive-hover, #dbdee1); }
   .evi-pv-row:hover { background: var(--evi-pv-hover); }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .evi-pv-scrim { animation: evi-pv-fade 150ms ease-out; }
-  .evi-pv-modal { animation: evi-pv-enter 200ms cubic-bezier(.2, .8, .2, 1); }
-}
-@keyframes evi-pv-fade { from { opacity: 0; } }
-@keyframes evi-pv-enter { from { opacity: 0; scale: .96; } }
 `;
 var item = (id, action) => /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Group, {
   children: /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
@@ -926,7 +912,7 @@ var item = (id, action) => /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Group
 var permissions_viewer_default = import_api.definePlugin({
   start(ctx) {
     ctx.addStyle(css);
-    ctx.onDispose(() => closeOpen?.());
+    ctx.onDispose(() => closeOpen?.({ instant: true }));
     const fail = () => ctx.toast("Couldn't read the permissions", { type: "failure" });
     ctx.contextMenu("user-context", (children, props) => {
       const userId = props.user?.id;
@@ -994,6 +980,6 @@ var permissions_viewer_default = import_api.definePlugin({
     });
   },
   stop() {
-    closeOpen?.();
+    closeOpen?.({ instant: true });
   }
 });

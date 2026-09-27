@@ -433,22 +433,14 @@ async function copy(text, done) {
 var closeOpen;
 function openDialog(expression, guildId) {
   closeOpen?.();
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = import_api.createRoot(container);
-  const close = () => {
-    if (closeOpen !== close)
-      return;
-    closeOpen = undefined;
-    root.unmount();
-    container.remove();
-  };
-  closeOpen = close;
-  root.render(/* @__PURE__ */ jsx_runtime.jsx(Dialog, {
+  const close = import_api.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(Dialog, {
     expression,
     initialGuildId: guildId,
-    onClose: close
-  }));
+    onClose: () => close2()
+  }), {
+    onClosed: () => void (closeOpen === close && (closeOpen = undefined))
+  });
+  closeOpen = close;
 }
 var previewUrl = (e) => e.kind === "emoji" ? emojiUrl(e.id, e.animated, 128) : stickerUrl(e.id, e.formatType);
 function Dialog({ expression, initialGuildId, onClose }) {
@@ -506,10 +498,10 @@ function Dialog({ expression, initialGuildId, onClose }) {
     }
   }
   return /* @__PURE__ */ jsx_runtime.jsx("div", {
-    className: "evi-es-scrim",
+    className: "evi-es-scrim evi-scrim",
     onMouseDown: (e) => e.target === e.currentTarget && !busy && onClose(),
     children: /* @__PURE__ */ jsx_runtime.jsxs("div", {
-      className: "evi-es-modal",
+      className: "evi-es-modal evi-modal",
       role: "dialog",
       "aria-modal": "true",
       "aria-labelledby": "evi-es-title",
@@ -752,7 +744,7 @@ var emoji_stealer_default = import_api.definePlugin({
     context = ctx;
     ctx.addStyle(css);
     ctx.onDispose(() => {
-      closeOpen?.();
+      closeOpen?.({ instant: true });
       context = undefined;
     });
     ctx.contextMenu(["message", "expression-picker"], (children, props) => {
@@ -767,6 +759,6 @@ var emoji_stealer_default = import_api.definePlugin({
     });
   },
   stop() {
-    closeOpen?.();
+    closeOpen?.({ instant: true });
   }
 });

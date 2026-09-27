@@ -2,7 +2,7 @@
     "id": "timezones",
     "name": "Timezones",
     "description": "Set someone's timezone from their right-click menu and see their local time next to their name in chat, on their profile and in the member list. Kept on this device.",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "authors": [
         "Evi"
     ],
@@ -10,7 +10,14 @@
         "social"
     ],
     "minEviVersion": "0.3.2",
+    "permissions": {},
     "changelog": [
+        {
+            "version": "1.0.3",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
         {
             "version": "1.0.2",
             "notes": [

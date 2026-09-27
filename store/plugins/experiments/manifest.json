@@ -2,14 +2,21 @@
     "id": "experiments",
     "name": "Experiments",
     "description": "Unlocks Discord's Experiments and developer settings tabs.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
         "Evi"
     ],
     "tags": [
         "developer"
     ],
+    "permissions": {},
     "changelog": [
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
         {
             "version": "1.0.0",
             "notes": [
