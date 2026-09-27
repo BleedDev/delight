@@ -1,0 +1,3 @@
+[test]
+# JSX in Evi's sources goes through its own runtime shim, like `bun run build` does (scripts/build.ts)
+preload = ["./tests/setup.ts"]
