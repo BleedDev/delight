@@ -6,7 +6,8 @@
  * The patched handler keeps calling $self after the plugin is turned off until Discord reloads, so
  * intercept() does nothing while the plugin isn't running.
  */
-import { createRoot, definePlugin, React } from "@evi/api";
+import { definePlugin, openLayer, React } from "@evi/api";
+import type { CloseLayer } from "@evi/api";
 import type { ReactNode } from "react";
 
 import { Analysis, analyzeLink, meetsThreshold, parseAllowlist, PATCH, RiskLevel } from "./analyze";
@@ -14,7 +15,7 @@ import { Analysis, analyzeLink, meetsThreshold, parseAllowlist, PATCH, RiskLevel
 let running = false;
 let threshold: RiskLevel = "caution";
 let allowlist: string[] = [];
-let closeOpen: (() => void) | undefined;
+let closeOpen: CloseLayer | undefined;
 
 /** Plain text of React children, for the words a masked link shows */
 function textOf(node: unknown): string {
@@ -35,25 +36,20 @@ function linkText(event: any, props: any): string {
 
 function openWarning(analysis: Analysis, onOpen: () => void, onCancel: () => void) {
     closeOpen?.();
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
     let settled = false;
-    const close = () => {
-        if (closeOpen === close) closeOpen = undefined;
-        root.unmount();
-        container.remove();
-    };
-    const finish = (open: boolean) => {
+    const finish = (open: boolean, options?: { instant?: boolean; }) => {
         if (settled) return;
         settled = true;
-        close();
+        close(options);
         try {
             (open ? onOpen : onCancel)();
         } catch { /* Discord's own callbacks */ }
     };
-    closeOpen = () => finish(false);
-    root.render(<Warning analysis={analysis} onOpen={() => finish(true)} onBack={() => finish(false)} />);
+    const cancel: CloseLayer = options => finish(false, options);
+    const close = openLayer(() => <Warning analysis={analysis} onOpen={() => finish(true)} onBack={() => finish(false)} />, {
+        onClosed: () => void (closeOpen === cancel && (closeOpen = undefined)),
+    });
+    closeOpen = cancel;
 }
 
 function Warning({ analysis, onOpen, onBack }: { analysis: Analysis; onOpen(): void; onBack(): void; }) {
@@ -92,8 +88,8 @@ function Warning({ analysis, onOpen, onBack }: { analysis: Analysis; onOpen(): v
     }
 
     return (
-        <div className="evi-ls-scrim" onMouseDown={e => e.target === e.currentTarget && onBack()}>
-            <div className="evi-ls-modal" data-level={analysis.level} role="alertdialog" aria-modal="true" aria-labelledby="evi-ls-title" aria-describedby="evi-ls-reasons">
+        <div className="evi-ls-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && onBack()}>
+            <div className="evi-ls-modal evi-modal" data-level={analysis.level} role="alertdialog" aria-modal="true" aria-labelledby="evi-ls-title" aria-describedby="evi-ls-reasons">
                 <header className="evi-ls-head">
                     <span className="evi-ls-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3 2 20h20L12 3Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /><path d="M12 10v4.5M12 17.5v.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
@@ -208,7 +204,7 @@ export default definePlugin({
         running = true;
         ctx.onDispose(() => {
             running = false;
-            closeOpen?.();
+            closeOpen?.({ instant: true });
         });
     },
 });

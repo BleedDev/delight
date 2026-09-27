@@ -1054,6 +1054,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
     :root:not(.reduce-motion) .dl-safe-float { animation: dl-panel-in var(--dl-duration-base) ease-out; }
+    :root:not(.reduce-motion) .dl-safe-float[data-closing] { animation: dl-panel-out var(--dl-duration-fast) ease-in forwards; }
 }
 
 /* ==== end safe mode ========================================================================== */
@@ -1593,10 +1594,6 @@
     max-block-size: min(880px, calc(100vh - 48px));
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    :root:not(.reduce-motion) .dl-modal { animation: dl-panel-in var(--dl-duration-base) ease-out; }
-}
-
 .dl-modal-section {
     flex: none;
     padding: 16px var(--dl-modal-padding) 8px;
@@ -1904,10 +1901,6 @@
 }
 
 .dl-dialog:focus { outline: none; }
-
-@media (prefers-reduced-motion: no-preference) {
-    :root:not(.reduce-motion) .dl-dialog { animation: dl-panel-in var(--dl-duration-base) ease-out; }
-}
 
 .dl-dialog-head {
     display: flex;

@@ -1,5 +1,5 @@
-import { Components, createRoot, definePlugin, filters, find, findAllExports, getStore, Menu, React, registerCommand } from "@evi/api";
-import type { PluginContext } from "@evi/api";
+import { Components, definePlugin, filters, find, findAllExports, getStore, Menu, openLayer, React, registerCommand } from "@evi/api";
+import type { CloseLayer, PluginContext } from "@evi/api";
 import type { ComponentType, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 
 import {
@@ -484,7 +484,7 @@ function Picker({ channel, onClose }: { channel: any; onClose(): void; }) {
 
 // ---- Popover and dialog hosts -------------------------------------------------------------------
 
-let closeOpen: (() => void) | undefined;
+let closeOpen: CloseLayer | undefined;
 let openAnchor: HTMLElement | null = null;
 const openListeners = new Set<() => void>();
 const useOpenAnchor = () => React.useSyncExternalStore(fn => (openListeners.add(fn), () => void openListeners.delete(fn)), () => openAnchor);
@@ -494,78 +494,76 @@ const setOpenAnchor = (el: HTMLElement | null) => {
 };
 
 /**
- * Renders into its own root on document.body. With an anchor it's a popover above it, otherwise a
+ * Renders into its own layer on document.body. With an anchor it's a popover above it, otherwise a
  * centred dialog. Escape and clicks outside close it; focus goes back where it was.
  */
-function openLayer(render: (close: () => void) => ReactNode, anchor?: HTMLElement) {
+function showLayer(render: (close: CloseLayer) => ReactNode, anchor?: HTMLElement) {
     closeOpen?.();
-    const container = document.createElement("div");
-    container.className = "evi-snip-layer";
-    document.body.append(container);
-    const root = createRoot(container);
     const previous = document.activeElement as HTMLElement | null;
+    let host: HTMLElement | null = null;
+    const setHost = (el: HTMLElement | null) => void (host = el);
 
     const onPointer = (e: MouseEvent) => {
         const target = e.target as Node;
-        if (container.contains(target) || anchor?.contains(target)) return;
+        if (host?.contains(target) || anchor?.contains(target)) return;
         close();
     };
     // Focus elsewhere: Escape closes before Discord sees it
     const onKey = (e: KeyboardEvent) => {
-        if (e.key !== "Escape" || container.contains(e.target as Node)) return;
+        if (e.key !== "Escape" || host?.contains(e.target as Node)) return;
         e.preventDefault();
         e.stopImmediatePropagation();
         close();
     };
     // Focus inside: the picker and editor handle keys first (Escape in the editor goes back to the
     // list), then nothing reaches Discord's keybinds. Escape nobody handled still closes.
-    const onInnerKey = (e: KeyboardEvent) => {
+    const onInnerKey = (e: ReactKeyboardEvent) => {
         e.stopPropagation();
-        if (e.key === "Escape" && !e.defaultPrevented) close();
+        if (e.key === "Escape" && !e.nativeEvent.defaultPrevented) close();
     };
-    container.addEventListener("keydown", onInnerKey);
-    const close = () => {
-        if (closeOpen !== close) return;
-        container.removeEventListener("keydown", onInnerKey);
-        closeOpen = undefined;
-        setOpenAnchor(null);
-        window.removeEventListener("mousedown", onPointer, true);
-        window.removeEventListener("keydown", onKey, true);
-        root.unmount();
-        container.remove();
-        if (!anchor && previous?.isConnected) previous.focus?.();
+    const close: CloseLayer = options => {
+        if (closeOpen === close) {
+            closeOpen = undefined;
+            setOpenAnchor(null);
+            window.removeEventListener("mousedown", onPointer, true);
+            window.removeEventListener("keydown", onKey, true);
+            if (!anchor && previous?.isConnected) previous.focus?.();
+        }
+        closeLayer(options);
     };
-    closeOpen = close;
-    window.addEventListener("mousedown", onPointer, true);
-    window.addEventListener("keydown", onKey, true);
-    setOpenAnchor(anchor ?? null);
 
+    let content: ReactNode;
     if (anchor) {
         const rect = anchor.getBoundingClientRect();
         const right = Math.max(8, window.innerWidth - rect.right - 8);
         const bottom = Math.max(8, window.innerHeight - rect.top + 8);
-        root.render(
-            <div className="evi-snip-popover" role="dialog" aria-label="Snippets" style={{ right, bottom, maxHeight: Math.max(240, rect.top - 24) }}>
+        content = (
+            <div className="evi-snip-popover evi-popout" data-side="top" role="dialog" aria-label="Snippets" style={{ right, bottom, maxHeight: Math.max(240, rect.top - 24) }} ref={setHost} onKeyDown={onInnerKey}>
                 {render(close)}
-            </div>,
+            </div>
         );
     } else {
-        root.render(
-            <div className="evi-snip-scrim" onMouseDown={e => e.target === e.currentTarget && close()}>
-                <div className="evi-snip-dialog" role="dialog" aria-modal="true" aria-label="Snippet">{render(close)}</div>
-            </div>,
+        content = (
+            <div className="evi-snip-scrim evi-scrim" ref={setHost} onKeyDown={onInnerKey} onMouseDown={e => e.target === e.currentTarget && close()}>
+                <div className="evi-snip-dialog evi-modal" role="dialog" aria-modal="true" aria-label="Snippet">{render(close)}</div>
+            </div>
         );
     }
+    const closeLayer = openLayer(() => content, { className: "evi-snip-layer" });
+    closeOpen = close;
+    window.addEventListener("mousedown", onPointer, true);
+    window.addEventListener("keydown", onKey, true);
+    setOpenAnchor(anchor ?? null);
     return close;
 }
 
 function openPicker(anchor: HTMLElement, channel: any) {
     if (closeOpen && openAnchor === anchor) return closeOpen();
-    openLayer(close => <Picker channel={channel} onClose={close} />, anchor);
+    showLayer(close => <Picker channel={channel} onClose={close} />, anchor);
 }
 
 function openEditorDialog(initial: Partial<SnippetInput>) {
-    openLayer(close => (
+    showLayer(close => (
         <div className="evi-snip-picker">
             <header className="evi-snip-head"><h2 className="evi-snip-title">Save as snippet</h2></header>
             <Editor
@@ -708,10 +706,9 @@ export default definePlugin({
     flex-direction: column;
     overflow: hidden;
 }
-.evi-snip-popover { position: fixed; width: min(420px, calc(100vw - 16px)); animation: evi-snip-in 140ms cubic-bezier(.2, .8, .2, 1); }
+.evi-snip-popover { position: fixed; width: min(420px, calc(100vw - 16px)); }
 .evi-snip-scrim { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.6); }
-.evi-snip-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 64px); animation: evi-snip-in 160ms cubic-bezier(.2, .8, .2, 1); }
-@keyframes evi-snip-in { from { opacity: 0; transform: translateY(4px) scale(.98); } }
+.evi-snip-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 64px); }
 .evi-snip-picker { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .evi-snip-head { display: flex; gap: 8px; align-items: center; padding: 12px 12px 8px; }
 .evi-snip-title { margin: 0; font-size: 16px; font-weight: 600; color: var(--header-primary, var(--evi-snip-text)); }
@@ -779,7 +776,7 @@ export default definePlugin({
     --evi-snip-brand: var(--brand-500, #5865f2);
 }
 .evi-snip-hint { margin: 0; color: var(--text-muted, #949ba4); font-size: 13px; }
-@media (prefers-reduced-motion: reduce) { .evi-snip-popover, .evi-snip-dialog { animation: none; } .evi-snip-actions, .evi-snip-button { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .evi-snip-actions, .evi-snip-button { transition: none; } }
 `,
 
     start(context) {
@@ -808,7 +805,7 @@ export default definePlugin({
         });
 
         context.onDispose(() => {
-            closeOpen?.();
+            closeOpen?.({ instant: true });
             unregisterCommand?.();
             unregisterCommand = undefined;
             registeredChoices = "";

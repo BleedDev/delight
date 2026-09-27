@@ -11,7 +11,7 @@ import { Settings } from "../settings";
 import { Themes } from "../themes";
 import { createRoot, React } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
-import { Button, Icon, IconButton, useStore } from "./components";
+import { Button, Icon, IconButton, useExit, useStore } from "./components";
 import { ensureStyles } from "./index";
 
 const ACTIONS: Record<RecentChange["action"], string> = {
@@ -123,9 +123,14 @@ export function SafeModeHint({ what }: { what: string; }) {
     );
 }
 
+function FloatingNotice({ onClose }: { onClose(): void; }) {
+    const exit = useExit(onClose);
+    return <div className="dl-safe-float" {...exit.closingProps}><SafeModeNotice onDismiss={exit.close} /></div>;
+}
+
 function Floating() {
     const [open, setOpen] = React.useState(true);
-    return open ? <div className="dl-safe-float"><SafeModeNotice onDismiss={() => setOpen(false)} /></div> : null;
+    return open ? <FloatingNotice onClose={() => setOpen(false)} /> : null;
 }
 
 let shown = false;

@@ -12,8 +12,8 @@
  * - One shared ticker, aligned to the minute, re-renders every visible time at once.
  * The time math lives in tz.ts.
  */
-import { Components, createRoot, definePlugin, filters, getStore, Menu, React } from "@evi/api";
-import type { PluginContext } from "@evi/api";
+import { Components, definePlugin, filters, getStore, Menu, openLayer, React } from "@evi/api";
+import type { CloseLayer, PluginContext } from "@evi/api";
 
 import {
     allZones, cityOf, describeTime, formatOffset, formatTime, isValidZone, localeUses12h, localZone, offsetMinutes, parseZones, regionOf,
@@ -180,21 +180,14 @@ function clockIcon(zone: string, at: Date) {
 
 // ---- The picker ---------------------------------------------------------------------------------
 
-let closeOpen: (() => void) | undefined;
+let closeOpen: CloseLayer | undefined;
 
 function openPicker(userId: string) {
     closeOpen?.();
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const close = () => {
-        if (closeOpen !== close) return;
-        closeOpen = undefined;
-        root.unmount();
-        container.remove();
-    };
+    const close = openLayer(close => <Picker userId={userId} onClose={() => close()} />, {
+        onClosed: () => void (closeOpen === close && (closeOpen = undefined)),
+    });
     closeOpen = close;
-    root.render(<Picker userId={userId} onClose={close} />);
 }
 
 function Picker({ userId, onClose }: { userId: string; onClose(): void; }) {
@@ -253,8 +246,8 @@ function Picker({ userId, onClose }: { userId: string; onClose(): void; }) {
     const loc = locale();
 
     return (
-        <div className="evi-tz-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-            <div className="evi-tz-modal" role="dialog" aria-modal="true" aria-labelledby="evi-tz-title">
+        <div className="evi-tz-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+            <div className="evi-tz-modal evi-modal" role="dialog" aria-modal="true" aria-labelledby="evi-tz-title">
                 <header className="evi-tz-head">
                     <div>
                         <h2 id="evi-tz-title">Set timezone for {name}</h2>
@@ -390,7 +383,7 @@ export default definePlugin({
         zones = parseZones(storage()?.get(STORAGE_KEY));
         ctx.addStyle(css);
         ctx.settings.onChange(bump);
-        ctx.onDispose(() => closeOpen?.());
+        ctx.onDispose(() => closeOpen?.({ instant: true }));
 
         // One ticker for every visible time, on the minute
         ctx.setTimeout(() => {
@@ -444,7 +437,7 @@ export default definePlugin({
     },
 
     stop() {
-        closeOpen?.();
+        closeOpen?.({ instant: true });
         context = undefined;
         bump();
     },
