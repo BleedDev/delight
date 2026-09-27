@@ -8,12 +8,12 @@
  *  - Chat header: a button that attaches a session to the conversation; attached sessions render beside the chat.
  *  - Slash commands (/claude, /catchup, /summarize, /draft, /todo) through ctx.command. Their answers are local
  *    messages from "Claude" with a live card inside.
- *  - The agent UI renders in shadow roots with the plugin's own stylesheet (styles.css), colored by Discord's theme.
+ *  - The agent UI renders in shadow roots with claude.ai's Code stylesheet (vendor/), colored by Discord's theme.
  *
  * The CLIs run in native.ts (host/): the user's own `claude` (and optionally `codex`) on their own login.
  */
 import { definePlugin, type PluginContext } from "@evi/api";
-import { mountShadow, type ShadowMount } from "./ui/cds/shadow";
+import { mountShadow, uninstallGlobal, type ShadowMount } from "./ui/cds/shadow";
 import { useAgents, loadChats, installAgentEvents, setView, updateChat, rt, restoreLive, newChat, sendPrompt, stopSession } from "./ui/store";
 import { installDiscordTools, disposeDiscordTools, Stores, channelLabel, watchChannel, Router } from "./ui/discord";
 import { setDiscordNamer } from "./ui/epitaxy/labels";
@@ -25,6 +25,7 @@ import { SettingsPanel } from "./ui/settings";
 import { connectNative, loadEnv, N } from "./ui/native";
 import { connectKv, kv } from "./ui/kv";
 import pageCss from "./page.css" with { type: "text" };
+import sparkPath from "./vendor/spark-path.txt" with { type: "text" };
 
 type Settings = typeof settings;
 const settings = {
@@ -52,10 +53,8 @@ let context: PluginContext<Settings> | undefined;
 const q = <T extends Element = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T | null;
 const ACCENT = "#d97757";
 
-// our own spark mark (eight rays), as markup for Discord's rows and header
 function sparkSvg(size: number, fill = "currentColor") {
-    const rays = Array.from({ length: 8 }, (_, i) => `<rect x="45" y="${i % 2 ? 14 : 4}" width="10" height="${i % 2 ? 36 : 46}" rx="5" transform="rotate(${i * 45} 50 50)"/>`).join("");
-    return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" fill="${fill}" aria-hidden="true">${rays}</svg>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" fill="${fill}" aria-hidden="true"><path d="${sparkPath}"/></svg>`;
 }
 
 // ---------------------------------------------------------------- DM list rows
@@ -360,6 +359,7 @@ export default definePlugin({
         await loadEnv();
         installDiscordTools();
         ctx.onDispose(disposeDiscordTools);
+        ctx.onDispose(uninstallGlobal);
         setDiscordNamer(id => {
             const c = Stores.Channel()?.getChannel(id);
             return c ? (c.guild_id ? "#" : "") + channelLabel(c) : undefined;

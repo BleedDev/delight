@@ -159,11 +159,25 @@ const set = useAgents.setState;
 const get = useAgents.getState;
 
 const EMPTY: Runtime = { items: [], status: "idle", busy: false, permissions: [], summaries: {}, tasks: {}, toolElapsed: {}, queued: [], requests: [], hooks: {}, bgTasks: [] };
+// While a history replays, runtime changes collect here and reach the store (and every subscriber) once at the end
+let pending: Map<string, Runtime> | null = null;
 export function rt(id: string): Runtime {
-    return get().runtimes[id] ?? EMPTY;
+    return pending?.get(id) ?? get().runtimes[id] ?? EMPTY;
 }
 function patchRt(id: string, fn: (r: Runtime) => Runtime) {
+    if (pending) return void pending.set(id, fn({ ...rt(id) }));
     set(s => ({ runtimes: { ...s.runtimes, [id]: fn({ ...rt(id) }) } }));
+}
+function batched(fn: () => void) {
+    if (pending) return fn();
+    pending = new Map();
+    try {
+        fn();
+    } finally {
+        const done = pending;
+        pending = null;
+        if (done.size) set(s => ({ runtimes: { ...s.runtimes, ...Object.fromEntries(done) } }));
+    }
 }
 export const chatById = (id: string) => get().chats.find(c => c.localId === id);
 
@@ -761,8 +775,10 @@ export function installAgentEvents() {
         else if (type === "history") {
             // a restarted Codex session replays its thread; the transcript already has it
             if (rt(localId).historyLoaded && rt(localId).items.length) return;
-            for (const m of data ?? []) ingest(localId, m, false);
-            patchRt(localId, r => ({ ...r, historyLoaded: true }));
+            batched(() => {
+                for (const m of data ?? []) ingest(localId, m, false);
+                patchRt(localId, r => ({ ...r, historyLoaded: true }));
+            });
         } else if (type === "context-usage") patchRt(localId, r => ({ ...r, contextUsage: data }));
         else if (type === "usage") patchRt(localId, r => ({ ...r, usage: data }));
         else if (type === "discord-event")
@@ -864,8 +880,10 @@ export async function loadHistory(chat: AgentChat) {
         // anything that arrived live while history was loading goes after the history
         const before = rt(chat.localId);
         const live = before.items;
-        patchRt(chat.localId, r => ({ ...r, items: [] }));
-        for (const m of msgs ?? []) ingest(chat.localId, m, false);
+        batched(() => {
+            patchRt(chat.localId, r => ({ ...r, items: [] }));
+            for (const m of msgs ?? []) ingest(chat.localId, m, false);
+        });
         // replaying past results mustn't make a turn that's running right now look idle
         const { busy, phase, turnStartedAt, stopping, outputTokens, streamChars, thinkingStartedAt, thinkingEndedAt } = before;
         patchRt(chat.localId, r => {

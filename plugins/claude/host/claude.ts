@@ -4,7 +4,7 @@
  * wire protocol Anthropic's Agent SDK speaks; it's implemented here directly so the plugin has no dependencies.
  * Runs on the user's own Claude login.
  */
-import { spawn, execFileSync, type ChildProcessWithoutNullStreams } from "child_process";
+import { spawn, execFile, execFileSync, type ChildProcessWithoutNullStreams } from "child_process";
 import crypto from "crypto";
 import fs from "fs";
 import os from "os";
@@ -38,15 +38,40 @@ export interface PermissionRequest {
     agentID?: string;
 }
 
-export function claudeBinary(env: Record<string, string> = process.env as any) {
+const run = (bin: string, args: string[], env: Record<string, string>) =>
+    new Promise<string>(resolve => execFile(bin, args, { env, timeout: 5000 }, (err, out) => resolve(err ? "" : String(out))));
+const newer = (a: number[], b: number[]) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+
+function candidatesFor(env: Record<string, string>) {
     const home = os.homedir();
     const exe = process.platform === "win32" ? "claude.exe" : "claude";
-    const candidates = [
+    return [
         path.join(home, ".local/bin", exe), path.join(home, ".bun/bin", exe), path.join(home, ".claude/local", exe),
         "/opt/homebrew/bin/claude", "/usr/local/bin/claude", "/usr/bin/claude",
         ...(process.platform === "win32" ? [path.join(env.APPDATA ?? "", "npm", "claude.cmd"), path.join(env.LOCALAPPDATA ?? "", "Programs", "claude", exe)] : []),
     ];
-    for (const c of candidates) if (c && fs.existsSync(c)) return c;
+}
+
+/**
+ * The newest `claude` on this machine. The model list comes from the CLI, so an old copy that happens to be
+ * found first would hide the newer models. Runs in the background (a few `--version` calls).
+ */
+export async function findNewestClaude(env: Record<string, string> = process.env as any) {
+    const candidates = candidatesFor(env);
+    const which = process.platform === "win32" ? await run("where", ["claude"], env) : await run("/bin/sh", ["-lc", "which -a claude"], env);
+    candidates.push(...which.split(/\r?\n/).map(l => l.trim()).filter(Boolean));
+    let best: { bin: string; v: number[] } | null = null;
+    for (const bin of new Set(candidates.filter(c => c && fs.existsSync(c)))) {
+        const v = (await run(bin, ["--version"], env)).match(/\d+\.\d+\.\d+/)?.[0]?.split(".").map(Number);
+        if (v && (!best || newer(v, best.v) > 0)) best = { bin, v };
+    }
+    return best?.bin ?? null;
+}
+
+/** Quick answer while the newest one is still being looked for: the first install that exists */
+export function claudeBinary(env: Record<string, string> = process.env as any) {
+    const exe = process.platform === "win32" ? "claude.exe" : "claude";
+    for (const c of candidatesFor(env)) if (c && fs.existsSync(c)) return c;
     try {
         const which = process.platform === "win32" ? execFileSync("where", ["claude"], { env }) : execFileSync("/bin/sh", ["-lc", "command -v claude"], { env });
         const first = which.toString().split(/\r?\n/)[0].trim();

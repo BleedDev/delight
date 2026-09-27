@@ -133,10 +133,11 @@ export function findTranscript(sessionId: string, dir?: string, root = projectsR
     return null;
 }
 
-export function getSessionMessages(sessionId: string, dir?: string) {
+export async function getSessionMessages(sessionId: string, dir?: string) {
     const file = findTranscript(sessionId, dir);
     if (!file) return [];
-    return parseTranscript(fs.readFileSync(file, "utf8"), sessionId);
+    // read without blocking Discord's main process (transcripts can be tens of MB)
+    return fs.promises.readFile(file, "utf8").then(text => parseTranscript(text, sessionId));
 }
 
 // ---------------------------------------------------------------- the list of sessions

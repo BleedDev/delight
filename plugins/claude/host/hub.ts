@@ -12,7 +12,7 @@ import net from "net";
 import os from "os";
 import path from "path";
 import { BRIDGE_SOURCE } from "./bridge";
-import { ClaudeSession, claudeBinary } from "./claude";
+import { ClaudeSession, claudeBinary, findNewestClaude } from "./claude";
 import { CodexSession } from "./codex";
 import { getSessionMessages, listSessions } from "./history";
 
@@ -84,6 +84,9 @@ export function createHub(dataDir: string) {
 
     // ------------------------------------------------------------ environment
     let shellEnv: Record<string, string> | null = null;
+    let claudePath: string | null = null;
+    const claudeBin = () => (claudePath ??= claudeBinary(userEnv()));
+    const newestClaude = findNewestClaude(userEnv()).then(p => void (p && (claudePath = p)), () => { });
     function userEnv() {
         if (shellEnv) return shellEnv;
         // Login shells know the user's PATH (bun, node, git, claude…); GUI-launched apps don't
@@ -338,7 +341,7 @@ export function createHub(dataDir: string) {
             return sess;
         }
         const sess: ClaudeSession = new ClaudeSession(opts, {
-            binary: claudeBinary(userEnv()),
+            binary: claudeBin(),
             env: userEnv(),
             mcpServers: { discord: bridgeServer(localId) },
             appendSystemPrompt: systemAppend(opts.attachedChannelId),
@@ -390,6 +393,7 @@ export function createHub(dataDir: string) {
     }
     // register + start; a session that fails to start doesn't stay behind as a zombie
     async function startSession(localId: string, opts: any) {
+        await newestClaude; // so a new session uses the newest claude, and its model list
         const sess = createSession({ ...opts, localId });
         sessions.set(localId, sess);
         try {
@@ -595,7 +599,7 @@ export function createHub(dataDir: string) {
             else if (!on && awakeId != null) (powerSaveBlocker.stop(awakeId), (awakeId = null));
             return awakeId != null;
         },
-        "agents:env": () => ({ home: os.homedir(), platform: process.platform, claude: claudeBinary(userEnv()) }),
+        "agents:env": () => ({ home: os.homedir(), platform: process.platform, claude: claudeBin() }),
         "git:status": (cwd: string) => gitStatus(str(cwd, "cwd")),
         "git:file-diff": (cwd: string, file: string) => gitFileDiff(str(cwd, "cwd"), str(file, "file")),
         "git:commit": async (cwd: string, message: string, files?: string[]) => {

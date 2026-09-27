@@ -1,16 +1,50 @@
-// Shadow-root host for the Claude UI: its stylesheet (styles.css, Discord's theme variables) stays out of Discord's
-// page and Discord's styles stay out of it.
+// Shadow-root host for the Claude UI: its stylesheet stays out of Discord's page and Discord's styles stay out of it.
 import { useContext, type ReactNode } from "react";
 import { lazyContext } from "../lazyReact";
 import { createRoot } from "@evi/api";
-import css from "../../styles.css" with { type: "text" };
+import css from "../../vendor/cds.css" with { type: "text" };
+import globalCss from "../../vendor/cds-global.css" with { type: "text" };
+import themeCss from "./theme-colors.css" with { type: "text" };
+import { FONT_FACES } from "../../vendor/fonts";
 
 type Root = { render(node: ReactNode): void; unmount(): void };
 
-let sheet: CSSStyleSheet | null = null;
-function claudeSheet() {
-    if (!sheet) ((sheet = new CSSStyleSheet()), sheet.replaceSync(css));
-    return sheet;
+let sheets: CSSStyleSheet[] | null = null;
+function claudeSheets() {
+    if (!sheets)
+        sheets = [css, themeCss].map(t => {
+            const s = new CSSStyleSheet();
+            s.replaceSync(t);
+            return s;
+        });
+    return sheets;
+}
+
+// @property rules only work in the document, not in a shadow root
+let globalSheet: CSSStyleSheet | null = null;
+function installGlobal() {
+    if (globalSheet) return;
+    globalSheet = new CSSStyleSheet();
+    globalSheet.replaceSync(globalCss);
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, globalSheet];
+}
+export function uninstallGlobal() {
+    if (globalSheet) document.adoptedStyleSheets = document.adoptedStyleSheets.filter(s => s !== globalSheet);
+    globalSheet = null;
+    for (const f of fonts) document.fonts.delete(f);
+    fonts.length = 0;
+}
+
+// fonts go through the FontFace API, so Discord's CSP never sees a font URL
+const fonts: FontFace[] = [];
+function registerFonts() {
+    if (fonts.length) return;
+    for (const f of FONT_FACES as any[]) {
+        const bin = Uint8Array.from(atob(f.data), c => c.charCodeAt(0));
+        const face = new FontFace(f.family, bin, { weight: f.weight, style: f.style, featureSettings: f.featureSettings, display: f.display ?? "swap" } as FontFaceDescriptors);
+        fonts.push(face);
+        face.load().then(x => document.fonts.add(x), e => console.warn("[Claude] font", f.family, e));
+    }
 }
 
 const PortalCtx = lazyContext<HTMLElement | null>(null);
@@ -20,6 +54,7 @@ const cdsRootProps = (pageBg: string, density: "compact" | "comfortable") => ({
     "data-density": density,
     "data-mode": "dark",
     "data-platform": "web",
+    "data-font": "anthropic",
     "data-page-bg": "surface-1",
     style: `font-size: var(--cds-font-size-body); --cds-page-bg: var(${pageBg});`,
 });
@@ -103,8 +138,10 @@ export interface ShadowMount {
 }
 
 export function mountShadow(host: HTMLElement, { density = "compact" as "compact" | "comfortable", className = "", detachedPortal = false } = {}): ShadowMount {
+    installGlobal();
+    registerFonts();
     const shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
-    shadow.adoptedStyleSheets = [claudeSheet()];
+    shadow.adoptedStyleSheets = claudeSheets();
     shadow.replaceChildren();
     for (const t of CONTAINED) host.addEventListener(t, e => e.stopPropagation());
 
@@ -125,7 +162,7 @@ export function mountShadow(host: HTMLElement, { density = "compact" as "compact
         layerHost.className = "dl-root dl-layer";
         layerHost.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:10001";
         const ls = layerHost.attachShadow({ mode: "open" });
-        ls.adoptedStyleSheets = [claudeSheet()];
+        ls.adoptedStyleSheets = claudeSheets();
         for (const t of CONTAINED) layerHost.addEventListener(t, e => e.stopPropagation());
         ls.append(portalWrap);
         document.body.appendChild(layerHost);

@@ -2,6 +2,7 @@ import { N } from "./native";
 // Access to Discord's own client internals (webpack modules / Flux stores) through Evi's finders.
 // Everything runs inside the user's logged-in Discord session; no token is ever read or exported.
 import { find as eviFind, getStore } from "@evi/api";
+import sparkPath from "../vendor/spark-path.txt" with { type: "text" };
 
 export const find = (filter: (m: any) => boolean): any => eviFind(filter as any);
 const fnSrc = (f: any) => {
@@ -13,19 +14,29 @@ const fnSrc = (f: any) => {
 };
 export const findByCode = (...needles: string[]) => lazy("code:" + needles.join("|"), m => typeof m === "function" && needles.every(n => fnSrc(m).includes(n)));
 
+// Every lookup scans all of Discord's modules, so results are kept, and a miss isn't retried for a few seconds
+// (the UI asks for these on every render).
 const cache = new Map<string, any>();
+const missedAt = new Map<string, number>();
+function cached<T>(key: string, look: () => T): T {
+    let v = cache.get(key);
+    if (v) return v;
+    const t = missedAt.get(key);
+    if (t && Date.now() - t < 5000) return undefined as T;
+    try {
+        v = look();
+    } catch {
+        v = undefined;
+    }
+    if (v) (cache.set(key, v), missedAt.delete(key));
+    else missedAt.set(key, Date.now());
+    return v;
+}
 function lazy<T = any>(key: string, filter: (m: any) => boolean): () => T {
-    return () => {
-        let v = cache.get(key);
-        if (!v) {
-            v = find(filter);
-            if (v) cache.set(key, v);
-        }
-        return v;
-    };
+    return () => cached(key, () => find(filter));
 }
 export const findByProps = (...props: string[]) => lazy(props.join(","), m => props.every(p => m?.[p] !== undefined));
-export const findStore = (name: string) => () => getStore(name) as any;
+export const findStore = (name: string) => () => cached<any>("store:" + name, () => getStore(name));
 
 export const Stores = {
     Channel: findStore("ChannelStore"),
@@ -404,9 +415,9 @@ export function localMessage(channelId: string, content: string, id = snowflake(
 const CLAUDE_AVATAR =
     "data:image/svg+xml;utf8," +
     encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="64" fill="#d97757"/><g transform="translate(24 24) scale(0.8)" fill="#fff">' +
-            Array.from({ length: 8 }, (_, i) => `<rect x="45" y="${i % 2 ? 14 : 4}" width="10" height="${i % 2 ? 36 : 46}" rx="5" transform="rotate(${i * 45} 50 50)"/>`).join("") +
-            "</g></svg>",
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="64" fill="#d97757"/><g transform="translate(24 24) scale(0.8)" fill="#fff"><path d="' +
+            sparkPath +
+            '"/></g></svg>',
     );
 // Discord replaces a chat's messages when it (re)loads history; put our local ones back
 export function ensureLocalMessage(channelId: string, id: string) {

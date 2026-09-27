@@ -1,0 +1,53 @@
+/* The UI's colour tokens → Discord's own theme variables, so the agents UI follows whatever theme Discord (or an
+   Evi theme) is using. Structure, type and motion are unchanged; only the colours follow the theme. */
+.cds-root[data-mode='dark'],
+.cds-root [data-mode='dark'] {
+  --cds-surface-0: var(--background-base-lowest, var(--background-tertiary, #1e1f22)) !important;
+  --cds-surface-1: var(--background-base-lower, var(--background-primary, #313338)) !important;
+  --cds-surface-2: var(--background-surface-high, var(--background-secondary, #2b2d31)) !important;
+  --cds-surface-3: var(--background-surface-higher, var(--background-floating, #232428)) !important;
+  --cds-surface-panel: var(--background-surface-high, var(--background-secondary, #2b2d31)) !important;
+  --cds-surface-popover: var(--background-surface-highest, var(--background-floating, #1e1f22)) !important;
+  --cds-page-bg: var(--background-base-lower, var(--background-primary, #313338)) !important;
+  --cds-bg-editor-canvas: var(--background-base-lower, var(--background-primary, #313338)) !important;
+  --epitaxy-transcript-surface: var(--background-base-lower, var(--background-primary, #313338));
+
+  --cds-bg-user-message: var(--background-mod-normal, rgba(255, 255, 255, 0.06)) !important;
+  --cds-bg-neutral: var(--background-mod-normal, rgba(255, 255, 255, 0.06)) !important;
+  --cds-bg-neutral-hover: var(--background-mod-strong, rgba(255, 255, 255, 0.1)) !important;
+  --cds-bg-neutral-chip: var(--background-mod-normal, rgba(255, 255, 255, 0.06)) !important;
+  --cds-bg-neutral-chip-hover: var(--background-mod-strong, rgba(255, 255, 255, 0.1)) !important;
+
+  --cds-text-primary: var(--text-default, var(--text-normal, #dbdee1)) !important;
+  --cds-text-secondary: var(--text-subtle, var(--interactive-normal, #b5bac1)) !important;
+  --cds-text-muted: var(--text-muted, #949ba4) !important;
+  --cds-text-disabled: color-mix(in srgb, var(--text-muted, #949ba4) 60%, transparent) !important;
+
+  --cds-border: var(--border-subtle, rgba(255, 255, 255, 0.06)) !important;
+  --cds-border-strong: var(--border-normal, rgba(255, 255, 255, 0.1)) !important;
+  --cds-border-stronger: var(--border-strong, rgba(255, 255, 255, 0.16)) !important;
+
+  --cds-fill-ghost-hover: var(--background-mod-subtle, rgba(255, 255, 255, 0.05)) !important;
+  --cds-fill-ghost-selected: var(--background-mod-normal, rgba(255, 255, 255, 0.08)) !important;
+  --cds-fill-secondary: var(--background-mod-normal, rgba(255, 255, 255, 0.07)) !important;
+  --cds-fill-secondary-hover: var(--background-mod-strong, rgba(255, 255, 255, 0.1)) !important;
+  --cds-fill-field: var(--input-background, var(--background-base-lowest, #1e1f22)) !important;
+  --cds-fill-control: var(--background-mod-normal, rgba(255, 255, 255, 0.07)) !important;
+  --cds-fill-control-hover: var(--background-mod-strong, rgba(255, 255, 255, 0.1)) !important;
+  --cds-fill-disabled: var(--background-mod-subtle, rgba(255, 255, 255, 0.04)) !important;
+  --cds-fill-primary: var(--text-default, var(--text-normal, #dbdee1)) !important;
+  --cds-fill-primary-hover: var(--white, #ffffff) !important;
+
+  /* focus: a quiet neutral ring instead of an orange glow */
+  --cds-focus-shadow: 0 0 0 1px var(--border-normal, rgba(255, 255, 255, 0.1)) !important;
+
+  --cds-alpha-1: var(--background-mod-subtle, rgba(255, 255, 255, 0.035)) !important;
+  --cds-alpha-2: var(--background-mod-normal, rgba(255, 255, 255, 0.06)) !important;
+  --cds-alpha-3: var(--background-mod-strong, rgba(255, 255, 255, 0.09)) !important;
+  --cds-alpha-4: rgba(255, 255, 255, 0.13) !important;
+}
+
+/* no orange light sweep over the prompt box */
+[data-shimmer-intro]::after {
+  display: none !important;
+}

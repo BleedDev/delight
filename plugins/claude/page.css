@@ -1,5 +1,5 @@
 /* The few pieces of the Claude plugin that live in Discord's own document.
-   Everything else renders in shadow roots with the plugin's own stylesheet (styles.css). */
+   Everything else renders in shadow roots with claude.ai's Code stylesheet (vendor/). */
 
 /* agents page: covers Discord's page area (right of the DM list) */
 .evi-claude-overlay {

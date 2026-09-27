@@ -33,6 +33,17 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.5.0-beta.2",
+        date: "2026-09-27",
+        sections: {
+            improved: [
+                "**Claude looks exactly like Claude Code.** The same stylesheet, fonts, icons and spark as claude.ai's Code view, in Discord's colours.",
+                "**No more freezes.** Opening Coding Agents, menus and long session histories stay smooth.",
+                "**All the newest models.** Claude uses the newest `claude` installed on your computer, so newer models show up under More models.",
+            ],
+        },
+    },
+    {
         version: "0.5.0-beta.1",
         date: "2026-09-27",
         sections: {

@@ -1,11 +1,49 @@
-// Code and diff views: line numbers beside the code (pre[data-file|data-diff] > code[data-code] > [data-gutter] +
-// [data-content]), with syntax colours from highlight.ts and a word-level emphasis on changed lines.
-import { useState, type ReactNode } from "react";
+// <diffs-container>: the code / diff renderer claude.ai Code uses (its own shadow root + the library's stylesheet),
+// with the same DOM (pre[data-file|data-diff] > code[data-code] > [data-gutter] + [data-content]) and theme.
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import diffsCss from "../../vendor/diffs.css" with { type: "text" };
 import { highlight, langFromPath, type Token } from "./highlight";
 
-// Code and diff views share one grid layout (line numbers | code), styled in styles.css under .evi-claude-diff
+const THEME = `@layer base, theme, rendered, unsafe;
+@layer rendered { :host { color-scheme: dark; --diffs-scrollbar-gutter-measured: 0px;
+  --diffs-dark:#eaecf0;--diffs-dark-bg:#1a1a19;--diffs-dark-addition-color:#32d74b;--diffs-dark-deletion-color:#ff3a30;--diffs-dark-modified-color:#0099ff;--diffs-light:#1a1a1a;--diffs-light-bg:#ffffff;--diffs-light-addition-color:#1e9e3c;--diffs-light-deletion-color:#ff3a30;--diffs-light-modified-color:#0073e6; } }`;
+const UNSAFE = `@layer base, theme, rendered, unsafe;
+@layer unsafe {
+  :host, [data-file], [data-diff] { --diffs-bg: transparent; }:host { font-size: inherit; } [data-file], [data-diff] { --diffs-font-size: 1em; --diffs-line-height: var(--cds-leading-code); --diffs-font-family: var(--cds-font-mono); --diffs-gap-inline: 0; --diffs-gap-block: 0; letter-spacing: calc(round(up, 1ch, 1px / 64) - 1ch); font-feature-settings: "liga", "clig", "calt"; } [data-code] { overflow: clip; } [data-line] { min-height: 1lh; padding-inline: 0; line-height: var(--cds-leading-code); } [data-line]:hover { background: transparent; }
+  [data-diff] [data-line] { padding-inline: 1ch; } [data-diff][data-indicators="classic"] [data-line] { padding-inline-start: 2ch; }
+  [data-single-sided="added"] [data-line] { background: var(--cds-bg-git-added, color-mix(in srgb, #32d74b 20%, transparent)); }
+  [data-single-sided="removed"] [data-line] { background: var(--cds-bg-git-removed, color-mix(in srgb, #ff2c56 20%, transparent)); }
+  [data-single-sided="added"] [data-column-number] { color: var(--cds-text-git-added, #32d74b); }
+  [data-single-sided="added"] [data-line-number-content]::before { content: "+ "; }
+  [data-single-sided="removed"] [data-line-number-content]::before { content: "\\2212  "; }
+  [data-separator] { color: var(--diffs-fg-number, #8a8782); padding-inline: 1ch; min-height: 1lh; opacity: .7; }
+}`;
+
+let sheets: CSSStyleSheet[] | null = null;
+function diffSheets() {
+    if (!sheets) {
+        sheets = [diffsCss, THEME, UNSAFE].map(t => {
+            const s = new CSSStyleSheet();
+            s.replaceSync(t);
+            return s;
+        });
+    }
+    return sheets;
+}
+
 function DiffsContainer({ children }: { children: ReactNode }) {
-    return <div className="evi-claude-diff">{children}</div>;
+    const host = useRef<HTMLElement>(null);
+    const [root, setRoot] = useState<ShadowRoot | null>(null);
+    useLayoutEffect(() => {
+        const h = host.current as any;
+        if (!h) return;
+        const sr: ShadowRoot = h.shadowRoot ?? h.attachShadow({ mode: "open" });
+        sr.adoptedStyleSheets = diffSheets();
+        setRoot(sr);
+    }, []);
+    const Tag = "diffs-container" as any;
+    return <Tag ref={host}>{root && createPortal(children, root as any)}</Tag>;
 }
 
 const TokenSpan = ({ t }: { t: Token }) => (t.c ? <span style={{ ["--diffs-token-light" as any]: t.l, ["--diffs-token-dark" as any]: t.c }}>{t.v}</span> : <>{t.v}</>);

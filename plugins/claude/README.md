@@ -15,7 +15,7 @@ Claude Code inside Discord. Off by default; it needs [Claude Code](https://claud
 - `native.ts` / `host/` run in Discord's main process. `host/claude.ts` drives the `claude` CLI over its stream-json protocol (the same NDJSON messages and control requests the official Agent SDK uses), implemented directly so the plugin has no dependencies. `host/codex.ts` drives `codex app-server`. The Discord tools reach both CLIs through a small MCP server (`host/bridge.ts`, written to the plugin's data folder and run with Electron's own Node) that forwards calls over a local socket.
 - `host/history.ts` reads Claude Code's own session files (`~/.claude/projects`) for "Resume a session" and transcripts.
 - The renderer talks to the host with `ctx.native.call("invoke", …)` and receives events through a long poll (`poll`).
-- The UI renders in shadow roots with `styles.css`, which is generated: Tailwind compiles the classes the UI uses, and `styles/source.css` maps every colour to Discord's theme variables, so it follows your theme. After changing class names, run `bun plugins/claude/styles/build.ts`.
-- Icons are [Lucide](https://lucide.dev) (ISC).
+- The UI renders in shadow roots with claude.ai's Code stylesheet, fonts, icons and spark (`vendor/`, for personal use with your own subscription), and `ui/cds/theme-colors.css` maps its colours to Discord's theme variables, so it follows your theme.
+- The newest `claude` found on the machine is used (an older copy earlier on a path would hide newer models).
 
 Chats (titles, folders, which chat is attached where) are kept in the plugin's data folder; the transcripts themselves stay in Claude Code's and Codex's own stores.

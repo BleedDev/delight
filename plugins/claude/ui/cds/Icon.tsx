@@ -1,117 +1,55 @@
-// Icons: Lucide (ISC license, https://lucide.dev) drawn as inline SVG in the current text colour.
-// The names are the UI's own vocabulary; each maps to the closest Lucide glyph.
+// CDS Icon: Anthropicons-Variable glyphs, sized and weighted exactly like claude.ai's Icon component.
 import type { CSSProperties } from "react";
-import * as L from "lucide";
+import manifest from "../../vendor/icons.json";
 
-type Node = L.IconNode;
-
-const MAP = {
-    Add: L.Plus,
-    AddCircle: L.CirclePlus,
-    AddLarge: L.Plus,
-    Agent: L.Bot,
-    Archive: L.Archive,
-    ArrowClockwise: L.RotateCw,
-    ArrowCounterClockwise: L.RotateCcw,
-    ArrowLeft: L.ArrowLeft,
-    ArrowRight: L.ArrowRight,
-    ArrowOutSquare: L.SquareArrowOutUpRight,
-    ArrowReturn: L.CornerDownLeft,
-    ArrowSplitRight: L.Split,
-    Attachment: L.Paperclip,
-    Bookmark: L.Bookmark,
-    CaretDown: L.ChevronDown,
-    CaretRight: L.ChevronRight,
-    CaretUp: L.ChevronUp,
-    ChangesPlusMinus: L.Diff,
-    Chat: L.MessageCircle,
-    ChatAdd: L.MessageCirclePlus,
-    ChatSimple: L.MessageSquare,
-    Check: L.Check,
-    CheckCircle: L.CircleCheck,
-    CheckCircleFilled: L.CircleCheckBig,
-    Checklist: L.ListChecks,
-    Clock: L.Clock,
-    CloudSlash: L.CloudOff,
-    Code: L.Code,
-    CommandLine: L.SquareTerminal,
-    Connectors: L.Plug,
-    Copy: L.Copy,
-    DotsCircle: L.CircleEllipsis,
-    DotsHorizontal: L.Ellipsis,
-    DotsVertical: L.EllipsisVertical,
-    Edit: L.Pencil,
-    EditFilled: L.PencilLine,
-    ExtendedThinking: L.Brain,
-    Eye: L.Eye,
-    EyeSlash: L.EyeOff,
-    File: L.File,
-    FileAdd: L.FilePlus,
-    Files: L.Files,
-    Filter: L.SlidersHorizontal,
-    Folder: L.Folder,
-    FolderOpen: L.FolderOpen,
-    FolderPlus: L.FolderPlus,
-    GitBranch: L.GitBranch,
-    GitMergedSimple: L.GitMerge,
-    GitPullRequest: L.GitPullRequest,
-    GitPullRequestClosed: L.GitPullRequestClosed,
-    GitPullRequestDraft: L.GitPullRequestDraft,
-    Globe: L.Globe,
-    Hand: L.Hand,
-    Help: L.CircleHelp,
-    History: L.History,
-    Info: L.Info,
-    Key: L.KeyRound,
-    Laptop: L.Laptop,
-    LaptopSlash: L.MonitorOff,
-    Lightbulb: L.Lightbulb,
-    Lightning: L.Zap,
-    LinkSimple: L.Link,
-    ListBullet: L.List,
-    Microphone: L.Mic,
-    Notification: L.Bell,
-    PaperPlane: L.Send,
-    Pin: L.Pin,
-    PinFilled: L.Pin,
-    PinSlash: L.PinOff,
-    Placeholder: L.Circle,
-    Plugin: L.Puzzle,
-    Scroll: L.ScrollText,
-    Search: L.Search,
-    Settings: L.Settings,
-    SidebarClose: L.PanelLeftClose,
-    SidebarOpen: L.PanelLeftOpen,
-    SlashShortcutCommand: L.SquareSlash,
-    Speaker: L.Volume2,
-    StopCircle: L.CircleStop,
-    TextAlignLeft: L.TextAlignStart,
-    Trash: L.Trash2,
-    User: L.User,
-    Users: L.Users,
-    UsageGaugeHigh: L.Gauge,
-    Warning: L.TriangleAlert,
-    Wrench: L.Wrench,
-    X: L.X,
-    XCircle: L.CircleX,
-} satisfies Record<string, L.IconNode>;
-
-export type IconName = keyof typeof MAP;
+export type IconName = keyof typeof manifest.icons;
 export type IconSize = "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 
-const PX: Record<IconSize, number> = { xs: 12, sm: 16, md: 20, lg: 24, xl: 28, xxl: 32 };
+const SIZES: Record<IconSize, { px: number; regular: number; strong?: number }> = {
+    xs: { px: 12, regular: 0.8 },
+    sm: { px: 16, regular: 1, strong: 1.25 },
+    md: { px: 20, regular: 1.2, strong: 1.5 },
+    lg: { px: 24, regular: 1.4 },
+    xl: { px: 28, regular: 1.6 },
+    xxl: { px: 32, regular: 1.8 },
+};
+const ORDER: IconSize[] = ["xs", "sm", "md", "lg", "xl", "xxl"];
+const WGHT = manifest.wght as Record<string, { lo: number; hi: number }>;
 
 export const rem = (px: number) => `calc(${px / 16}rem * var(--cds-rem-scale, 1))`;
 
-export function iconStyle(size: IconSize | number = "md"): CSSProperties {
-    const px = typeof size === "number" ? size : PX[size];
-    return { width: rem(px), height: rem(px) };
+// stroke width at a rendered size -> variable-font weight (400..700), same curve as the source
+function weight(stroke: number, px: number) {
+    const master = px <= 18 ? 16 : 20;
+    const r = (stroke * master) / px;
+    const { lo, hi } = WGHT[master];
+    const w = 400 + 300 * ((r - lo) / (hi - lo));
+    return Math.round(Math.max(400, Math.min(700, w)) * 10) / 10;
 }
+function nearest(px: number): IconSize {
+    let best: IconSize = "md";
+    let d = Infinity;
+    for (const s of ORDER) {
+        const x = Math.abs(SIZES[s].px - px);
+        if (x <= d) ((d = x), (best = s));
+    }
+    return best;
+}
+
+export function iconStyle(size: IconSize | number = "md", bold = false): CSSProperties {
+    const preset = typeof size === "number" ? SIZES[nearest(size)] : SIZES[size];
+    const px = typeof size === "number" ? size : preset.px;
+    const stroke = bold && preset.strong ? preset.strong : preset.regular;
+    return { fontSize: rem(px), fontWeight: weight(stroke, px) };
+}
+
+const ANIM = new Set<string>(manifest.anim);
 
 export function Icon({
     name,
     size = "md",
     bold,
+    animated,
     className,
     style,
     label,
@@ -124,31 +62,36 @@ export function Icon({
     style?: CSSProperties;
     label?: string;
 }) {
-    const node = MAP[name] as Node | undefined;
-    const px = typeof size === "number" ? size : PX[size];
-    // thinner strokes at small sizes, like the text around them
-    const stroke = (bold ? 2.25 : 2) * (px <= 12 ? 1.1 : px <= 16 ? 1 : 0.9);
+    const cp = manifest.icons[name];
+    const secondary = (manifest.secondary as Record<string, number>)[name];
+    const base = iconStyle(size, bold);
+    const anim = animated && ANIM.has(name);
+    const st: any = anim ? { ...base, "--cds-opsz": (typeof size === "number" ? size : SIZES[size].px) <= 18 ? 16 : 20, "--cds-wght": base.fontWeight } : base;
+    if (anim) {
+        const dur = (manifest.animDur as any)[name];
+        const out = (manifest.animDurOut as any)[name];
+        const ease = (manifest.animEase as any)[name];
+        if (dur !== undefined) st["--cds-anim-dur"] = `${dur}ms`;
+        if (out !== undefined) st["--cds-anim-dur-out"] = `${out}ms`;
+        if (ease !== undefined) st["--cds-anim-ease"] = ease;
+    }
     return (
-        <svg
+        <span
             data-cds="Icon"
-            className={`evi-claude-icon ${className ?? ""}`}
-            viewBox="0 0 24 24"
-            width={px}
-            height={px}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ ...iconStyle(size), flex: "none", ...style }}
+            data-cds-anim={anim ? "" : undefined}
+            data-cds-anim-loop={anim && manifest.animLoop.includes(name) ? "" : undefined}
+            className={className}
+            style={style ? { ...st, ...style } : st}
             role={label ? "img" : undefined}
             aria-hidden={label ? undefined : true}
             aria-label={label}
         >
-            {node?.map(([tag, attrs], i) => {
-                const Tag = tag as any;
-                return <Tag key={i} {...(attrs as any)} />;
-            })}
-        </svg>
+            {secondary !== undefined && (
+                <span data-cds-icon-layer="secondary" aria-hidden="true">
+                    {String.fromCodePoint(secondary)}
+                </span>
+            )}
+            {cp === undefined ? null : String.fromCodePoint(cp)}
+        </span>
     );
 }
