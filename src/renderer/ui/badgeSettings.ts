@@ -13,7 +13,7 @@ import { DAY, nextSupporterTier, SUPPORTER_TIERS, supportedDays, supporterTier }
 
 import { Badge, badgeKey, Badges } from "../badges";
 import type { PluginContext } from "../plugins/context";
-import { PLUGIN_BADGE_PREFIX, ProfileBadges } from "../profileBadges";
+import { PLUGIN_BADGE_PREFIX, ProfileBadges, sameBadges } from "../profileBadges";
 import { showToast } from "../toolkit/toasts";
 import { findStore, filters } from "../webpack/find";
 
@@ -26,7 +26,8 @@ const LEVEL_RARITY = [RARITY.COMMON, RARITY.COMMON, RARITY.RARE, RARITY.RARE, RA
 
 /** "3 months", "1 year" */
 function span(days: number) {
-    if (days < 365) return `${Math.round(days / 30.44)} month${Math.round(days / 30.44) === 1 ? "" : "s"}`;
+    // 30-day months, the same as the levels
+    if (days < 365) return `${Math.round(days / 30)} month${Math.round(days / 30) === 1 ? "" : "s"}`;
     const years = Math.round(days / 365);
     return `${years} year${years === 1 ? "" : "s"}`;
 }
@@ -101,11 +102,15 @@ function pluginEntry(b: ReturnType<typeof ProfileBadges.forUser>[number]) {
     };
 }
 
+/** Discord's stores, found once: the badge hooks run on every profile render */
+let profileSettingsStore: any;
+let userStore: any;
+
 /** What someone's arrangement is right now: while you edit your own profile, the unsaved one */
 export function currentPrefs(userId: string | undefined, isMe: boolean): BadgePrefs {
     const saved = Badges.prefsFor(userId);
     if (!isMe) return saved;
-    const pending = findStore<any>("UserProfileSettingsStore")?.getPendingChanges?.();
+    const pending = (profileSettingsStore ??= findStore<any>("UserProfileSettingsStore"))?.getPendingChanges?.();
     return {
         order: pending?.pendingBadgeDisplayOrder != null ? oursFromDiscord(pending.pendingBadgeDisplayOrder) : saved.order,
         hidden: pending?.pendingBadgeHiddenBadges != null ? oursFromDiscord(pending.pendingBadgeHiddenBadges).filter((id): id is string => typeof id === "string") : saved.hidden,
@@ -113,7 +118,7 @@ export function currentPrefs(userId: string | undefined, isMe: boolean): BadgePr
 }
 
 export function installBadgeSettings(ctx: PluginContext) {
-    const me = () => findStore<any>("UserStore")?.getCurrentUser?.()?.id as string | undefined;
+    const me = () => (userStore ??= findStore<any>("UserStore"))?.getCurrentUser?.()?.id as string | undefined;
 
     // Entries are rebuilt only when our list changes: Discord's hooks compare them by identity
     let cachedVersion = -1;
@@ -134,15 +139,15 @@ export function installBadgeSettings(ctx: PluginContext) {
     }
 
     // Plugins answer from live state, so theirs are rebuilt only when what they return changes
-    const pluginCache = new Map<string, { key: string; entries: ReturnType<typeof pluginEntry>[]; }>();
+    const pluginCache = new Map<string, { badges: ReturnType<typeof ProfileBadges.forUser>; entries: ReturnType<typeof pluginEntry>[]; }>();
     function pluginEntriesFor(userId: string) {
         if (!ProfileBadges.size) return [];
         const badges = ProfileBadges.forUser(userId);
-        const key = JSON.stringify(badges);
         const cached = pluginCache.get(userId);
-        if (cached?.key === key) return cached.entries;
+        if (cached && sameBadges(cached.badges, badges)) return cached.entries;
         const entries = badges.map(pluginEntry);
-        pluginCache.set(userId, { key, entries });
+        if (pluginCache.size >= 200) pluginCache.clear();
+        pluginCache.set(userId, { badges, entries });
         return entries;
     }
 

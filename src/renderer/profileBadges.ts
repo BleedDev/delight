@@ -25,6 +25,25 @@ export type ProfileBadgeProvider = (userId: string) => ProfileBadge[] | null | u
 /** A plugin's badge in Discord's badge directory: never sent to Discord or evi.rest when saving */
 export { PLUGIN_PREFIX as PLUGIN_BADGE_PREFIX } from "@shared/badges";
 
+/** What decides how a badge looks and acts, in Discord's format or ours */
+const BADGE_FIELDS = ["id", "description", "icon", "iconSrc", "link", "name", "plugin", "eviKey"] as const;
+
+/**
+ * Whether two badge lists draw the same, field by field. Badge hooks run on every profile render,
+ * and Discord compares what they return by identity: an unchanged list is handed back as the same
+ * array. Cheaper than building a key with JSON.stringify.
+ */
+export function sameBadges(a: readonly any[] | undefined, b: readonly any[]): boolean {
+    if (!a || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        const x = a[i], y = b[i];
+        if (x === y) continue;
+        if (!x || !y) return false;
+        for (const field of BADGE_FIELDS) if (x[field] !== y[field]) return false;
+    }
+    return true;
+}
+
 const logger = new Logger("ProfileBadges", "#5865f2");
 const providers = new Map<ProfileBadgeProvider, string>();
 

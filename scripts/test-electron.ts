@@ -116,7 +116,7 @@ async function storeStepInstall() {
     const nativeOffCall = nativeCtx ? await nativeCtx.native.call("ping").then((r: unknown) => `answered ${r}`, (e: Error) => `refused: ${e.message}`) : null;
     // Any plugin can be removed: one dropped into the folder by hand, and one from the dev build
     const manual = await D.store.uninstall("late-plugin");
-    const devRemoved = await D.store.uninstall("toolkit-demo");
+    const devRemoved = await D.store.uninstall("timezones");
     return {
         status: listing.status, ids: listing.plugins.map((p: any) => p.id), problems: listing.problems.length,
         good, goodRan: (window as any).__storeGood, goodRunning: goodState?.running === true, goodSource: goodState?.source,
@@ -124,7 +124,7 @@ async function storeStepInstall() {
         nativeRefused, nativeRefusedListed,
         native, nativeRunning, nativePing, nativeOffCall,
         manual, lateStillThere: !!D.plugins.get("late-plugin"),
-        devRemoved, devStillThere: !!D.plugins.get("toolkit-demo"),
+        devRemoved, devStillThere: !!D.plugins.get("timezones"),
     };
 }
 
@@ -514,7 +514,7 @@ else {
     check("store: main refuses native calls for a plugin that's switched off", /^refused: .*turned off/.test(i.nativeOffCall ?? ""), i.nativeOffCall);
     check("reports: a crash report about another version than the store installed is refused", i.crashOtherVersion?.ok === false && /isn't installed from the store/.test(i.crashOtherVersion.error), i.crashOtherVersion);
     check("store: removes a plugin it didn't install, and remembers it so updates don't bring it back", i.manual?.ok === true && !i.lateStillThere && !d1.late && d1.removed.includes("late-plugin"), { result: i.manual, removed: d1.removed });
-    check("store: a dev build plugin is hidden (its files are the repo's) and remembered too", i.devRemoved?.ok === true && !i.devStillThere && d1.removed.includes("toolkit-demo"), { result: i.devRemoved, removed: d1.removed });
+    check("store: a dev build plugin is hidden (its files are the repo's) and remembered too", i.devRemoved?.ok === true && !i.devStillThere && d1.removed.includes("timezones"), { result: i.devRemoved, removed: d1.removed });
     check("store: update replaces the plugin live", u.offered === "2.0.0" && u.update?.ok === true && u.update.version === "2.0.0" && u.afterUpdate.ran === "2.0.0" && u.afterUpdate.running && u.afterUpdate.disposed === 1, { offered: u.offered, update: u.update, after: u.afterUpdate });
     check("store: uninstall stops and removes it live", u.uninstall?.ok === true && !u.listedAfterUninstall && u.disposedAfterUninstall === 2 && !u.installed.includes("store-good") && d2.good === null && d2.staging.length === 0, { result: u.uninstall, disk: d2 });
 }

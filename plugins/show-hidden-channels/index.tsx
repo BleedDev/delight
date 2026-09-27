@@ -41,14 +41,75 @@ function HiddenIcon() {
     return Tooltip ? <Tooltip text="Hidden channel">{icon}</Tooltip> : icon({});
 }
 
+const isUncategorized = (entry: { channel: any; comparator: number; }) =>
+    entry.channel.id === "null" && entry.channel.name === "Uncategorized" && entry.comparator === -1;
+
 /**
  * getChannels without hidden channels, per result of the original. Discord calls it constantly and
  * compares results by reference, so a new copy each time would re-render the channel list every time.
+ *
+ * A permission change can hide or reveal channels without GuildChannelStore handing out a new
+ * object, so each result also remembers the permissions it was made under: a counter bumped on
+ * every PermissionStore change, and that server's permission versions. After a change in one
+ * server the others still match and are handed back untouched. When a server's do change, its
+ * channels are filtered again, and if the same ones come out, the old object is kept.
  */
-let filteredChannels = new WeakMap<object, Record<string, any>>();
+interface Filtered {
+    /** permissionChanges when last checked */
+    stamp: number;
+    /** The server's permission versions, or undefined when PermissionStore doesn't have them */
+    key: string | undefined;
+    result: Record<string, any>;
+}
+const filteredChannels = new WeakMap<object, Filtered>();
+let permissionChanges = 0;
 
-const isUncategorized =(entry: { channel: any; comparator: number; }) =>
-    entry.channel.id === "null" && entry.channel.name === "Uncategorized" && entry.comparator === -1;
+/** The server a getChannels result is for */
+function guildOf(channels: Record<string, any>): string | undefined {
+    if (typeof channels.id === "string") return channels.id;
+    for (const entries of Object.values(channels)) {
+        if (!Array.isArray(entries)) continue;
+        for (const entry of entries) {
+            const id = entry?.channel?.guild_id;
+            if (typeof id === "string") return id;
+        }
+    }
+}
+
+/**
+ * PermissionStore's own change counters for a server (its roles and member) and for channel
+ * overwrites. Only trusted when it has both.
+ */
+function permissionKey(guildId: string | undefined): string | undefined {
+    const permissions = store("PermissionStore");
+    if (!guildId || typeof permissions?.getGuildVersion !== "function" || typeof permissions?.getChannelsVersion !== "function") return;
+    return `${permissions.getGuildVersion(guildId)}:${permissions.getChannelsVersion()}`;
+}
+
+function filterChannels(channels: Record<string, any>): Record<string, any> {
+    const result: Record<string, any> = {};
+    for (const [key, entries] of Object.entries(channels)) {
+        if (!Array.isArray(entries)) {
+            result[key] = entries;
+            continue;
+        }
+        result[key] = entries.filter(entry => isUncategorized(entry) || entry.channel.id === null || !isHiddenChannel(entry.channel));
+    }
+    return result;
+}
+
+/** Same lists, entry for entry */
+function sameChannels(a: Record<string, any>, b: Record<string, any>): boolean {
+    const keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) return false;
+    for (const key of keys) {
+        const x = a[key], y = b[key];
+        if (x === y) continue;
+        if (!Array.isArray(x) || !Array.isArray(y) || x.length !== y.length) return false;
+        for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+    }
+    return true;
+}
 
 const css = `
 .evi-shc-hidden-icon { cursor: not-allowed; margin-left: 6px; z-index: 0; }
@@ -482,17 +543,16 @@ export default definePlugin({
 
     resolveGuildChannels(channels: Record<string, any>, includeHidden: boolean) {
         if (includeHidden || !channels || typeof channels !== "object") return channels;
-        let result = filteredChannels.get(channels);
-        if (result) return result;
-        result = {};
-        for (const [key, entries] of Object.entries(channels)) {
-            if (!Array.isArray(entries)) {
-                result[key] = entries;
-                continue;
-            }
-            result[key] = entries.filter(entry => isUncategorized(entry) || entry.channel.id === null || !isHiddenChannel(entry.channel));
+        const cached = filteredChannels.get(channels);
+        if (cached?.stamp === permissionChanges) return cached.result;
+        const key = permissionKey(guildOf(channels));
+        if (cached && key !== undefined && cached.key === key) {
+            cached.stamp = permissionChanges;
+            return cached.result;
         }
-        filteredChannels.set(channels, result);
+        const fresh = filterChannels(channels);
+        const result = cached && sameChannels(cached.result, fresh) ? cached.result : fresh;
+        filteredChannels.set(channels, { stamp: permissionChanges, key, result });
         return result;
     },
 
@@ -513,11 +573,12 @@ export default definePlugin({
 
     start(ctx) {
         setContext(ctx);
-        // A permission change can hide or reveal channels without GuildChannelStore handing out a new object
+        // A permission change can hide or reveal channels without GuildChannelStore handing out a new
+        // object: cached results are checked again (see filteredChannels)
         const permissions = store("PermissionStore");
-        const reset = () => void (filteredChannels = new WeakMap());
-        permissions?.addChangeListener?.(reset);
-        ctx.onDispose(() => permissions?.removeChangeListener?.(reset));
+        const changed = () => void permissionChanges++;
+        permissions?.addChangeListener?.(changed);
+        ctx.onDispose(() => permissions?.removeChangeListener?.(changed));
     },
 
     stop() {

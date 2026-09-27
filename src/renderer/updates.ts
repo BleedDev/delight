@@ -82,6 +82,17 @@ export const Updates = {
         Updates.schedule();
     },
 
+    get beta() {
+        return Settings.data.betaUpdates === true;
+    },
+
+    /** Main reads the setting, so it's saved before checking again */
+    async setBeta(on: boolean) {
+        Settings.update(d => void (d.betaUpdates = on));
+        await Settings.save().catch(() => { });
+        return Updates.check(true);
+    },
+
     /** Checks after startup settles, then every few hours, unless turned off */
     schedule(delay = 15_000) {
         clearInterval(timer);

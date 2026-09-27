@@ -1,25 +1,39 @@
 /** The muted "Last seen 3h ago" line under a name, shared by the member list, friends list and DM list */
 import { Components, React } from "@evi/api";
 
-import { entryOf, fullText, isOnline, state, useVersion } from "./state";
-import type { Settings } from "./state";
-import { lineText } from "./track";
+import { fullText, lineOf, useUser } from "./state";
+import type { Where } from "./state";
 
+// The text sits in a block that fills the line, so hovering anywhere on it reaches its handler
 export const lineCss = `
 .evi-last-seen-sub { display: block; color: var(--text-muted, #949ba4); font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.evi-last-seen-sub > span { display: block; overflow: hidden; text-overflow: ellipsis; }
 `;
 
-type Where = { [K in keyof Settings]: Settings[K]["type"] extends "boolean" ? K : never }[keyof Settings];
+interface LineProps { userId: string; setting: Where; className?: string; }
 
-/** Renders nothing when the setting is off, the person is online, or nothing is known */
-export function LastSeenLine({ userId, setting, className }: { userId: string; setting: Where; className?: string; }) {
-    useVersion();
-    if (!state.context?.settings.get(setting)) return null;
-    if (isOnline(userId)) return null;
-    const text = lineText(entryOf(userId), Date.now());
+let memoized: React.ComponentType<LineProps> | undefined;
+
+/**
+ * The line component, memoized. React.memo can't run when the plugin loads (Discord's React isn't
+ * there yet), so it's made on first use: `const Line = lastSeenLine(); <Line ... />`.
+ */
+export const lastSeenLine = () => memoized ??= React.memo(LastSeenLine);
+
+/**
+ * Renders nothing when the setting is off, the person is online, or nothing is known. Re-renders
+ * only when this person's line changes; the long hover text is only put together on hover.
+ */
+function LastSeenLine({ userId, setting, className }: LineProps) {
+    const text = useUser(userId, () => lineOf(userId, setting));
+    const [hovered, setHovered] = React.useState(false);
     if (!text) return null;
-    const full = fullText(userId) ?? text;
-    const line = <span className={className ? `evi-last-seen-sub ${className}` : "evi-last-seen-sub"}>{text}</span>;
     const Tooltip = Components.Tooltip;
+    const full = hovered || !Tooltip ? fullText(userId) ?? text : text;
+    const line = (
+        <span className={className ? `evi-last-seen-sub ${className}` : "evi-last-seen-sub"}>
+            <span onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>{text}</span>
+        </span>
+    );
     return Tooltip ? <Tooltip text={full}>{line}</Tooltip> : <span title={full}>{line}</span>;
 }

@@ -3,19 +3,27 @@
  * details (the Plugins tab) and on a store plugin's page, before it's installed. The analysis itself
  * is src/shared/pluginPermissions.ts.
  */
-import { analyzePermissions, Capability, PermissionsReport, Risk, RISK_LABELS, riskSummary, StorePreviewResult } from "@shared/pluginPermissions";
+import { analyzePermissions, Capability, PermissionsReport, Risk, StorePreviewResult } from "@shared/pluginPermissions";
 
+import { t } from "../i18n";
 import { Native } from "../native";
 import type { PluginState } from "../plugins/manager";
 import { PluginUsage } from "../plugins/usage";
 import { Store } from "../store";
 import { React } from "../webpack/common";
 import { Badge, Dialog, Icon, IconButton, IconName, Status, Text, Tone } from "./components";
+import { PluginActivitySection } from "./PluginActivity";
 import { PulledNotice, ReportRow } from "./Trust";
 
 const riskTone: Record<Risk, Tone> = { low: "success", medium: "warning", high: "danger" };
 const riskIcon: Record<Risk, IconName> = { low: "circleCheck", medium: "info", high: "warning" };
-const riskWord: Record<Risk, string> = { low: "Low", medium: "Medium", high: "High" };
+
+/** One line on the overall picture, for the top of the list (shared/pluginPermissions.ts riskSummary) */
+function riskSummary(report: PermissionsReport) {
+    if (report.risk === "high") return t("perms.summary.high");
+    if (!report.capabilities.length) return t(report.scanned ? "perms.summary.nothingFound" : "perms.summary.pageOnly");
+    return t(report.risk === "medium" ? "perms.summary.medium" : "perms.summary.low");
+}
 
 function CapabilityRow({ capability: c }: { capability: Capability; }) {
     return (
@@ -24,11 +32,11 @@ function CapabilityRow({ capability: c }: { capability: Capability; }) {
             <div className="dl-perms-text">
                 <div className="dl-perms-title">
                     <Text variant="text-sm/semibold" color="text-strong">{c.title}</Text>
-                    <span className="dl-perms-risk" data-risk={c.risk}>{riskWord[c.risk]}</span>
+                    <span className="dl-perms-risk" data-risk={c.risk}>{t(`perms.risk.${c.risk}`)}</span>
                 </div>
                 <Text tag="p" variant="text-sm/normal" color="text-subtle">{c.description}</Text>
                 {c.details.length > 0 && (
-                    <ul className="dl-perms-details" aria-label={`${c.title}: details`}>
+                    <ul className="dl-perms-details" aria-label={t("perms.detailsLabel", { title: c.title })}>
                         {c.details.map(d => <li key={d} className="dl-perms-detail">{d}</li>)}
                     </ul>
                 )}
@@ -49,7 +57,7 @@ export function PermissionsList({ report, pending, error, note }: {
     return (
         <div className="dl-perms" data-risk={report.risk}>
             <div className="dl-perms-head">
-                <Status tone={riskTone[report.risk]}>{RISK_LABELS[report.risk]}</Status>
+                <Status tone={riskTone[report.risk]}>{t(`perms.riskLabel.${report.risk}`)}</Status>
                 <Text variant="text-sm/normal" color="text-subtle">{riskSummary(report)}</Text>
             </div>
             {report.capabilities.length > 0 && (
@@ -58,11 +66,11 @@ export function PermissionsList({ report, pending, error, note }: {
                 </ul>
             )}
             <span role="status">
-                {pending && <Status tone="muted">Checking its code…</Status>}
-                {error && <Status tone="muted">Couldn’t check its code ({error}), so this only shows what its store listing says.</Status>}
+                {pending && <Status tone="muted">{t("perms.checking")}</Status>}
+                {error && <Status tone="muted">{t("perms.checkFailed", { error })}</Status>}
             </span>
             <Text tag="p" variant="text-xs/normal" color="text-muted" className="dl-perms-note">
-                {note ?? "Found by reading its code. A plugin can still do things its code doesn’t spell out, so only install plugins from authors you trust."}
+                {note ?? t("perms.note")}
             </Text>
         </div>
     );
@@ -87,9 +95,7 @@ export function InstalledPluginPermissions({ state }: { state: PluginState; }) {
     return (
         <PermissionsList
             report={report}
-            note={ran
-                ? "From its code and what it registered while running. A plugin can still do things its code doesn’t spell out."
-                : "Found by reading its code. Turn it on to also see exactly what it registers while it runs."}
+            note={t(ran ? "perms.noteRan" : "perms.noteNotRan")}
         />
     );
 }
@@ -115,30 +121,32 @@ function PluginDetails({ state }: { state: PluginState; }) {
             {state.pulled && <PulledNotice pull={state.pulled} update={update} />}
             {manifest.description && <Text tag="p" variant="text-md/normal" color="text-default">{manifest.description}</Text>}
             <Text variant="text-sm/normal" color="text-subtle" tabular>
-                {[manifest.version && `v${manifest.version}`, authors.length > 0 && `By ${authors.join(", ")}`].filter(Boolean).join(" · ")}
+                {[manifest.version && `v${manifest.version}`, authors.length > 0 && t("common.by", { author: authors.join(", ") })].filter(Boolean).join(" · ")}
             </Text>
 
             <section className="dl-stack" aria-labelledby={`${headingId}-access`}>
-                <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={`${headingId}-access`}>Permissions</Text>
+                <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={`${headingId}-access`}>{t("perms.title")}</Text>
                 <InstalledPluginPermissions state={state} />
             </section>
 
+            <PluginActivitySection state={state} headingId={`${headingId}-activity`} />
+
             <section className="dl-stack" aria-labelledby={`${headingId}-changes`}>
-                <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={`${headingId}-changes`}>What’s new</Text>
+                <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={`${headingId}-changes`}>{t("store.whatsNew")}</Text>
                 {changelog.length ? (
                     <ol className="dl-changelog">
                         {changelog.map(c => (
                             <li key={c.version}>
                                 <div className="dl-row-title">
                                     <Text variant="text-sm/semibold" color="text-strong" tabular>v{c.version}</Text>
-                                    {c.version === manifest.version && <Badge>Installed</Badge>}
+                                    {c.version === manifest.version && <Badge>{t("store.installed")}</Badge>}
                                 </div>
                                 <ul>{c.notes.map(n => <li key={n}><Text variant="text-sm/normal" color="text-subtle">{n}</Text></li>)}</ul>
                             </li>
                         ))}
                     </ol>
                 ) : (
-                    <Text tag="p" variant="text-sm/normal" color="text-muted">{manifest.name} doesn’t publish a changelog.</Text>
+                    <Text tag="p" variant="text-sm/normal" color="text-muted">{t("perms.noChangelog", { name: manifest.name })}</Text>
                 )}
             </section>
 
@@ -154,7 +162,7 @@ export function PluginDetailsButton({ state }: { state: PluginState; }) {
     const id = `dl-plugin-${manifest.id}-info`;
     return (
         <>
-            <IconButton icon="info" label={`${manifest.name} details`} aria-controls={open ? id : undefined} onClick={() => setOpen(true)} />
+            <IconButton icon="info" label={t("perms.detailsOf", { name: manifest.name })} aria-controls={open ? id : undefined} onClick={() => setOpen(true)} />
             {open && (
                 <Dialog id={id} title={manifest.name} onClose={() => setOpen(false)}>
                     <PluginDetails state={state} />
@@ -173,7 +181,7 @@ function preview(id: string, version: string) {
     const key = `${id}@${version}`;
     let pending = previews.get(key);
     if (!pending) {
-        pending = (Native.storePreview?.(id) ?? Promise.resolve<StorePreviewResult>({ ok: false, error: "this Evi can’t fetch it yet" }))
+        pending = (Native.storePreview?.(id) ?? Promise.resolve<StorePreviewResult>({ ok: false, error: t("perms.cantFetch") }))
             .catch(err => ({ ok: false as const, error: String((err as Error)?.message ?? err) }));
         previews.set(key, pending);
         pending.then(r => !r.ok && previews.delete(key));
@@ -197,7 +205,7 @@ export function StorePluginPermissions({ id, version, native, headingId }: { id:
 
     return (
         <section className="dl-stack" aria-labelledby={headingId} data-store-permissions={id}>
-            <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={headingId}>Permissions</Text>
+            <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={headingId}>{t("perms.title")}</Text>
             <PermissionsList report={report} pending={!result} error={result && !result.ok ? result.error : undefined} />
         </section>
     );

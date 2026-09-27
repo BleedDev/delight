@@ -2,6 +2,9 @@
 # a maintainer reviews the draft on GitHub and presses "Publish release", which is what
 # `evi update` picks up (it only sees published, non-prerelease releases).
 #
+# A version with a dash (v0.5.0-beta.1) is drafted as a prerelease that never becomes "Latest":
+# only people who turned on beta versions (or run `evi update --beta`) get it.
+#
 # Run it from the Actions tab with a version, or push a tag: git tag v0.2.0 && git push origin v0.2.0
 # Either way the version has to match package.json, since that's what the exe reports.
 name: Release
@@ -71,15 +74,22 @@ jobs:
           unzip -q rcodesign.zip -d rcodesign
           echo "RCODESIGN=$(find "$PWD/rcodesign" -name rcodesign.exe)" >> "$GITHUB_ENV"
 
-      # Every installer and its .sha256. Bun downloads the other systems' runtimes and moves them
+      # Evi Setup (installer/, Rust + Tauri) builds with the runner's Rust; this keeps its crates between runs
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: installer
+
+      # Every installer and its .sha256, plus evi-core.json (what Evi Setup downloads) and Evi-Setup.exe.
+      # Bun downloads the other systems' runtimes and moves them
       # into its cache; on the runner the checkout is on D: and the cache and temp on C:, and those
       # moves fail ("Failed to extract executable"). Keep all of it on the checkout's drive.
-      - run: bun scripts/build.ts --release
+      - run: bun scripts/build.ts --release --installer
         env:
           BUN_INSTALL_CACHE_DIR: ${{ runner.temp }}/bun-cache
           TEMP: ${{ runner.temp }}
           TMP: ${{ runner.temp }}
       - run: bun scripts/test-cli.ts --exe
+      - run: bun scripts/test-installer.ts
       - run: cat dist/*.sha256
 
       - name: Create draft release
@@ -93,9 +103,9 @@ jobs:
             exit 1
           fi
           prerelease=()
-          if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
+          if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease --latest=false); fi
           # Named one by one: evi-linux-* would also match the .sha256 files, uploading them twice
-          gh release create "$TAG" dist/evi.exe dist/evi-macos-{arm64,x64} dist/evi-linux-{x64,arm64} dist/*.sha256 \
+          gh release create "$TAG" dist/evi.exe dist/evi-macos-{arm64,x64} dist/evi-linux-{x64,arm64} dist/evi-core.json dist/Evi-Setup.exe dist/*.sha256 \
             --draft "${prerelease[@]}" \
             --target "$GITHUB_SHA" \
             --title "Evi $VERSION" \

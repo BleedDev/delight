@@ -1,8 +1,8 @@
 /**
- * Updating Evi from inside Discord. Checks GitHub for the latest published release; installing one
- * downloads its installer for this system (evi.exe on Windows), checks it against the published SHA-256,
- * keeps it in the data folder, and has it run `install --restart` for this Discord: that writes the new
- * core and official plugins, closes Discord and starts it again.
+ * Updating Evi from inside Discord. Checks GitHub for the latest published release (prereleases too, with
+ * betas on); installing one downloads its installer for this system (evi.exe on Windows), checks it
+ * against the published SHA-256, keeps it in the data folder, and has it run `install --restart` for this
+ * Discord: that writes the new core and official plugins, closes Discord and starts it again.
  *
  * The installer closes Discord, so it can't be Discord's child: on Windows it's started through WMI,
  * elsewhere in a session of its own. Its output goes to logs/update.log.
@@ -10,7 +10,7 @@
  * A dev build (the loader points at a repo's dist/) updates with git; it only checks.
  */
 import { IPC } from "@shared/ipc";
-import { EXE_ASSET, flavorOf, isNewerRelease, parseRelease, RELEASE_REPO, ReleaseInfo, UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/release";
+import { EXE_ASSET, flavorOf, isNewerRelease, parseRelease, pickRelease, RELEASE_REPO, ReleaseInfo, UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/release";
 import { execFile, spawn } from "child_process";
 import { createHash } from "crypto";
 import { ipcMain, net, WebContents } from "electron";
@@ -18,6 +18,7 @@ import { accessSync, constants, mkdirSync, renameSync, rmSync, writeFileSync } f
 import { join, resolve } from "path";
 
 import { DATA_DIR } from "./paths";
+import { settings } from "./settings";
 
 /** Overridable so tests can serve fake releases from a local server */
 const API = (process.env.EVI_UPDATE_API || "https://api.github.com").replace(/\/+$/, "");
@@ -29,6 +30,8 @@ const EXE = join(DATA_DIR, EXE_ASSET);
 const LOG = join(DATA_DIR, "logs", "update.log");
 
 let last: UpdateStatus | undefined;
+/** Whether the last check counted betas */
+let lastBeta = false;
 let checking: Promise<UpdateStatus> | undefined;
 let installing = false;
 
@@ -48,29 +51,36 @@ function blockedReason(): string | undefined {
     }
 }
 
-async function fetchLatest(): Promise<ReleaseInfo | null> {
+/** The newest release. /releases/latest never answers with a prerelease, so betas pick from the list instead */
+async function fetchLatest(beta: boolean): Promise<ReleaseInfo | null> {
     let res: Response;
+    const path = beta ? "releases?per_page=30" : "releases/latest";
     try {
-        res = await net.fetch(`${API}/repos/${RELEASE_REPO}/releases/latest`, { headers: HEADERS, cache: "no-store", signal: AbortSignal.timeout(15_000) });
+        res = await net.fetch(`${API}/repos/${RELEASE_REPO}/${path}`, { headers: HEADERS, cache: "no-store", signal: AbortSignal.timeout(15_000) });
     } catch (err) {
         throw new Error(`Couldn’t reach GitHub: ${(err as Error).message}`);
     }
     if (res.status === 404) return null;
     if (res.status === 403 || res.status === 429) throw new Error("GitHub’s rate limit was hit. Try again in a few minutes.");
     if (!res.ok) throw new Error(`GitHub answered ${res.status}`);
-    const release = parseRelease(await res.json().catch(() => null));
+    const json = await res.json().catch(() => null);
+    const release = parseRelease(beta ? pickRelease(json, true) : json);
     if (!release) return null;
     if ("error" in release) throw new Error(release.error);
     return release;
 }
 
 export function checkForUpdate(force = false): Promise<UpdateStatus> {
-    if (!force && last && Date.now() - last.checkedAt < FRESH_FOR) return Promise.resolve(last);
+    const beta = settings.betaUpdates === true;
+    // Turning betas on or off makes the last answer stale
+    if (!force && last && lastBeta === beta && Date.now() - last.checkedAt < FRESH_FOR) return Promise.resolve(last);
     checking ??= (async (): Promise<UpdateStatus> => {
         const current = EVI_VERSION;
         const checkedAt = Date.now();
+        lastBeta = beta;
         try {
-            const release = await fetchLatest();
+            // Only ever forward: with betas off again, someone on 0.5.0-beta.1 waits for 0.5.0 rather than going back
+            const release = await fetchLatest(beta);
             if (!release) return { state: "none", current, checkedAt };
             if (!isNewerRelease(release.tag, current)) return { state: "current", current, latest: release.version, checkedAt };
             const blocked = blockedReason();

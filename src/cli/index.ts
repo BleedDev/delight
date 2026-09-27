@@ -2,7 +2,7 @@
  * evi install    [--flavor stable|ptb|canary|development|all] [--dev] [--restart]
  * evi uninstall  [--flavor ...] [--restart]
  * evi status
- * evi update     [--check] [--flavor ...] [--restart]
+ * evi update     [--check] [--beta] [--flavor ...] [--restart]
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
@@ -40,6 +40,7 @@ const { values: flags, positionals } = parseArgs({
         dev: { type: "boolean", default: false },
         restart: { type: "boolean", default: false },
         check: { type: "boolean", default: false },
+        beta: { type: "boolean", default: false },
         help: { type: "boolean", short: "h", default: false },
     },
 });
@@ -93,11 +94,13 @@ async function prepareCore(): Promise<{ corePath: string; devPluginsDir?: string
     for (const [file, content] of Object.entries(embed.core)) writeFileSync(join(coreDir, file), content);
     writeFileSync(join(coreDir, "package.json"), JSON.stringify({ type: "commonjs" }));
 
-    // Official plugins are refreshed, except ones the user removed; user plugins in other folders are never touched
+    // Evi comes with no plugins: they're added from the store. Official plugins someone already has
+    // (from before, when every install laid them all down) are kept up to date; ones they removed or
+    // installed from the store are left alone, and nothing new is added.
     const removed = existsSync(join(DATA_DIR, REMOVED_PLUGINS_FILE)) ? parseRemovedPlugins(readFileSync(join(DATA_DIR, REMOVED_PLUGINS_FILE), "utf8")) : new Set<string>();
     for (const [id, files] of Object.entries(embed.plugins)) {
-        if (removed.has(id)) continue;
         const dir = join(DATA_DIR, "plugins", id);
+        if (removed.has(id) || !existsSync(join(dir, "manifest.json")) || existsSync(join(dir, STORE_MARKER))) continue;
         rmSync(dir, { recursive: true, force: true });
         mkdirSync(dir, { recursive: true });
         for (const [file, content] of Object.entries(files)) writeFileSync(join(dir, file), content);
@@ -214,7 +217,7 @@ async function update() {
 
     let release;
     try {
-        release = await fetchLatestRelease();
+        release = await fetchLatestRelease(flags.beta);
     } catch (e) {
         fail(e instanceof UpdateError ? e.message : String(e));
     }
@@ -270,6 +273,7 @@ Options
   --restart                                      Quit and reopen Discord for you
   --dev                                          Point Discord at this repo's dist/ (hot reload)
   --check                                        With update: only report whether a newer release exists
+  --beta                                         With update: include beta versions (prereleases)
 
 Launch Discord with --vanilla to start it once without Evi.${process.platform === "linux" ? "\nDiscord's folder usually belongs to root on Linux: run install, uninstall and update with sudo." : ""}`);
 }

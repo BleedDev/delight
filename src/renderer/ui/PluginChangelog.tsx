@@ -4,8 +4,9 @@
  * release notes. Several updated plugins share one popup. Never on a first install, and not while
  * Evi's own "What's new" is up: it waits for that to close. The logic is src/shared/pluginChangelog.ts.
  */
-import { detectPluginUpdates, mergeUpdates, PluginUpdate, updatesTitle } from "@shared/pluginChangelog";
+import { detectPluginUpdates, mergeUpdates, PluginUpdate } from "@shared/pluginChangelog";
 
+import { t } from "../i18n";
 import { PluginManager } from "../plugins/manager";
 import { Settings } from "../settings";
 import { Store } from "../store";
@@ -15,6 +16,7 @@ import { whenAppReady } from "./appReady";
 import { Button, SwitchRow, Text, useStore } from "./components";
 import { ensureStyles } from "./index";
 import { afterWhatsNew, ChangelogModal, inline } from "./WhatsNew";
+import { DiscordContext } from "./discordContext";
 
 export function PluginChangelogModal({ updates, onClose, onTurnOff }: { updates: PluginUpdate[]; onClose(): void; onTurnOff?(): void; }) {
     const single = updates.length === 1 ? updates[0] : undefined;
@@ -22,31 +24,31 @@ export function PluginChangelogModal({ updates, onClose, onTurnOff }: { updates:
         <ChangelogModal
             className="dl-plugin-whats-new"
             titleId="dl-plugin-whats-new-title"
-            eyebrow="Plugin updates"
-            title={updatesTitle(updates)}
-            subtitle={single && `Updated from ${single.from} to ${single.to}`}
+            eyebrow={t("pluginNotes.eyebrow")}
+            title={single ? t("pluginNotes.titleOne", { name: single.name, version: single.to }) : t("pluginNotes.titleMany", { count: updates.length })}
+            subtitle={single && t("pluginNotes.updatedFrom", { from: single.from, to: single.to })}
             onClose={onClose}
             footer={close => (
                 <div className="dl-plugin-whats-new-footer">
-                    <Text variant="text-xs/normal" color="text-muted" className="dl-grow">Every version is in the plugin’s details, in Evi’s Plugins.</Text>
+                    <Text variant="text-xs/normal" color="text-muted" className="dl-grow">{t("pluginNotes.footer")}</Text>
                     {onTurnOff && (
                         <Button onClick={() => {
                             onTurnOff();
                             close();
-                        }}>Stop showing these</Button>
+                        }}>{t("pluginNotes.stop")}</Button>
                     )}
-                    <button type="button" className="dl-notes-done" onClick={close}>Got it</button>
+                    <button type="button" className="dl-notes-done" onClick={close}>{t("common.gotIt")}</button>
                 </div>
             )}
         >
-            <div className="dl-whats-new-notes" role="region" aria-label="Changelog content" tabIndex={0}>
+            <div className="dl-whats-new-notes" role="region" aria-label={t("whatsNew.contentLabel")} tabIndex={0}>
                 {updates.map(u => (
                     <section key={u.id} className="dl-plugin-whats-new-plugin" data-plugin={u.id} aria-label={`${u.name} ${u.to}`}>
                         {!single && <Text tag="h2" variant="heading-md/bold" className="dl-whats-new-title dl-whats-new-improved">{u.name} {u.to}</Text>}
                         {u.entries.map(e => (
                             <React.Fragment key={e.version}>
                                 {/* One version needs no heading: the title (or the plugin's heading) already names it */}
-                                {u.entries.length > 1 && <Text tag="h3" variant="text-sm/semibold" color="text-muted" className="dl-plugin-whats-new-version" tabular>Version {e.version}</Text>}
+                                {u.entries.length > 1 && <Text tag="h3" variant="text-sm/semibold" color="text-muted" className="dl-plugin-whats-new-version" tabular>{t("pluginNotes.version", { version: e.version })}</Text>}
                                 <ul className="dl-whats-new-list">
                                     {e.notes.map(n => <li className="dl-whats-new-item" key={n}>{inline(n)}</li>)}
                                 </ul>
@@ -102,7 +104,7 @@ function show(updates: PluginUpdate[]) {
     waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
         const container = document.createElement("div");
         document.body.append(container);
-        createRoot(container).render(<Popup />);
+        createRoot(container).render(<DiscordContext><Popup /></DiscordContext>);
     }));
 }
 
@@ -145,8 +147,8 @@ export function PluginChangelogSetting() {
         <li className="dl-row">
             <SwitchRow
                 id="dl-plugin-changelogs"
-                label="Show what’s new after plugin updates"
-                description="Once per update, a popup lists what changed in the plugins that updated. Their details always have the full changelog."
+                label={t("pluginNotes.setting")}
+                description={t("pluginNotes.settingHint")}
                 checked={settings.pluginChangelogs !== false}
                 onChange={on => Settings.update(d => {
                     d.pluginChangelogs = on;

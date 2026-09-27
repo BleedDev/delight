@@ -341,6 +341,33 @@ Put injected UI into Discord's tree through a source patch that calls a `$self` 
 - Use Discord's CSS variables (`var(--interactive-normal)`, `var(--text-normal)`, `var(--background-secondary)`...) so it works with every theme.
 - Don't target Discord's hashed class names (`buttonContainer_a1b2c3`) directly in CSS; they change. If you need one, find it at runtime from its CSS module (see `getContainerClass` in `plugins/silent-typing/index.tsx`) or target stable attributes (`[aria-label]`, `[data-list-item-id]`).
 
+### Translations
+
+Evi's own UI follows Discord's language (the one picked in Discord's Language settings) and switches live when it changes. Your plugin can do the same with `defineStrings`: English is required and is the fallback for anything another language doesn't have.
+
+```tsx
+import { defineStrings, useLocale } from "@evi/api";
+
+const t = defineStrings({
+    en: { copied: "Copied {name}", messages: { one: "{count} message", other: "{count} messages" } },
+    es: { copied: "Se copió {name}", messages: { one: "{count} mensaje", other: "{count} mensajes" } },
+    "pt-BR": { copied: "{name} copiado" },
+    ru: { messages: { one: "{count} сообщение", few: "{count} сообщения", many: "{count} сообщений", other: "{count} сообщения" } },
+});
+
+ctx.toast(t("copied", { name: user.username }));
+
+function Counter({ n }: { n: number; }) {
+    useLocale(); // re-renders when Discord's language changes
+    return <span>{t("messages", { count: n })}</span>;
+}
+```
+
+- Keys come from `en`; other languages can only use those keys (TypeScript checks it) and may leave some out.
+- `{name}` is filled from the second argument. A plural is an object keyed by [plural category](https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html) (`one`, `few`, `many`, `other`...), picked by `count`; `other` is required.
+- Languages are Discord's tags. `pt-BR` matches exactly; `es` also covers `es-ES` and `es-419`. `I18n.discordLocale` is Discord's tag, `I18n.locale` the one Evi uses for its own UI.
+- Translate what your plugin shows. Leave your manifest's `name`, `description` and `changelog` in English: the store shows them as written.
+
 ## 10. Native code
 
 `native.ts` runs in Discord's main process with full Node and Electron access. Use it only for what the renderer can't do:

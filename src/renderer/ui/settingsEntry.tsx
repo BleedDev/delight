@@ -5,21 +5,13 @@
  * CATEGORY > CUSTOM), each with a lazy `buildLayout()`. We wrap the `$Root` node's buildLayout to
  * insert our section, using export hooks only, no source patches.
  */
-import type { ComponentType } from "react";
-
+import { useLocale } from "../i18n";
 import { Logger } from "../logger";
 import { hook } from "../patching/hooks";
 import { findExport, filters, waitFor } from "../webpack/find";
-import { AccountTab } from "./AccountTab";
-import { BackupTab } from "./BackupTab";
 import { ErrorBoundary } from "./components";
 import { ensureStyles } from "./index";
-import { PatchesTab } from "./PatchesTab";
-import { PatchHelperTab } from "./PatchHelperTab";
-import { PluginsTab } from "./PluginsTab";
-import { QuickCssTab } from "./QuickCssTab";
-import { ThemesTab } from "./ThemesTab";
-import { UpdatesTab } from "./UpdatesTab";
+import { Page, pages, PageView } from "./pages";
 
 interface LayoutNode {
     key: string;
@@ -36,19 +28,13 @@ const SECTION_KEY = "evi_section";
 const ANCHOR_KEY = "billing_section";
 const SYM_WRAPPED = Symbol("evi.rootWrapped");
 
-const iconPaths = {
+const iconPaths: Record<string, string> = {
     plugins: "M10 3a2 2 0 0 1 4 0v2h3a2 2 0 0 1 2 2v3h-2a2 2 0 0 0 0 4h2v3a2 2 0 0 1-2 2h-3v-2a2 2 0 0 0-4 0v2H7a2 2 0 0 1-2-2v-3h2a2 2 0 0 0 0-4H5V7a2 2 0 0 1 2-2h3z",
     themes: "M7 14a3 3 0 0 0-3 3c0 1.3-1.2 2-2 2 .9 1.2 2.5 2 4 2a4 4 0 0 0 4-4 3 3 0 0 0-3-3zm13.7-9.4-1.3-1.3a1 1 0 0 0-1.4 0L9 12.3l2.8 2.7 8.9-8.9a1 1 0 0 0 0-1.4z",
-    css: "M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.4 1.5-1.4H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zM7.5 12a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z",
-    // Code brackets
-    patchHelper: "M8.7 6.3a1 1 0 0 1 0 1.4L4.4 12l4.3 4.3a1 1 0 1 1-1.4 1.4l-5-5a1 1 0 0 1 0-1.4l5-5a1 1 0 0 1 1.4 0zm6.6 0a1 1 0 0 1 1.4 0l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4l4.3-4.3-4.3-4.3a1 1 0 0 1 0-1.4z",
-    // Archive box
-    backup: "M5 3h14a2 2 0 0 1 2 2v3H3V5a2 2 0 0 1 2-2zm-1 7h16v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9zm5 3a1 1 0 0 0 0 2h6a1 1 0 1 0 0-2H9z",
-    // Arrow into a tray
-    updates: "M12 2a1 1 0 0 1 1 1v10.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V3a1 1 0 0 1 1-1ZM3 20a1 1 0 1 0 0 2h18a1 1 0 1 0 0-2H3Z",
-    // Person
-    account: "M12 3a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 11c4.4 0 8 2.2 8 5v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1c0-2.8 3.6-5 8-5z",
-    patches: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z",
+    // Sliders
+    general: "M4 5a1 1 0 0 0 0 2h7.17a3 3 0 0 0 5.66 0H20a1 1 0 1 0 0-2h-3.17a3 3 0 0 0-5.66 0H4Zm0 12a1 1 0 1 0 0 2h3.17a3 3 0 0 0 5.66 0H20a1 1 0 1 0 0-2h-7.17a3 3 0 0 0-5.66 0H4Zm-1-5a1 1 0 0 1 1-1h11.17a3 3 0 0 1 5.66 0H21a1 1 0 1 1 0 2h-.17a3 3 0 0 1-5.66 0H4a1 1 0 0 1-1-1Z",
+    // Wrench
+    advanced: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z",
 };
 
 function makeIcon(path: string) {
@@ -62,35 +48,35 @@ function makeIcon(path: string) {
     };
 }
 
-function Embedded({ Tab }: { Tab: ComponentType; }) {
-    return <div className="dl-root dl-embedded"><ErrorBoundary><Tab /></ErrorBoundary></div>;
+function Embedded({ page }: { page: Page; }) {
+    useLocale();
+    return <div className="dl-root dl-embedded"><ErrorBoundary><PageView page={page} /></ErrorBoundary></div>;
 }
 
 function buildSection(types: NodeTypes): LayoutNode {
-    const entry = (key: string, title: string, iconPath: string, Tab: ComponentType): LayoutNode => {
-        const Component = () => <Embedded Tab={Tab} />;
-        const custom: LayoutNode = { key: `evi_${key}_custom`, type: types.CUSTOM, Component, useSearchTerms: () => ["Evi", title] };
+    // Titles are hooks to Discord, so they follow its language as it changes
+    const entry = (page: Page): LayoutNode => {
+        const key = page.id;
+        const title = () => {
+            useLocale();
+            return page.label();
+        };
+        const Component = () => <Embedded page={page} />;
+        // Discord's settings search finds a page by its tabs too ("Quick CSS", "Backup"...)
+        const useSearchTerms = () => ["Evi", title(), ...page.tabs.map(tab => tab.label())];
+        const custom: LayoutNode = { key: `evi_${key}_custom`, type: types.CUSTOM, Component, useSearchTerms };
         const category: LayoutNode = { key: `evi_${key}_category`, type: types.CATEGORY, buildLayout: () => [custom] };
-        const panel: LayoutNode = { key: `evi_${key}_panel`, type: types.PANEL, useTitle: () => title, buildLayout: () => [category] };
+        const panel: LayoutNode = { key: `evi_${key}_panel`, type: types.PANEL, useTitle: title, buildLayout: () => [category] };
         return {
             key: `evi_${key}_sidebar_item`,
             type: types.SIDEBAR_ITEM,
-            useTitle: () => title,
-            icon: makeIcon(iconPath),
+            useTitle: title,
+            icon: makeIcon(iconPaths[key] ?? iconPaths.advanced),
             buildLayout: () => [panel],
         };
     };
 
-    const items = [
-        entry("plugins", "Plugins", iconPaths.plugins, PluginsTab),
-        entry("themes", "Themes", iconPaths.themes, ThemesTab),
-        entry("quickcss", "Quick CSS", iconPaths.css, QuickCssTab),
-        entry("backup", "Backup", iconPaths.backup, BackupTab),
-        entry("account", "Account", iconPaths.account, AccountTab),
-        entry("updates", "Updates", iconPaths.updates, UpdatesTab),
-        entry("patches", "Patches", iconPaths.patches, PatchesTab),
-        entry("patchhelper", "Patch Helper", iconPaths.patchHelper, PatchHelperTab),
-    ];
+    const items = pages.map(entry);
 
     return { key: SECTION_KEY, type: types.SECTION, useTitle: () => "Evi", buildLayout: () => items };
 }

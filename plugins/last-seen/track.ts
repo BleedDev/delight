@@ -43,20 +43,39 @@ function touch(tracker: Tracker, id: string): Entry {
 }
 
 /**
- * Drops the least recently touched entries beyond `cap`, skipping anyone `keep` protects. Only if
- * everyone left is protected do protected people go too. Returns how many were removed.
+ * How far past the cap the tracker may grow before it's pruned. Pruning then drops this many at
+ * once, so it runs once per few hundred new people instead of on every one.
  */
-export function prune(tracker: Tracker, cap = DEFAULT_CAP, keep?: Keep): number {
+export const PRUNE_SLACK = 500;
+
+/**
+ * Drops the least recently touched entries until `cap` are left, skipping anyone `keep` protects.
+ * Only if everyone left is protected do protected people go too. With `slack`, nothing happens
+ * until there are more than `cap + slack`. Returns how many were removed.
+ *
+ * Protected people who were skipped move to the most recently used end, so the next prune doesn't
+ * walk past them again: with thousands of friends at the front, every prune would rescan them all.
+ */
+export function prune(tracker: Tracker, cap = DEFAULT_CAP, keep?: Keep, slack = 0): number {
+    if (tracker.size <= cap + slack) return 0;
+    const excess = tracker.size - cap;
     let removed = 0;
-    if (tracker.size <= cap) return 0;
-    for (const id of tracker.keys()) {
-        if (tracker.size <= cap) return removed;
-        if (keep?.(id)) continue;
+    const skipped: [string, Entry][] = [];
+    for (const [id, entry] of tracker) {
+        if (removed >= excess) break;
+        if (keep?.(id)) {
+            skipped.push([id, entry]);
+            continue;
+        }
         tracker.delete(id);
         removed++;
     }
+    for (const [id, entry] of skipped) {
+        tracker.delete(id);
+        tracker.set(id, entry);
+    }
     for (const id of tracker.keys()) {
-        if (tracker.size <= cap) break;
+        if (removed >= excess) break;
         tracker.delete(id);
         removed++;
     }
@@ -66,6 +85,18 @@ export function prune(tracker: Tracker, cap = DEFAULT_CAP, keep?: Keep): number 
 export interface Options {
     cap?: number;
     keep?: Keep;
+    /** Extra room before pruning, see PRUNE_SLACK. 0 (the default) prunes on every addition over the cap. */
+    slack?: number;
+}
+
+/**
+ * Whether someone isn't tracked: you, and bots when `ignoreBots` is on. Only an explicit bot flag
+ * counts: raw payloads (presences, typing, voice) usually leave it out, and looking each one up in
+ * UserStore on every dispatch isn't worth it. The lines under names pass the user record's own flag.
+ */
+export function isIgnored(id: string | undefined, bot: boolean | undefined, me: string | undefined, ignoreBots: boolean): boolean {
+    if (!id || id === me) return true;
+    return ignoreBots && bot === true;
 }
 
 /**
@@ -79,7 +110,7 @@ export function observePresence(tracker: Tracker, id: string, status: string | n
         entry.online = true;
         entry.seen = now;
         delete entry.approx;
-        prune(tracker, opts.cap, opts.keep);
+        prune(tracker, opts.cap, opts.keep, opts.slack);
         return true;
     }
     const entry = tracker.get(id);
@@ -96,7 +127,7 @@ export function observeActivity(tracker: Tracker, id: string, at: number, opts: 
     const old = tracker.get(id)?.active ?? 0;
     if (at <= old) return false;
     touch(tracker, id).active = at;
-    prune(tracker, opts.cap, opts.keep);
+    prune(tracker, opts.cap, opts.keep, opts.slack);
     return true;
 }
 
@@ -114,7 +145,7 @@ export function observeMessage(tracker: Tracker, id: string, at: number, where: 
     else delete entry.channelId;
     if (where.messageId) entry.messageId = where.messageId;
     else delete entry.messageId;
-    prune(tracker, opts.cap, opts.keep);
+    prune(tracker, opts.cap, opts.keep, opts.slack);
     return true;
 }
 
@@ -167,7 +198,7 @@ export function deserialize(data: unknown, opts: Options = {}): Tracker {
         }
         if (entry.seen || entry.message || entry.active) tracker.set(id, entry);
     }
-    prune(tracker, opts.cap, opts.keep);
+    prune(tracker, opts.cap, opts.keep, opts.slack);
     return tracker;
 }
 

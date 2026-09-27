@@ -15,7 +15,7 @@ import { arrange, BadgeAdminAction, EVI_PREFIX } from "@shared/badges";
 
 import { Badge, badgeKey, Badges } from "../badges";
 import { PluginContext } from "../plugins/context";
-import { ProfileBadges } from "../profileBadges";
+import { ProfileBadges, sameBadges } from "../profileBadges";
 import { filters, findStore } from "../webpack/find";
 import { currentPrefs, installBadgeSettings } from "./badgeSettings";
 
@@ -53,9 +53,21 @@ export function startBadges() {
         return EVI_PREFIX + badgeKey(id.slice(EVI_PREFIX.length));
     });
 
+    // Discord's badge row compares the list by identity: while nothing changed, the same array goes back
+    const last = new Map<string, any[]>();
+    const stable = (userId: string | undefined, badges: any[]) => {
+        if (!userId) return badges;
+        const previous = last.get(userId);
+        if (previous && sameBadges(previous, badges)) return previous;
+        if (last.size >= 200) last.clear();
+        last.set(userId, badges);
+        return badges;
+    };
+
+    let userStore: any;
     ctx.hookExport("after", profileBadgesFilter, ({ args, result }) => {
         const userId: string | undefined = args[0]?.userId;
-        const isMe = !!userId && userId === findStore<any>("UserStore")?.getCurrentUser?.()?.id;
+        const isMe = !!userId && userId === (userStore ??= findStore<any>("UserStore"))?.getCurrentUser?.()?.id;
         // Your own profile follows what you're editing, before it's saved
         const prefs = currentPrefs(userId, isMe);
         const hidden = new Set(prefs.hidden);
@@ -66,7 +78,7 @@ export function startBadges() {
         const plugins = userId ? ProfileBadges.forUser(userId).map(b => ({ id: EVI_PREFIX + b.id, description: b.description, iconSrc: b.iconSrc, ...b.link && { link: b.link } })) : [];
         if (!ours.length && !plugins.length) return theirs.length === result?.length ? undefined : theirs;
         const arranged = ours.length ? arrange(theirs, ours.map(toProfileBadge), b => b.eviKey, b => typeof b?.id === "string" ? badgeType?.(b.id) : undefined, prefs.order) : theirs;
-        return plugins.length ? [...arranged, ...plugins] : arranged;
+        return stable(userId, plugins.length ? [...arranged, ...plugins] : arranged);
     });
 
     installBadgeSettings(ctx);

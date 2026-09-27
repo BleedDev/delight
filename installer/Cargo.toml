@@ -1,0 +1,35 @@
+[package]
+name = "evi-setup"
+# The version users see comes from ../package.json through tauri.conf.json
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "evi-setup"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# custom-protocol: the UI is always served from the embedded ui/ folder, so a plain `cargo build --release` works
+tauri = { version = "2", features = ["custom-protocol"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+# native-tls: the system's TLS (SChannel, Secure Transport, OpenSSL) instead of bundling rustls
+ureq = { version = "3", default-features = false, features = ["native-tls"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Threading"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

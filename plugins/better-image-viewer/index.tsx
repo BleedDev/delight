@@ -26,11 +26,14 @@ function channelMessages(channelId: string): any[] {
     return channel.toArray?.() ?? channel._array ?? (Array.isArray(channel) ? channel : []);
 }
 
-function isHiddenAuthor(message: any) {
-    const id = message?.author?.id;
-    if (!id) return false;
+/** Whether a message's author is blocked or ignored; RelationshipStore is looked up once per gallery, not per message */
+function hiddenAuthors(): (message: any) => boolean {
     const relationships = findStore("RelationshipStore");
-    return !!(relationships?.isBlockedOrIgnored?.(id) ?? relationships?.isBlocked?.(id));
+    return message => {
+        const id = message?.author?.id;
+        if (!id) return false;
+        return !!(relationships?.isBlockedOrIgnored?.(id) ?? relationships?.isBlocked?.(id));
+    };
 }
 
 /** The options with the whole channel's images, or undefined to leave them alone */
@@ -42,7 +45,7 @@ function widen(options: any) {
     // Already a multi-message gallery (a media channel, search...): Discord knows best there
     if (!items.every(i => i?.sourceMetadata?.message?.id === message.id)) return;
 
-    const gallery = channelGallery(channelMessages(message.channel_id), message.id, items, start, toItem, isHiddenAuthor);
+    const gallery = channelGallery(channelMessages(message.channel_id), message.id, items, start, toItem, hiddenAuthors());
     if (!gallery || gallery.items.length === items.length) return;
     return { ...options, ...gallery };
 }

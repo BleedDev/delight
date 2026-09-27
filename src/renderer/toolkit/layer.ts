@@ -14,7 +14,8 @@
 import type { ReactNode } from "react";
 
 import { createStyle } from "../styles";
-import { createRoot } from "../webpack/common";
+import { DiscordContext } from "../ui/discordContext";
+import { createRoot, React } from "../webpack/common";
 
 const SPRING_IN = "linear(0, 0.08, 0.252, 0.447, 0.625, 0.769, 0.875, 0.946, 0.99, 1.014, 1.024, 1.026, 1.023, 1.018, 1.013, 1.009, 1)";
 const SPRING_OUT = "linear(0, 0.149, 0.382, 0.578, 0.721, 0.821, 0.889, 0.935, 0.965, 0.986, 1)";
@@ -118,6 +119,6 @@ export function openLayer(render: (close: CloseLayer) => ReactNode, options: Lay
         void exitDone(container).then(finish);
     };
 
-    root.render(render(close));
+    root.render(React.createElement(DiscordContext, null, render(close)));
     return close;
 }

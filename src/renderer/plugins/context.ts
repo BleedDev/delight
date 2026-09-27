@@ -5,6 +5,7 @@ import { Logger } from "../logger";
 import { Native } from "../native";
 import { ProfileBadgeProvider, ProfileBadges } from "../profileBadges";
 import { hook, HookCallback, HookKind } from "../patching/hooks";
+import { Perf } from "../perf";
 import { Settings } from "../settings";
 import { createStyle, ManagedStyle } from "../styles";
 import { CommandDefinition, registerCommand } from "../toolkit/commands";
@@ -12,6 +13,7 @@ import { addContextMenuPatch, ContextMenuCallback } from "../toolkit/contextMenu
 import { showToast, ToastOptions } from "../toolkit/toasts";
 import { Dispatcher, FluxAction, React } from "../webpack/common";
 import { Filter, FoundExport, waitFor } from "../webpack/find";
+import { PluginActivity } from "./activity";
 import { diagnoseLookups, isLookupProblem, LOOKUP_GRACE_MS, trackLookup, untrackLookup } from "./lookups";
 import type { SettingsSchema, SettingsValues } from "./types";
 import { PluginUsage } from "./usage";
@@ -168,11 +170,15 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
 
     readonly flux = {
         subscribe: (type: string, handler: (action: FluxAction) => void) => {
+            const site = Perf.site(this.id, "flux", type);
             const safe = (action: FluxAction) => {
+                const start = Perf.begin();
                 try {
                     handler(action);
                 } catch (err) {
                     this.logger.error(`Flux handler for ${type} threw`, err);
+                } finally {
+                    Perf.end(site, start);
                 }
             };
             PluginUsage.add(this.id, "flux", type);
@@ -185,7 +191,11 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     readonly native = {
         call: <T = unknown>(method: string, ...args: unknown[]): Promise<T> => {
             if (!this.manifest.native) throw new Error(`${this.id} has no native module`);
-            return Native.callNative(this.id, method, args);
+            // Which full-access method it ran, never the arguments (activity.ts)
+            const settle = PluginActivity.nativeCall(this.id, String(method));
+            const pending: Promise<T> = Native.callNative(this.id, method, args);
+            pending.then(() => settle(true), () => settle(false));
+            return pending;
         },
     };
 
@@ -207,8 +217,10 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
      * Push Menu.Item / Menu.Group elements (from @evi/api) into `children`. Removed on stop.
      */
     contextMenu(navId: string | string[], callback: ContextMenuCallback) {
-        for (const id of [navId].flat()) PluginUsage.add(this.id, "menus", id);
-        return this.onDispose(addContextMenuPatch(navId, callback));
+        const ids = [navId].flat();
+        for (const id of ids) PluginUsage.add(this.id, "menus", id);
+        // Charged to this plugin, not to Evi's shared Menu hook it runs in
+        return this.onDispose(addContextMenuPatch(navId, Perf.measure(Perf.site(this.id, "menu", ids.join(", ")), callback)));
     }
 
     /** Registers a slash command that runs locally, listed with Discord's built-ins. Removed on stop. */
@@ -222,16 +234,16 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
      * after Evi's own on the profile and in Discord's badge directory ("Your badges"). Removed on stop.
      */
     profileBadges(provider: ProfileBadgeProvider) {
-        return this.onDispose(ProfileBadges.add(this.manifest.name, provider));
+        return this.onDispose(ProfileBadges.add(this.manifest.name, Perf.measure(Perf.site(this.id, "badges", "profile badges"), provider)));
     }
 
     setInterval(fn: () => void, ms: number) {
-        const handle = setInterval(fn, ms);
+        const handle = setInterval(Perf.measure(Perf.site(this.id, "timer", `setInterval ${ms} ms`), fn), ms);
         return this.onDispose(() => clearInterval(handle));
     }
 
     setTimeout(fn: () => void, ms: number) {
-        const handle = setTimeout(fn, ms);
+        const handle = setTimeout(Perf.measure(Perf.site(this.id, "timer", "setTimeout"), fn), ms);
         return this.onDispose(() => clearTimeout(handle));
     }
 

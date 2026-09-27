@@ -11,7 +11,6 @@ import { imageDataUrl } from "@shared/images";
 import { cleanSwitches, StorePreviewResult } from "@shared/pluginPermissions";
 import { IPC, PluginManifest } from "@shared/ipc";
 import {
-    compareVersions,
     DEFAULT_REGISTRY_URL,
     InstalledPlugin,
     InstalledTheme,
@@ -19,6 +18,7 @@ import {
     MAX_FILE_BYTES,
     MAX_IMAGE_BYTES,
     MAX_REGISTRY_BYTES,
+    meetsMinEvi,
     parseRegistry,
     RegistryEntry,
     STORE_MARKER,
@@ -175,7 +175,7 @@ function decodeText(name: string, data: Uint8Array) {
 
 async function install(id: string, sender: WebContents, pageAllowed: boolean, report: (p: StoreProgress) => void): Promise<StoreResult> {
     const entry = await getEntry(id);
-    if (entry.minEviVersion && compareVersions(EVI_VERSION, entry.minEviVersion) < 0) {
+    if (!meetsMinEvi(EVI_VERSION, entry.minEviVersion)) {
         throw new Error(`${entry.name} needs Evi ${entry.minEviVersion} or newer, this is ${EVI_VERSION}`);
     }
 
@@ -305,7 +305,7 @@ async function uninstall(id: string, sender: WebContents, report: (p: StoreProgr
 async function installTheme(id: string, report: (p: StoreProgress) => void): Promise<StoreResult> {
     const entry = (await current()).themes.get(id);
     if (!entry) throw new Error(`${id} isn't in the store`);
-    if (entry.minEviVersion && compareVersions(EVI_VERSION, entry.minEviVersion) < 0) {
+    if (!meetsMinEvi(EVI_VERSION, entry.minEviVersion)) {
         throw new Error(`${entry.name} needs Evi ${entry.minEviVersion} or newer, this is ${EVI_VERSION}`);
     }
 

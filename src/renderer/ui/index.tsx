@@ -1,19 +1,14 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent } from "react";
 
+import { t, useLocale } from "../i18n";
 import { Native } from "../native";
 import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
-import { AccountTab } from "./AccountTab";
-import { BackupTab } from "./BackupTab";
-import { Button, ErrorBoundary, Icon, IconName, openDialogs, Text, useStore } from "./components";
-import { PatchesTab } from "./PatchesTab";
-import { PatchHelperTab } from "./PatchHelperTab";
-import { PluginsTab } from "./PluginsTab";
-import { QuickCssTab } from "./QuickCssTab";
-import { ThemesTab } from "./ThemesTab";
-import { UpdatesTab } from "./UpdatesTab";
+import { Button, ErrorBoundary, Icon, openDialogs, Text, useStore } from "./components";
+import { pages, PageView } from "./pages";
 import { currentRelease, WhatsNewModal } from "./WhatsNew";
 import css from "./styles.css" with { type: "text" };
+import { DiscordContext } from "./discordContext";
 
 type View = "closed" | "open" | "closing";
 
@@ -38,17 +33,8 @@ function close() {
     setTimeout(() => view === "closing" && setView("closed"), CLOSE_MS);
 }
 
-// `icon` is optional so a section added without one still fits; its label stays aligned with the rest
-const tabs: readonly { id: string; label: string; icon?: IconName; Component: () => ReactNode; }[] = [
-    { id: "plugins", label: "Plugins", icon: "puzzle", Component: PluginsTab },
-    { id: "themes", label: "Themes", icon: "palette", Component: ThemesTab },
-    { id: "quickcss", label: "Quick CSS", icon: "code", Component: QuickCssTab },
-    { id: "backup", label: "Backup", icon: "download", Component: BackupTab },
-    { id: "account", label: "Account", icon: "link", Component: AccountTab },
-    { id: "updates", label: "Updates", icon: "download", Component: UpdatesTab },
-    { id: "patches", label: "Patches", icon: "wrench", Component: PatchesTab },
-    { id: "patchhelper", label: "Patch Helper", icon: "beaker", Component: PatchHelperTab },
-];
+// Each page has its tabs along the top, see pages.tsx
+const tabs = pages;
 
 // Remembered across closing and reopening, like Discord's settings remember their last page
 let lastTab = tabs[0].id;
@@ -56,6 +42,7 @@ let lastTab = tabs[0].id;
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function Panel() {
+    useLocale();
     const [tab, setTabState] = React.useState(lastTab);
     const [whatsNew, setWhatsNew] = React.useState(false);
     const release = currentRelease();
@@ -109,7 +96,7 @@ function Panel() {
                     <div className="dl-sidebar-head">
                         <Text tag="h2" variant="text-xs/semibold" color="text-muted" id="dl-title" className="dl-sidebar-title">Evi</Text>
                     </div>
-                    <div className="dl-nav" role="tablist" aria-label="Evi sections" aria-orientation="vertical" onKeyDown={onTabKey}>
+                    <div className="dl-nav" role="tablist" aria-label={t("panel.sections")} aria-orientation="vertical" onKeyDown={onTabKey}>
                         {tabs.map(t => (
                             <button
                                 key={t.id}
@@ -122,30 +109,30 @@ function Panel() {
                                 tabIndex={t.id === tab ? 0 : -1}
                                 onClick={() => setTab(t.id)}
                             >
-                                {t.icon ? <Icon name={t.icon} size={20} /> : <span className="dl-nav-icon-space" />}
-                                <span>{t.label}</span>
+                                <Icon name={t.icon} size={20} />
+                                <span>{t.label()}</span>
                             </button>
                         ))}
                     </div>
                     <div className="dl-sidebar-foot">
-                        <Button icon="folder" onClick={() => Native.openPath("data")}>Open data folder</Button>
+                        <Button icon="folder" onClick={() => Native.openPath("data")}>{t("panel.openDataFolder")}</Button>
                         <button type="button" className="dl-link-button dl-version-link" onClick={() => setWhatsNew(true)}>
-                            <Text variant="text-xs/normal" color="text-muted" tabular>{`Evi ${EVI_VERSION} · What’s new`}</Text>
+                            <Text variant="text-xs/normal" color="text-muted" tabular>{t("panel.versionWhatsNew", { version: EVI_VERSION })}</Text>
                         </button>
                     </div>
                 </nav>
                 <div className="dl-content">
                     <header className="dl-content-head">
-                        <Text tag="h1" variant="heading-xl/semibold" color="text-strong" className="dl-content-title">{current.label}</Text>
+                        <Text tag="h1" variant="heading-xl/semibold" color="text-strong" className="dl-content-title">{current.label()}</Text>
                         <div className="dl-close">
-                            <button type="button" className="dl-close-button" aria-label="Close Evi settings" onClick={close}>
+                            <button type="button" className="dl-close-button" aria-label={t("panel.close")} onClick={close}>
                                 <Icon name="closeLarge" size={18} />
                             </button>
                             <span className="dl-close-hint" aria-hidden="true">ESC</span>
                         </div>
                     </header>
                     <div className="dl-body" role="tabpanel" id="dl-tabpanel" aria-labelledby={`dl-tab-${current.id}`} ref={bodyRef}>
-                        <ErrorBoundary resetKey={current.id}><current.Component /></ErrorBoundary>
+                        <ErrorBoundary resetKey={current.id}><PageView page={current} /></ErrorBoundary>
                     </div>
                 </div>
                 {whatsNew && release && <WhatsNewModal releases={[release]} onClose={() => setWhatsNew(false)} />}
@@ -175,7 +162,7 @@ function mount() {
     const container = document.createElement("div");
     container.className = "dl-root";
     document.body.append(container);
-    createRoot(container).render(<Root />);
+    createRoot(container).render(<DiscordContext><Root /></DiscordContext>);
 }
 
 export const SettingsUI = {

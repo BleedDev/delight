@@ -5,6 +5,8 @@
 export { Badges } from "../renderer/badges";
 export type { Badge } from "../renderer/badges";
 export type { BadgeAdminAction } from "../shared/badges";
+export { defineStrings, I18n, useLocale } from "../renderer/i18n";
+export type { Message, PluralMessage, Vars } from "../shared/i18n";
 export { Logger } from "../renderer/logger";
 export { getUnhooked, hook } from "../renderer/patching/hooks";
 export type { HookCallback, HookContext, HookKind } from "../renderer/patching/hooks";

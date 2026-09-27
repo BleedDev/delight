@@ -2,7 +2,7 @@
  * Evi's own releases: published on GitHub with an installer per system and its .sha256 attached. Read
  * by the CLI's `evi update` and by the app's Updates page, which installs a new release with one click.
  */
-import { compareVersions } from "./store";
+import { compareVersions, isVersion } from "./store";
 
 export const RELEASE_REPO = "BleedDev/evi";
 
@@ -43,10 +43,29 @@ export function flavorOf(execPath: string): Flavor | undefined {
     return (Object.keys(FLAVORS) as Flavor[]).find(f => FLAVORS[f].toLowerCase() === exe);
 }
 
-/** "v1.2.3-beta" -> "1.2.3" */
-export const cleanVersion = (tag: string) => tag.trim().replace(/^v/i, "").split(/[-+]/)[0];
+/** "v1.2.3-beta.1+build" -> "1.2.3-beta.1". The prerelease part stays: 0.5.0-beta.1 comes before 0.5.0 */
+export const cleanVersion = (tag: string) => tag.trim().replace(/^v/i, "").split("+")[0];
+
+/** A beta like 0.5.0-beta.1 */
+export const isPrerelease = (version: string) => cleanVersion(version).includes("-");
 
 export const isNewerRelease = (tag: string, current: string) => compareVersions(cleanVersion(tag), cleanVersion(current)) > 0;
+
+/**
+ * The release to offer from GitHub's /releases list: the highest version that isn't a draft, counting
+ * prereleases only with beta on. Tags that aren't versions are skipped. Undefined if none qualifies.
+ */
+export function pickRelease(list: unknown, beta: boolean): any {
+    if (!Array.isArray(list)) return;
+    let best: any;
+    for (const r of list) {
+        if (!r || typeof r !== "object" || typeof r.tag_name !== "string" || r.draft) continue;
+        if (!beta && (r.prerelease || isPrerelease(r.tag_name))) continue;
+        if (!isVersion(cleanVersion(r.tag_name))) continue;
+        if (!best || compareVersions(cleanVersion(r.tag_name), cleanVersion(best.tag_name)) > 0) best = r;
+    }
+    return best;
+}
 
 export interface ReleaseInfo {
     tag: string;
@@ -56,11 +75,13 @@ export interface ReleaseInfo {
     /** Release notes as written on GitHub (markdown), trimmed */
     notes: string;
     publishedAt: string | null;
+    /** A beta: marked as a prerelease on GitHub, or a version like 0.5.0-beta.1 */
+    prerelease: boolean;
     exeUrl: string;
     checksumUrl: string;
 }
 
-/** GitHub's /releases/latest answer, or undefined if it isn't a usable release */
+/** One release as GitHub's API describes it, or undefined if it isn't a usable release */
 export function parseRelease(json: any): ReleaseInfo | { error: string; } | undefined {
     if (!json || typeof json !== "object" || typeof json.tag_name !== "string" || json.draft) return;
     const asset = (name: string) => Array.isArray(json.assets) ? json.assets.find((a: any) => a?.name === name)?.browser_download_url : undefined;
@@ -72,6 +93,7 @@ export function parseRelease(json: any): ReleaseInfo | { error: string; } | unde
         url: typeof json.html_url === "string" ? json.html_url : `https://github.com/${RELEASE_REPO}/releases`,
         notes: typeof json.body === "string" ? json.body.trim().slice(0, 4000) : "",
         publishedAt: typeof json.published_at === "string" ? json.published_at : null,
+        prerelease: json.prerelease === true || isPrerelease(json.tag_name),
         exeUrl,
         checksumUrl,
     };

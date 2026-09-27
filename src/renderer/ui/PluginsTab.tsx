@@ -3,6 +3,7 @@ import { healthWarns } from "@shared/health";
 import { isPluginEnabled } from "@shared/ipc";
 
 import { buildCrashReport, copyText, discordBuild } from "../crashReport";
+import { t } from "../i18n";
 import { Native } from "../native";
 import { getPatchRecords } from "../patching/source";
 import { diagnoseLookups, isLookupProblem, LookupDiagnosis } from "../plugins/lookups";
@@ -12,10 +13,11 @@ import { crashKey, fitReport } from "../sentReports";
 import { Settings } from "../settings";
 import { Store } from "../store";
 import { React } from "../webpack/common";
-import { Badge, Button, Dialog, EmptyState, FilterChips, IconButton, List, Notice, SearchField, SettingField, Status, Switch, Text, useStore } from "./components";
+import { Badge, Button, Dialog, Dropdown, EmptyState, IconButton, Notice, Pagination, scrollToTop, SearchField, SettingField, Status, Switch, Text, usePages, useStore } from "./components";
+import { openStore, showTab } from "./nav";
 import { PluginDetailsButton } from "./PluginPermissions";
 import { SafeModeNotice } from "./SafeModeNotice";
-import { HealthPill, StoreBanner, StoreView } from "./Store";
+import { Glyph, HealthPill, useStoreState } from "./Store";
 import { PulledNotice } from "./Trust";
 
 type Filter = "all" | "enabled" | "disabled" | "settings" | "dev";
@@ -36,23 +38,12 @@ const filterTests: Record<Filter, (p: PluginState) => boolean> = {
 const matchesQuery = (p: PluginState, q: string) =>
     !q || `${p.manifest.name} ${p.manifest.description ?? ""} ${p.manifest.id} ${Store.authorsOf(p).join(" ")}`.toLowerCase().includes(q);
 
-function PatchSummary({ id }: { id: string; }) {
+/** Only when something went wrong: working patches are the expected state, Advanced > Patches lists them all */
+function PatchFailures({ id }: { id: string; }) {
     const records = getPatchRecords(id);
-    if (!records.length) return null;
-
-    const applied = records.filter(r => r.state === "applied").length;
     const failed = records.filter(r => r.state === "failed" || r.state === "partial").length;
-
-    if (failed) {
-        return <Status tone="danger">{records.length === 1 ? "Patch failed" : `${failed} of ${records.length} patches failed`}</Status>;
-    }
-    // Waiting patches target code Discord only loads when it's first needed (a voice call, a settings
-    // page...). They apply right as it loads, so they're as fine as applied ones
-    const waiting = records.length - applied;
-    const text = records.length === 1
-        ? applied ? "Patch applied" : "Patch applies when needed"
-        : waiting ? `${applied} patches applied, ${waiting} when needed` : `${applied} patches applied`;
-    return <Status tone="success" quiet>{text}</Status>;
+    if (!failed) return null;
+    return <Status tone="danger">{records.length === 1 ? t("plugins.patchFailed") : t("plugins.patchesFailed", { failed, count: records.length })}</Status>;
 }
 
 /** Parts of Discord the plugin waited for that never showed up: it runs, but without them */
@@ -60,7 +51,7 @@ function LookupSummary({ problems }: { problems: LookupDiagnosis[]; }) {
     if (!problems.length) return null;
     const broken = problems.some(d => d.health === "broken");
     const n = problems.length;
-    return <Status tone={broken ? "danger" : "warning"}>{`Can’t find ${n === 1 ? "1 part" : `${n} parts`} of Discord`}</Status>;
+    return <Status tone={broken ? "danger" : "warning"}>{t("plugins.lookupProblems", { count: n })}</Status>;
 }
 
 function PluginSettings({ state }: { state: PluginState; }) {
@@ -105,11 +96,11 @@ function CrashReport({ state }: { state: PluginState; }) {
 
     return (
         <div className="dl-toolbar dl-crash">
-            <Button icon="copy" onClick={copy}>Copy crash report</Button>
+            <Button icon="copy" onClick={copy}>{t("crash.copy")}</Button>
             {canSend && <SendToAuthor state={state} version={version!} author={entry!.authors.join(", ")} />}
             <span role="status">
-                {copied === "copied" && <Status tone="success">Copied. Paste it into a bug report for {state.manifest.name}.</Status>}
-                {copied === "failed" && <Status tone="danger">Couldn’t reach the clipboard</Status>}
+                {copied === "copied" && <Status tone="success">{t("crash.copied", { name: state.manifest.name })}</Status>}
+                {copied === "failed" && <Status tone="danger">{t("crash.clipboardFailed")}</Status>}
             </span>
         </div>
     );
@@ -144,25 +135,25 @@ function SendToAuthor({ state, version, author }: { state: PluginState; version:
 
     return (
         <>
-            <Button disabled={sending || !!sentTo} onClick={start}>{sentTo ? "Sent" : sending ? "Sending…" : "Send to author"}</Button>
+            <Button disabled={sending || !!sentTo} onClick={start}>{sentTo ? t("crash.sent") : sending ? t("common.sending") : t("crash.sendToAuthor")}</Button>
             <span role="status">
-                {sentTo && <Status tone="success">Sent to {sentTo}</Status>}
-                {!sentTo && error && <Status tone="danger">Couldn’t send it: {error}</Status>}
+                {sentTo && <Status tone="success">{t("crash.sentTo", { author: sentTo })}</Status>}
+                {!sentTo && error && <Status tone="danger">{t("crash.sendFailed", { error })}</Status>}
             </span>
             {asking !== undefined && (
-                <Dialog id={`dl-crash-send-${id}`} title={`Send this crash report to ${author}?`} onClose={() => setAsking(undefined)}>
+                <Dialog id={`dl-crash-send-${id}`} title={t("crash.confirmTitle", { author })} onClose={() => setAsking(undefined)}>
                     <div className="dl-stack">
-                        <pre className="dl-crash-text" tabIndex={0} aria-label="The crash report">{asking}</pre>
+                        <pre className="dl-crash-text" tabIndex={0} aria-label={t("crash.reportLabel")}>{asking}</pre>
                         <Text tag="p" variant="text-sm/normal" color="text-subtle">
-                            It goes to {author} through evi.rest. It has no messages, tokens or account details.
+                            {t("crash.confirmBody", { author })}
                         </Text>
                         <label className="dl-check">
                             <input type="checkbox" checked={dontAsk} onChange={e => setDontAsk(e.currentTarget.checked)} />
-                            Don’t ask again
+                            {t("common.dontAskAgain")}
                         </label>
                         <div className="dl-toolbar">
-                            <Button variant="accent" onClick={() => void send(asking)}>Send report</Button>
-                            <Button onClick={() => setAsking(undefined)}>Cancel</Button>
+                            <Button variant="accent" onClick={() => void send(asking)}>{t("common.sendReport")}</Button>
+                            <Button onClick={() => setAsking(undefined)}>{t("common.cancel")}</Button>
                         </div>
                     </div>
                 </Dialog>
@@ -171,7 +162,10 @@ function SendToAuthor({ state, version, author }: { state: PluginState; version:
     );
 }
 
-function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id: string): void; }) {
+/** Cards per page: six rows of two */
+const PAGE_SIZE = 12;
+
+function PluginCard({ state }: { state: PluginState; }) {
     const { manifest } = state;
     const [settingsOpen, setSettingsOpen] = React.useState(false);
     const [confirmingUninstall, setConfirmingUninstall] = React.useState(false);
@@ -192,96 +186,72 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
     const health = healthWarns(known, Store.installedPlugin(manifest.id)?.version ?? manifest.version) ? known : undefined;
     // Evi turned this version off everywhere: it can't run, and says why instead
     const { pulled } = state;
-    const statuses = state.error || state.needsReload || state.running || enabled || action === "update" || op || health || pulled;
+    const authors = Store.authorsOf(state);
+    const removeLabel = fromStore ? t("common.uninstallName", { name: manifest.name }) : t("common.removeName", { name: manifest.name });
+    const reloadNote = state.needsReload && state.reloadReason;
+    // A card with a problem to explain takes the whole row, so the explanation has room
+    const wide = !!(state.error || lookupProblems.length || pulled || health?.message || reloadNote);
 
     // Full-access updates go through the plugin's store page, which asks first
-    const update = () => entry?.native ? onOpenStore(manifest.id) : Store.install(manifest.id);
+    const update = () => entry?.native ? openStore("plugin", manifest.id) : Store.install(manifest.id);
 
     return (
-        <li className="dl-row" aria-labelledby={titleId}>
-            <div className="dl-row-head">
-                <div className="dl-row-text">
+        <li className="dl-plugin-card" aria-labelledby={titleId} data-wide={wide ? "" : undefined}>
+            <div className="dl-plugin-card-top">
+                <Glyph name={manifest.name} />
+                <div className="dl-plugin-card-title">
                     <div className="dl-row-title">
                         <Text tag="h3" variant="text-md/semibold" color="text-strong" id={titleId}>{manifest.name}</Text>
-                        {manifest.version && <Text variant="text-xs/medium" color="text-muted" className="dl-version" tabular>v{manifest.version}</Text>}
                         {state.source === "dev" && <Badge>Dev</Badge>}
-                        {fromStore && <Badge>Store</Badge>}
-                        {manifest.native && <Badge>Native</Badge>}
-                        {statuses && (
-                            <span className="dl-row-meta" role="status">
-                                {op?.type === "busy" && <Status tone="muted">{op.label}</Status>}
-                                {op?.type === "error" && <Status tone="danger">{op.error}</Status>}
-                                {op?.type === "done" && <Status tone="success">{op.message}</Status>}
-                                {pulled && <Status tone="danger">Turned off by Evi</Status>}
-                                {!op && !pulled && action === "update" && <Status tone="warning">v{entry?.version} available</Status>}
-                                {state.error && <Status tone="danger">Failed to start</Status>}
-                                {state.needsReload && <Status tone="warning">Reload to apply</Status>}
-                                {state.running && !state.error && <Status tone="success" quiet>Running</Status>}
-                                {paused && !pulled && <Status tone="muted">Paused in safe mode</Status>}
-                                {enabled && !pulled && <PatchSummary id={manifest.id} />}
-                                <LookupSummary problems={lookupProblems} />
-                                {health && <HealthPill health={health} />}
-                            </span>
-                        )}
+                        {fromStore && <Badge>{t("common.store")}</Badge>}
+                        {manifest.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
                     </div>
-                    {manifest.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-desc">{manifest.description}</Text>}
+                    <Text variant="text-xs/normal" color="text-muted" tabular className="dl-plugin-card-byline">
+                        {[manifest.version && `v${manifest.version}`, authors.length > 0 && t("common.by", { author: authors.join(", ") })].filter(Boolean).join(" · ")}
+                    </Text>
                 </div>
-                <div className="dl-row-controls">
-                    {action === "update" && !pulled && <Button variant="accent" icon="download" disabled={busy} onClick={update}>Update</Button>}
-                    <IconButton
-                        icon="trash"
-                        label={`${fromStore ? "Uninstall" : "Remove"} ${manifest.name}`}
-                        aria-expanded={confirmingUninstall}
-                        onClick={() => setConfirmingUninstall(!confirmingUninstall)}
-                    />
-                    <PluginDetailsButton state={state} />
+                {/* Off while pulled, whatever it's set to; the notice below says why */}
+                <Switch checked={enabled && !pulled} disabled={!!pulled} labelledBy={titleId} onChange={v => PluginManager.setEnabled(manifest.id, v)} />
+            </div>
+            {manifest.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-plugin-card-desc">{manifest.description}</Text>}
+            <div className="dl-plugin-card-foot">
+                {/* Only what needs you: a plugin that just works says nothing */}
+                <span className="dl-row-meta dl-grow" role="status">
+                    {op?.type === "busy" && <Status tone="muted">{op.label}</Status>}
+                    {op?.type === "error" && <Status tone="danger">{op.error}</Status>}
+                    {op?.type === "done" && <Status tone="success">{op.message}</Status>}
+                    {pulled && <Status tone="danger">{t("pulled.label")}</Status>}
+                    {!op && !pulled && action === "update" && <Status tone="warning">{t("plugins.versionAvailable", { version: entry?.version ?? "" })}</Status>}
+                    {state.error && <Status tone="danger">{t("plugins.failedToStart")}</Status>}
+                    {state.needsReload && <Status tone="warning">{t("plugins.reloadToApply")}</Status>}
+                    {paused && !pulled && <Status tone="muted">{t("plugins.pausedSafeMode")}</Status>}
+                    {enabled && !pulled && <PatchFailures id={manifest.id} />}
+                    <LookupSummary problems={lookupProblems} />
+                    {health && <HealthPill health={health} />}
+                </span>
+                <div className="dl-row-controls dl-plugin-card-actions">
+                    {action === "update" && !pulled && <Button variant="accent" icon="download" disabled={busy} onClick={update}>{t("common.update")}</Button>}
                     {withSettings && (
                         <IconButton
                             icon="settings"
-                            label={`${manifest.name} settings`}
-                            aria-haspopup="dialog"
+                            label={t("plugins.settingsOf", { name: manifest.name })}
                             aria-controls={settingsOpen ? settingsId : undefined}
                             onClick={() => setSettingsOpen(true)}
                         />
                     )}
-                    {/* Off while pulled, whatever it's set to; the notice below says why */}
-                    <Switch checked={enabled && !pulled} disabled={!!pulled} labelledBy={titleId} onChange={v => PluginManager.setEnabled(manifest.id, v)} />
+                    <PluginDetailsButton state={state} />
+                    <IconButton icon="trash" label={removeLabel} onClick={() => setConfirmingUninstall(true)} />
                 </div>
             </div>
             {pulled && <PulledNotice pull={pulled} update={action === "update" && entry ? { version: entry.version, busy, run: update } : undefined} />}
-            {confirmingUninstall && (
-                <div className="dl-store-confirm dl-uninstall" role="group" aria-label={`${fromStore ? "Uninstall" : "Remove"} ${manifest.name}`}>
-                    <p className="dl-hint">
-                        {fromStore
-                            ? <>Uninstall {manifest.name}? Its files are removed. Its settings stay, so reinstalling picks up where you left off.</>
-                            : <>
-                                Remove {manifest.name}? {state.source === "dev" ? "It’s part of the dev build, so it’s hidden rather than deleted." : "Its files are deleted."}{" "}
-                                Evi won’t bring it back when it updates. Its settings stay{entry ? ", and you can install it again from the Store" : ""}.
-                            </>}
-                    </p>
-                    <div className="dl-toolbar">
-                        <Button
-                            variant="danger"
-                            disabled={busy}
-                            onClick={() => {
-                                setConfirmingUninstall(false);
-                                Store.uninstall(manifest.id);
-                            }}
-                        >
-                            {fromStore ? "Uninstall" : "Remove"}
-                        </Button>
-                        <Button onClick={() => setConfirmingUninstall(false)}>Cancel</Button>
-                    </div>
-                </div>
-            )}
             {state.error && <pre className="dl-error">{state.error}</pre>}
             {!state.error && lookupProblems.length > 0 && (
                 <>
                     <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">
-                        {health && "Others are seeing this too. "}
+                        {health && `${t("plugins.othersSeeing")} `}
                         {lookupProblems.some(d => d.health === "broken")
-                            ? "Discord probably changed these after an update. The plugin still runs, but the parts that need them won’t work:"
-                            : "Not found in what Discord has loaded so far. If you’ve already used the parts of Discord this plugin changes, Discord probably changed them:"}
+                            ? t("plugins.lookupsBroken")
+                            : t("plugins.lookupsMissing")}
                     </Text>
                     {lookupProblems.map((d, i) => <pre key={i} className="dl-error">{d.target}</pre>)}
                 </>
@@ -290,25 +260,40 @@ function PluginRow({ state, onOpenStore }: { state: PluginState; onOpenStore(id:
                 <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">{health.setBy ? `${health.setBy}: ` : ""}{health.message}</Text>
             )}
             {(state.error || lookupProblems.length > 0) && <CrashReport state={state} />}
-            {state.needsReload && state.reloadReason && (
-                <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">Couldn’t apply live because {state.reloadReason}.</Text>
+            {reloadNote && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">{t("plugins.couldntApplyLive", { reason: reloadNote })}</Text>}
+            {confirmingUninstall && (
+                <Dialog id={`dl-plugin-${manifest.id}-uninstall`} title={`${removeLabel}?`} onClose={() => setConfirmingUninstall(false)}>
+                    {close => (
+                        <div className="dl-stack">
+                            <Text tag="p" variant="text-sm/normal" color="text-subtle">
+                                {fromStore
+                                    ? t("plugins.uninstallBody")
+                                    : `${state.source === "dev" ? t("plugins.removeDev") : t("plugins.removeFiles")} ${entry ? t("plugins.removeStaysStore") : t("plugins.removeStays")}`}
+                            </Text>
+                            <div className="dl-toolbar">
+                                <Button
+                                    variant="danger"
+                                    disabled={busy}
+                                    onClick={() => {
+                                        close();
+                                        Store.uninstall(manifest.id);
+                                    }}
+                                >
+                                    {fromStore ? t("common.uninstall") : t("common.remove")}
+                                </Button>
+                                <Button onClick={close}>{t("common.cancel")}</Button>
+                            </div>
+                        </div>
+                    )}
+                </Dialog>
             )}
             {withSettings && settingsOpen && (
-                <Dialog id={settingsId} title={`${manifest.name} settings`} onClose={() => setSettingsOpen(false)}>
+                <Dialog id={settingsId} title={t("plugins.settingsOf", { name: manifest.name })} onClose={() => setSettingsOpen(false)}>
                     <PluginSettings state={state} />
                 </Dialog>
             )}
         </li>
     );
-}
-
-/** Installed plugins, with the store one click away inside the same tab */
-export function PluginsTab() {
-    // undefined: the installed list. Otherwise the store, opened on a plugin's page when there's an id.
-    const [store, setStore] = React.useState<{ id?: string; }>();
-    return store
-        ? <StoreView kind="plugin" initialId={store.id} onBack={() => setStore(undefined)} />
-        : <InstalledPlugins onOpenStore={id => setStore({ id })} />;
 }
 
 interface Undo {
@@ -334,33 +319,35 @@ function BulkActions({ plugins, onDone }: { plugins: PluginState[]; onDone(undo:
     };
 
     return (
-        <div className="dl-bulk" role="group" aria-label="All plugins">
+        <div className="dl-bulk" role="group" aria-label={t("plugins.all")}>
             <Button
                 disabled={busy || !enabledNow.length}
-                onClick={() => apply(enabledNow.map(p => [p, false]), `Turned off ${enabledNow.length} ${enabledNow.length === 1 ? "plugin" : "plugins"}`)}
+                onClick={() => apply(enabledNow.map(p => [p, false]), t("plugins.turnedOff", { count: enabledNow.length }))}
             >
-                Turn all off
+                {t("plugins.turnAllOff")}
             </Button>
             <Button
                 disabled={busy || !offDefault.length}
-                onClick={() => apply(offDefault.map(p => [p, p.manifest.enabledByDefault ?? false]), `Reset ${offDefault.length} ${offDefault.length === 1 ? "plugin" : "plugins"} to their defaults`)}
+                onClick={() => apply(offDefault.map(p => [p, p.manifest.enabledByDefault ?? false]), t("plugins.wereReset", { count: offDefault.length }))}
             >
-                Reset to defaults
+                {t("plugins.resetDefaults")}
             </Button>
         </div>
     );
 }
 
-function InstalledPlugins({ onOpenStore }: { onOpenStore(id?: string): void; }) {
+/** The installed plugins: search, a filter, and the plugins as cards, a page at a time */
+export function InstalledPlugins() {
     const plugins = useStore(PluginManager.subscribe, PluginManager.getSnapshot);
     useStore(Settings.subscribe, () => Settings.data);
-    // Rows show store badges, updates and known problems
-    useStore(Store.subscribe, Store.getSnapshot);
+    // Cards show store badges, updates and known problems
+    const store = useStoreState();
     React.useEffect(() => Store.loadReports(), []);
     const [undo, setUndo] = React.useState<Undo>();
     const [query, setQuery] = React.useState("");
     const [filter, setFilter] = React.useState<Filter>("all");
     const q = query.trim().toLowerCase();
+    const listRef = React.useRef<HTMLDivElement>(null);
 
     // Which plugins a filter shows is decided when the filter or search changes, not on every toggle:
     // switching a plugin off under "Enabled" leaves it in place instead of pulling it from under the cursor
@@ -370,57 +357,59 @@ function InstalledPlugins({ onOpenStore }: { onOpenStore(id?: string): void; }) 
         [filter, q, ids],
     );
     const visible = plugins.filter(p => shown.has(p.manifest.id));
+    const paged = usePages(visible, PAGE_SIZE, `${filter}\n${q}`);
 
     const count = (f: Filter) => plugins.filter(filterTests[f]).length;
     const enabledCount = count("enabled");
+    const devCount = count("dev");
     const needsReload = plugins.some(p => p.needsReload);
+    const updates = store.plugins.filter(p => Store.pluginAction(p.id) === "update").length;
     const filtered = filter !== "all" || !!q;
 
     const clear = () => {
         setQuery("");
         setFilter("all");
     };
+    const filterOptions: { value: Filter; label: string; }[] = [
+        { value: "all", label: `${t("plugins.all")} (${plugins.length})` },
+        { value: "enabled", label: `${t("plugins.filter.enabled")} (${enabledCount})` },
+        { value: "disabled", label: `${t("plugins.filter.disabled")} (${plugins.length - enabledCount})` },
+        { value: "settings", label: `${t("plugins.filter.settings")} (${count("settings")})` },
+        ...devCount ? [{ value: "dev" as const, label: `Dev (${devCount})` }] : [],
+    ];
 
     return (
-        <div className="dl-tab">
+        <div className="dl-tab dl-tab-compact">
             {SafeMode.active && <SafeModeNotice />}
             {needsReload && (
-                <Notice tone="warning" action={<Button variant="accent" onClick={() => location.reload()}>Reload Discord</Button>}>
-                    Some plugin changes couldn’t be applied live. Reload Discord to finish applying them.
+                <Notice tone="warning" action={<Button variant="accent" onClick={() => location.reload()}>{t("common.reloadDiscord")}</Button>}>
+                    {t("plugins.needsReload")}
+                </Notice>
+            )}
+            {updates > 0 && (
+                <Notice tone="info" action={<Button id="dl-plugin-see-updates" onClick={() => showTab("plugins", "store")}>{t("store.seeUpdates")}</Button>}>
+                    {t("plugins.updatesReady", { count: updates })}
                 </Notice>
             )}
 
-            <StoreBanner kind="plugin" onOpen={() => onOpenStore()} />
-
-            <div className="dl-controls">
-                <div className="dl-toolbar">
-                    <div className="dl-grow">
-                        <SearchField id="dl-plugin-search" label="Search plugins" placeholder="Search plugins" value={query} onChange={setQuery} />
-                    </div>
-                    <Button size="md" icon="folder" onClick={() => Native.openPath("plugins")}>Open plugins folder</Button>
+            <div className="dl-toolbar">
+                <div className="dl-grow">
+                    <SearchField id="dl-plugin-search" label={t("plugins.search")} placeholder={t("plugins.search")} value={query} onChange={setQuery} />
                 </div>
-                <FilterChips<Filter>
-                    label="Show plugins"
-                    value={filter}
-                    onChange={setFilter}
-                    options={[
-                        { id: "all", label: "All", count: plugins.length },
-                        { id: "enabled", label: "Enabled", count: enabledCount },
-                        { id: "disabled", label: "Disabled", count: plugins.length - enabledCount },
-                        { id: "settings", label: "Has settings", count: count("settings") },
-                        { id: "dev", label: "Dev", count: count("dev") },
-                    ]}
-                />
+                <div className="dl-toolbar-select">
+                    <Dropdown<Filter> id="dl-plugin-filter" label={t("plugins.filterLabel")} options={filterOptions} value={filter} onChange={setFilter} />
+                </div>
+                <IconButton icon="folder" label={t("plugins.openFolder")} onClick={() => Native.openPath("plugins")} />
             </div>
 
-            <div className="dl-stack">
+            <div className="dl-stack" ref={listRef}>
                 <div className="dl-toolbar">
                     <Text variant="text-sm/medium" color="text-subtle" role="status" tabular className="dl-grow">
                         {!plugins.length
-                            ? "No plugins installed"
+                            ? t("plugins.noneInstalled")
                             : filtered
-                                ? `Showing ${visible.length} of ${plugins.length} plugins`
-                                : `${plugins.length} plugins, ${enabledCount} enabled`}
+                                ? t("plugins.showing", { shown: visible.length, count: plugins.length })
+                                : t("plugins.count", { count: plugins.length, enabled: enabledCount })}
                     </Text>
                     {plugins.length > 0 && <BulkActions plugins={plugins} onDone={setUndo} />}
                 </div>
@@ -435,26 +424,37 @@ function InstalledPlugins({ onOpenStore }: { onOpenStore(id?: string): void; }) 
                                     for (const [id, on] of Object.entries(undo.previous)) await PluginManager.setEnabled(id, on);
                                 }}
                             >
-                                Undo
+                                {t("common.undo")}
                             </Button>
                         }
                     >
-                        {undo.message}.
+                        {undo.message}
                     </Notice>
                 )}
                 {visible.length ? (
-                    <List label="Plugins">{visible.map(p => <PluginRow key={p.manifest.id} state={p} onOpenStore={onOpenStore} />)}</List>
+                    <>
+                        <ul className="dl-plugin-grid" aria-label={t("tabs.plugins")}>{paged.items.map(p => <PluginCard key={p.manifest.id} state={p} />)}</ul>
+                        <Pagination
+                            label={t("plugins.pages")}
+                            page={paged.page}
+                            count={paged.count}
+                            onChange={n => {
+                                paged.setPage(n);
+                                scrollToTop(listRef.current);
+                            }}
+                        />
+                    </>
                 ) : plugins.length ? (
                     <EmptyState
                         icon="search"
-                        title={q ? `No plugins match “${query.trim()}”` : "No plugins in this filter"}
-                        action={<Button onClick={clear}>Show all plugins</Button>}
+                        title={q ? t("plugins.noMatch", { query: query.trim() }) : t("plugins.noneInFilter")}
+                        action={<Button onClick={clear}>{t("plugins.showAll")}</Button>}
                     >
-                        {q ? "Try part of a plugin’s name or description." : "Pick another filter above to see the rest."}
+                        {q ? t("plugins.noMatchHint") : t("plugins.noneInFilterHint")}
                     </EmptyState>
                 ) : (
-                    <EmptyState icon="puzzle" title="No plugins installed yet" action={<Button icon="folder" onClick={() => Native.openPath("plugins")}>Open plugins folder</Button>}>
-                        Drop a plugin folder into your plugins folder and it shows up here right away.
+                    <EmptyState icon="puzzle" title={t("plugins.emptyTitle")} action={<Button icon="folder" onClick={() => Native.openPath("plugins")}>{t("plugins.openFolder")}</Button>}>
+                        {t("plugins.emptyBody")}
                     </EmptyState>
                 )}
             </div>

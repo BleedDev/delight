@@ -1,6 +1,8 @@
 import { describe as group, expect, test } from "bun:test";
 
-import { describe, deserialize, formatRelative, formatSpan, lineText, merge, observeActivity, observeMessage, observePresence, prune, seenText, serialize } from "../plugins/last-seen/track";
+import {
+    describe, deserialize, formatRelative, formatSpan, isIgnored, lineText, merge, observeActivity, observeMessage, observePresence, prune, seenText, serialize,
+} from "../plugins/last-seen/track";
 import type { Tracker } from "../plugins/last-seen/track";
 
 const H = 3600_000;
@@ -116,7 +118,53 @@ group("prune", () => {
         observeActivity(t, "friend", 1, opts);
         for (let i = 0; i < 10; i++) observeActivity(t, `s${i}`, i + 2, opts);
         expect(t.size).toBe(3);
-        expect([...t.keys()]).toEqual(["friend", "s8", "s9"]);
+        // Skipped protected people move to the back, so the next prune doesn't walk past them again
+        expect([...t.keys()]).toEqual(["s8", "friend", "s9"]);
+    });
+
+    test("with slack, nothing goes until the cap plus slack is passed, then back down to the cap at once", () => {
+        const t: Tracker = new Map();
+        const opts = { cap: 10, slack: 5 };
+        for (let i = 0; i < 15; i++) observeActivity(t, `u${i}`, i + 1, opts);
+        expect(t.size).toBe(15);
+        observeActivity(t, "u15", 100, opts);
+        expect(t.size).toBe(10);
+        expect([...t.keys()]).toEqual(["u6", "u7", "u8", "u9", "u10", "u11", "u12", "u13", "u14", "u15"]);
+        // And again only after another five
+        for (let i = 16; i < 21; i++) observeActivity(t, `u${i}`, i + 100, opts);
+        expect(t.size).toBe(15);
+    });
+
+    test("prune with slack returns how many went", () => {
+        const t: Tracker = new Map(Array.from({ length: 20 }, (_, i) => [`u${i}`, { seen: i }]));
+        expect(prune(t, 10, undefined, 10)).toBe(0);
+        expect(prune(t, 10, undefined, 9)).toBe(10);
+        expect(t.size).toBe(10);
+    });
+
+    test("protected people at the front are only scanned once across prunes", () => {
+        const t: Tracker = new Map();
+        for (let i = 0; i < 100; i++) t.set(`f${i}`, { seen: i });
+        for (let i = 0; i < 100; i++) t.set(`s${i}`, { seen: 100 + i });
+        let asked = 0;
+        const keep = (id: string) => (asked++, id.startsWith("f"));
+        expect(prune(t, 150, keep)).toBe(50);
+        expect(asked).toBe(150);
+        // The friends moved behind the strangers still left: the next prune starts on strangers
+        expect([...t.keys()].slice(0, 3)).toEqual(["s50", "s51", "s52"]);
+        for (let i = 0; i < 10; i++) t.set(`n${i}`, { seen: 300 + i });
+        asked = 0;
+        expect(prune(t, 150, keep)).toBe(10);
+        expect(asked).toBe(10);
+        expect(t.has("f0")).toBe(true);
+        expect(t.has("s59")).toBe(false);
+        expect(t.has("s60")).toBe(true);
+    });
+
+    test("protected people keep their order among themselves when they have to go too", () => {
+        const t: Tracker = new Map([["a", { seen: 1 }], ["x", { seen: 2 }], ["b", { seen: 3 }], ["c", { seen: 4 }]]);
+        expect(prune(t, 2, id => id !== "x")).toBe(2);
+        expect([...t.keys()]).toEqual(["b", "c"]);
     });
 
     test("protected people go too once everyone left is protected", () => {
@@ -132,6 +180,29 @@ group("prune", () => {
         const t: Tracker = new Map([["a", { seen: 1 }]]);
         expect(prune(t, 5)).toBe(0);
         expect(t.size).toBe(1);
+    });
+});
+
+group("isIgnored", () => {
+    test("you and missing ids are never tracked", () => {
+        expect(isIgnored("me", undefined, "me", false)).toBe(true);
+        expect(isIgnored(undefined, undefined, "me", false)).toBe(true);
+        expect(isIgnored("", false, "me", true)).toBe(true);
+    });
+
+    test("only an explicit bot flag counts as a bot", () => {
+        expect(isIgnored("a", true, "me", true)).toBe(true);
+        expect(isIgnored("a", false, "me", true)).toBe(false);
+        // Raw payloads (presence, typing, voice) often leave the flag out: not a bot
+        expect(isIgnored("a", undefined, "me", true)).toBe(false);
+    });
+
+    test("bots are tracked when ignoring them is off", () => {
+        expect(isIgnored("a", true, "me", false)).toBe(false);
+    });
+
+    test("before your id is known, everyone else counts", () => {
+        expect(isIgnored("a", undefined, undefined, true)).toBe(false);
     });
 });
 

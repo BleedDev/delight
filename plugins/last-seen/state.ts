@@ -5,7 +5,7 @@
 import { getStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
-import { DEFAULT_CAP, describe, isOnlineStatus, serialize } from "./track";
+import { DEFAULT_CAP, describe, isIgnored, isOnlineStatus, lineText, PRUNE_SLACK, serialize } from "./track";
 import type { Entry, Options, Tracker } from "./track";
 
 export const settings = {
@@ -18,6 +18,9 @@ export const settings = {
 
 export type Settings = typeof settings;
 
+/** The settings that turn a line on in one place */
+export type Where = { [K in keyof Settings]: Settings[K]["type"] extends "boolean" ? K : never }[keyof Settings];
+
 export const state = {
     context: undefined as PluginContext<Settings> | undefined,
     tracker: new Map() as Tracker,
@@ -28,33 +31,52 @@ export const state = {
 
 // --- Discord stores --------------------------------------------------------------------------
 
+const stores = new Map<string, any>();
+
+/** A Flux store, found once: lines ask on every row render and presences arrive by the hundred */
 export const store = (name: string): any => {
+    let found = stores.get(name);
+    if (found) return found;
     try {
-        return getStore(name);
+        found = getStore(name);
     } catch {
         return undefined;
     }
+    stores.set(name, found);
+    return found;
 };
 
-export const ownId = () => store("UserStore")?.getCurrentUser?.()?.id as string | undefined;
+/** Your id, looked up once and again on reconnect (refreshOwnId): every observation checks it */
+let me: string | undefined;
+export const ownId = () => me ??= store("UserStore")?.getCurrentUser?.()?.id as string | undefined;
+export const refreshOwnId = () => void (me = store("UserStore")?.getCurrentUser?.()?.id);
+
 export const statusOf = (id: string) => store("PresenceStore")?.getStatus?.(id) as string | undefined;
 export const isOnline = (id: string) => isOnlineStatus(statusOf(id));
+/** For the places that show someone, where looking the user up is cheap next to rendering them */
+export const isBot = (id: string) => store("UserStore")?.getUser?.(id)?.bot as boolean | undefined;
 
-export function ignored(id: string, bot?: boolean) {
-    if (!id || id === ownId()) return true;
-    if (!state.context?.settings.get("ignoreBots")) return false;
-    return bot ?? !!store("UserStore")?.getUser?.(id)?.bot;
-}
+/** You, and bots when "Ignore bots" is on. `bot` is the payload's flag: missing means not a bot. */
+export const ignored = (id: string, bot?: boolean) => isIgnored(id, bot, ownId(), !!state.context?.settings.get("ignoreBots"));
 
-/** DM recipients, refreshed at most once a minute: checked on every prune */
-let dmIds = new Set<string>();
-let dmIdsAt = 0;
-function dmRecipients(): Set<string> {
-    const now = Date.now();
-    if (now - dmIdsAt < 60_000) return dmIds;
-    dmIdsAt = now;
+/**
+ * Friends and 1:1 DM contacts, dropped last when the tracker is full. Built when a prune needs it
+ * and kept until a relationship or DM channel changes (invalidateKeep).
+ */
+let keepIds: Set<string> | undefined;
+/** False when RelationshipStore can't list friends: then they're asked about one by one */
+let friendsListed = false;
+
+function keepSet(): Set<string> {
+    if (keepIds) return keepIds;
     const next = new Set<string>();
+    friendsListed = false;
     try {
+        const friends = store("RelationshipStore")?.getFriendIDs?.() as string[] | undefined;
+        if (Array.isArray(friends)) {
+            friendsListed = true;
+            for (const id of friends) next.add(id);
+        }
         const channels = store("PrivateChannelStore")?.getPrivateChannelIds?.() as string[] | undefined;
         const channelStore = store("ChannelStore");
         for (const channelId of channels ?? []) {
@@ -63,14 +85,22 @@ function dmRecipients(): Set<string> {
             if (channel?.type === 1) for (const id of channel.recipients ?? []) next.add(id);
         }
     } catch { }
-    dmIds = next;
-    return dmIds;
+    keepIds = next;
+    return next;
 }
 
-/** Friends and DM contacts are dropped last when the tracker is full */
-export const keep = (id: string) => !!store("RelationshipStore")?.isFriend?.(id) || dmRecipients().has(id);
+export const invalidateKeep = () => void (keepIds = undefined);
 
-export const opts: Options = { cap: DEFAULT_CAP, keep };
+export const keep = (id: string) => keepSet().has(id) || !friendsListed && !!store("RelationshipStore")?.isFriend?.(id);
+
+/** Prunes a few hundred at a time, once that many new people came in */
+export const opts: Options = { cap: DEFAULT_CAP, keep, slack: PRUNE_SLACK };
+
+/** Forgets what was looked up for the current account (on stop) */
+export function resetLookups() {
+    me = undefined;
+    keepIds = undefined;
+}
 
 /** "#general", "@name" for a DM, or undefined */
 export function channelLabel(channelId: string | undefined): string | undefined {
@@ -92,35 +122,115 @@ export function fullText(id: string): string | null {
 
 // --- Re-rendering ----------------------------------------------------------------------------
 
-/** Re-renders every Last Seen line: on data changes (throttled) and once a minute for the relative times */
+/**
+ * Lines subscribe per person, so a change re-renders only that person's lines. Changes are batched
+ * (at most every 5 seconds). Once a minute every line re-reads its text for the relative times, and
+ * React re-renders only the ones whose text changed. The settings panel listens to everything.
+ */
+const userListeners = new Map<string, Set<() => void>>();
+const panelListeners = new Set<() => void>();
+/** Bumped whenever everyone is re-read (the minute, settings, loading, clearing) */
+let epoch = 0;
+/** Bumped for one person when their data changes; cleared with each epoch */
+const userVersions = new Map<string, number>();
+/** For the panel: bumped on every change */
 let version = 0;
-const listeners = new Set<() => void>();
+const pendingIds = new Set<string>();
+let pendingAll = false;
 let bumpTimer: ReturnType<typeof setTimeout> | undefined;
+/**
+ * The time lines are worded for, moved on each notification. React may read a line's text more
+ * than once per render, and it has to come out the same each time.
+ */
+let clock = Date.now();
 
+const call = (listeners: Iterable<() => void>) => {
+    for (const l of [...listeners]) l();
+};
+
+function notify(ids?: Iterable<string>) {
+    clock = Date.now();
+    version++;
+    if (ids) {
+        for (const id of ids) {
+            userVersions.set(id, (userVersions.get(id) ?? 0) + 1);
+            const listeners = userListeners.get(id);
+            if (listeners) call(listeners);
+        }
+    } else {
+        epoch++;
+        userVersions.clear();
+        for (const listeners of userListeners.values()) call(listeners);
+    }
+    call(panelListeners);
+}
+
+/** Re-reads every line now: settings changes, clearing, importing, loading, stopping */
 export function bumpNow() {
     clearTimeout(bumpTimer);
     bumpTimer = undefined;
-    version++;
-    listeners.forEach(l => l());
+    pendingIds.clear();
+    pendingAll = false;
+    notify();
 }
 
-const bumpSoon = () => {
-    bumpTimer ??= setTimeout(bumpNow, 5000);
-};
+/** Once a minute: relative times move on. Only lines whose text changed re-render. */
+export const tick = () => notify();
 
+function flushChanges() {
+    bumpTimer = undefined;
+    if (pendingAll) return bumpNow();
+    const ids = [...pendingIds];
+    pendingIds.clear();
+    notify(ids);
+}
+
+/** Someone's data changed (or, without an id, anyone's): saved soon, their lines update within 5 seconds */
+export function changed(id?: string) {
+    state.dirty = true;
+    if (id === undefined) pendingAll = true;
+    else pendingIds.add(id);
+    bumpTimer ??= setTimeout(flushChanges, 5000);
+}
+
+/** Changes when someone's data changes or everyone is re-read: a cache key for what's built from their data */
+export const versionOf = (id: string) => `${epoch}:${userVersions.get(id) ?? 0}`;
+
+/** The settings panel: re-renders on every change */
 export function useVersion() {
     return React.useSyncExternalStore(
         cb => {
-            listeners.add(cb);
-            return () => void listeners.delete(cb);
+            panelListeners.add(cb);
+            return () => void panelListeners.delete(cb);
         },
         () => version,
     );
 }
 
-export function changed() {
-    state.dirty = true;
-    bumpSoon();
+function subscribeUser(id: string, cb: () => void) {
+    let listeners = userListeners.get(id);
+    if (!listeners) userListeners.set(id, listeners = new Set());
+    listeners.add(cb);
+    return () => {
+        listeners.delete(cb);
+        if (!listeners.size && userListeners.get(id) === listeners) userListeners.delete(id);
+    };
+}
+
+/**
+ * React hook: `read()` about one person, read again when their data changes, on the minute and on
+ * settings changes. Re-renders only when the result is different (===), so return a string,
+ * number or boolean.
+ */
+export function useUser<T extends string | number | boolean>(userId: string, read: () => T): T {
+    const subscribe = React.useCallback((cb: () => void) => subscribeUser(userId, cb), [userId]);
+    return React.useSyncExternalStore(subscribe, read);
+}
+
+/** The line under someone's name, or "" for none: the setting is off, they're online, or nothing is known */
+export function lineOf(userId: string, setting: Where): string {
+    if (!state.context?.settings.get(setting) || isOnline(userId)) return "";
+    return lineText(entryOf(userId), clock) ?? "";
 }
 
 // --- Storage ---------------------------------------------------------------------------------

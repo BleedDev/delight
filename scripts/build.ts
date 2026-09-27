@@ -2,26 +2,39 @@
  *   bun scripts/build.ts            build core + plugins into dist/
  *   bun scripts/build.ts --watch    rebuild on change; running Discord hot-reloads plugins, Ctrl+R picks up core
  *   bun scripts/build.ts --cli      also compile the installer into dist/evi.exe
- *   bun scripts/build.ts --release  compile the installer for every system a release carries, each with its .sha256
+ *   bun scripts/build.ts --release  compile the installer for every system a release carries, each with its .sha256,
+ *                                   plus evi-core.json (the core and official plugins Evi Setup downloads)
+ *   bun scripts/build.ts --installer  compile Evi Setup, the small window installer in installer/ (Rust + Tauri), into
+ *                                   dist/Evi-Setup.exe. On its own it only does that and leaves core and plugins alone
  */
 import type { BunPlugin } from "bun";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, watch, writeFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, watch, writeFileSync } from "fs";
 import { basename, join, resolve } from "path";
 
 import pkg from "../package.json";
 import type { PluginManifest } from "../src/shared/ipc";
 import { RELEASE_ASSETS } from "../src/shared/release";
+import { RETIRED_PLUGINS } from "../src/shared/store";
 
 const ROOT = resolve(import.meta.dir, "..");
 const DIST = join(ROOT, "dist");
 const CORE_OUT = join(DIST, "core");
 const PLUGINS_OUT = join(DIST, "plugins");
+/** Plugins only the tests load (Toolkit Demo exercises the toolkit): never shipped, never in the store */
+const TEST_PLUGINS_OUT = join(DIST, "test-plugins");
+const TEST_PLUGIN_ROOT = join(ROOT, "tests", "fixtures", "plugins");
 const PLUGIN_ROOTS = [join(ROOT, "plugins"), join(ROOT, "userplugins")];
 
 const args = new Set(process.argv.slice(2));
 const WATCH = args.has("--watch");
 const RELEASE = args.has("--release");
 const CLI = args.has("--cli") || RELEASE;
+const INSTALLER = args.has("--installer");
+const INSTALLER_ONLY = INSTALLER && !CLI && !WATCH;
+
+/** Release assets next to the CLI's: what Evi Setup downloads, and Evi Setup itself */
+const CORE_ASSET = "evi-core.json";
+const INSTALLER_ASSET = process.platform === "win32" ? "Evi-Setup.exe" : `Evi-Setup-${process.platform === "darwin" ? "macos" : "linux"}-${process.arch}`;
 
 /** Bun cross-compiles, so every installer builds from any machine */
 const TARGETS: Record<typeof RELEASE_ASSETS[number], string> = {
@@ -94,13 +107,13 @@ function findEntry(dir: string, name: string) {
     return ["ts", "tsx", "js", "jsx"].map(ext => join(dir, `${name}.${ext}`)).find(existsSync);
 }
 
-async function buildPlugin(dir: string) {
+async function buildPlugin(dir: string, outRoot = PLUGINS_OUT) {
     const manifestPath = join(dir, "manifest.json");
     if (!existsSync(manifestPath)) return;
 
     const manifest: PluginManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     manifest.id ??= basename(dir);
-    const out = join(PLUGINS_OUT, manifest.id);
+    const out = join(outRoot, manifest.id);
 
     const entry = findEntry(dir, "index");
     if (!entry) return console.error(`✗ ${manifest.id}: no index.ts`);
@@ -219,12 +232,46 @@ async function compileCli() {
     }
 }
 
+function writeChecksum(asset: string) {
+    const hash = new Bun.CryptoHasher("sha256").update(readFileSync(join(DIST, asset))).digest("hex");
+    writeFileSync(join(DIST, `${asset}.sha256`), `${hash}  ${asset}\n`);
+}
+
+/** What Evi Setup installs: the same as dist/embed.json, plus the plugins it should delete as retired */
+function writeCoreAsset() {
+    const embed = JSON.parse(readFileSync(join(DIST, "embed.json"), "utf8"));
+    writeFileSync(join(DIST, CORE_ASSET), JSON.stringify({ ...embed, retired: RETIRED_PLUGINS }));
+    writeChecksum(CORE_ASSET);
+    console.log(`✓ dist/${CORE_ASSET}`);
+}
+
+/** Evi Setup (installer/): a Rust + Tauri app, built with cargo for this system */
+async function compileInstaller() {
+    const cargo = Bun.which("cargo");
+    if (!cargo) {
+        console.error("✗ Evi Setup needs Rust: install it from https://rustup.rs");
+        process.exit(1);
+    }
+    const dir = join(ROOT, "installer");
+    const code = await Bun.spawn([cargo, "build", "--release", "--locked"], { cwd: dir, stdio: ["inherit", "inherit", "inherit"] }).exited;
+    if (code !== 0) process.exit(code);
+    copyFileSync(join(dir, "target", "release", process.platform === "win32" ? "evi-setup.exe" : "evi-setup"), join(DIST, INSTALLER_ASSET));
+    if (RELEASE) writeChecksum(INSTALLER_ASSET);
+    console.log(`✓ dist/${INSTALLER_ASSET} (${(statSync(join(DIST, INSTALLER_ASSET)).size / 1024 / 1024).toFixed(1)} MB)`);
+}
+
 function debounce(fn: () => void, ms = 100) {
     let timer: ReturnType<typeof setTimeout> | undefined;
     return () => {
         clearTimeout(timer);
         timer = setTimeout(fn, ms);
     };
+}
+
+if (INSTALLER_ONLY) {
+    mkdirSync(DIST, { recursive: true });
+    await compileInstaller();
+    process.exit(0);
 }
 
 // Overwrite in place rather than wiping dist/: a running Discord watches it, and a wipe would
@@ -238,9 +285,14 @@ for (const id of readdirSync(PLUGINS_OUT)) {
 writeFileSync(join(DIST, "package.json"), JSON.stringify({ type: "commonjs" }));
 
 await buildCore();
-await Promise.all(pluginDirs().map(buildPlugin));
+await Promise.all(pluginDirs().map(dir => buildPlugin(dir)));
+if (existsSync(TEST_PLUGIN_ROOT)) {
+    await Promise.all(readdirSync(TEST_PLUGIN_ROOT, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => buildPlugin(join(TEST_PLUGIN_ROOT, e.name), TEST_PLUGINS_OUT)));
+}
 writeEmbed();
 if (CLI) await compileCli();
+if (RELEASE) writeCoreAsset();
+if (INSTALLER) await compileInstaller();
 
 if (WATCH) {
     watch(join(ROOT, "src"), { recursive: true }, debounce(buildCore));

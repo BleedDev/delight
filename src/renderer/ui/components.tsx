@@ -4,8 +4,9 @@
  * fallbacks for when Discord renames one of its components. Layout (sections, lists, rows) follows
  * the measurements of Discord's own settings layout, see styles.css.
  */
-import type { ButtonHTMLAttributes, ComponentType, ReactElement, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ComponentType, KeyboardEvent as ReactKeyboardEvent, ReactElement, ReactNode } from "react";
 
+import { t } from "../i18n";
 import type { SettingDefinition } from "../plugins/types";
 import { exitDone } from "../toolkit/layer";
 import { React, ReactDOM } from "../webpack/common";
@@ -136,8 +137,10 @@ export function Switch({ checked, onChange, label, labelledBy, disabled }: {
     disabled?: boolean;
 }) {
     const Native = DiscordUI.Switch.get;
-    // Discord's switch is named through labelledBy only
-    if (Native && labelledBy) return <Native checked={checked} onChange={onChange} labelledBy={labelledBy} disabled={disabled} />;
+    // Discord's switch is named through labelledBy only. Its real checkbox sits in a visually hidden,
+    // absolutely placed box: without a positioned parent that box lands far down the page, and
+    // clicking the switch focused it there, scrolling Discord's settings away from the switch.
+    if (Native && labelledBy) return <span className="dl-switch-anchor"><Native checked={checked} onChange={onChange} labelledBy={labelledBy} disabled={disabled} /></span>;
     return (
         <button
             type="button"
@@ -312,6 +315,107 @@ export function FilterChips<K extends string>({ label, options, value, onChange 
                 </button>
             ))}
         </div>
+    );
+}
+
+/**
+ * Tabs along the top of a page, like Discord's settings tab bars. Each tab's id is `${id}-${tab}`
+ * and the panel it controls is `${id}-panel`. Arrows move between tabs, Home and End jump to the ends.
+ */
+export function TabBar<K extends string>({ id, label, tabs, value, onChange }: {
+    id: string;
+    label: string;
+    /** `count` shows as a red pill, for things waiting on you (updates) */
+    tabs: readonly { id: K; label: string; count?: number; }[];
+    value: K;
+    onChange(value: K): void;
+}) {
+    const onKeyDown = (e: ReactKeyboardEvent) => {
+        const index = tabs.findIndex(tab => tab.id === value);
+        const next = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }[e.key];
+        if (next === undefined) return;
+        e.preventDefault();
+        const target = tabs[(next + tabs.length) % tabs.length];
+        onChange(target.id);
+        document.getElementById(`${id}-${target.id}`)?.focus();
+    };
+
+    return (
+        <div className="dl-tabbar" role="tablist" aria-label={label} onKeyDown={onKeyDown}>
+            {tabs.map(tab => (
+                <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    id={`${id}-${tab.id}`}
+                    className="dl-tabbar-item"
+                    aria-selected={tab.id === value}
+                    aria-controls={`${id}-panel`}
+                    tabIndex={tab.id === value ? 0 : -1}
+                    onClick={() => onChange(tab.id)}
+                >
+                    {tab.label}
+                    {!!tab.count && <span className="dl-tabbar-count dl-tabular">{tab.count}</span>}
+                </button>
+            ))}
+        </div>
+    );
+}
+
+/**
+ * One page of `items` at a time. Back to the first page whenever `resetKey` changes (a new search or
+ * filter), and never past the last page when the list shrinks under you.
+ */
+export function usePages<T>(items: readonly T[], size: number, resetKey: unknown) {
+    const [page, setPage] = React.useState(0);
+    const [key, setKey] = React.useState(resetKey);
+    if (key !== resetKey) {
+        setKey(resetKey);
+        setPage(0);
+    }
+    const count = Math.max(1, Math.ceil(items.length / size));
+    const current = Math.min(key === resetKey ? page : 0, count - 1);
+    return { page: current, count, items: items.slice(current * size, (current + 1) * size), setPage };
+}
+
+/** First, last, and the pages around the current one; null where pages are skipped */
+export function pageNumbers(page: number, count: number): (number | null)[] {
+    if (count <= 7) return Array.from({ length: count }, (_, i) => i);
+    const shown = [...new Set([0, page - 1, page, page + 1, count - 1])].filter(p => p >= 0 && p < count).sort((a, b) => a - b);
+    return shown.flatMap((p, i) => i > 0 && p - shown[i - 1] > 1 ? [null, p] : [p]);
+}
+
+/** Brings the top of a list back into view when its page changes, if you'd scrolled past it */
+export function scrollToTop(el: HTMLElement | null) {
+    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: "start" });
+}
+
+/** Numbered page buttons with previous and next, hidden when everything fits on one page */
+export function Pagination({ page, count, onChange, label }: { page: number; count: number; onChange(page: number): void; label: string; }) {
+    if (count <= 1) return null;
+    return (
+        <nav className="dl-pagination" aria-label={label}>
+            <button type="button" className="dl-page" aria-label={t("pagination.previous")} disabled={page === 0} onClick={() => onChange(page - 1)}>
+                <Icon name="chevronLeft" size={16} />
+            </button>
+            {pageNumbers(page, count).map((p, i) => p === null
+                ? <span key={`gap-${i}`} className="dl-page-gap" aria-hidden="true">…</span>
+                : (
+                    <button
+                        key={p}
+                        type="button"
+                        className="dl-page dl-tabular"
+                        aria-label={t("pagination.page", { page: p + 1 })}
+                        aria-current={p === page ? "page" : undefined}
+                        onClick={() => onChange(p)}
+                    >
+                        {p + 1}
+                    </button>
+                ))}
+            <button type="button" className="dl-page" aria-label={t("pagination.next")} disabled={page === count - 1} onClick={() => onChange(page + 1)}>
+                <Icon name="chevronRight" size={16} />
+            </button>
+        </nav>
     );
 }
 

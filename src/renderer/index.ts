@@ -10,6 +10,7 @@ import { startHealthReports } from "./health";
 import { Logger } from "./logger";
 import { Native } from "./native";
 import { diagnosePatches } from "./patching/diagnose";
+import { Perf } from "./perf";
 import { diagnoseLookups } from "./plugins/lookups";
 import { PluginManager } from "./plugins/manager";
 import { startPullNotices } from "./pulls";
@@ -57,6 +58,8 @@ const Evi = {
     toolkit: Toolkit,
     safeMode: SafeMode,
     updates: Updates,
+    /** Where plugins spend time: snapshot(), record(ms) */
+    perf: Perf,
     get wreq() {
         return wreq;
     },

@@ -7,6 +7,7 @@ import { REPORT_REASONS, ReportReason, validatePluginReport } from "@shared/plug
 import type { PulledPlugin } from "@shared/pulls";
 import { isVersion } from "@shared/store";
 
+import { t } from "../i18n";
 import { Native } from "../native";
 import { React } from "../webpack/common";
 import { Button, Dialog, Icon, Status, Text } from "./components";
@@ -23,17 +24,17 @@ export function PulledNotice({ pull, update }: {
     update?: { version: string; busy?: boolean; run(): void; };
 }) {
     return (
-        <section className="dl-pulled" aria-label="Turned off by Evi">
+        <section className="dl-pulled" aria-label={t("pulled.label")}>
             <Icon name="circleError" size={20} />
             <div className="dl-pulled-text">
-                <Text tag="p" variant="text-sm/semibold" color="text-strong">Evi turned it off on every install: {pull.reason}</Text>
+                <Text tag="p" variant="text-sm/semibold" color="text-strong">{t("pulled.title", { reason: pull.reason })}</Text>
                 <Text tag="p" variant="text-sm/normal" color="text-subtle">
                     {update
-                        ? `v${update.version} isn’t affected. Update to turn it back on.`
-                        : `It can’t be turned on until Evi lifts this or a fixed version is out${pull.removed ? ". It’s no longer in the store." : "."}`}
+                        ? t("pulled.updateFixes", { version: update.version })
+                        : t(pull.removed ? "pulled.blockedRemoved" : "pulled.blocked")}
                 </Text>
             </div>
-            {update && <Button variant="accent" icon="download" disabled={update.busy} onClick={update.run}>{`Update to v${update.version}`}</Button>}
+            {update && <Button variant="accent" icon="download" disabled={update.busy} onClick={update.run}>{t("common.updateTo", { version: update.version })}</Button>}
         </section>
     );
 }
@@ -68,7 +69,7 @@ function ReportForm({ id, version, onSent, onCancel }: { id: string; version?: s
 
     const submit = async () => {
         if (sending) return;
-        if (!reason) return fail({ field: "reason", message: "Pick what’s wrong" });
+        if (!reason) return fail({ field: "reason", message: t("report.pickReason") });
         const checked = validatePluginReport(id, { reason, details, ...(isVersion(version) && { version }) });
         if ("error" in checked) return fail({ field: "details", message: checked.error });
 
@@ -86,7 +87,7 @@ function ReportForm({ id, version, onSent, onCancel }: { id: string; version?: s
         // Checked here on Send report rather than by the browser, so every problem reads the same
         <form className="dl-stack dl-report" onSubmit={e => e.preventDefault()} ref={formRef} noValidate>
             <fieldset className="dl-report-reasons" aria-describedby={error?.field === "reason" ? `${base}-error` : undefined}>
-                <legend className="dl-label">What’s wrong?</legend>
+                <legend className="dl-label">{t("report.whatsWrong")}</legend>
                 {REPORT_REASONS.map(r => (
                     <label key={r.value} className="dl-check">
                         <input
@@ -99,13 +100,13 @@ function ReportForm({ id, version, onSent, onCancel }: { id: string; version?: s
                                 if (error?.field) setError(undefined);
                             }}
                         />
-                        {r.label}
+                        {t(`report.reason.${r.value}`)}
                     </label>
                 ))}
             </fieldset>
 
             <div className="dl-field">
-                <label className="dl-label" htmlFor={`${base}-details`}>Details{required ? "" : " (optional)"}</label>
+                <label className="dl-label" htmlFor={`${base}-details`}>{t(required ? "report.details" : "report.detailsOptional")}</label>
                 <textarea
                     id={`${base}-details`}
                     className="dl-textarea dl-report-details"
@@ -115,7 +116,7 @@ function ReportForm({ id, version, onSent, onCancel }: { id: string; version?: s
                     required={required}
                     aria-invalid={error?.field === "details" || undefined}
                     aria-describedby={[`${base}-count`, error?.field === "details" && `${base}-error`].filter(Boolean).join(" ")}
-                    placeholder={required ? "Say what’s wrong" : "What did you see?"}
+                    placeholder={t(required ? "report.detailsRequiredPlaceholder" : "report.detailsPlaceholder")}
                     onChange={e => {
                         setDetails(e.currentTarget.value);
                         if (error?.field === "details") setError(undefined);
@@ -127,11 +128,11 @@ function ReportForm({ id, version, onSent, onCancel }: { id: string; version?: s
             <span role="alert" id={`${base}-error`}>{error && <Status tone="danger">{error.message}</Status>}</span>
 
             <Text tag="p" variant="text-sm/normal" color="text-subtle">
-                Reports go to Evi’s team, not the author. If this install is linked to your Discord account, they can see who sent it.
+                {t("report.privacy")}
             </Text>
             <div className="dl-toolbar">
-                <Button variant="accent" disabled={sending} onClick={() => void submit()}>{sending ? "Sending…" : "Send report"}</Button>
-                <Button onClick={onCancel}>Cancel</Button>
+                <Button variant="accent" disabled={sending} onClick={() => void submit()}>{sending ? t("common.sending") : t("common.sendReport")}</Button>
+                <Button onClick={onCancel}>{t("common.cancel")}</Button>
             </div>
         </form>
     );
@@ -149,11 +150,11 @@ export function ReportRow({ id, name, version }: { id: string; name: string; ver
 
     return (
         <div className="dl-report-row" data-report={id}>
-            <Text variant="text-sm/normal" color="text-subtle">Harmful, fake or badly broken?</Text>
-            <Button disabled={done} onClick={() => setOpen(true)}>{done ? "Reported" : "Report"}</Button>
-            <span role="status">{thanks && <Status tone="success">Thanks. Evi’s team will look at it.</Status>}</span>
+            <Text variant="text-sm/normal" color="text-subtle">{t("report.prompt")}</Text>
+            <Button disabled={done} onClick={() => setOpen(true)}>{done ? t("report.reported") : t("report.report")}</Button>
+            <span role="status">{thanks && <Status tone="success">{t("report.thanks")}</Status>}</span>
             {open && (
-                <Dialog id={`dl-report-${id}`} title={`Report ${name}`} onClose={() => setOpen(false)}>
+                <Dialog id={`dl-report-${id}`} title={t("report.title", { name })} onClose={() => setOpen(false)}>
                     {close => (
                         <ReportForm
                             id={id}

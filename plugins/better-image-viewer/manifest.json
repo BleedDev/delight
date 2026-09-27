@@ -2,10 +2,11 @@
     "id": "better-image-viewer",
     "name": "Better Image Viewer",
     "description": "Discord's image viewer, but the arrows go through every image in the channel instead of stopping at the end of the message you clicked.",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "authors": ["Evi"],
     "tags": ["utility"],
     "changelog": [
+        { "version": "2.0.1", "notes": ["Faster: opening an image in a long channel does less work."] },
         {
             "version": "2.0.0",
             "notes": [

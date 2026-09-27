@@ -8,8 +8,8 @@
 import { React } from "@evi/api";
 import type { SourcePatch } from "@evi/api";
 
-import { LastSeenLine } from "./line";
-import { entryOf, ignored, state } from "./state";
+import { lastSeenLine } from "./line";
+import { entryOf, ignored, isBot, state } from "./state";
 import { isOnlineStatus, lineText } from "./track";
 
 export const dmPatches: SourcePatch[] = [
@@ -29,8 +29,9 @@ export const dmMethods = {
             if (!state.context?.settings.get("showInDms") || isOnlineStatus(status)) return null;
             const id = channel?.getRecipientId?.();
             // Nothing to say: return null so Discord doesn't render an empty subtext row
-            if (!id || ignored(id) || !lineText(entryOf(id), Date.now())) return null;
-            return <LastSeenLine userId={id} setting="showInDms" />;
+            if (!id || !lineText(entryOf(id), Date.now()) || ignored(id, isBot(id))) return null;
+            const Line = lastSeenLine();
+            return <Line userId={id} setting="showInDms" />;
         } catch (e) {
             state.context?.logger.error("DM subtext failed", e);
             return null;

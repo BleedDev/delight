@@ -1,9 +1,8 @@
 import { renameSync, rmSync, writeFileSync } from "fs";
 
-import { CHECKSUM_ASSET, EXE_ASSET } from "../shared/release";
-import { compareVersions } from "./discord";
+import { CHECKSUM_ASSET, cleanVersion, EXE_ASSET, isNewerRelease, pickRelease } from "../shared/release";
 
-export { CHECKSUM_ASSET, EXE_ASSET };
+export { CHECKSUM_ASSET, cleanVersion, EXE_ASSET };
 export const REPO = "BleedDev/evi";
 
 /** Overridable so tests can serve fake releases from a local server */
@@ -30,14 +29,8 @@ interface GitHubRelease {
 /** True when running as the compiled installer rather than `bun src/cli/index.ts` */
 export const COMPILED = !/^bun(-debug)?(\.exe)?$/i.test(process.execPath.split(/[\\/]/).pop() ?? "");
 
-/** "v1.2.3-beta" -> "1.2.3" */
-export function cleanVersion(tag: string) {
-    return tag.trim().replace(/^v/i, "").split(/[-+]/)[0];
-}
-
-export function isNewer(tag: string, current: string) {
-    return compareVersions(cleanVersion(tag), cleanVersion(current)) > 0;
-}
+/** Prereleases count: 0.5.0-beta.1 is newer than 0.4.0 and older than 0.5.0 */
+export const isNewer = isNewerRelease;
 
 async function request(url: string, timeout: number) {
     try {
@@ -47,15 +40,19 @@ async function request(url: string, timeout: number) {
     }
 }
 
-/** The latest published release, or null if nothing has been published yet. Drafts and prereleases never show up here. */
-export async function fetchLatestRelease(): Promise<Release | null> {
-    const res = await request(`${API}/repos/${REPO}/releases/latest`, 15_000);
+/**
+ * The latest published release, or null if nothing has been published yet. Drafts never show up, and
+ * prereleases only with beta: /releases/latest skips them, so that picks the newest from the list instead.
+ */
+export async function fetchLatestRelease(beta = false): Promise<Release | null> {
+    const res = await request(`${API}/repos/${REPO}/${beta ? "releases?per_page=30" : "releases/latest"}`, 15_000);
     if (res.status === 404) return null;
     if (res.status === 403 || res.status === 429) throw new UpdateError("GitHub's API rate limit was hit. Try again in a few minutes.");
     if (!res.ok) throw new UpdateError(`GitHub answered ${res.status} ${res.statusText}`);
 
-    const data = await res.json() as GitHubRelease;
-    if (data.draft) return null;
+    const json = await res.json();
+    const data: GitHubRelease | undefined = beta ? pickRelease(json, true) : json;
+    if (!data || data.draft) return null;
     const asset = (name: string) => data.assets.find(a => a.name === name)?.browser_download_url;
     const exeUrl = asset(EXE_ASSET);
     const checksumUrl = asset(CHECKSUM_ASSET);

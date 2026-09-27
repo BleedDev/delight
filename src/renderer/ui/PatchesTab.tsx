@@ -1,15 +1,18 @@
+import type { EviKey } from "@shared/locales";
+
+import { t } from "../i18n";
 import { diagnosePatches, PatchDiagnosis, PatchHealth } from "../patching/diagnose";
 import { diagnoseLookups, LookupDiagnosis, LookupHealth } from "../plugins/lookups";
 import { React } from "../webpack/common";
 import { Button, EmptyState, List, Section, Status, Text, Tone } from "./components";
 
-const health: Record<PatchHealth, { tone: Tone; label: string; hint: string; order: number; }> = {
-    broken: { tone: "danger", label: "Broken", hint: "No module matches the find. Discord probably changed this code.", order: 0 },
-    failed: { tone: "danger", label: "Failed", hint: "Found its module but couldn’t change it.", order: 0 },
-    partial: { tone: "danger", label: "Partly applied", hint: "Some replacements matched nothing.", order: 0 },
-    ambiguous: { tone: "warning", label: "Ambiguous", hint: "The find matches several modules. Make it more specific.", order: 1 },
-    waiting: { tone: "success", label: "Applies when needed", hint: "Its code loads later, when you open the part of Discord that uses it, and is patched as it loads.", order: 2 },
-    applied: { tone: "success", label: "Applied", hint: "", order: 3 },
+const health: Record<PatchHealth, { tone: Tone; label: EviKey; hint?: EviKey; order: number; }> = {
+    broken: { tone: "danger", label: "patches.broken", hint: "patches.brokenHint", order: 0 },
+    failed: { tone: "danger", label: "patches.failed", hint: "patches.failedHint", order: 0 },
+    partial: { tone: "danger", label: "patches.partial", hint: "patches.partialHint", order: 0 },
+    ambiguous: { tone: "warning", label: "patches.ambiguous", hint: "patches.ambiguousHint", order: 1 },
+    waiting: { tone: "success", label: "patches.waiting", hint: "patches.waitingHint", order: 2 },
+    applied: { tone: "success", label: "patches.applied", order: 3 },
 };
 
 function PatchRow({ d }: { d: PatchDiagnosis; }) {
@@ -21,18 +24,18 @@ function PatchRow({ d }: { d: PatchDiagnosis; }) {
                 <div className="dl-row-text">
                     <div className="dl-row-title">
                         <Text tag="h3" variant="heading-md/medium" color="text-strong" id={titleId}>{d.plugin}</Text>
-                        <Text variant="text-xs/medium" color="text-muted" className="dl-version" tabular>{`Patch ${d.index + 1}`}</Text>
+                        <Text variant="text-xs/medium" color="text-muted" className="dl-version" tabular>{t("patches.patchNumber", { n: d.index + 1 })}</Text>
                     </div>
                     <p className="dl-code-inline"><span className="dl-code-key">find</span>{String(d.patch.find)}</p>
-                    {info.hint && <Text tag="p" variant="text-sm/normal" color="text-subtle">{info.hint}</Text>}
+                    {info.hint && <Text tag="p" variant="text-sm/normal" color="text-subtle">{t(info.hint)}</Text>}
                     {d.modules.length > 0 && (
                         <Text tag="p" variant="text-xs/normal" color="text-muted" className="dl-mono">
-                            {`${d.modules.length === 1 ? "Module" : "Modules"} ${d.modules.join(", ")}`}
+                            {t("patches.modules", { count: d.modules.length, list: d.modules.join(", ") })}
                         </Text>
                     )}
                 </div>
                 <div className="dl-row-controls">
-                    <Status tone={info.tone}>{info.label}</Status>
+                    <Status tone={info.tone}>{t(info.label)}</Status>
                 </div>
             </div>
             {d.errors.map((e, i) => <pre key={i} className="dl-error">{e}</pre>)}
@@ -40,19 +43,17 @@ function PatchRow({ d }: { d: PatchDiagnosis; }) {
     );
 }
 
-const lookupHealth: Record<LookupHealth, { tone: Tone; label: string; hint: (d: LookupDiagnosis) => string; order: number; }> = {
+const lookupHealth: Record<LookupHealth, { tone: Tone; label: EviKey; hint: (d: LookupDiagnosis) => string; order: number; }> = {
     broken: {
-        tone: "danger", label: "Not found", order: 0,
-        hint: d => d.candidates.length
-            ? "Its module loaded, but nothing in it matches any more. Discord probably changed this code."
-            : "No module matches. Discord probably changed this code.",
+        tone: "danger", label: "patches.notFound", order: 0,
+        hint: d => t(d.candidates.length ? "patches.lookupBrokenLoaded" : "patches.lookupBroken"),
     },
     missing: {
-        tone: "warning", label: "Not found yet", order: 1,
-        hint: () => "Nothing Discord has loaded so far matches. If you’ve already used the part of Discord it’s for, Discord probably changed it.",
+        tone: "warning", label: "patches.notFoundYet", order: 1,
+        hint: () => t("patches.lookupMissing"),
     },
-    waiting: { tone: "success", label: "Found when needed", order: 2, hint: () => "Its code loads later, when you open the part of Discord that uses it." },
-    found: { tone: "success", label: "Found", order: 3, hint: () => "" },
+    waiting: { tone: "success", label: "patches.foundWhenNeeded", order: 2, hint: () => t("patches.lookupWaiting") },
+    found: { tone: "success", label: "patches.found", order: 3, hint: () => "" },
 };
 
 function LookupRow({ d, index }: { d: LookupDiagnosis; index: number; }) {
@@ -70,19 +71,17 @@ function LookupRow({ d, index }: { d: LookupDiagnosis; index: number; }) {
                     {hint && <Text tag="p" variant="text-sm/normal" color="text-subtle">{hint}</Text>}
                     {d.candidates.length > 0 && (
                         <Text tag="p" variant="text-xs/normal" color="text-muted" className="dl-mono">
-                            {`${d.candidates.length === 1 ? "Module" : "Modules"} ${d.candidates.join(", ")}`}
+                            {t("patches.modules", { count: d.candidates.length, list: d.candidates.join(", ") })}
                         </Text>
                     )}
                 </div>
                 <div className="dl-row-controls">
-                    <Status tone={info.tone}>{info.label}</Status>
+                    <Status tone={info.tone}>{t(info.label)}</Status>
                 </div>
             </div>
         </li>
     );
 }
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 export function PatchesTab() {
     const check = () => ({ patches: diagnosePatches(), lookups: diagnoseLookups() });
@@ -96,8 +95,8 @@ export function PatchesTab() {
         + lookups.filter(d => lookupHealth[d.health].tone !== "success").length;
 
     const counts = [
-        results.length && plural(results.length, "source patch", "source patches"),
-        lookups.length && plural(lookups.length, "lookup", "lookups"),
+        results.length && t("patches.sourcePatchCount", { count: results.length }),
+        lookups.length && t("patches.lookupCount", { count: lookups.length }),
     ].filter(Boolean).join(", ");
 
     return (
@@ -106,26 +105,26 @@ export function PatchesTab() {
                 <div className="dl-grow">
                     <Text variant="text-sm/medium" color="text-subtle" role="status" tabular>
                         {counts
-                            ? `${counts}, ${problems ? `${problems} ${problems === 1 ? "needs" : "need"} attention` : "no problems found"}`
-                            : "No source patches or lookups active"}
+                            ? problems ? t("patches.summaryProblems", { counts, count: problems }) : t("patches.summaryOk", { counts })
+                            : t("patches.none")}
                     </Text>
                 </div>
-                <Button icon="refresh" onClick={() => setResults(check())}>Check again</Button>
+                <Button icon="refresh" onClick={() => setResults(check())}>{t("common.checkAgain")}</Button>
             </div>
             {results.length ? (
-                <List label="Source patches">{sorted.map(d => <PatchRow key={`${d.plugin}-${d.index}`} d={d} />)}</List>
+                <List label={t("patches.sourcePatches")}>{sorted.map(d => <PatchRow key={`${d.plugin}-${d.index}`} d={d} />)}</List>
             ) : !lookups.length && (
-                <EmptyState icon="wrench" title="No source patches active">
-                    Plugins that rewrite Discord’s code list their patches here, with a health check after every Discord update.
+                <EmptyState icon="wrench" title={t("patches.emptyTitle")}>
+                    {t("patches.emptyBody")}
                 </EmptyState>
             )}
             {lookups.length > 0 && (
                 <Section
                     id="dl-lookups"
-                    title="Lookups"
-                    description="Parts of Discord plugins wait for before they hook or use them. One that’s never found fails quietly, so it’s checked here."
+                    title={t("patches.lookups")}
+                    description={t("patches.lookupsHint")}
                 >
-                    <List label="Lookups">{sortedLookups.map(({ d, index }) => <LookupRow key={`${d.plugin}-${index}`} d={d} index={index} />)}</List>
+                    <List label={t("patches.lookups")}>{sortedLookups.map(({ d, index }) => <LookupRow key={`${d.plugin}-${index}`} d={d} index={index} />)}</List>
                 </Section>
             )}
         </div>

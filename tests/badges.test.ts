@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { arrange, isDiscordId, oursFromDiscord, parseBadgeEvents, parseBadges, splitSettings } from "../src/shared/badges";
 import { isSupporterBadge, nextSupporterTier, SUPPORTER_TIERS, supportedDays, supporterTier } from "../src/shared/supporter";
 import { imageDataUrl, imageType } from "../src/shared/images";
+import { sameBadges } from "../src/renderer/profileBadges";
 
 const icon = "https://evi.rest/badges/dev.png?v=abc";
 
@@ -63,13 +64,20 @@ describe("supporters", () => {
         expect(supporterTier(now, now).badge).toBe("supporter-bronze");
         expect(supporterTier(now - 29 * DAY, now).badge).toBe("supporter-bronze");
         expect(supporterTier(now - 30 * DAY, now).badge).toBe("supporter-silver");
-        expect(supporterTier(now - 300 * DAY, now).badge).toBe("supporter-ruby")
+        // A level a month for six months: Gold at 2, Sapphire at 4, Ruby at 6
+        expect(supporterTier(now - 59 * DAY, now).badge).toBe("supporter-silver");
+        expect(supporterTier(now - 60 * DAY, now).badge).toBe("supporter-gold");
+        expect(supporterTier(now - 90 * DAY, now).badge).toBe("supporter-emerald");
+        expect(supporterTier(now - 120 * DAY, now).badge).toBe("supporter-sapphire");
+        expect(supporterTier(now - 150 * DAY, now).badge).toBe("supporter-amethyst");
+        expect(supporterTier(now - 180 * DAY, now).badge).toBe("supporter-ruby");
+        expect(supporterTier(now - 364 * DAY, now).badge).toBe("supporter-ruby");
         // A year is the top
         expect(supporterTier(now - 365 * DAY, now).badge).toBe("supporter-prismatic");
         expect(supporterTier(now - 4000 * DAY, now).badge).toBe("supporter-prismatic");
         // A start date in the future (time taken away) is just day 0
         expect(supportedDays(now + 10 * DAY, now)).toBe(0);
-        expect(nextSupporterTier(now - 100 * DAY, now)).toEqual({ tier: SUPPORTER_TIERS[4], at: now - 100 * DAY + 122 * DAY });
+        expect(nextSupporterTier(now - 100 * DAY, now)).toEqual({ tier: SUPPORTER_TIERS[4], at: now - 100 * DAY + 120 * DAY });
         expect(nextSupporterTier(now - 4000 * DAY, now)).toBeUndefined();
         expect(isSupporterBadge("supporter-ruby")).toBe(true);
         expect(isSupporterBadge("developer")).toBe(false);
@@ -137,5 +145,22 @@ describe("images", () => {
     test("data URLs only for images", () => {
         expect(imageDataUrl(png)).toBe(`data:image/png;base64,${btoa(String.fromCharCode(...png))}`);
         expect(imageDataUrl(new TextEncoder().encode("<html>"))).toBeUndefined();
+    });
+});
+
+describe("profile badges: unchanged lists", () => {
+    const badge = (id: string, description = id) => ({ id, description, iconSrc: `data:${id}`, plugin: "P" });
+
+    test("the same badges in new objects are the same list", () => {
+        expect(sameBadges([badge("a"), badge("b")], [badge("a"), badge("b")])).toBe(true);
+        expect(sameBadges([], [])).toBe(true);
+    });
+
+    test("any difference in what's drawn, where it links or the order is a change", () => {
+        expect(sameBadges([badge("a")], [badge("a", "Last seen 5m ago")])).toBe(false);
+        expect(sameBadges([badge("a")], [{ ...badge("a"), link: "https://discord.com/channels/@me/1/2" }])).toBe(false);
+        expect(sameBadges([badge("a"), badge("b")], [badge("b"), badge("a")])).toBe(false);
+        expect(sameBadges([badge("a")], [badge("a"), badge("b")])).toBe(false);
+        expect(sameBadges(undefined, [])).toBe(false);
     });
 });

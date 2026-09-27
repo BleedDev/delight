@@ -6,11 +6,13 @@ import { Logger } from "../logger";
 import { Native } from "../native";
 import { loadedModulesMatching, replaceLive } from "../patching/live";
 import { getPatchRecords, registerPatches, SourcePatch, unregisterPatches } from "../patching/source";
+import { Perf } from "../perf";
 import * as JsxRuntime from "../react/jsx-runtime";
 import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
 import { React, ReactDOM } from "../webpack/common";
 import { wreq } from "../webpack/runtime";
+import { PluginActivity } from "./activity";
 import { PluginContext } from "./context";
 import type { PluginDefinition } from "./types";
 
@@ -67,7 +69,12 @@ function evaluate({ manifest, code }: PluginPayload): PluginDefinition {
         throw new Error(`${manifest.id} tried to require "${name}". Only @evi/api and react are provided, bundle anything else.`);
     };
 
-    const fn = new Function("module", "exports", "require", `${code}\n//# sourceURL=evi://plugins/${manifest.id}.js`);
+    // Its own fetch, XMLHttpRequest and WebSocket, which note what it contacts (activity.ts). They're an
+    // outer function's parameters so a bundle declaring its own `const fetch` still evaluates, and the
+    // wrapper starts on the bundle's first line so stack line numbers don't move.
+    const net = PluginActivity.networkScope(manifest.id);
+    const outer = new Function("fetch", "XMLHttpRequest", "WebSocket", `return function (module, exports, require) {${code}\n};\n//# sourceURL=evi://plugins/${manifest.id}.js`);
+    const fn = outer(net.fetch, net.XMLHttpRequest, net.WebSocket);
     fn(module, module.exports, require);
 
     const definition = module.exports?.default ?? module.exports;
@@ -140,7 +147,15 @@ async function start(state: PluginState) {
     try {
         if (definition.css) ctx.addStyle(definition.css);
         for (const [type, handler] of Object.entries(definition.flux ?? {})) ctx.flux.subscribe(type, handler.bind(definition));
-        await definition.start?.(ctx);
+        // Only until start() returns: an async start's awaits don't hold up Discord
+        const began = Perf.begin();
+        let started: void | Promise<void>;
+        try {
+            started = definition.start?.(ctx);
+        } finally {
+            Perf.end(Perf.site(state.manifest.id, "start", "start()"), began);
+        }
+        await started;
         logger.info(`Started ${state.manifest.name}`);
     } catch (err) {
         logger.error(`Failed to start ${state.manifest.name}`, err);
@@ -382,8 +397,9 @@ export const PluginManager = {
         return () => void listeners.delete(listener);
     },
 
-    /** Target of $self in source patches */
+    /** Target of $self in source patches: the definition, its functions measured (perf.ts) */
     self(id: string) {
-        return plugins.get(id)?.definition;
+        const definition = plugins.get(id)?.definition;
+        return definition && Perf.measuredSelf(id, definition);
     },
 };

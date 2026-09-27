@@ -5,6 +5,7 @@
  */
 import type { AccountUser } from "@shared/account";
 
+import { t } from "../i18n";
 import { Native } from "../native";
 import { React } from "../webpack/common";
 import { Button, Section, Status, Text } from "./components";
@@ -40,7 +41,7 @@ export function AccountTab() {
         if (state.kind !== "waiting") return;
         const timer = setInterval(async () => {
             if (Date.now() - state.since > CODE_TTL_MS) {
-                setState({ kind: "idle", note: "That code expired. Get a new one to try again." });
+                setState({ kind: "idle", note: t("account.codeExpired") });
                 return;
             }
             const res = await Native.accountStatus();
@@ -57,43 +58,43 @@ export function AccountTab() {
 
     return (
         <Section
-            title="Evi account"
-            description="Link this install to your Discord account on evi.rest. Your stars follow you to every PC you link, and your dashboard shows them all."
+            title={t("account.title")}
+            description={t("account.description")}
         >
             <div className="dl-account-card" aria-live="polite">
-                {state.kind === "loading" && <Text variant="text-sm/normal" color="text-muted">Checking…</Text>}
+                {state.kind === "loading" && <Text variant="text-sm/normal" color="text-muted">{t("account.checking")}</Text>}
 
                 {state.kind === "offline" && (
                     <>
                         <div className="dl-account-text">
-                            <Text variant="text-md/semibold" color="text-strong">Couldn’t reach evi.rest</Text>
+                            <Text variant="text-md/semibold" color="text-strong">{t("account.offline")}</Text>
                             <Status tone="danger">{state.error}</Status>
                         </div>
-                        <Button onClick={() => { setState({ kind: "loading" }); check(); }}>Try again</Button>
+                        <Button onClick={() => { setState({ kind: "loading" }); check(); }}>{t("common.tryAgain")}</Button>
                     </>
                 )}
 
                 {(state.kind === "idle" || state.kind === "starting") && (
                     <>
                         <div className="dl-account-text">
-                            <Text variant="text-md/semibold" color="text-strong">This install isn’t linked</Text>
-                            <Text variant="text-sm/normal" color="text-subtle">Your browser opens evi.rest, where you log in with Discord and confirm.</Text>
+                            <Text variant="text-md/semibold" color="text-strong">{t("account.notLinked")}</Text>
+                            <Text variant="text-sm/normal" color="text-subtle">{t("account.notLinkedHint")}</Text>
                             {state.kind === "idle" && state.note && <Status tone="danger">{state.note}</Status>}
                         </div>
                         <Button variant="accent" icon="link" onClick={start} disabled={state.kind === "starting"}>
-                            {state.kind === "starting" ? "Opening evi.rest…" : "Link to your account"}
+                            {state.kind === "starting" ? t("account.opening") : t("account.link")}
                         </Button>
                     </>
                 )}
 
                 {state.kind === "waiting" && (
                     <div className="dl-account-waiting">
-                        <Text variant="text-sm/normal" color="text-subtle">Confirm this code on evi.rest. Log in with Discord there if it asks.</Text>
+                        <Text variant="text-sm/normal" color="text-subtle">{t("account.confirmCode")}</Text>
                         <span className="dl-account-code">{state.code}</span>
-                        <Status tone="muted">Waiting for you to confirm…</Status>
+                        <Status tone="muted">{t("account.waiting")}</Status>
                         <div className="dl-account-actions">
-                            <Button onClick={start}>Get a new code</Button>
-                            <Button onClick={() => setState({ kind: "idle" })}>Cancel</Button>
+                            <Button onClick={start}>{t("account.newCode")}</Button>
+                            <Button onClick={() => setState({ kind: "idle" })}>{t("common.cancel")}</Button>
                         </div>
                     </div>
                 )}
@@ -103,9 +104,9 @@ export function AccountTab() {
                         <img className="dl-account-avatar" src={avatarUrl(state.user)} alt="" width={40} height={40} />
                         <div className="dl-account-text">
                             <Text variant="text-md/semibold" color="text-strong">{state.user.globalName || state.user.username}</Text>
-                            <Status tone="success" quiet>{`Linked as @${state.user.username}`}</Status>
+                            <Status tone="success" quiet>{t("account.linkedAs", { username: state.user.username })}</Status>
                         </div>
-                        <Button onClick={() => Native.openDashboard()}>Open dashboard</Button>
+                        <Button onClick={() => Native.openDashboard()}>{t("account.openDashboard")}</Button>
                     </>
                 )}
             </div>

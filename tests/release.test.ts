@@ -13,7 +13,7 @@ describe("Evi's releases", () => {
         });
         expect(release).toEqual({
             tag: "v0.3.0", version: "0.3.0", url: "https://github.com/BleedDev/evi/releases/tag/v0.3.0",
-            notes: "## New\n- Updates from the app", publishedAt: "2026-09-27T10:00:00Z",
+            notes: "## New\n- Updates from the app", publishedAt: "2026-09-27T10:00:00Z", prerelease: false,
             exeUrl: asset("evi.exe").browser_download_url, checksumUrl: asset("evi.exe.sha256").browser_download_url,
         });
     });
@@ -26,7 +26,7 @@ describe("Evi's releases", () => {
     });
 
     test("versions", () => {
-        expect(cleanVersion("v1.2.3-beta")).toBe("1.2.3");
+        expect(cleanVersion("v1.2.3-beta")).toBe("1.2.3-beta");
         expect(isNewerRelease("v0.3.0", "0.2.0")).toBe(true);
         expect(isNewerRelease("v0.2.0", "0.2.0")).toBe(false);
         expect(isNewerRelease("v0.10.0", "0.9.9")).toBe(true);

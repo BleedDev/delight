@@ -145,6 +145,9 @@ function replaceModule(id: string): LiveOutcome {
     return { id, ok: true };
 }
 
+/** Factory sources, read once: every toggle of a patching plugin searches all loaded modules */
+const sources = new WeakMap<Function, string>();
+
 /** Loaded modules that any of these patches target */
 export function loadedModulesMatching(patches: SourcePatch[]): string[] {
     if (!wreq || !patches.length) return [];
@@ -152,7 +155,8 @@ export function loadedModulesMatching(patches: SourcePatch[]): string[] {
     for (const id in wreq.c) {
         const factory = getOriginalFactory(wreq.m[id]);
         if (!factory) continue;
-        const source = Function.prototype.toString.call(factory);
+        let source = sources.get(factory);
+        if (source === undefined) sources.set(factory, source = Function.prototype.toString.call(factory));
         if (patches.some(p => matchesFind(source, p.find))) ids.push(id);
     }
     return ids;
@@ -182,16 +186,22 @@ export function refreshReactTree() {
     let fiber = key ? (container as any)[key] : undefined;
     if (!fiber) return;
 
+    const components: React.Component[] = [];
     const stack = [fiber];
     let visited = 0;
     while (stack.length && visited++ < 50_000) {
         fiber = stack.pop();
-        if (fiber.stateNode instanceof React.Component) {
-            try {
-                fiber.stateNode.forceUpdate();
-            } catch { }
-        }
+        if (fiber.stateNode instanceof React.Component) components.push(fiber.stateNode);
         if (fiber.sibling) stack.push(fiber.sibling);
         if (fiber.child) stack.push(fiber.child);
     }
+    // As a transition: re-rendering all of Discord at once froze it for a moment on every plugin
+    // toggle. This way React renders it in slices and keeps clicks and scrolling going in between.
+    React.startTransition(() => {
+        for (const component of components) {
+            try {
+                component.forceUpdate();
+            } catch { }
+        }
+    });
 }

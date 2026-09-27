@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { Native } from "../native";
 import { Settings } from "../settings";
 import { QuickCss } from "../styles";
@@ -16,11 +17,11 @@ export function QuickCssTab() {
 
     return (
         <div className="dl-tab">
-            <SafeModeHint what="Quick CSS edits" />
+            <SafeModeHint what="quickCss" />
             <SwitchRow
                 id="dl-quickcss-toggle"
-                label="Apply Quick CSS"
-                description="Styles apply as you type. Saving the file in another editor updates Discord too."
+                label={t("quickCss.apply")}
+                description={t("quickCss.applyHint")}
                 checked={applied}
                 onChange={v => {
                     Settings.update(d => void (d.quickCss = v));
@@ -29,11 +30,11 @@ export function QuickCssTab() {
             />
             <Section
                 id="dl-quickcss-editor"
-                title="Editor"
-                description="Anything here goes on top of Discord and your themes."
-                action={<Button icon="pencil" onClick={() => Native.openPath("quickCss")}>Open in your editor</Button>}
+                title={t("quickCss.editor")}
+                description={t("quickCss.editorHint")}
+                action={<Button icon="pencil" onClick={() => Native.openPath("quickCss")}>{t("quickCss.openInEditor")}</Button>}
             >
-                <CodeArea id="dl-quickcss" label="Quick CSS" placeholder="/* Anything here is applied on top of Discord */" value={css} onChange={onInput} />
+                <CodeArea id="dl-quickcss" label="Quick CSS" placeholder={t("quickCss.placeholder")} value={css} onChange={onInput} />
             </Section>
         </div>
     );

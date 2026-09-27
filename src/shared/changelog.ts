@@ -33,6 +33,26 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.5.0",
+        date: "2026-09-27",
+        sections: {
+            added: [
+                "**Evi Setup.** A small installer with a window: pick your Discord, click Install Evi or Uninstall Evi. It checks for a newer Evi first and downloads it, so it's a few MB instead of over 100.",
+                "**Evi in your language.** Evi's menus follow Discord's language: Spanish, Portuguese, French, German, Turkish, Russian, Polish and Japanese. Plugins can be translated too.",
+                "**See what a plugin did.** A plugin's details list the sites it contacted and when, and point out ones its code never mentions.",
+                "**Beta versions.** Turn on Get beta versions in Updates to get new Evi versions a few days early.",
+                "**Plugin Author badge.** Anyone whose plugin makes it into the store gets it on their profile.",
+            ],
+            improved: [
+                "Turning a plugin on or off no longer freezes Discord for a moment.",
+                "**Supporter levels come monthly.** A new badge every month for your first six months, from Silver at one month to Ruby at six, then Prismatic at one year.",
+            ],
+            fixed: [
+                "Clicking a plugin's switch no longer scrolls Discord's settings away from it.",
+            ],
+        },
+    },
+    {
         version: "0.4.0",
         date: "2026-09-27",
         cover: "0.4.0",

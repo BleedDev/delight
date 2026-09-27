@@ -5,6 +5,7 @@
  */
 import { isPluginEnabled } from "@shared/ipc";
 
+import { t } from "./i18n";
 import { PluginManager } from "./plugins/manager";
 import { PullMemory, pullKey, readPullMemory, unseenPulls } from "./pullMemory";
 import { SafeMode } from "./safeMode";
@@ -45,7 +46,7 @@ const pulledNow = () => PluginManager.getSnapshot()
 function announce() {
     const { due, memory } = unseenPulls(pulledNow(), readMemory(), Date.now());
     writeMemory(memory);
-    for (const p of due) showToast(`${p.name} was turned off by Evi`, { type: "failure", duration: 6000 });
+    for (const p of due) showToast(t("toast.pulled", { name: p.name }), { type: "failure", duration: 6000 });
 }
 
 let started = false;

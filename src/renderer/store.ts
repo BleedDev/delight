@@ -5,6 +5,7 @@ import { PulledPlugin, pullFor } from "@shared/pulls";
 import { starKey, StarsSnapshot } from "@shared/stars";
 import { InstalledPlugin, InstalledTheme, RegistryEntry, storeAction, StoreProgress, StoreResult, ThemeEntry } from "@shared/store";
 
+import { t } from "./i18n";
 import { Logger } from "./logger";
 import { Native } from "./native";
 import { PluginManager } from "./plugins/manager";
@@ -74,10 +75,10 @@ function setOp(kind: StoreKind, id: string, op: StoreOp | undefined) {
 }
 
 const phaseLabel = ({ phase, done, total }: StoreProgress) => ({
-    downloading: total > 1 ? `Downloading file ${Math.min(done + 1, total)} of ${total}…` : "Downloading…",
-    verifying: "Checking files…",
-    installing: "Installing…",
-    removing: "Removing…",
+    downloading: total > 1 ? t("op.downloadingFile", { n: Math.min(done + 1, total), count: total }) : t("common.downloading"),
+    verifying: t("op.verifying"),
+    installing: t("op.installing"),
+    removing: t("op.removing"),
 })[phase];
 
 function listen() {
@@ -91,7 +92,7 @@ function listen() {
 
 async function run(kind: StoreKind, id: string, label: string, action: () => Promise<StoreResult>) {
     listen();
-    if (state[opsKey(kind)][id]?.type === "busy") return { ok: false, error: "Already in progress" } as StoreResult;
+    if (state[opsKey(kind)][id]?.type === "busy") return { ok: false, error: t("op.alreadyRunning") } as StoreResult;
     setOp(kind, id, { type: "busy", label });
     let result: StoreResult;
     try {
@@ -112,11 +113,11 @@ async function run(kind: StoreKind, id: string, label: string, action: () => Pro
  */
 /** What a fresh install says, from how the plugin actually ended up rather than what was asked */
 function installedMessage(plugin: ReturnType<typeof PluginManager.get>) {
-    if (SafeMode.active) return "Installed. It turns on when you exit safe mode";
-    if (!plugin) return "Installed. It turns on the next time Discord starts";
-    if (plugin.error) return "Installed, but it couldn’t start. Its crash report is in the Plugins list";
-    if (plugin.needsReload) return "Installed. Restart Discord to finish turning it on";
-    return plugin.running ? "Installed and turned on" : "Installed";
+    if (SafeMode.active) return t("op.installedSafeMode");
+    if (!plugin) return t("op.installedNextStart");
+    if (plugin.error) return t("op.installedCrashed");
+    if (plugin.needsReload) return t("op.installedRestart");
+    return plugin.running ? t("op.installedOn") : t("store.installed");
 }
 
 function installedPlugin(id: string): InstalledPlugin | undefined {
@@ -258,13 +259,13 @@ export const Store = {
      * only passes after the user confirmed they trust it with full access to their computer.
      */
     async install(id: string, options: { allowNative?: boolean; } = {}) {
-        if (Store.pluginAction(id) === "pulled") return { ok: false, error: "Evi pulled this version" } as StoreResult;
+        if (Store.pluginAction(id) === "pulled") return { ok: false, error: t("op.pulled") } as StoreResult;
         const updating = !!state.installed[id];
         // Switched on before it arrives, so it starts however main's announcement and its answer are
         // ordered (and on the next start of Discord, if neither reaches this page)
         const wasOn = Settings.data.plugins[id]?.enabled;
         if (!updating) Settings.update(d => void ((d.plugins[id] ??= {}).enabled = true));
-        const result = await run("plugin", id, "Starting…", () => Native.storeInstall(id, options));
+        const result = await run("plugin", id, t("op.starting"), () => Native.storeInstall(id, options));
         if (!result.ok) {
             if (!updating) Settings.update(d => {
                 const entry = d.plugins[id];
@@ -277,7 +278,7 @@ export const Store = {
 
         set({ installed: { ...state.installed, [id]: { id, version: result.version, fromStore: true } } });
         if (updating) {
-            setOp("plugin", id, { type: "done", message: `Updated to v${result.version}` });
+            setOp("plugin", id, { type: "done", message: t("op.updatedTo", { version: result.version }) });
             return result;
         }
         const plugin = await PluginManager.whenLoaded(id);
@@ -287,32 +288,32 @@ export const Store = {
     },
 
     async uninstall(id: string) {
-        const result = await run("plugin", id, "Removing…", () => Native.storeUninstall(id));
+        const result = await run("plugin", id, t("op.removing"), () => Native.storeUninstall(id));
         if (!result.ok) return result;
 
         const installed = { ...state.installed };
         delete installed[id];
         set({ installed });
-        setOp("plugin", id, { type: "done", message: "Uninstalled" });
+        setOp("plugin", id, { type: "done", message: t("op.uninstalled") });
         return result;
     },
 
     /** Installs or updates a theme; a new one is turned on straight away */
     async installTheme(id: string) {
         const updating = !!state.installedThemes[id];
-        const result = await run("theme", id, "Starting…", () => Native.storeInstallTheme(id));
+        const result = await run("theme", id, t("op.starting"), () => Native.storeInstallTheme(id));
         if (!result.ok) return result;
 
         const file = `${id}.css`;
         set({ installedThemes: { ...state.installedThemes, [id]: { id, version: result.version, file, fromStore: true } } });
         if (!updating) Themes.setEnabled(file, true);
-        setOp("theme", id, { type: "done", message: updating ? `Updated to v${result.version}` : "Installed and turned on" });
+        setOp("theme", id, { type: "done", message: updating ? t("op.updatedTo", { version: result.version }) : t("op.installedOn") });
         return result;
     },
 
     async uninstallTheme(id: string) {
         const file = state.installedThemes[id]?.file;
-        const result = await run("theme", id, "Removing…", () => Native.storeUninstallTheme(id));
+        const result = await run("theme", id, t("op.removing"), () => Native.storeUninstallTheme(id));
         if (!result.ok) return result;
 
         const installedThemes = { ...state.installedThemes };
@@ -320,7 +321,7 @@ export const Store = {
         set({ installedThemes });
         // Don't leave a dangling "on" behind for a file that's gone
         if (file && Themes.isEnabled(file)) Themes.setEnabled(file, false);
-        setOp("theme", id, { type: "done", message: "Uninstalled" });
+        setOp("theme", id, { type: "done", message: t("op.uninstalled") });
         return result;
     },
 
@@ -364,10 +365,10 @@ export const Store = {
         const updated = [...plugins.updated, ...themes.updated];
         if (updated.length) {
             logger.info(`Auto-updated ${updated.join(", ")}`);
-            showToast(updated.length === 1 ? `Evi updated ${updated[0]}` : `Evi updated ${updated.length} plugins and themes`, { type: "success" });
+            showToast(updated.length === 1 ? t("toast.autoUpdatedOne", { name: updated[0] }) : t("toast.autoUpdatedMany", { count: updated.length }), { type: "success" });
         }
         if (plugins.skippedNative.length) {
-            showToast(`${plugins.skippedNative.join(", ")} ${plugins.skippedNative.length === 1 ? "has an update" : "have updates"} waiting for your OK in Evi's Plugins`, { duration: 6000 });
+            showToast(t("toast.nativeWaiting", { names: plugins.skippedNative.join(", "), count: plugins.skippedNative.length }), { duration: 6000 });
         }
     },
 

@@ -5,6 +5,7 @@
 import type { RecentChange, SafeModeInfo } from "@shared/ipc";
 import { isStillActive, pickSuspect } from "@shared/safeMode";
 
+import { t, timeAgo as ago, useLocale } from "../i18n";
 import { PluginManager } from "../plugins/manager";
 import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
@@ -14,30 +15,14 @@ import { filters, waitFor } from "../webpack/find";
 import { whenAppReady } from "./appReady";
 import { Button, Icon, IconButton, useExit, useStore } from "./components";
 import { ensureStyles } from "./index";
-
-const ACTIONS: Record<RecentChange["action"], string> = {
-    enabled: "turned on",
-    settings: "settings changed",
-    installed: "added",
-    updated: "updated",
-    edited: "edited",
-};
+import { DiscordContext } from "./discordContext";
 
 const reasons: Record<SafeModeInfo["reason"], (info: SafeModeInfo) => string> = {
-    "crash-loop": info => `Discord didn’t finish starting the last ${info.failures} times, so Evi started it without plugins, themes or Quick CSS.`,
-    "renderer-crash": () => "Discord crashed several times in a row, so Evi turned off plugins, themes and Quick CSS.",
-    "flag": () => "Discord was started with --evi-safe, so plugins, themes and Quick CSS are off for this session.",
+    "crash-loop": info => t("safeMode.reason.crashLoop", { count: info.failures }),
+    "renderer-crash": () => t("safeMode.reason.rendererCrash"),
+    "flag": () => t("safeMode.reason.flag"),
 };
 
-const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-function ago(at: number) {
-    const seconds = Math.round((at - Date.now()) / 1000);
-    const units = [["day", 86400], ["hour", 3600], ["minute", 60]] as const;
-    for (const [unit, size] of units) {
-        if (Math.abs(seconds) >= size) return relative.format(Math.round(seconds / size), unit);
-    }
-    return "just now";
-}
 
 function nameOf(change: RecentChange) {
     if (change.kind === "plugin") return PluginManager.get(change.id)?.manifest.name ?? change.id;
@@ -46,8 +31,11 @@ function nameOf(change: RecentChange) {
 }
 
 function describe(change: RecentChange) {
-    const kind = change.kind === "plugin" ? "plugin" : change.kind === "theme" ? "theme" : "";
-    return `${kind ? `${kind}, ` : ""}${ACTIONS[change.action]} ${ago(change.at)}`;
+    const action = t(`safeMode.action.${change.action}`);
+    const when = ago(change.at);
+    if (change.kind === "plugin") return t("safeMode.changedPlugin", { action, when });
+    if (change.kind === "theme") return t("safeMode.changedTheme", { action, when });
+    return t("safeMode.changed", { action, when });
 }
 
 export function SafeModeNotice({ onDismiss }: { onDismiss?(): void; }) {
@@ -77,21 +65,21 @@ export function SafeModeNotice({ onDismiss }: { onDismiss?(): void; }) {
         <section className="dl-safe" aria-labelledby="dl-safe-title" data-reason={info.reason}>
             <div className="dl-safe-head">
                 <span className="dl-safe-icon"><Icon name="warning" size={18} /></span>
-                <h2 className="dl-safe-title" id="dl-safe-title">Evi is in safe mode</h2>
-                {onDismiss && <IconButton icon="close" label="Hide safe mode notice" onClick={onDismiss} />}
+                <h2 className="dl-safe-title" id="dl-safe-title">{t("safeMode.title")}</h2>
+                {onDismiss && <IconButton icon="close" label={t("safeMode.hide")} onClick={onDismiss} />}
             </div>
-            <p className="dl-safe-text">{reasons[info.reason](info)} Discord itself works normally.</p>
+            <p className="dl-safe-text">{reasons[info.reason](info)} {t("safeMode.discordWorks")}</p>
             {suspect ? (
                 <p className="dl-safe-text">
-                    Most recent change: <strong className="dl-safe-suspect">{nameOf(suspect)}</strong>
+                    {t("safeMode.mostRecent")} <strong className="dl-safe-suspect">{nameOf(suspect)}</strong>
                     <span className="dl-safe-meta"> ({describe(suspect)})</span>
                 </p>
             ) : (
-                <p className="dl-safe-text">No recent plugin, theme or Quick CSS changes were recorded.</p>
+                <p className="dl-safe-text">{t("safeMode.noChanges")}</p>
             )}
             {others.length > 0 && (
                 <div className="dl-safe-text">
-                    Also changed recently:
+                    {t("safeMode.alsoChanged")}
                     <ul className="dl-safe-changes">
                         {others.map(c => (
                             <li key={`${c.kind}:${c.id}:${c.action}`}>
@@ -104,22 +92,22 @@ export function SafeModeNotice({ onDismiss }: { onDismiss?(): void; }) {
             <div className="dl-safe-actions">
                 {suspect && (
                     <Button variant="accent" disabled={busy} onClick={run(() => SafeMode.disableAndExit(suspect))}>
-                        Disable {nameOf(suspect)} and restart
+                        {t("safeMode.disableAndRestart", { name: nameOf(suspect) })}
                     </Button>
                 )}
-                <Button disabled={busy} onClick={run(() => SafeMode.exit())}>Exit safe mode and restart</Button>
+                <Button disabled={busy} onClick={run(() => SafeMode.exit())}>{t("safeMode.exitAndRestart")}</Button>
             </div>
         </section>
     );
 }
 
 /** One line for the Themes and Quick CSS tabs */
-export function SafeModeHint({ what }: { what: string; }) {
+export function SafeModeHint({ what }: { what: "quickCss" | "themes"; }) {
     if (!SafeMode.active) return null;
     return (
         <div className="dl-banner" role="status">
             <Icon name="warning" />
-            <span>Safe mode is on: {what} aren’t applied until you exit it from the Plugins tab.</span>
+            <span>{t(what === "themes" ? "safeMode.hint.themes" : "safeMode.hint.quickCss")}</span>
         </div>
     );
 }
@@ -130,6 +118,7 @@ function FloatingNotice({ onClose }: { onClose(): void; }) {
 }
 
 function Floating() {
+    useLocale();
     const [open, setOpen] = React.useState(true);
     return open ? <FloatingNotice onClose={() => setOpen(false)} /> : null;
 }
@@ -143,7 +132,7 @@ export function showSafeModeNotice() {
         const container = document.createElement("div");
         container.className = "dl-root";
         document.body.append(container);
-        createRoot(container).render(<Floating />);
+        createRoot(container).render(<DiscordContext><Floating /></DiscordContext>);
     };
     // react-dom/client loads after React and Flux, which is all onCommonReady waits for
     waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {

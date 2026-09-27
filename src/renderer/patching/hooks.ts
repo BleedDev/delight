@@ -7,6 +7,7 @@
  * or filters them, and a call allocates one context object (plus one per `instead` hook).
  */
 import { Logger } from "../logger";
+import { Perf, Site } from "../perf";
 import { unlazy } from "../utils/lazy";
 
 export interface HookContext<Args extends any[] = any[], Result = any> {
@@ -36,6 +37,8 @@ export type HookCallback<Args extends any[] = any[], Result = any> = (ctx: HookC
 interface HookEntry {
     callback: HookCallback;
     owner: string;
+    /** Where its time is charged (perf.ts) */
+    site: Site;
 }
 
 interface HookedFunction {
@@ -82,7 +85,13 @@ class Call implements HookContext {
     }
 
     callOriginal(...args: any[]) {
-        return runInstead(this.record, this.self, args, this.newTarget, this.insteads, this.next);
+        // Whatever runs underneath is not the calling hook's time
+        const start = Perf.begin();
+        try {
+            return runInstead(this.record, this.self, args, this.newTarget, this.insteads, this.next);
+        } finally {
+            Perf.pass(start);
+        }
     }
 }
 
@@ -90,12 +99,15 @@ function runInstead(record: HookedFunction, self: any, args: any[], newTarget: F
     if (index < 0) return invoke(record, self, args, newTarget);
 
     const entry = insteads[index];
+    const start = Perf.begin();
     try {
         return entry.callback(new Call(record, self, args, newTarget, insteads, index - 1));
     } catch (err) {
         logger.error(`instead hook of ${entry.owner} on ${String(record.key)} threw, skipping it`, err);
-        return runInstead(record, self, args, newTarget, insteads, index - 1);
+    } finally {
+        Perf.end(entry.site, start);
     }
+    return runInstead(record, self, args, newTarget, insteads, index - 1);
 }
 
 function report(kind: HookKind, entry: HookEntry, record: HookedFunction, err: unknown) {
@@ -110,10 +122,13 @@ function createWrapper(record: HookedFunction) {
         const ctx = new Call(record, this, args, newTarget, instead, instead.length - 1);
 
         for (let i = 0; i < before.length; i++) {
+            const start = Perf.begin();
             try {
                 before[i].callback(ctx);
             } catch (err) {
                 report("before", before[i], record, err);
+            } finally {
+                Perf.end(before[i].site, start);
             }
         }
 
@@ -122,11 +137,14 @@ function createWrapper(record: HookedFunction) {
             : invoke(record, this, ctx.args, newTarget);
 
         for (let i = 0; i < after.length; i++) {
+            const start = Perf.begin();
             try {
                 const value = after[i].callback(ctx);
                 if (value !== undefined) ctx.result = value;
             } catch (err) {
                 report("after", after[i], record, err);
+            } finally {
+                Perf.end(after[i].site, start);
             }
         }
 
@@ -196,7 +214,7 @@ export function hook<T extends object, K extends keyof T>(
         byKey.set(key, record);
     }
 
-    const entry: HookEntry = { callback, owner };
+    const entry: HookEntry = { callback, owner, site: Perf.site(owner, "hook", `${kind} ${hookedName(target, key, record.original)}`) };
     const rec = record;
     rec[kind] = [...rec[kind], entry];
 
@@ -217,6 +235,27 @@ export function hook<T extends object, K extends keyof T>(
         else if (rec.descriptor.configurable) Object.defineProperty(current, rec.key, rec.descriptor);
         else current[rec.key] = rec.original;
     };
+}
+
+const readable = (fn: any): string | undefined => {
+    const name = fn?.displayName ?? fn?.name;
+    // Minified names ("e", "Z") say nothing
+    return typeof name === "string" && name.length > 2 && name !== "Object" && name !== "Function" ? name : undefined;
+};
+
+/**
+ * What the Performance tab calls a hooked function. Export keys are minified ("Z", "ZP"), so the
+ * store it's on ("UserStore.getUser") or the function's own name is preferred when there is one.
+ */
+function hookedName(target: any, key: PropertyKey, fn: Function) {
+    const k = String(key);
+    try {
+        const holder = typeof target === "object" ? readable(target.constructor) : undefined;
+        if (holder) return `${holder}.${k}`;
+        const own = readable(fn);
+        if (own && own !== k) return k.length <= 2 ? own : `${k} (${own})`;
+    } catch { }
+    return k;
 }
 
 /** The unhooked version of a possibly hooked function */

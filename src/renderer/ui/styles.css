@@ -245,6 +245,156 @@
 
 /* ---- layout -------------------------------------------------------------------------------- */
 
+/* A page: its tabs along the top, the tab it's on below */
+.dl-page-view {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Tabs like Discord's settings: words on a divider, the current one underlined in the accent */
+.dl-tabbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 24px;
+    border-block-end: 1px solid var(--dl-border-divider);
+}
+
+.dl-tabbar-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-block-end: -1px;
+    padding: 8px 0 10px;
+    border: 0;
+    border-block-end: 2px solid transparent;
+    background: none;
+    color: var(--dl-interactive);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 20px;
+    cursor: pointer;
+    transition: color var(--dl-duration-fast) ease-out, border-color var(--dl-duration-fast) ease-out;
+}
+
+@media (hover: hover) {
+    .dl-tabbar-item:hover { color: var(--dl-interactive-hover); }
+}
+
+.dl-tabbar-item[aria-selected="true"] {
+    border-block-end-color: var(--dl-brand);
+    color: var(--dl-interactive-active);
+}
+
+.dl-tabbar-item:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Things waiting on you, Discord's red mention pill */
+.dl-tabbar-count {
+    min-inline-size: 16px;
+    padding-inline: 5px;
+    border-radius: var(--dl-radius-round);
+    background: var(--status-danger, #da373c);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+}
+
+/* Lists with a toolbar on top sit closer together */
+.dl-tab-compact {
+    gap: 16px;
+}
+
+/* A dropdown in a toolbar row, next to the search field */
+.dl-toolbar-select {
+    flex: none;
+    inline-size: 190px;
+}
+
+/* A folded section's toggle: chevron and title, the chevron turns when it opens */
+.dl-disclosure {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    color: var(--dl-text-subtle);
+    font: inherit;
+    cursor: pointer;
+}
+
+.dl-disclosure > svg { transition: rotate var(--dl-duration-base) ease-out; }
+.dl-disclosure[aria-expanded="true"] > svg { rotate: 90deg; }
+
+@media (hover: hover) {
+    .dl-disclosure:hover > * { color: var(--dl-text-strong); }
+}
+
+.dl-disclosure:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Page numbers under a list */
+.dl-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    padding-block-start: 4px;
+}
+
+.dl-page {
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: 32px;
+    block-size: 32px;
+    padding-inline: 8px;
+    border: 0;
+    border-radius: var(--dl-radius-control);
+    background: none;
+    color: var(--dl-interactive);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .dl-page:hover:not(:disabled) { background: var(--dl-bg-hover); color: var(--dl-interactive-hover); }
+}
+
+.dl-page[aria-current="page"] {
+    background: var(--dl-brand);
+    color: var(--dl-text-on-accent);
+}
+
+.dl-page:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.dl-page:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+.dl-page-gap {
+    min-inline-size: 20px;
+    color: var(--dl-text-muted);
+    text-align: center;
+}
+
 .dl-tab {
     display: flex;
     flex-direction: column;
@@ -693,6 +843,12 @@
     padding-inline-start: 36px;
 }
 
+.dl-switch-anchor {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+}
+
 .dl-switch {
     all: unset;
     flex: none;
@@ -1098,39 +1254,6 @@
     color: var(--dl-text-warning);
 }
 
-/* The way into the store, on top of the Plugins and Themes tabs */
-.dl-store-banner {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 20px;
-    border-radius: var(--dl-radius-group);
-    border: 1px solid var(--dl-border-group);
-    background: var(--dl-bg-group);
-}
-
-.dl-store-banner-icon {
-    display: grid;
-    flex: none;
-    place-items: center;
-    inline-size: 56px;
-    block-size: 56px;
-    border-radius: var(--dl-radius-group);
-    background: var(--dl-brand);
-    color: var(--dl-text-on-accent);
-}
-
-.dl-store-banner-text {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 4px;
-    min-inline-size: 0;
-}
-
-.dl-store-banner-text > * { margin: 0; }
-.dl-store-banner-text > p { max-inline-size: 60ch; text-wrap: pretty; }
-
 /* A letter tile standing in for an icon, the registry has no images for the list */
 .dl-store-glyph {
     display: grid;
@@ -1172,18 +1295,7 @@
     border-radius: 4px;
 }
 
-.dl-store-filters { align-items: flex-start; }
-
-.dl-store-sort {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: 8px;
-    min-inline-size: 200px;
-}
-
-.dl-store-sort > :last-child { flex: 1; }
-.dl-store-sort .dl-select { min-block-size: 32px; padding-block: 4px; font-size: 14px; }
+.dl-toolbar-select .dl-select { inline-size: 100%; }
 
 .dl-store-updates {
     display: flex;
@@ -1261,8 +1373,8 @@
 /* The store's listing: a grid of cards, each one opening the item's page */
 .dl-store-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -1272,9 +1384,9 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     min-inline-size: 0;
-    padding: 16px;
+    padding: 12px 14px;
     border-radius: var(--dl-radius-group);
     border: 1px solid var(--dl-border-group);
     background: var(--dl-bg-group);
@@ -1338,8 +1450,8 @@
     margin: 0;
     overflow: hidden;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     text-wrap: pretty;
 }
 
@@ -1365,13 +1477,16 @@
     gap: 8px;
     min-block-size: 32px;
     margin-block-start: auto;
-    padding-block-start: 10px;
+    padding-block-start: 8px;
     border-block-start: 1px solid var(--dl-border-divider);
 }
 
 .dl-store-card-foot > .dl-store-status {
     flex: 1;
     min-inline-size: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 /* GitHub-style star toggle */
@@ -1556,6 +1671,91 @@
 }
 
 /* ---- installed lists ----------------------------------------------------------------------- */
+
+/* Plugins, as cards two to a row. Same build as the store's cards, so both tabs read alike */
+.dl-plugin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dl-plugin-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-inline-size: 0;
+    padding: 12px 14px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+
+/* A problem to explain gets the whole row */
+.dl-plugin-card[data-wide] {
+    grid-column: 1 / -1;
+}
+
+.dl-plugin-card-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dl-plugin-card-top > .dl-store-glyph {
+    inline-size: 36px;
+    block-size: 36px;
+    font-size: 16px;
+    align-self: center;
+}
+
+.dl-plugin-card-title {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+
+.dl-plugin-card-title > * { margin: 0; }
+.dl-plugin-card-title h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dl-plugin-card-byline {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dl-plugin-card-desc {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    text-wrap: pretty;
+}
+
+.dl-plugin-card[data-wide] .dl-plugin-card-desc {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+}
+
+.dl-plugin-card-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-block-size: 32px;
+    margin-block-start: auto;
+    padding-block-start: 8px;
+    border-block-start: 1px solid var(--dl-border-divider);
+}
+
+.dl-plugin-card-actions { gap: 4px; }
+
+.dl-plugin-card > :is(.dl-error, .dl-row-note, .dl-crash) { margin: 0; }
 
 .dl-bulk {
     display: flex;
@@ -1997,6 +2197,28 @@
 
 .dl-plugin-details > p { margin: 0; }
 
+/* ---- plugin activity (PluginActivity.tsx) ------------------------------------------------------ */
+
+.dl-activity-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.dl-activity-empty { margin: 0; }
+
+.dl-activity-item > svg { color: var(--dl-text-subtle); }
+
+/* A host its code doesn't name: the one thing on the list worth a second look */
+.dl-activity-item[data-unexpected] {
+    background: var(--dl-bg-warning);
+    box-shadow: inset 2px 0 0 var(--dl-text-warning);
+}
+.dl-activity-item[data-unexpected] > svg { color: var(--dl-text-warning); }
+.dl-activity-item[data-unexpected]:first-child { border-start-start-radius: var(--dl-radius-group); border-start-end-radius: var(--dl-radius-group); }
+.dl-activity-item[data-unexpected]:last-child { border-end-start-radius: var(--dl-radius-group); border-end-end-radius: var(--dl-radius-group); }
+
 /* ---- end store --------------------------------------------------------------------------- */
 
 /* Discord's own inputs draw their focus border themselves: don't stack our outline on top.
@@ -2363,4 +2585,100 @@
 .dl-root .dl-check > input:focus-visible {
     outline: 2px solid var(--dl-focus-ring);
     outline-offset: 2px;
+}
+
+/* ---- performance (PerformanceTab.tsx) -------------------------------------------------------- */
+
+.dl-perf-card {
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+    overflow-x: auto;
+}
+
+.dl-perf-table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.dl-perf-table th,
+.dl-perf-table td {
+    padding: 8px 16px;
+    text-align: end;
+    white-space: nowrap;
+}
+
+.dl-perf-table thead th {
+    padding-block: 10px;
+    background: var(--dl-bg-group-head);
+    color: var(--dl-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.dl-perf-table th:first-child {
+    inline-size: 100%;
+    text-align: start;
+    white-space: normal;
+}
+
+/* A plugin's row and the details under it read as one: the divider goes above the pair */
+.dl-perf-table tbody tr:not(.dl-perf-details) {
+    border-block-start: 1px solid var(--dl-border-divider);
+}
+
+.dl-perf-table tbody th {
+    padding-inline-start: 8px;
+    font-weight: inherit;
+}
+
+.dl-perf-plugin {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-wrap: break-word;
+}
+
+/* The details row takes no space while closed; Collapse animates its height */
+.dl-perf-table .dl-perf-details > td {
+    padding: 0;
+    text-align: start;
+    white-space: normal;
+}
+
+.dl-perf-sites {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0 16px 12px 48px;
+    list-style: none;
+}
+
+.dl-stack > .dl-perf-sites {
+    padding: 0;
+}
+
+.dl-perf-sites > li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+}
+
+.dl-perf-site-name {
+    min-inline-size: 0;
+    color: var(--dl-text-default);
+    font-size: 12px;
+}
+
+.dl-perf-site-numbers {
+    margin-inline-start: auto;
+}
+
+.dl-perf-note {
+    margin: 0;
+    max-inline-size: 72ch;
+    text-wrap: pretty;
 }

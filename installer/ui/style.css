@@ -1,0 +1,568 @@
+:root {
+    color-scheme: dark;
+    /* Discord's dark palette */
+    --color-bg-page: #1e1f22;
+    --color-bg-card: #2b2d31;
+    --color-bg-card-hover: #313338;
+    --color-bg-control: #4e5058;
+    --color-bg-control-hover: #6d6f78;
+    --color-border: rgb(255 255 255 / 0.06);
+    --color-text-primary: #f2f3f5;
+    --color-text-secondary: #b5bac1;
+    --color-text-muted: #80848e;
+    --color-accent-solid: #5865f2;
+    --color-accent-hover: #4752c4;
+    --color-accent-tint: rgb(88 101 242 / 0.14);
+    --color-accent-border: rgb(88 101 242 / 0.35);
+    --color-status-ok: #23a55a;
+    --color-status-warn: #f0b232;
+    --color-status-danger: #f23f43;
+    --color-status-off: #80848e;
+    --color-focus: #00a8fc;
+
+    --radius-card: 12px;
+    --radius-control: 8px;
+    --duration-fast: 150ms;
+    --duration-base: 220ms;
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Ubuntu, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--color-text-primary);
+    background: var(--color-bg-page);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+/* ── Title bar ── */
+
+.titlebar {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    height: 32px;
+    padding-inline-start: 14px;
+}
+
+.titlebar-name {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.titlebar-button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 32px;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-secondary);
+}
+
+.titlebar-button svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+}
+
+.titlebar-button:disabled {
+    opacity: 0.35;
+}
+
+@media (hover: hover) {
+    .titlebar-button:not(:disabled):hover {
+        background: rgb(255 255 255 / 0.06);
+        color: var(--color-text-primary);
+    }
+
+    .titlebar-button.close:not(:disabled):hover {
+        background: var(--color-status-danger);
+        color: #fff;
+    }
+}
+
+/* ── Layout ── */
+
+main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: 8px 20px 20px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-block-end: 18px;
+}
+
+.logo {
+    display: block;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    outline: 1px solid rgb(255 255 255 / 0.08);
+    outline-offset: -1px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+}
+
+.subtitle {
+    margin: 2px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+}
+
+.version {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.section-label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+/* ── Update banner ── */
+
+.banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-block-end: 16px;
+    padding: 8px 8px 8px 14px;
+    border: 1px solid var(--color-accent-border);
+    border-radius: var(--radius-control);
+    background: var(--color-accent-tint);
+}
+
+.banner-text {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ── Install list ── */
+
+.installs {
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    border-radius: var(--radius-card);
+    background: var(--color-bg-card);
+}
+
+.installs-loading {
+    padding: 18px 12px;
+    color: var(--color-text-muted);
+}
+
+.install {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 50px;
+    padding: 8px 12px;
+    border-radius: var(--radius-control);
+}
+
+.install:not(.unavailable) {
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .install:not(.unavailable):hover {
+        background: var(--color-bg-card-hover);
+    }
+}
+
+.install.unavailable .install-name {
+    color: var(--color-text-muted);
+}
+
+.install-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.install-name {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.install-state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--color-status-off);
+}
+
+.state-evi .dot {
+    background: var(--color-status-ok);
+}
+
+.state-other-mod .dot {
+    background: var(--color-status-warn);
+}
+
+.state-missing .dot {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--color-status-off);
+}
+
+.state-missing .install-state {
+    color: var(--color-text-muted);
+}
+
+.install-version {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Discord's checkbox: a rounded square that fills with the accent */
+.check {
+    appearance: none;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    border: 1.5px solid var(--color-text-muted);
+    border-radius: 6px;
+    background: transparent;
+    transition: background-color var(--duration-fast) ease-out, border-color var(--duration-fast) ease-out;
+}
+
+.check::after {
+    content: "";
+    width: 10px;
+    height: 6px;
+    margin-block-start: -2px;
+    border: solid #fff;
+    border-width: 0 0 2px 2px;
+    rotate: -45deg;
+    scale: 0.4;
+    opacity: 0;
+    transition: scale var(--duration-fast) ease-out, opacity var(--duration-fast) ease-out;
+}
+
+.check:checked {
+    border-color: var(--color-accent-solid);
+    background: var(--color-accent-solid);
+}
+
+.check:checked::after {
+    scale: 1;
+    opacity: 1;
+}
+
+.check:disabled {
+    opacity: 0.4;
+}
+
+.hint {
+    margin: 10px 2px 0;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    text-wrap: pretty;
+}
+
+/* ── Buttons ── */
+
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-block-start: auto;
+    padding-block-start: 16px;
+}
+
+.button {
+    flex: 1;
+    height: 40px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius-control);
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background-color var(--duration-fast) ease-out, scale 200ms ease-out, opacity var(--duration-fast) ease-out;
+}
+
+.button.small {
+    flex: none;
+    height: 30px;
+    padding: 0 12px;
+    font-size: 13px;
+    background: var(--color-accent-solid);
+    color: #fff;
+}
+
+.button.primary {
+    background: var(--color-accent-solid);
+    color: #fff;
+}
+
+.button.secondary {
+    background: var(--color-bg-control);
+}
+
+.button:not(:disabled):active {
+    scale: 0.97;
+}
+
+.button:disabled {
+    opacity: 0.45;
+}
+
+@media (hover: hover) {
+    .button.primary:not(:disabled):hover,
+    .button.small:not(:disabled):hover {
+        background: var(--color-accent-hover);
+    }
+
+    .button.secondary:not(:disabled):hover {
+        background: var(--color-bg-control-hover);
+    }
+}
+
+/* ── Working / done ── */
+
+.status-view {
+    align-items: center;
+    padding-block-start: 28px;
+    text-align: center;
+}
+
+.status-icon {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    margin-block-end: 18px;
+}
+
+.status-icon.busy::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 3px solid rgb(255 255 255 / 0.08);
+    border-top-color: var(--color-accent-solid);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+
+.status-icon.done,
+.status-icon.failed {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+}
+
+.status-icon.done {
+    background: rgb(35 165 90 / 0.16);
+    color: var(--color-status-ok);
+}
+
+.status-icon.failed {
+    background: rgb(242 63 67 / 0.16);
+    color: var(--color-status-danger);
+}
+
+.status-icon svg {
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.status-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    text-wrap: balance;
+}
+
+.status-text {
+    min-height: 20px;
+    margin: 6px 0 0;
+    max-width: 330px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+}
+
+.outcomes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-height: 150px;
+    margin: 18px 0 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    text-align: start;
+}
+
+.outcomes:empty {
+    display: none;
+}
+
+.outcome {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-control);
+    background: var(--color-bg-card);
+    font-size: 12.5px;
+    color: var(--color-text-secondary);
+    overflow-wrap: break-word;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.outcome svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    margin-block-start: 2px;
+    fill: none;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.outcome.ok svg {
+    stroke: var(--color-status-ok);
+}
+
+.outcome.failed svg {
+    stroke: var(--color-status-danger);
+}
+
+.status-view .actions {
+    width: 100%;
+}
+
+@keyframes spin {
+    to {
+        rotate: 360deg;
+    }
+}
+
+/* ── Motion, only for people who haven't asked for less ── */
+
+@media (prefers-reduced-motion: no-preference) {
+    .view.entering {
+        animation: view-in var(--duration-base) var(--ease-out) both;
+    }
+
+    .banner:not([hidden]) {
+        animation: view-in var(--duration-base) var(--ease-out) both;
+    }
+
+    .install.entering {
+        animation: row-in var(--duration-base) var(--ease-out) both;
+        animation-delay: calc(var(--i, 0) * 30ms);
+    }
+
+    .status-icon.done svg,
+    .status-icon.failed svg {
+        animation: icon-in 260ms var(--ease-out) both;
+    }
+}
+
+@keyframes view-in {
+    from {
+        opacity: 0;
+        translate: 0 6px;
+    }
+}
+
+@keyframes row-in {
+    from {
+        opacity: 0;
+        translate: 0 4px;
+    }
+}
+
+@keyframes icon-in {
+    from {
+        opacity: 0;
+        scale: 0.25;
+        filter: blur(4px);
+    }
+}

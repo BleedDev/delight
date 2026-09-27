@@ -8,6 +8,7 @@
 import { latestRelease, mergeReleases, Release, RELEASES_URL, releasesSince, SECTION_KINDS, SectionKind } from "@shared/changelog";
 import type { ReactNode } from "react";
 
+import { I18n, t, useLocale } from "../i18n";
 import { Settings } from "../settings";
 import { createRoot, React, ReactDOM } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
@@ -15,8 +16,7 @@ import { whenAppReady } from "./appReady";
 import { cx, FocusLayer, Icon, useExit, useModal } from "./components";
 import { coverUrl } from "./covers";
 import { ensureStyles } from "./index";
-
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "long" });
+import { DiscordContext } from "./discordContext";
 
 /** The markdown Evi's notes use: **bold** lead-ins and `code` */
 export function inline(text: string) {
@@ -45,6 +45,8 @@ export function ChangelogModal({ className, titleId, title, eyebrow, subtitle, h
     /** A function gets `close`, for buttons that close it with the exit animation */
     footer?: ReactNode | ((close: () => void) => ReactNode);
 }) {
+    // Its own root: follow Discord's language here too
+    useLocale();
     const exit = useExit(onClose);
     const { ref, onKeyDown } = useModal(exit.close);
     const scrollerRef = React.useRef<HTMLDivElement>(null);
@@ -66,7 +68,7 @@ export function ChangelogModal({ className, titleId, title, eyebrow, subtitle, h
                 <div className={cx("dl-notes evi-modal", className)} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={ref} onKeyDown={onKeyDown}>
                     <FocusLayer containerRef={ref}>
                         {hero && <div className="dl-notes-hero">{hero}</div>}
-                        <button type="button" className="dl-notes-close" aria-label="Close" onClick={exit.close}>
+                        <button type="button" className="dl-notes-close" aria-label={t("common.close")} onClick={exit.close}>
                             <Icon name="close" size={20} />
                         </button>
                         <header className="dl-notes-head" data-hero={hero ? "" : undefined}>
@@ -85,13 +87,6 @@ export function ChangelogModal({ className, titleId, title, eyebrow, subtitle, h
         document.body,
     );
 }
-
-const KIND_LABELS: Record<SectionKind, string> = {
-    added: "New",
-    improved: "Improved",
-    fixed: "Fixed",
-    progress: "In progress",
-};
 
 /** A mark per kind of change, drawn on a 16px grid to sit in the pill */
 function KindMark({ kind }: { kind: SectionKind; }) {
@@ -113,32 +108,32 @@ function VersionHero({ version }: { version: string; }) {
 export function WhatsNewModal({ releases, onClose }: { releases: Release[]; onClose(): void; }) {
     const notes = mergeReleases(releases);
     const cover = coverUrl(notes.cover);
-    const date = dateFormat.format(new Date(`${notes.date}T00:00:00`));
+    const date = new Intl.DateTimeFormat(I18n.discordLocale, { dateStyle: "long" }).format(new Date(`${notes.date}T00:00:00`));
 
     return (
         <ChangelogModal
             className="dl-whats-new"
             titleId="dl-whats-new-title"
             eyebrow={<>Evi {notes.version}<span aria-hidden="true"> · </span><time dateTime={notes.date}>{date}</time></>}
-            title="What’s new in Evi"
+            title={t("whatsNew.title")}
             hero={cover ? <img className="dl-whats-new-cover" src={cover} alt="" width={1200} height={675} /> : <VersionHero version={notes.version} />}
             onClose={onClose}
             footer={close => (
                 <>
                     <a className="dl-notes-link" href={RELEASES_URL} target="_blank" rel="noreferrer noopener">
                         <Icon name="github" size={16} />
-                        <span>Every release on GitHub</span>
+                        <span>{t("whatsNew.allReleases")}</span>
                     </a>
-                    <button type="button" className="dl-notes-done" onClick={close}>Got it</button>
+                    <button type="button" className="dl-notes-done" onClick={close}>{t("common.gotIt")}</button>
                 </>
             )}
         >
-            <div className="dl-whats-new-notes" role="region" aria-label="Changelog content" tabIndex={0}>
+            <div className="dl-whats-new-notes" role="region" aria-label={t("whatsNew.contentLabel")} tabIndex={0}>
                 {SECTION_KINDS.filter(kind => notes.sections[kind]?.length).map(kind => (
                     <section className="dl-notes-section" data-kind={kind} key={kind} aria-labelledby={`dl-whats-new-${kind}`}>
                         <h2 className={`dl-whats-new-title dl-whats-new-${kind}`} id={`dl-whats-new-${kind}`}>
                             <KindMark kind={kind} />
-                            {KIND_LABELS[kind]}
+                            {t(`whatsNew.kind.${kind}`)}
                         </h2>
                         <ul className="dl-whats-new-list">
                             {notes.sections[kind]!.map(line => <li className="dl-whats-new-item" key={line}>{inline(line)}</li>)}
@@ -193,7 +188,7 @@ export function showWhatsNewIfUpdated() {
         const mount = () => {
             const container = document.createElement("div");
             document.body.append(container);
-            createRoot(container).render(<Startup releases={releases} />);
+            createRoot(container).render(<DiscordContext><Startup releases={releases} /></DiscordContext>);
         };
         if (document.body) mount();
         else document.addEventListener("DOMContentLoaded", mount, { once: true });

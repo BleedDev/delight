@@ -58,6 +58,28 @@ describe("read all: collecting", () => {
         expect(collectUnread(stores).map(r => r.channelId)).toEqual(["a"]);
     });
 
+    test("skipReadGuilds leaves out servers Discord says are read, without asking about their channels", () => {
+        const stores = makeStores({ a: { unread: true }, c: { unread: true } });
+        const asked: string[] = [];
+        const hasUnread = stores.ReadStateStore.hasUnread;
+        stores.ReadStateStore.hasUnread = id => (asked.push(id), hasUnread(id));
+        stores.GuildReadStateStore = { hasUnread: id => id === "g2", getMentionCount: () => 0 };
+        expect(collectUnread(stores, { skipReadGuilds: true }).map(r => r.channelId)).toEqual(["c"]);
+        expect(asked).toEqual(["c"]);
+        // Without the option (marking read), every channel is still checked
+        expect(collectUnread(stores).map(r => r.channelId)).toEqual(["a", "c"]);
+    });
+
+    test("skipReadGuilds: mentions count, muted-inclusive check preferred, unknown means look", () => {
+        const stores = makeStores({ a: { mentions: 1 }, c: { unread: true } });
+        stores.GuildReadStateStore = { hasUnread: () => false, getMentionCount: id => (id === "g1" ? 1 : 0) };
+        expect(collectUnread(stores, { skipReadGuilds: true }).map(r => r.channelId)).toEqual(["a"]);
+        stores.GuildReadStateStore = { hasUnread: () => false, getGuildHasUnreadIgnoreMuted: id => id === "g2" };
+        expect(collectUnread(stores, { skipReadGuilds: true }).map(r => r.channelId)).toEqual(["c"]);
+        stores.GuildReadStateStore = {};
+        expect(collectUnread(stores, { skipReadGuilds: true }).map(r => r.channelId)).toEqual(["a", "c"]);
+    });
+
     test("toAck keeps only what BULK_ACK reads", () => {
         expect(toAck({ guildId: "g", channelId: "c", messageId: "m", readStateType: 0 } as any)).toEqual({ channelId: "c", messageId: "m", readStateType: 0 });
     });

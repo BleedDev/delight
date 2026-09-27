@@ -9,20 +9,26 @@
  * - Activity: typing, joining or leaving voice and reacting stamp "last active".
  * - Messages: MESSAGE_CREATE stamps "last message" and where; LOAD_MESSAGES_SUCCESS (opening or
  *   scrolling a channel) backfills it from history.
+ * - Presences and history are recorded when the browser is idle, never inside Discord's dispatch.
  * - Storage: IndexedDB (Discord removes window.localStorage), one record, written at most every
- *   30 seconds and on stop/unload. Capped at 25000 people, least recently seen dropped first,
- *   friends and DM contacts last.
+ *   30 seconds and on stop/unload. Capped at 25000 people, least recently seen dropped first (a
+ *   few hundred at a time), friends and DM contacts last.
  * - Profiles: a clock badge through ctx.profileBadges, also listed in Discord's badge directory;
  *   hovering shows the full summary, clicking jumps to their last message.
  * - Member list, friends list, DM list: a line under offline people's names (source patches).
+ *   Each line listens to its own person only (state.ts).
  */
 import { definePlugin, React } from "@evi/api";
+import type { ProfileBadge } from "@evi/api";
 
 import { dmMethods, dmPatches } from "./dms";
 import { friendsMethods, friendsPatches } from "./friends";
-import { LastSeenLine, lineCss } from "./line";
+import { lastSeenLine, lineCss } from "./line";
 import { SettingsPanel } from "./panel";
-import { bumpNow, changed, dbGet, fullText, ignored, isOnline, opts, ownId, save, settings, state, statusOf, store } from "./state";
+import {
+    bumpNow, changed, dbGet, fullText, ignored, invalidateKeep, isBot, isOnline, opts, refreshOwnId, resetLookups, save, settings, state, statusOf, store, tick,
+    versionOf,
+} from "./state";
 import { deserialize, isOnlineStatus, merge, observeActivity, observeMessage, observePresence } from "./track";
 
 const SAVE_EVERY = 30_000;
@@ -34,20 +40,48 @@ const CLOCK = `data:image/svg+xml,${encodeURIComponent(
 
 // --- Observing -------------------------------------------------------------------------------
 
-const pending = new Map<string, boolean | undefined>();
-let flushTimer: ReturnType<typeof setTimeout> | undefined;
+/**
+ * Presence updates and message history are recorded off the dispatch, when the browser is idle:
+ * opening a channel or a busy server shouldn't wait on bookkeeping. Updates that arrive meanwhile
+ * are batched into one pass.
+ */
+const pendingPresences = new Map<string, boolean | undefined>();
+let pendingPages: { messages: any[]; channelId?: string; }[] = [];
+let cancelFlush: (() => void) | undefined;
 
-/** Reads PresenceStore after the dispatch has settled, so it reflects the update */
-function flushPresences() {
-    flushTimer = undefined;
-    const now = Date.now();
-    let any = false;
-    for (const [id, bot] of pending) {
-        if (ignored(id, bot)) continue;
-        any = observePresence(state.tracker, id, statusOf(id), now, opts) || any;
+/** At the latest this long after the dispatch, even if the browser never goes idle */
+const IDLE_TIMEOUT = 1000;
+
+function whenIdle(fn: (deadline?: IdleDeadline) => void): () => void {
+    if (typeof requestIdleCallback === "function") {
+        const handle = requestIdleCallback(fn, { timeout: IDLE_TIMEOUT });
+        return () => cancelIdleCallback(handle);
     }
-    pending.clear();
-    if (any) changed();
+    const handle = setTimeout(fn, 50);
+    return () => clearTimeout(handle);
+}
+
+const scheduleFlush = () => void (cancelFlush ??= whenIdle(flush));
+
+/** Reads PresenceStore once the dispatch has settled, so it reflects the updates, then message history */
+function flush(deadline?: IdleDeadline) {
+    cancelFlush = undefined;
+    if (!state.context) return;
+    const now = Date.now();
+    for (const [id, bot] of pendingPresences) {
+        if (!ignored(id, bot) && observePresence(state.tracker, id, statusOf(id), now, opts)) changed(id);
+    }
+    pendingPresences.clear();
+    // A page (50 messages) at a time, while the browser has time to spare
+    while (pendingPages.length) {
+        const page = pendingPages.shift()!;
+        for (const msg of page.messages) {
+            const id = message(msg, page.channelId);
+            if (id) changed(id);
+        }
+        if (deadline && !deadline.didTimeout && deadline.timeRemaining() < 1) break;
+    }
+    if (pendingPages.length) scheduleFlush();
 }
 
 /** Everyone online right now counts as seen; anyone we had online who no longer is went offline */
@@ -56,8 +90,9 @@ function seed() {
     const now = Date.now();
     let any = false;
     if (statuses) {
+        // Once per connection, off the dispatch: worth asking UserStore, so online bots aren't all stored
         for (const id in statuses) {
-            if (isOnlineStatus(statuses[id]) && !ignored(id)) any = observePresence(state.tracker, id, statuses[id], now, opts) || any;
+            if (isOnlineStatus(statuses[id]) && !ignored(id, isBot(id))) any = observePresence(state.tracker, id, statuses[id], now, opts) || any;
         }
     }
     for (const [id, entry] of state.tracker) {
@@ -72,15 +107,16 @@ function timeOf(timestamp: unknown) {
     return Number.isFinite(at) ? Math.min(at, Date.now()) : Date.now();
 }
 
-function message(msg: any, channelId?: string): boolean {
+/** Records a message; returns the author's id if that changed anything */
+function message(msg: any, channelId?: string): string | undefined {
     const author = msg?.author;
-    if (!author?.id || msg.webhook_id || ignored(author.id, author.bot)) return false;
-    return observeMessage(state.tracker, author.id, timeOf(msg.timestamp), { channelId: msg.channel_id ?? channelId, messageId: msg.id }, opts);
+    if (!author?.id || msg.webhook_id || ignored(author.id, author.bot)) return;
+    if (observeMessage(state.tracker, author.id, timeOf(msg.timestamp), { channelId: msg.channel_id ?? channelId, messageId: msg.id }, opts)) return author.id;
 }
 
 function activity(id: unknown, at = Date.now()) {
     if (typeof id !== "string" || ignored(id)) return;
-    if (observeActivity(state.tracker, id, at, opts)) changed();
+    if (observeActivity(state.tracker, id, at, opts)) changed(id);
 }
 
 /** Clicking the profile clock jumps to their last message, when we know where it was */
@@ -114,7 +150,8 @@ export default definePlugin({
 
     memberSubText(original: unknown, user: { id?: string; bot?: boolean; } | null | undefined, status: string | undefined) {
         if (!state.context || !user?.id || isOnlineStatus(status) || ignored(user.id, user.bot)) return original;
-        return <>{original}<LastSeenLine key="evi-last-seen" userId={user.id} setting="showInMemberList" /></>;
+        const Line = lastSeenLine();
+        return <>{original}<Line key="evi-last-seen" userId={user.id} setting="showInMemberList" /></>;
     },
 
     ...friendsMethods,
@@ -125,19 +162,19 @@ export default definePlugin({
             if (!state.context) return;
             for (const u of action?.updates ?? []) {
                 const id = u?.user?.id;
-                if (typeof id === "string") pending.set(id, u.user.bot);
+                if (typeof id === "string") pendingPresences.set(id, u.user.bot);
             }
-            flushTimer ??= setTimeout(flushPresences, 0);
+            scheduleFlush();
         },
         MESSAGE_CREATE(action: any) {
             if (!state.context || action?.optimistic) return;
-            if (message(action?.message, action?.channelId)) changed();
+            const id = message(action?.message, action?.channelId);
+            if (id) changed(id);
         },
         LOAD_MESSAGES_SUCCESS(action: any) {
-            if (!state.context || !Array.isArray(action?.messages)) return;
-            let any = false;
-            for (const msg of action.messages) any = message(msg, action.channelId) || any;
-            if (any) changed();
+            if (!state.context || !Array.isArray(action?.messages) || !action.messages.length) return;
+            pendingPages.push({ messages: action.messages, channelId: action.channelId });
+            scheduleFlush();
         },
         TYPING_START(action: any) {
             if (state.context) activity(action?.userId);
@@ -150,8 +187,17 @@ export default definePlugin({
             for (const vs of action?.voiceStates ?? []) activity(vs?.userId);
         },
         CONNECTION_OPEN() {
-            if (state.context) setTimeout(seed, 1000);
+            if (!state.context) return;
+            refreshOwnId();
+            invalidateKeep();
+            setTimeout(seed, 1000);
         },
+        // Who counts as a friend or DM contact, for pruning
+        RELATIONSHIP_ADD: invalidateKeep,
+        RELATIONSHIP_REMOVE: invalidateKeep,
+        RELATIONSHIP_UPDATE: invalidateKeep,
+        CHANNEL_CREATE: invalidateKeep,
+        CHANNEL_DELETE: invalidateKeep,
     },
 
     start(ctx) {
@@ -182,26 +228,36 @@ export default definePlugin({
         });
 
         ctx.setInterval(() => void save(), SAVE_EVERY);
-        ctx.setInterval(bumpNow, 60_000);
+        ctx.setInterval(tick, 60_000);
         const onUnload = () => void save();
         window.addEventListener("beforeunload", onUnload);
         ctx.onDispose(() => window.removeEventListener("beforeunload", onUnload));
         ctx.settings.onChange(bumpNow);
 
-        // On profiles and in Discord's badge directory, through Evi's badges
+        // On profiles and in Discord's badge directory, through Evi's badges. Asked on every
+        // profile render, so the badge is only rebuilt when their data, their status or the minute changes
+        const badges = new Map<string, { key: string; badges: ProfileBadge[] | undefined; }>();
         ctx.profileBadges(userId => {
-            if (!ctx.settings.get("showOnProfiles") || userId === ownId()) return;
+            if (!ctx.settings.get("showOnProfiles") || ignored(userId, isBot(userId))) return;
+            const key = `${versionOf(userId)}:${statusOf(userId)}`;
+            const cached = badges.get(userId);
+            if (cached?.key === key) return cached.badges;
             const description = fullText(userId);
-            return description ? [{ id: "last-seen", description, iconSrc: CLOCK, link: messageLink(userId) }] : undefined;
+            const result = description ? [{ id: "last-seen", description, iconSrc: CLOCK, link: messageLink(userId) }] : undefined;
+            if (badges.size >= 500) badges.clear();
+            badges.set(userId, { key, badges: result });
+            return result;
         });
     },
 
     stop() {
         void save();
-        clearTimeout(flushTimer);
-        flushTimer = undefined;
-        pending.clear();
+        cancelFlush?.();
+        cancelFlush = undefined;
+        pendingPresences.clear();
+        pendingPages = [];
         state.context = undefined;
+        resetLookups();
         bumpNow();
     },
 

@@ -11,6 +11,8 @@
  * Pure: no DOM, no network, no disk, shared by the renderer and the tests.
  */
 
+import { DISCORD_HOST } from "./pluginActivity";
+
 export type Risk = "low" | "medium" | "high";
 
 export type CapabilityId =
@@ -127,8 +129,6 @@ const ORDER: CapabilityId[] = [
     "menus", "commands", "css", "links", "storage", "settings",
 ];
 
-/** Discord's own hosts: talking to them is what Discord does anyway */
-const DISCORD_HOST = /(?:^|\.)(?:discord\.com|discordapp\.com|discordapp\.net|discord\.gg|discord\.media|discordcdn\.com|discord\.new|dis\.gd)$/;
 /** Hosts every bundle mentions without ever contacting them: XML namespaces, React's error pages */
 const IGNORED_HOST = /(?:^|\.)(?:w3\.org|reactjs\.org|react\.dev|fb\.me|example\.com|example\.org|localhost)$/;
 

@@ -173,7 +173,30 @@ export const findAll = <T = any>(filter: Filter) => findAllExports<T>(filter).ma
 export const findByProps = <T = any>(...props: string[]) => find<T>(filters.byProps(...props));
 export const findByCode = <T = any>(...code: CodeMatcher[]) => find<T>(filters.byCode(...code));
 export const findComponent = <T = any>(...code: CodeMatcher[]) => find<T>(filters.componentByCode(...code));
-export const findStore = <T = any>(name: string) => find<T>(filters.byStoreName(name));
+/**
+ * Stores found so far, by name. Finding one walks every loaded module (~10k), and plugins ask on
+ * every message, row render and presence update, so each is looked up once. Safe to keep: stores are
+ * singletons, and live replacement never re-runs a module that holds one (patching/live.ts).
+ * A store that isn't loaded yet is looked for again, at most once a second.
+ */
+const stores = new Map<string, unknown>();
+const missing = new Map<string, number>();
+const MISS_RETRY_MS = 1000;
+
+export function findStore<T = any>(name: string): T | undefined {
+    const cached = stores.get(name);
+    if (cached) return cached as T;
+    const missedAt = missing.get(name);
+    if (missedAt !== undefined && performance.now() - missedAt < MISS_RETRY_MS) return undefined;
+    const store = find<T>(filters.byStoreName(name));
+    if (store) {
+        stores.set(name, store);
+        missing.delete(name);
+    } else {
+        missing.set(name, performance.now());
+    }
+    return store;
+}
 
 interface Waiter {
     filter: Filter;

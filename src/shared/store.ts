@@ -47,8 +47,11 @@ export const STORE_MARKER = ".evi-store.json";
  */
 export const REMOVED_PLUGINS_FILE = "removed-plugins.json";
 
-/** Official plugins that became part of Evi itself: old copies on disk are deleted, never loaded */
-export const RETIRED_PLUGINS: readonly string[] = ["badges"];
+/**
+ * Official plugins that are gone: part of Evi itself now (badges), or never meant for people (Toolkit
+ * Demo, a toolkit example the tests still use). Old copies on disk are deleted, never loaded.
+ */
+export const RETIRED_PLUGINS: readonly string[] = ["badges", "toolkit-demo"];
 
 export function parseRemovedPlugins(text: string): Set<string> {
     try {
@@ -415,11 +418,18 @@ export async function whyNotHash(name: string, data: Uint8Array, expected: strin
     if (actual !== expected.toLowerCase()) return `${name} doesn't match the registry (sha256 ${actual.slice(0, 12)}…, expected ${expected.slice(0, 12)}…). Nothing was installed.`;
 }
 
+/**
+ * Whether this Evi is new enough for something needing `min`. A beta counts as the version it leads
+ * up to: 0.5.0-beta.1 runs plugins made for 0.5.0, which is what its testers are there to try.
+ */
+export const meetsMinEvi = (eviVersion: string, min: string | undefined) =>
+    !min || compareVersions(eviVersion.replace(/-.*$/, ""), min) >= 0;
+
 /** What the store should offer for an entry, plugin or theme */
 export function storeAction(entry: { version: string; minEviVersion?: string; }, installed: { id?: string; version?: string; fromStore: boolean; } | undefined, eviVersion: string):
     "install" | "update" | "installed" | "local" | "incompatible" {
     if (installed && !installed.fromStore) return "local";
-    if (entry.minEviVersion && compareVersions(eviVersion, entry.minEviVersion) < 0) return installed ? "installed" : "incompatible";
+    if (!meetsMinEvi(eviVersion, entry.minEviVersion)) return installed ? "installed" : "incompatible";
     if (!installed) return "install";
     return compareVersions(entry.version, installed.version ?? "0") > 0 ? "update" : "installed";
 }

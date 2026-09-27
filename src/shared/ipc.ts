@@ -157,6 +157,8 @@ export interface EviSettings {
     autoUpdate?: boolean;
     /** Look for new versions of Evi when Discord starts (on unless turned off) */
     checkEviUpdates?: boolean;
+    /** Offer prereleases (betas) too. Off by default */
+    betaUpdates?: boolean;
     /** The version whose "update available" notice was dismissed, so it doesn't come back */
     dismissedUpdate?: string;
     /** The Evi version whose "What's new" was last shown, to show it once after each update */

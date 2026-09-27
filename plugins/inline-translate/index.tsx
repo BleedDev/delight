@@ -19,7 +19,7 @@ import {
     cacheKey, googleLanguage, isTranslatable, languageName, LRU, normalizeLanguage, parseLanguageList, protect, RateQueue, restore,
     shouldAutoTranslate, shouldShowAuto,
 } from "./translate";
-import type { AutoMode, Translation } from "./translate";
+import type { AutoMode, AutoOptions, Translation } from "./translate";
 
 const settings = {
     target: {
@@ -117,55 +117,104 @@ const css = `
 .dl-it-link:focus-visible { outline: 2px solid var(--focus-primary, #00b0f4); outline-offset: 1px; }
 `;
 
-function discordLocale(): string {
-    return getStore("LocaleStore")?.locale || document.documentElement.lang || navigator.language || "en";
+const stores = new Map<string, any>();
+
+/** A Flux store, found once: every message render asks */
+function store(name: string): any {
+    let found = stores.get(name);
+    if (found) return found;
+    try {
+        found = getStore(name);
+    } catch {
+        return undefined;
+    }
+    stores.set(name, found);
+    return found;
 }
 
-const currentUserId = (): string | undefined => getStore("UserStore")?.getCurrentUser?.()?.id;
+function discordLocale(): string {
+    return store("LocaleStore")?.locale || document.documentElement.lang || navigator.language || "en";
+}
+
+/** Your id, looked up once and again on reconnect */
+let me: string | undefined;
+const currentUserId = (): string | undefined => me ??= store("UserStore")?.getCurrentUser?.()?.id;
 
 function isOwn(message: any) {
-    const me = currentUserId();
-    return !!me && message?.author?.id === me;
+    const id = currentUserId();
+    return !!id && message?.author?.id === id;
 }
 
 /** Everything that lives while the plugin runs */
 class Runtime {
     readonly cache = new LRU<string, Entry>(CACHE_SIZE);
     readonly views = new LRU<string, View>(CACHE_SIZE);
-    private listeners = new Set<() => void>();
-    version = 0;
+    /**
+     * Listeners per message and target (cacheKey): a translation arriving re-renders its own
+     * message's block and button, not every message on screen
+     */
+    private listeners = new Map<string, Set<() => void>>();
+    /** Bumped when everything re-renders: settings, Discord's language, stopping */
+    epoch = 0;
     readonly queue: RateQueue;
+    /** The target language and automatic mode options, worked out once per settings or language change */
+    private cachedTarget: string | undefined;
+    private cachedOptions: AutoOptions | undefined;
 
     constructor(readonly ctx: Ctx) {
         // A dropped auto job forgets its "loading" entry, so it's queued again when it renders next
         this.queue = new RateQueue(INTERVAL, MAX_QUEUED, key => {
             if (this.cache.peek(key)?.state === "loading") {
                 this.cache.delete(key);
-                this.emit();
+                this.emit(key);
             }
         });
     }
 
-    subscribe = (fn: () => void) => {
-        this.listeners.add(fn);
-        return () => void this.listeners.delete(fn);
-    };
+    subscribe(key: string, fn: () => void) {
+        let set = this.listeners.get(key);
+        if (!set) this.listeners.set(key, set = new Set());
+        set.add(fn);
+        return () => {
+            set.delete(fn);
+            if (!set.size && this.listeners.get(key) === set) this.listeners.delete(key);
+        };
+    }
 
-    emit() {
-        this.version++;
-        for (const fn of this.listeners) fn();
+    /** Re-renders one message's block and button, or everything without a key */
+    emit(key?: string) {
+        if (key === undefined) {
+            this.epoch++;
+            for (const set of [...this.listeners.values()]) for (const fn of [...set]) fn();
+            return;
+        }
+        const set = this.listeners.get(key);
+        if (set) for (const fn of [...set]) fn();
+    }
+
+    /** Settings or Discord's language changed: work the target and options out again, re-render everything */
+    invalidate() {
+        this.cachedTarget = undefined;
+        this.cachedOptions = undefined;
+        this.emit();
     }
 
     target() {
-        return normalizeLanguage(this.ctx.settings.get("target")) ?? googleLanguage(discordLocale());
+        return this.cachedTarget ??= normalizeLanguage(this.ctx.settings.get("target")) ?? googleLanguage(discordLocale());
     }
 
-    autoOptions() {
-        return {
-            mode: this.ctx.settings.get("autoMode") as AutoMode,
+    autoMode() {
+        return this.ctx.settings.get("autoMode") as AutoMode;
+    }
+
+    autoOptions(): AutoOptions {
+        const id = currentUserId();
+        if (this.cachedOptions && this.cachedOptions.currentUserId === id) return this.cachedOptions;
+        return this.cachedOptions = {
+            mode: this.autoMode(),
             languages: parseLanguageList(this.ctx.settings.get("autoLanguages")),
             target: this.target(),
-            currentUserId: currentUserId(),
+            currentUserId: id,
             ignoreBots: this.ctx.settings.get("ignoreBots"),
         };
     }
@@ -173,7 +222,7 @@ class Runtime {
     setView(key: string, view: View | undefined) {
         if (view) this.views.set(key, view);
         else this.views.delete(key);
-        this.emit();
+        this.emit(key);
     }
 
     /** Queues a translation unless an up-to-date one is cached or on its way */
@@ -190,7 +239,7 @@ class Runtime {
         }
 
         this.cache.set(key, { state: "loading", content });
-        this.emit();
+        this.emit(key);
 
         this.queue.add(key, async () => {
             const auto = !urgent;
@@ -207,7 +256,7 @@ class Runtime {
                 if (this.cache.peek(key)?.content === content) this.cache.set(key, { state: "error", content, error });
                 if (!auto) this.ctx.logger.warn("Translation failed", error);
             } finally {
-                this.emit();
+                this.emit(key);
             }
         }, urgent);
     }
@@ -218,11 +267,16 @@ class Runtime {
         if (this.views.peek(key) === "shown") return this.setView(key, "dismissed");
         this.views.set(key, "shown");
         this.request(message, true);
-        this.emit();
+        this.emit(key);
     }
 
     isShown(message: any) {
         return this.views.peek(cacheKey(message.id, this.target())) === "shown";
+    }
+
+    /** What a message's block shows, as one value that changes when it should re-render */
+    snapshot(key: string) {
+        return `${this.epoch}|${this.views.peek(key) ?? ""}|${this.cache.peek(key)?.state ?? ""}`;
     }
 
     dispose() {
@@ -255,11 +309,16 @@ function LinkButton({ onClick, children }: { onClick: () => void; children: Reac
     return <button type="button" className="dl-it-link" onClick={onClick}>{children}</button>;
 }
 
+/** Re-renders when this message's translation or view changes, or on a settings change */
+function useMessageState(runtime: Runtime, key: string) {
+    const subscribe = React.useCallback((fn: () => void) => runtime.subscribe(key, fn), [runtime, key]);
+    return React.useSyncExternalStore(subscribe, () => runtime.snapshot(key));
+}
+
 function Inline({ runtime, message }: { runtime: Runtime; message: any; }) {
-    React.useSyncExternalStore(runtime.subscribe, () => runtime.version);
-    const values = runtime.ctx.settings.use();
     const target = runtime.target();
     const key = cacheKey(message.id, target);
+    useMessageState(runtime, key);
     const entry = runtime.cache.peek(key);
     const view = runtime.views.peek(key);
     const content: string = typeof message.content === "string" ? message.content : "";
@@ -267,11 +326,14 @@ function Inline({ runtime, message }: { runtime: Runtime; message: any; }) {
     // Automatic mode, and manual translations that went stale after an edit
     React.useEffect(() => {
         if (!content) return;
+        const shown = runtime.views.peek(key) === "shown";
+        // Most messages: nothing is shown and automatic mode is off, so there's nothing to work out
+        if (!shown && runtime.autoMode() === "off") return;
         const cached = runtime.cache.peek(key);
         if (cached && cached.content === content) return;
-        if (runtime.views.peek(key) === "shown") return runtime.request(message, true);
+        if (shown) return runtime.request(message, true);
         if (runtime.views.peek(key) !== "dismissed" && shouldAutoTranslate(message, runtime.autoOptions())) runtime.request(message, false);
-    }, [key, content, values.autoMode, values.autoLanguages, values.ignoreBots]);
+    }, [key, content, runtime.epoch]);
 
     if (!view || view === "dismissed" || !entry || entry.content !== content) return null;
     const dismiss = () => runtime.setView(key, "dismissed");
@@ -321,7 +383,7 @@ function TranslateIcon(props: { className?: string; color?: string; }) {
 }
 
 function HoverButton({ runtime, Button, message }: { runtime: Runtime; Button: React.ComponentType<any>; message: any; }) {
-    React.useSyncExternalStore(runtime.subscribe, () => runtime.version);
+    useMessageState(runtime, cacheKey(message.id, runtime.target()));
     const shown = runtime.isShown(message);
     return <Button label={shown ? "Hide Translation" : "Translate"} icon={TranslateIcon} onClick={() => runtime.toggle(message)} />;
 }
@@ -384,7 +446,23 @@ export default definePlugin({
             );
         });
 
-        // Settings changes re-render every block (target language, automatic mode)
-        ctx.settings.onChange(() => runtime.emit());
+        // Settings changes re-render every block (target language, automatic mode), and so does
+        // changing Discord's language when the target follows it
+        ctx.settings.onChange(() => runtime.invalidate());
+        const locale = store("LocaleStore");
+        let lastLocale = locale?.locale;
+        const onLocale = () => {
+            if (locale.locale === lastLocale) return;
+            lastLocale = locale.locale;
+            runtime.invalidate();
+        };
+        locale?.addChangeListener?.(onLocale);
+        ctx.onDispose(() => locale?.removeChangeListener?.(onLocale));
+        // Another account: your own messages are someone else's now
+        ctx.flux.subscribe("CONNECTION_OPEN", () => {
+            me = undefined;
+            runtime.invalidate();
+        });
+        ctx.onDispose(() => void (me = undefined));
     },
 });

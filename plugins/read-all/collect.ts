@@ -33,10 +33,29 @@ export interface ReadStores {
     /** getActiveJoinedThreadsForGuild(guildId) => { [parentId]: { [threadId]: { channel } } } */
     ActiveJoinedThreadsStore?: { getActiveJoinedThreadsForGuild(guildId: string): Record<string, Record<string, unknown>> | undefined; };
     ChannelStore?: { getSortedPrivateChannels?(): ChannelLike[]; };
+    /** Per server: anything unread or mentioned, without going through each channel */
+    GuildReadStateStore?: {
+        hasUnread?(guildId: string): boolean;
+        /** Counts muted channels too, like the per-channel check does */
+        getGuildHasUnreadIgnoreMuted?(guildId: string): boolean;
+        getMentionCount?(guildId: string): number;
+    };
 }
 
 export interface CollectOptions {
     includeDms?: boolean;
+    /**
+     * Skip servers GuildReadStateStore says have nothing unread or mentioned. Much faster with many
+     * servers; for the count only, since Discord may leave muted channels out of it.
+     */
+    skipReadGuilds?: boolean;
+}
+
+/** Whether a server may have something unread; true when the store can't tell */
+export function guildMaybeUnread(store: ReadStores["GuildReadStateStore"], guildId: string): boolean {
+    const unread = store?.getGuildHasUnreadIgnoreMuted?.(guildId) ?? store?.hasUnread?.(guildId);
+    if (typeof unread !== "boolean") return true;
+    return unread || (store?.getMentionCount?.(guildId) ?? 0) > 0;
 }
 
 function guildIds(store: ReadStores["GuildStore"]): string[] {
@@ -66,7 +85,9 @@ export function collectUnread(stores: ReadStores, options: CollectOptions = {}):
         out.push({ guildId, channelId: channel.id, messageId: rs.lastMessageId(channel.id) ?? null, readStateType: CHANNEL_READ_STATE });
     };
 
+    const skip = options.skipReadGuilds && stores.GuildReadStateStore;
     for (const guildId of guildIds(stores.GuildStore)) {
+        if (skip && !guildMaybeUnread(skip, guildId)) continue;
         const groups = stores.GuildChannelStore.getChannels(guildId) ?? {};
         for (const group of Object.values(groups)) {
             if (Array.isArray(group)) group.forEach(item => consider(channelOf(item), guildId));

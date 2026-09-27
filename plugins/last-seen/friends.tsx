@@ -6,9 +6,9 @@
 import { React } from "@evi/api";
 import type { SourcePatch } from "@evi/api";
 
-import { LastSeenLine } from "./line";
-import { entryOf, ignored, isOnline, state, useVersion } from "./state";
-import { isOnlineStatus, lineText } from "./track";
+import { lastSeenLine } from "./line";
+import { ignored, lineOf, state, useUser } from "./state";
+import { isOnlineStatus } from "./track";
 
 export const friendsPatches: SourcePatch[] = [
     {
@@ -21,18 +21,25 @@ export const friendsPatches: SourcePatch[] = [
     },
 ];
 
-function FriendSubText({ original, userId }: { original: React.ReactNode; userId: string; }) {
-    useVersion();
-    const show = state.context?.settings.get("showInFriends") && !isOnline(userId) && lineText(entryOf(userId), Date.now());
-    return show ? <LastSeenLine userId={userId} setting="showInFriends" /> : <>{original}</>;
+interface SubTextProps { original: React.ReactNode; userId: string; }
+
+/** Re-renders only when whether this friend has a line changes (or the row itself re-renders) */
+function FriendSubText({ original, userId }: SubTextProps) {
+    const show = useUser(userId, () => !!lineOf(userId, "showInFriends"));
+    const Line = lastSeenLine();
+    return show ? <Line userId={userId} setting="showInFriends" /> : <>{original}</>;
 }
+
+/** Memoized on first use: React isn't there yet when the plugin loads */
+let memoized: React.ComponentType<SubTextProps> | undefined;
 
 export const friendsMethods = {
     friendSubText(original: any, user: { id?: string; bot?: boolean; } | null | undefined, status: string | undefined) {
         try {
             // Ignored users show "Ignored" there, which matters more
             if (!state.context || !user?.id || isOnlineStatus(status) || original?.props?.userIgnored || ignored(user.id, user.bot)) return original;
-            return <FriendSubText original={original} userId={user.id} />;
+            const SubText = memoized ??= React.memo(FriendSubText);
+            return <SubText original={original} userId={user.id} />;
         } catch (e) {
             state.context?.logger.error("Friends list line failed", e);
             return original;

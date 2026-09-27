@@ -29,6 +29,8 @@ const settings = {
 
 let context: PluginContext<Settings> | undefined;
 let log: VoiceLog | undefined;
+/** SelectedChannelStore, captured on start: sync runs on every voice state update anywhere you can see */
+let selectedChannels: any;
 
 function store(name: string): any {
     try {
@@ -68,7 +70,7 @@ function avatarOf(userId: string, guildId: string | null | undefined): string | 
 /** Reads the stores and feeds the log. `moves` comes from a VOICE_STATE_UPDATES payload. */
 function sync(moves?: Map<string, Move>) {
     if (!log || !context) return;
-    const voiceChannelId: string | null = store("SelectedChannelStore")?.getVoiceChannelId?.() ?? null;
+    const voiceChannelId: string | null = (selectedChannels ??= store("SelectedChannelStore"))?.getVoiceChannelId?.() ?? null;
     if (!voiceChannelId && !log.current) return;
     const voice = store("VoiceStateStore");
     const channel = getChannel(voiceChannelId);
@@ -379,6 +381,14 @@ const css = `
 .evi-vcl-chip[aria-pressed="true"] { background: var(--control-primary-background-default, var(--brand-500, #5865f2)); color: var(--control-primary-text-default, #fff); }
 
 .evi-vcl-list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0 8px 8px; }
+/* Discord's thin scrollbar instead of Windows' grey one with arrows: a slim rounded thumb, no track */
+.evi-vcl-list, .evi-vcl-nav { scrollbar-width: auto; scrollbar-color: auto; }
+.evi-vcl-list::-webkit-scrollbar, .evi-vcl-nav::-webkit-scrollbar { width: 8px; }
+.evi-vcl-list::-webkit-scrollbar-track, .evi-vcl-nav::-webkit-scrollbar-track, .evi-vcl-list::-webkit-scrollbar-corner { background: transparent; }
+.evi-vcl-list::-webkit-scrollbar-button, .evi-vcl-nav::-webkit-scrollbar-button { display: none; }
+.evi-vcl-list::-webkit-scrollbar-thumb, .evi-vcl-nav::-webkit-scrollbar-thumb { min-height: 40px; border: 2px solid transparent; border-radius: 4px; background-clip: padding-box;
+  background-color: var(--scrollbar-auto-thumb, rgb(151 151 159 / 0.4)); }
+.evi-vcl-list::-webkit-scrollbar-thumb:hover, .evi-vcl-nav::-webkit-scrollbar-thumb:hover { background-color: rgb(151 151 159 / 0.6); }
 .evi-vcl-row { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: var(--radius-sm, 8px); }
 .evi-vcl-row[data-self] { color: var(--evi-vcl-muted); }
 .evi-vcl-row[data-kind="leave"] .evi-vcl-avatar, .evi-vcl-row[data-kind="moveOut"] .evi-vcl-avatar { opacity: .5; }
@@ -443,7 +453,7 @@ export default definePlugin({
 
         // You joining, switching or leaving. Only a different channel counts: the store also emits
         // while voice states are being reloaded, and those are diffed on VOICE_STATE_UPDATES
-        const selected = store("SelectedChannelStore");
+        const selected = selectedChannels = store("SelectedChannelStore");
         const onSelected = () => {
             const id = selected?.getVoiceChannelId?.() ?? null;
             if (id !== (current.current?.channelId ?? null)) sync();
