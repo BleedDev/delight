@@ -1,0 +1,10 @@
+{
+    "id": "claude",
+    "name": "Claude",
+    "description": "Claude Code inside Discord: coding sessions with approvals, diffs and git in your DM sidebar, /claude and friends in any chat, and Discord tools so Claude can read, draft and (with your OK) act for you. Runs your own installed Claude Code (or Codex) on your own login.",
+    "version": "1.0.0",
+    "authors": ["cyxz"],
+    "tags": ["ai", "developer", "messages"],
+    "changelog": [{ "version": "1.0.0", "notes": ["First release: Coding Agents sessions, slash commands with live replies, Discord tools, Codex support."] }],
+    "enabledByDefault": false
+}

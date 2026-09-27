@@ -84,6 +84,7 @@ Official plugins ship in `plugins/` and are turned on or off in the Plugins tab.
 | Smooth Typing | on | Batches draft saves while you type, halving the worst frame drops |
 | Experiments | off | Unlocks the Experiments and developer settings tabs |
 | GPU Boost | off | Turns on Chromium's zero-copy GPU uploads (after a restart) |
+| Claude | off | Claude Code inside Discord: coding sessions (transcript, approvals, diffs, git, commit and PR) in your DM sidebar, `/claude`, `/catchup`, `/summarize`, `/draft` and `/todo` in any chat with live replies only you can see, and Discord tools so Claude can read, draft and, with your OK, act for you. Runs your own installed `claude` (or `codex`) on your own login; see [plugins/claude](plugins/claude/README.md) |
 | Silent Typing | off | Others don't see you typing. Toggle with `/silenttyping` or the keyboard button in the chat bar |
 | Quick Actions | off | Message menu: Copy Message Link, Copy Raw Text, Copy Message ID, Search Image (Google Lens, Yandex, TinEye) and Translate with Google, opened in your browser. Items only show when they apply, and not when Discord's menu already has them |
 

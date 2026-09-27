@@ -21,12 +21,17 @@
         "test:plugins": "node scripts/test-fast-lists.ts"
     },
     "devDependencies": {
+        "@tailwindcss/cli": "4",
         "@types/bun": "^1.4.2",
         "@types/node": "^26.6.3",
         "@types/react": "19",
         "@types/react-dom": "19",
         "electron": "37",
+        "lucide": "^1.48.0",
+        "marked": "18.0.14",
         "playwright-core": "^1.63.0",
-        "typescript": "^7.0.2"
+        "tailwindcss": "4",
+        "typescript": "^7.0.2",
+        "zustand": "5"
     }
 }

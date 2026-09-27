@@ -1,0 +1,193 @@
+/* The few pieces of the Claude plugin that live in Discord's own document.
+   Everything else renders in shadow roots with the plugin's own stylesheet (styles.css). */
+
+/* agents page: covers Discord's page area (right of the DM list) */
+.evi-claude-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  background: var(--background-base-lower, #131315);
+}
+
+/* agent session attached to a DM */
+.evi-claude-panel {
+  width: 420px;
+  flex: none;
+  display: flex;
+  min-height: 0;
+  background: var(--background-base-lower, #131315);
+}
+.evi-claude-panel-grip {
+  flex: none;
+  width: 5px;
+  margin: 0 -2px;
+  position: relative;
+  z-index: 2;
+  cursor: col-resize;
+  border-left: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  transition: background-color 0.15s;
+}
+.evi-claude-panel-grip:hover,
+.evi-claude-panel-grip:active {
+  background: rgba(217, 119, 87, 0.45);
+}
+
+/* DM sidebar rows ("Coding Agents", pinned sessions) */
+.evi-claude-row-icon {
+  color: var(--interactive-normal);
+}
+.evi-claude-row-badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--badge-notification-background, #da373c);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+.evi-claude-avatar {
+  flex: none;
+  border-radius: 50%;
+  background: #d97757;
+  color: #faf9f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.evi-claude-avatar.busy svg {
+  animation: evi-claude-spin 2.4s linear infinite;
+}
+@keyframes evi-claude-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.evi-claude-selected {
+  background: var(--background-modifier-selected, rgba(255, 255, 255, 0.08));
+  color: var(--interactive-active);
+}
+li.evi-claude-drop > div {
+  box-shadow: inset 0 0 0 2px #d97757;
+  border-radius: 8px;
+}
+
+/* while the agents page is open, Discord's own selection highlight would point at the wrong place */
+body.evi-claude-agents-open nav[class*='privateChannels_'] li:not([data-evi-claude]) [class*='interactiveSelected'] {
+  background: transparent !important;
+  color: var(--interactive-normal) !important;
+}
+body.evi-claude-agents-open nav[class*='privateChannels_'] li:not([data-evi-claude]) [class*='interactiveSelected'] * {
+  color: inherit;
+}
+
+/* an attached session takes the profile sidebar's place, so the conversation keeps its width */
+.evi-claude-panel ~ aside:not(.evi-claude-root) {
+  display: none !important;
+}
+
+/* sessions list in the DM sidebar: the DM list slides out, the sessions slide in (and back) */
+.evi-claude-sb-host {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  opacity: 0;
+  transform: translateX(32px);
+  pointer-events: none;
+  background: var(--background-base-lower, #131315);
+  transition:
+    opacity 0.2s cubic-bezier(0.215, 0.61, 0.355, 1),
+    transform 0.32s cubic-bezier(0.215, 0.61, 0.355, 1),
+    visibility 0s linear 0.32s;
+  visibility: hidden;
+}
+.evi-claude-sb-on > .evi-claude-sb-host {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  visibility: visible;
+  transition:
+    opacity 0.24s cubic-bezier(0.215, 0.61, 0.355, 1) 0.04s,
+    transform 0.32s cubic-bezier(0.215, 0.61, 0.355, 1),
+    visibility 0s;
+}
+[class^='sidebarList_'] > nav[class^='privateChannels_'] {
+  transition:
+    opacity 0.2s cubic-bezier(0.215, 0.61, 0.355, 1),
+    transform 0.32s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+.evi-claude-sb-on > nav[class^='privateChannels_'] {
+  opacity: 0;
+  transform: translateX(-32px);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .evi-claude-sb-host,
+  .evi-claude-sb-on > .evi-claude-sb-host,
+  [class^='sidebarList_'] > nav[class^='privateChannels_'] {
+    transition: none;
+  }
+}
+
+/* the agents page fades in with the sidebar swap */
+.evi-claude-overlay {
+  animation: evi-claude-page-in 0.28s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+@keyframes evi-claude-page-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .evi-claude-overlay {
+    animation: none;
+  }
+}
+
+/* pinned sessions in the DM list slide in, and fold away when unpinned */
+.evi-claude-pin-in {
+  animation: evi-claude-pin-in 0.26s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+@keyframes evi-claude-pin-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+    max-height: 0;
+  }
+  to {
+    max-height: 48px;
+  }
+}
+.evi-claude-pin-out {
+  overflow: hidden;
+  transition:
+    height 0.22s cubic-bezier(0.215, 0.61, 0.355, 1),
+    opacity 0.16s ease-out,
+    transform 0.22s cubic-bezier(0.215, 0.61, 0.355, 1);
+  height: 0 !important;
+  opacity: 0;
+  transform: translateX(-10px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .evi-claude-pin-in {
+    animation: none;
+  }
+  .evi-claude-pin-out {
+    transition: none;
+  }
+}
+
+
+/* the plugin's settings panel (under Evi's generated settings) */
+.evi-claude-settings { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.evi-claude-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06)); }
+.evi-claude-settings-title { color: var(--header-primary, var(--text-default, #fff)); font-size: 14px; font-weight: 500; }
+.evi-claude-settings-note { color: var(--text-muted, #949ba4); font-size: 13px; line-height: 1.35; margin-top: 2px; }
+.evi-claude-settings-tip { padding: 6px 0; }
