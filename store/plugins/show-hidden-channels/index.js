@@ -539,8 +539,55 @@ function HiddenIcon() {
     children: icon
   }) : icon({});
 }
-var filteredChannels = new WeakMap;
 var isUncategorized = (entry) => entry.channel.id === "null" && entry.channel.name === "Uncategorized" && entry.comparator === -1;
+var filteredChannels = new WeakMap;
+var permissionChanges = 0;
+function guildOf(channels) {
+  if (typeof channels.id === "string")
+    return channels.id;
+  for (const entries of Object.values(channels)) {
+    if (!Array.isArray(entries))
+      continue;
+    for (const entry of entries) {
+      const id = entry?.channel?.guild_id;
+      if (typeof id === "string")
+        return id;
+    }
+  }
+}
+function permissionKey(guildId) {
+  const permissions = store("PermissionStore");
+  if (!guildId || typeof permissions?.getGuildVersion !== "function" || typeof permissions?.getChannelsVersion !== "function")
+    return;
+  return `${permissions.getGuildVersion(guildId)}:${permissions.getChannelsVersion()}`;
+}
+function filterChannels(channels) {
+  const result = {};
+  for (const [key, entries] of Object.entries(channels)) {
+    if (!Array.isArray(entries)) {
+      result[key] = entries;
+      continue;
+    }
+    result[key] = entries.filter((entry) => isUncategorized(entry) || entry.channel.id === null || !isHiddenChannel(entry.channel));
+  }
+  return result;
+}
+function sameChannels(a, b) {
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length)
+    return false;
+  for (const key of keys) {
+    const x = a[key], y = b[key];
+    if (x === y)
+      continue;
+    if (!Array.isArray(x) || !Array.isArray(y) || x.length !== y.length)
+      return false;
+    for (let i = 0;i < x.length; i++)
+      if (x[i] !== y[i])
+        return false;
+  }
+  return true;
+}
 var css = `
 .evi-shc-hidden-icon { cursor: not-allowed; margin-left: 6px; z-index: 0; }
 ${lockScreenCss}
@@ -921,18 +968,17 @@ var show_hidden_channels_default = import_api3.definePlugin({
   resolveGuildChannels(channels, includeHidden) {
     if (includeHidden || !channels || typeof channels !== "object")
       return channels;
-    let result = filteredChannels.get(channels);
-    if (result)
-      return result;
-    result = {};
-    for (const [key, entries] of Object.entries(channels)) {
-      if (!Array.isArray(entries)) {
-        result[key] = entries;
-        continue;
-      }
-      result[key] = entries.filter((entry) => isUncategorized(entry) || entry.channel.id === null || !isHiddenChannel(entry.channel));
+    const cached = filteredChannels.get(channels);
+    if (cached?.stamp === permissionChanges)
+      return cached.result;
+    const key = permissionKey(guildOf(channels));
+    if (cached && key !== undefined && cached.key === key) {
+      cached.stamp = permissionChanges;
+      return cached.result;
     }
-    filteredChannels.set(channels, result);
+    const fresh = filterChannels(channels);
+    const result = cached && sameChannels(cached.result, fresh) ? cached.result : fresh;
+    filteredChannels.set(channels, { stamp: permissionChanges, key, result });
     return result;
   },
   makeAllowedRolesReduce(guildId) {
@@ -952,9 +998,9 @@ var show_hidden_channels_default = import_api3.definePlugin({
   start(ctx) {
     setContext(ctx);
     const permissions = store("PermissionStore");
-    const reset = () => void (filteredChannels = new WeakMap);
-    permissions?.addChangeListener?.(reset);
-    ctx.onDispose(() => permissions?.removeChangeListener?.(reset));
+    const changed = () => void permissionChanges++;
+    permissions?.addChangeListener?.(changed);
+    ctx.onDispose(() => permissions?.removeChangeListener?.(changed));
   },
   stop() {
     setContext(undefined);

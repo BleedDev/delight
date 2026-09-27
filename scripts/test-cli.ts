@@ -55,12 +55,17 @@ if (!EXE) {
     check("loader keeps Discord's app name", JSON.parse(readAsarFile(asar, "package.json")).name === "discord");
 }
 
+// An official plugin someone already has (installs used to lay them all down) gets updated; nothing is added
+const pluginsDir = join(ROAMING, "Evi", "plugins");
+mkdirSync(join(pluginsDir, "no-track"), { recursive: true });
+writeFileSync(join(pluginsDir, "no-track", "manifest.json"), "{}");
 r = cli("install");
 check("install (bundled core) succeeds", r.code === 0 && /Installed|Updated/.test(r.out), r.out);
 const coreDir = join(ROAMING, "Evi", "core");
 check("core written to the data folder", ["main.js", "preload.js", "renderer.js"].every(f => existsSync(join(coreDir, f))));
 check("core marked as CommonJS", JSON.parse(readFileSync(join(coreDir, "package.json"), "utf8")).type === "commonjs");
-check("official plugins installed", ["clear-urls", "experiments", "no-track"].every(id => existsSync(join(ROAMING, "Evi", "plugins", id, "manifest.json"))));
+check("Evi comes with no plugins: none added", !["clear-urls", "experiments"].some(id => existsSync(join(pluginsDir, id))));
+check("an official plugin you already had is updated", readFileSync(join(pluginsDir, "no-track", "manifest.json"), "utf8") !== "{}");
 check("loader points at the installed core", shim().includes(JSON.stringify(join(coreDir, "main.js"))) && !shim().includes("EVI_DEV_PLUGINS"), shim());
 check("Discord's archive still intact after reinstall", readFileSync(original).equals(discordAsar));
 

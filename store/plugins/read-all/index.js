@@ -47,6 +47,12 @@ var import_api = require("@evi/api");
 // plugins/read-all/collect.ts
 var CHANNEL_READ_STATE = 0;
 var BULK_ACK_LIMIT = 100;
+function guildMaybeUnread(store, guildId) {
+  const unread = store?.getGuildHasUnreadIgnoreMuted?.(guildId) ?? store?.hasUnread?.(guildId);
+  if (typeof unread !== "boolean")
+    return true;
+  return unread || (store?.getMentionCount?.(guildId) ?? 0) > 0;
+}
 function guildIds(store) {
   const ids = store.getGuildIds?.();
   if (Array.isArray(ids))
@@ -72,7 +78,10 @@ function collectUnread(stores, options = {}) {
       return;
     out.push({ guildId, channelId: channel.id, messageId: rs.lastMessageId(channel.id) ?? null, readStateType: CHANNEL_READ_STATE });
   };
+  const skip = options.skipReadGuilds && stores.GuildReadStateStore;
   for (const guildId of guildIds(stores.GuildStore)) {
+    if (skip && !guildMaybeUnread(skip, guildId))
+      continue;
     const groups = stores.GuildChannelStore.getChannels(guildId) ?? {};
     for (const group of Object.values(groups)) {
       if (Array.isArray(group))
@@ -113,18 +122,22 @@ var settings = {
   contextMenu: { type: "boolean", label: "Server menu item", description: '"Mark All Servers as Read" when you right-click a server.', default: true }
 };
 var context;
+var cachedStores;
 function stores() {
+  if (cachedStores)
+    return cachedStores;
   const GuildStore = import_api.findStore("GuildStore");
   const GuildChannelStore = import_api.findStore("GuildChannelStore");
   const ReadStateStore = import_api.findStore("ReadStateStore");
   if (!GuildStore || !GuildChannelStore || !ReadStateStore)
     return;
-  return {
+  return cachedStores = {
     GuildStore,
     GuildChannelStore,
     ReadStateStore,
     ActiveJoinedThreadsStore: import_api.findStore("ActiveJoinedThreadsStore"),
-    ChannelStore: import_api.findStore("ChannelStore")
+    ChannelStore: import_api.findStore("ChannelStore"),
+    GuildReadStateStore: import_api.findStore("GuildReadStateStore")
   };
 }
 async function readAll() {
@@ -155,16 +168,40 @@ async function readAllWithToast() {
 var unreadCount = 0;
 var listeners = new Set;
 var recountTimer;
+var cancelIdle;
 function recount() {
   recountTimer = undefined;
+  cancelIdle = undefined;
   const s = stores();
-  const next = s && context ? collectUnread(s, { includeDms: context.settings.get("includeDms") }).length : 0;
+  const next = s && context ? collectUnread(s, { includeDms: context.settings.get("includeDms"), skipReadGuilds: true }).length : 0;
   if (next === unreadCount)
     return;
   unreadCount = next;
   listeners.forEach((l) => l());
 }
-var scheduleRecount = () => void (recountTimer ??= setTimeout(recount, 250));
+var RECOUNT_AFTER = 1500;
+var RECOUNT_WITHIN = 5000;
+var firstChange = 0;
+function whenIdle(fn) {
+  if (typeof requestIdleCallback === "function") {
+    const handle2 = requestIdleCallback(fn, { timeout: 1000 });
+    return () => cancelIdleCallback(handle2);
+  }
+  const handle = setTimeout(fn, 0);
+  return () => clearTimeout(handle);
+}
+function scheduleRecount() {
+  const now = performance.now();
+  if (recountTimer === undefined)
+    firstChange = now;
+  else if (now - firstChange >= RECOUNT_WITHIN)
+    return;
+  clearTimeout(recountTimer);
+  recountTimer = setTimeout(() => {
+    recountTimer = undefined;
+    cancelIdle ??= whenIdle(recount);
+  }, RECOUNT_AFTER);
+}
 function useUnreadCount() {
   return import_api.React.useSyncExternalStore((cb) => {
     listeners.add(cb);
@@ -243,6 +280,9 @@ var read_all_default = import_api.definePlugin({
       context = undefined;
       clearTimeout(recountTimer);
       recountTimer = undefined;
+      cancelIdle?.();
+      cancelIdle = undefined;
+      cachedStores = undefined;
       unreadCount = 0;
       listeners.forEach((l) => l());
     });

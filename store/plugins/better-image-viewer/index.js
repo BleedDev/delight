@@ -141,12 +141,14 @@ function channelMessages(channelId) {
     return [];
   return channel.toArray?.() ?? channel._array ?? (Array.isArray(channel) ? channel : []);
 }
-function isHiddenAuthor(message) {
-  const id = message?.author?.id;
-  if (!id)
-    return false;
+function hiddenAuthors() {
   const relationships = import_api.findStore("RelationshipStore");
-  return !!(relationships?.isBlockedOrIgnored?.(id) ?? relationships?.isBlocked?.(id));
+  return (message) => {
+    const id = message?.author?.id;
+    if (!id)
+      return false;
+    return !!(relationships?.isBlockedOrIgnored?.(id) ?? relationships?.isBlocked?.(id));
+  };
 }
 function widen(options) {
   const items = Array.isArray(options?.items) ? options.items : [];
@@ -156,7 +158,7 @@ function widen(options) {
     return;
   if (!items.every((i) => i?.sourceMetadata?.message?.id === message.id))
     return;
-  const gallery = channelGallery(channelMessages(message.channel_id), message.id, items, start, toItem, isHiddenAuthor);
+  const gallery = channelGallery(channelMessages(message.channel_id), message.id, items, start, toItem, hiddenAuthors());
   if (!gallery || gallery.items.length === items.length)
     return;
   return { ...options, ...gallery };

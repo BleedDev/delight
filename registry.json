@@ -8,26 +8,35 @@
             "authors": [
                 "Evi"
             ],
-            "version": "2.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "2.0.1",
             "tags": [
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.5.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/better-image-viewer/manifest.json?v=9a796b922b4c",
-                    "sha256": "9a796b922b4cca1ce2ab713c1363de4b0763603a2202f55646f6770c8fc7b4c6"
+                    "url": "https://evi.rest/store/plugins/better-image-viewer/manifest.json?v=4eeec5336965",
+                    "sha256": "4eeec5336965a0fb75e9330b639e7782dafe60f56049051a2f4efce7566fafa2"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/better-image-viewer/index.js?v=e22e09fd51dc",
-                    "sha256": "e22e09fd51dc38e86a4a6b0e0a367f2b21c675c81e84f62d14d6fd090c3976a4"
+                    "url": "https://evi.rest/store/plugins/better-image-viewer/index.js?v=87c96cdadccf",
+                    "sha256": "87c96cdadccfdf37003a2f25701b99ea81bcb8a124fcf2eba2d930e4b7b8f0c2"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/better-image-viewer",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "2.0.1",
+                    "notes": [
+                        "Faster: opening an image in a long channel does less work."
+                    ]
+                },
                 {
                     "version": "2.0.0",
                     "notes": [
@@ -78,6 +87,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -87,20 +99,20 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "version": "1.0.1",
             "tags": [
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/emoji-stealer/manifest.json?v=0870301500cd",
-                    "sha256": "0870301500cdc06b6a7dc19d3475de41e5c64ea2e7511576400acc982740b873"
+                    "url": "https://evi.rest/store/plugins/emoji-stealer/manifest.json?v=5e307dc5a34a",
+                    "sha256": "5e307dc5a34acfc184eabcab2049c4fc52f937150dcd018dfe675588ead3cbeb"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/emoji-stealer/index.js?v=bdd24a2025bf",
-                    "sha256": "bdd24a2025bf985ad00dcc1e07a735700fd7812de535d4b01e8b28bffacf889f"
+                    "url": "https://evi.rest/store/plugins/emoji-stealer/index.js?v=4beccb345fce",
+                    "sha256": "4beccb345fce6f9e20b673a3f0b5f89d7c09f7e6b6a2727ff9bea0f13ff0371b"
                 }
             },
             "updatedAt": "2026-09-27",
@@ -108,11 +120,20 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.1",
+                    "notes": [
+                        "The Add to Server dialog opens and closes with Discord's own animation."
+                    ]
+                },
+                {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -148,6 +169,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -183,6 +207,9 @@
                         "Servers, messages and members far out of view skip rendering work instead of being removed, so nothing flickers or jumps."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -218,6 +245,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -253,6 +283,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -313,6 +346,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -348,6 +384,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -384,6 +423,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -419,6 +461,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -428,21 +473,24 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "messages",
                 "utility"
             ],
             "native": true,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.5.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/inline-translate/manifest.json?v=669ce2d7043f",
-                    "sha256": "669ce2d7043ffd7c99171846864ba8c391615d85edda3e66ebfd65702c2e4ea0"
+                    "url": "https://evi.rest/store/plugins/inline-translate/manifest.json?v=fa8fa981dce3",
+                    "sha256": "fa8fa981dce3953b87b875b8e43837cef62f5f965a9936a7aa6664a8216be6e2"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/inline-translate/index.js?v=002d931bb72d",
-                    "sha256": "002d931bb72d89c117c64558ebb7f7e3c4d022a7f31c7d2b36fdea5d2d2d8eac"
+                    "url": "https://evi.rest/store/plugins/inline-translate/index.js?v=db61552b6194",
+                    "sha256": "db61552b6194032077e4a2684f0d70ad3e185264ca11cf4a5869c2119530bbda"
                 },
                 "native.js": {
                     "url": "https://evi.rest/store/plugins/inline-translate/native.js?v=3a2b891f9f14",
@@ -454,6 +502,12 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Faster: messages load with no extra work while automatic translation is off, and a finished translation only redraws its own message."
+                    ]
+                },
+                {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
@@ -464,30 +518,56 @@
         {
             "id": "last-seen",
             "name": "Last Seen",
-            "description": "See when someone was last online and when they last sent a message, on their profile and next to offline members. Only counts what your client has seen, kept on this device.",
+            "description": "See when someone was last online, last active and last sent a message: on their profile, next to offline members, in your friends list and in your DMs. Only counts what your client has seen, kept on this device.",
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.1.2",
             "tags": [
                 "social"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.4.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/last-seen/manifest.json?v=b34ab3aedbcb",
-                    "sha256": "b34ab3aedbcb879fee8e7e9abf0774c91b4660f3fb4e96712607314e81794984"
+                    "url": "https://evi.rest/store/plugins/last-seen/manifest.json?v=b3ea09461165",
+                    "sha256": "b3ea09461165cbdaa146cb0129c637ad8e6a51b8218628be348307b83f71a738"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/last-seen/index.js?v=95bb4fd93b32",
-                    "sha256": "95bb4fd93b320df408944bcdd3a03287c98ca614189deeeb28d7637eb91d4923"
+                    "url": "https://evi.rest/store/plugins/last-seen/index.js?v=fa3b3856f6ae",
+                    "sha256": "fa3b3856f6ae7c1fdfcd93f68bec87c26e0f7dbd59c0c92530ddd07698e0fede"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/last-seen",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.2",
+                    "notes": [
+                        "Faster: opening channels and DMs no longer waits on Last Seen, and a change only redraws the lines of the person it is about."
+                    ]
+                },
+                {
+                    "version": "1.1.1",
+                    "notes": [
+                        "The last seen clock shows in Discord's badge directory (Your badges) too."
+                    ]
+                },
+                {
+                    "version": "1.1.0",
+                    "notes": [
+                        "Remembers up to 25,000 people, and friends and DM contacts are the last to be forgotten.",
+                        "Last active: typing, voice and reactions count too, even when someone looks offline.",
+                        "Opening a channel fills in when people last sent a message there, and hovering says where. Click the clock on a profile to jump to it.",
+                        "Shows under offline friends in the friends list and under offline people in your DMs.",
+                        "Times that are only a guess (someone was online when Discord closed) now say \"in the last 3h\".",
+                        "Settings: search everyone remembered, export and import, and clearing asks first and can be undone."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -503,21 +583,21 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "version": "1.0.1",
             "tags": [
                 "privacy",
                 "security"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/link-safety/manifest.json?v=733ac396c90b",
-                    "sha256": "733ac396c90b860a4d4b2ad0526b4782ec4a47de20671a1e186298a2f172e076"
+                    "url": "https://evi.rest/store/plugins/link-safety/manifest.json?v=a0060346a4e8",
+                    "sha256": "a0060346a4e859f797571746c4f6926ea5622826469333921ad09b68d6e93fdf"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/link-safety/index.js?v=0317f801fb76",
-                    "sha256": "0317f801fb7692a1b452f44375503baf706c8f86ff8f511dc17e840e18bc5fcb"
+                    "url": "https://evi.rest/store/plugins/link-safety/index.js?v=7cbceb44c47e",
+                    "sha256": "7cbceb44c47ead3a628c5059c3404924ae55ec619b939b805f9f72acb47d4e8c"
                 }
             },
             "updatedAt": "2026-09-27",
@@ -525,11 +605,20 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.1",
+                    "notes": [
+                        "The warning opens and closes with Discord's own animation."
+                    ]
+                },
+                {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -571,6 +660,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -610,6 +702,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -619,26 +714,32 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.1.0",
+            "version": "1.1.1",
             "tags": [
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/permissions-viewer/manifest.json?v=bdb81a64f51c",
-                    "sha256": "bdb81a64f51c73af4b6de073ad668f71c99b5d1227d3a45f02522c98e1717e2f"
+                    "url": "https://evi.rest/store/plugins/permissions-viewer/manifest.json?v=b362277748ab",
+                    "sha256": "b362277748abe21feff8da6e48fcd8ad24e995823f6b09a9ef4253053e72a093"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/permissions-viewer/index.js?v=17ea53e33f42",
-                    "sha256": "17ea53e33f4207e60b6e73c8cd59bebc4496be54029e9fb22c9dd99eef804316"
+                    "url": "https://evi.rest/store/plugins/permissions-viewer/index.js?v=0856782ed152",
+                    "sha256": "0856782ed152b083e6f036f8622d4e95a3d07ab688b183ea3cf04615f30287d9"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/permissions-viewer",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.1",
+                    "notes": [
+                        "The dialog opens and closes with Discord's own animation."
+                    ]
+                },
                 {
                     "version": "1.1.0",
                     "notes": [
@@ -651,6 +752,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -660,26 +764,42 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.1.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.2.1",
             "tags": [
                 "appearance"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.4.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/platform-indicators/manifest.json?v=e73d4e60d1f7",
-                    "sha256": "e73d4e60d1f729b836f0d3c1e8288b0876857d3ccbd1a3bf9f9396ba7e8d4585"
+                    "url": "https://evi.rest/store/plugins/platform-indicators/manifest.json?v=ebbc86790cdc",
+                    "sha256": "ebbc86790cdc876dd30189fec56ce633dae679854ae240b727c30dfee430ba53"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/platform-indicators/index.js?v=2b477500fda6",
-                    "sha256": "2b477500fda6f03f170b99b9a814624b6e77b58a8d1a97c12ec2a85a30c3aa74"
+                    "url": "https://evi.rest/store/plugins/platform-indicators/index.js?v=2ea724c207a5",
+                    "sha256": "2ea724c207a5cc6a719f20a635ede3ecdbf11aed710f6f3e1e551398b2b5d326"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/platform-indicators",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.2.1",
+                    "notes": [
+                        "Faster: an icon only redraws when that person switches devices, and places you turned off get no icons at all."
+                    ]
+                },
+                {
+                    "version": "1.2.0",
+                    "notes": [
+                        "One icon per person, for the device they're actually on. A web session left open in the background no longer shows next to their desktop app.",
+                        "The device shows in Discord's badge directory (Your badges) too."
+                    ]
+                },
                 {
                     "version": "1.1.0",
                     "notes": [
@@ -729,6 +849,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -738,26 +861,35 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.5.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/read-all/manifest.json?v=ef18898fcaa6",
-                    "sha256": "ef18898fcaa64854c01dfd2933befc97dda3d6960e924c1e9a9ab054031b0c90"
+                    "url": "https://evi.rest/store/plugins/read-all/manifest.json?v=c84c84ebea90",
+                    "sha256": "c84c84ebea90923fcc6318945ebe0d7e8ede105033a8ad9ab869f98b3cb0103e"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/read-all/index.js?v=af2be229d09f",
-                    "sha256": "af2be229d09f2929f36c38fa55c1726e5583d058c8289a2980c6ddc44299690c"
+                    "url": "https://evi.rest/store/plugins/read-all/index.js?v=09b02dbe7f8a",
+                    "sha256": "09b02dbe7f8a7f66e5a6b6d49b267aa2543a78b65e819cc745bdb65a8e1d3ff0"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/read-all",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Faster: the unread count waits for a quiet moment and skips servers with nothing unread, instead of recounting on every message."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -799,6 +931,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -808,27 +943,36 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.1",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.2",
             "tags": [
                 "servers",
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.5.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/show-hidden-channels/manifest.json?v=0c258b3ad168",
-                    "sha256": "0c258b3ad16858c4538be85efb669feaa4e2c7745ae845aaeb63428072552ab8"
+                    "url": "https://evi.rest/store/plugins/show-hidden-channels/manifest.json?v=6610026e9753",
+                    "sha256": "6610026e9753b0aaf6a173e546dafd0ad36d2d0a814368fd503e139230c5a385"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/show-hidden-channels/index.js?v=c76649584109",
-                    "sha256": "c76649584109583e19567cfab2b6f952bf6c4308389af70c249e978fd06f7fde"
+                    "url": "https://evi.rest/store/plugins/show-hidden-channels/index.js?v=12db51201577",
+                    "sha256": "12db512015770bcf430ba9b6e836fec1aa36fe801137e4be29158a8ae36b84c0"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/show-hidden-channels",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.2",
+                    "notes": [
+                        "Faster: a permission change in one server no longer redraws every server's channel list."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -877,6 +1021,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -918,6 +1065,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -927,21 +1077,21 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "version": "1.0.1",
             "tags": [
                 "messages",
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/snippets/manifest.json?v=ff27b156ad05",
-                    "sha256": "ff27b156ad0537195f986a248dfd6483815e87a7d52d3304678444d92cb1ba43"
+                    "url": "https://evi.rest/store/plugins/snippets/manifest.json?v=7050bb671900",
+                    "sha256": "7050bb67190067e61956009b99384222e44e93630cc4b6981ff522be04d7b8fa"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/snippets/index.js?v=c3476e9aa4c4",
-                    "sha256": "c3476e9aa4c442d7bb7a55f7af8e3a4dde02f4d8604816e39967d60c15a85eb4"
+                    "url": "https://evi.rest/store/plugins/snippets/index.js?v=66f23a92e8f1",
+                    "sha256": "66f23a92e8f15da12ea837d529455c1f056d93aa808fcd19779f3f998622317c"
                 }
             },
             "updatedAt": "2026-09-27",
@@ -949,11 +1099,20 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.1",
+                    "notes": [
+                        "The snippets menu and the Save as snippet dialog open and close with Discord's own animations."
+                    ]
+                },
+                {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -989,6 +1148,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -998,26 +1160,35 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.1",
             "tags": [
                 "privacy"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/strip-metadata/manifest.json?v=c8154f567451",
-                    "sha256": "c8154f5674516088cf0bd468ead9a11497c7d728d3ba8e90337d50bfea196d3e"
+                    "url": "https://evi.rest/store/plugins/strip-metadata/manifest.json?v=e665975e18a0",
+                    "sha256": "e665975e18a0ec4ff1186b2230b2872bf2d2a947d6678a2bbf6c7e7e2cf7bba9"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/strip-metadata/index.js?v=eb5dd0121cf7",
-                    "sha256": "eb5dd0121cf7e7305321cbe7ea597485332cbfe1d51d98947f9040b6b7e14ab0"
+                    "url": "https://evi.rest/store/plugins/strip-metadata/index.js?v=2a0e7a74ec1b",
+                    "sha256": "2a0e7a74ec1bbaccf1e917faa6edb6f6ed9f916e277101a65025dd0588971c38"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/strip-metadata",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.0.1",
+                    "notes": [
+                        "Works with Discord's new upload code again: uploads that skip the upload queue are cleaned too, and the \"Can't find 1 part of Discord\" warning is gone."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -1033,20 +1204,20 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "version": "1.0.1",
             "tags": [
                 "social"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/timezones/manifest.json?v=fb47f9659926",
-                    "sha256": "fb47f9659926f454420cf6a1ca6c6b5305674fea5937cde6820d384b46ae2945"
+                    "url": "https://evi.rest/store/plugins/timezones/manifest.json?v=c5c1731998fe",
+                    "sha256": "c5c1731998fe7bbc4a4f1078855d4097b675f52cef655ffbfe04f7f8ffef60d3"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/timezones/index.js?v=7c40893ae99a",
-                    "sha256": "7c40893ae99a6afc2612c129a15387c6866a83440ffcceda7e84431157f434ad"
+                    "url": "https://evi.rest/store/plugins/timezones/index.js?v=60b1d9d92418",
+                    "sha256": "60b1d9d9241880f13ec79aaa0eb91d640343bfa6c2da69796e538350a8e71e16"
                 }
             },
             "updatedAt": "2026-09-27",
@@ -1054,46 +1225,20 @@
             "screenshots": [],
             "changelog": [
                 {
-                    "version": "1.0.0",
+                    "version": "1.0.1",
                     "notes": [
-                        "First release."
+                        "The timezone picker opens and closes with Discord's own animation."
                     ]
-                }
-            ]
-        },
-        {
-            "id": "toolkit-demo",
-            "name": "Toolkit Demo",
-            "description": "Example of the plugin toolkit: a /evi command, a toast, and a Copy Message ID item in the message menu.",
-            "authors": [
-                "Evi"
-            ],
-            "version": "1.0.0",
-            "tags": [
-                "developer"
-            ],
-            "native": false,
-            "minEviVersion": "0.1.0",
-            "files": {
-                "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/toolkit-demo/manifest.json",
-                    "sha256": "aa47519a0b78a6595476035ab92109db97d281bef554ce62c9cd7b1dd2e29115"
                 },
-                "index.js": {
-                    "url": "https://evi.rest/store/plugins/toolkit-demo/index.js",
-                    "sha256": "9c719bcb3659cb3d9640262faf17ac44e99bf05dc9bc43af16c4047900903f70"
-                }
-            },
-            "updatedAt": "2026-09-26",
-            "source": "https://github.com/BleedDev/evi/tree/main/plugins/toolkit-demo",
-            "screenshots": [],
-            "changelog": [
                 {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -1103,20 +1248,20 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "version": "1.0.1",
             "tags": [
                 "media"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/video-controls-plus/manifest.json?v=f936ef88473b",
-                    "sha256": "f936ef88473baf86acbb2e0391db56a98732603d5ddb1b12b20d1109f8d69b62"
+                    "url": "https://evi.rest/store/plugins/video-controls-plus/manifest.json?v=a2888b72d77b",
+                    "sha256": "a2888b72d77b558a6085f19a8b26fb701b1f9ff4ab59764d55289d4422f98950"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/video-controls-plus/index.js?v=9a82c862ff2b",
-                    "sha256": "9a82c862ff2bc83965562bc2f4aee3f1ca0a9b382f9581705bf4162e6aba520f"
+                    "url": "https://evi.rest/store/plugins/video-controls-plus/index.js?v=16b2c03432b8",
+                    "sha256": "16b2c03432b8187c87ea2db57aa25cd47a08c3c75b3af5226264f879c75ed951"
                 }
             },
             "updatedAt": "2026-09-27",
@@ -1124,11 +1269,20 @@
             "screenshots": [],
             "changelog": [
                 {
+                    "version": "1.0.1",
+                    "notes": [
+                        "The speed menu slides in like Discord's menus, and fades out instead of vanishing."
+                    ]
+                },
+                {
                     "version": "1.0.0",
                     "notes": [
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -1138,26 +1292,49 @@
             "authors": [
                 "Evi"
             ],
-            "version": "1.0.0",
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.1.2",
             "tags": [
                 "voice"
             ],
             "native": false,
-            "minEviVersion": "0.2.0",
+            "minEviVersion": "0.3.2",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/voice-activity-log/manifest.json?v=d4b2131987aa",
-                    "sha256": "d4b2131987aae686f20661b4f524bbfcdce1cd01c01a6ff04be67be2ae3ca0bc"
+                    "url": "https://evi.rest/store/plugins/voice-activity-log/manifest.json?v=22fe8a677350",
+                    "sha256": "22fe8a6773509f9225914ba028731a3202e6a7969535f74a28049639f475099f"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/voice-activity-log/index.js?v=fa0e78fae9e8",
-                    "sha256": "fa0e78fae9e83df6c6c8309adbf88cc0693d5527725ab3b6b35c51088902bc19"
+                    "url": "https://evi.rest/store/plugins/voice-activity-log/index.js?v=1669bca1a7b0",
+                    "sha256": "1669bca1a7b0cd358ef3798b788ff959feff3134d4256514709587882d1ce218"
                 }
             },
             "updatedAt": "2026-09-27",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/voice-activity-log",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.2",
+                    "notes": [
+                        "The log scrolls with Discord's slim scrollbar instead of the grey one with arrows."
+                    ]
+                },
+                {
+                    "version": "1.1.1",
+                    "notes": [
+                        "Faster: a little less work on every voice update."
+                    ]
+                },
+                {
+                    "version": "1.1.0",
+                    "notes": [
+                        "A cleaner log: sessions are listed by channel with a dot on the one you're in, plus a proper search field and bigger avatars.",
+                        "Opens and closes with Discord's own dialog animation.",
+                        "People already in the channel when you join now read \"was already here\"."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -1200,6 +1377,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         },
         {
@@ -1235,6 +1415,9 @@
                         "First release."
                     ]
                 }
+            ],
+            "authorIds": [
+                "evi"
             ]
         }
     ],

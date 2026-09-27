@@ -422,49 +422,91 @@ var css = `
 .dl-it-link:hover { text-decoration: underline; }
 .dl-it-link:focus-visible { outline: 2px solid var(--focus-primary, #00b0f4); outline-offset: 1px; }
 `;
-function discordLocale() {
-  return import_api.getStore("LocaleStore")?.locale || document.documentElement.lang || navigator.language || "en";
+var stores = new Map;
+function store(name) {
+  let found = stores.get(name);
+  if (found)
+    return found;
+  try {
+    found = import_api.getStore(name);
+  } catch {
+    return;
+  }
+  stores.set(name, found);
+  return found;
 }
-var currentUserId = () => import_api.getStore("UserStore")?.getCurrentUser?.()?.id;
+function discordLocale() {
+  return store("LocaleStore")?.locale || document.documentElement.lang || navigator.language || "en";
+}
+var me;
+var currentUserId = () => me ??= store("UserStore")?.getCurrentUser?.()?.id;
 function isOwn(message) {
-  const me = currentUserId();
-  return !!me && message?.author?.id === me;
+  const id = currentUserId();
+  return !!id && message?.author?.id === id;
 }
 
 class Runtime {
   ctx;
   cache = new LRU(CACHE_SIZE);
   views = new LRU(CACHE_SIZE);
-  listeners = new Set;
-  version = 0;
+  listeners = new Map;
+  epoch = 0;
   queue;
+  cachedTarget;
+  cachedOptions;
   constructor(ctx) {
     this.ctx = ctx;
     this.queue = new RateQueue(INTERVAL, MAX_QUEUED, (key) => {
       if (this.cache.peek(key)?.state === "loading") {
         this.cache.delete(key);
-        this.emit();
+        this.emit(key);
       }
     });
   }
-  subscribe = (fn) => {
-    this.listeners.add(fn);
-    return () => void this.listeners.delete(fn);
-  };
-  emit() {
-    this.version++;
-    for (const fn of this.listeners)
-      fn();
+  subscribe(key, fn) {
+    let set = this.listeners.get(key);
+    if (!set)
+      this.listeners.set(key, set = new Set);
+    set.add(fn);
+    return () => {
+      set.delete(fn);
+      if (!set.size && this.listeners.get(key) === set)
+        this.listeners.delete(key);
+    };
+  }
+  emit(key) {
+    if (key === undefined) {
+      this.epoch++;
+      for (const set2 of [...this.listeners.values()])
+        for (const fn of [...set2])
+          fn();
+      return;
+    }
+    const set = this.listeners.get(key);
+    if (set)
+      for (const fn of [...set])
+        fn();
+  }
+  invalidate() {
+    this.cachedTarget = undefined;
+    this.cachedOptions = undefined;
+    this.emit();
   }
   target() {
-    return normalizeLanguage(this.ctx.settings.get("target")) ?? googleLanguage(discordLocale());
+    return this.cachedTarget ??= normalizeLanguage(this.ctx.settings.get("target")) ?? googleLanguage(discordLocale());
+  }
+  autoMode() {
+    return this.ctx.settings.get("autoMode");
   }
   autoOptions() {
-    return {
-      mode: this.ctx.settings.get("autoMode"),
+    const id = currentUserId();
+    if (this.cachedOptions && this.cachedOptions.currentUserId === id)
+      return this.cachedOptions;
+    return this.cachedOptions = {
+      mode: this.autoMode(),
       languages: parseLanguageList(this.ctx.settings.get("autoLanguages")),
       target: this.target(),
-      currentUserId: currentUserId(),
+      currentUserId: id,
       ignoreBots: this.ctx.settings.get("ignoreBots")
     };
   }
@@ -473,7 +515,7 @@ class Runtime {
       this.views.set(key, view);
     else
       this.views.delete(key);
-    this.emit();
+    this.emit(key);
   }
   request(message, urgent) {
     const content = message.content;
@@ -489,7 +531,7 @@ class Runtime {
         return;
     }
     this.cache.set(key, { state: "loading", content });
-    this.emit();
+    this.emit(key);
     this.queue.add(key, async () => {
       const auto = !urgent;
       try {
@@ -510,7 +552,7 @@ class Runtime {
         if (!auto)
           this.ctx.logger.warn("Translation failed", error);
       } finally {
-        this.emit();
+        this.emit(key);
       }
     }, urgent);
   }
@@ -520,10 +562,13 @@ class Runtime {
       return this.setView(key, "dismissed");
     this.views.set(key, "shown");
     this.request(message, true);
-    this.emit();
+    this.emit(key);
   }
   isShown(message) {
     return this.views.peek(cacheKey(message.id, this.target())) === "shown";
+  }
+  snapshot(key) {
+    return `${this.epoch}|${this.views.peek(key) ?? ""}|${this.cache.peek(key)?.state ?? ""}`;
   }
   dispose() {
     this.queue.stop();
@@ -564,25 +609,31 @@ function LinkButton({ onClick, children }) {
     children
   });
 }
+function useMessageState(runtime, key) {
+  const subscribe = import_api.React.useCallback((fn) => runtime.subscribe(key, fn), [runtime, key]);
+  return import_api.React.useSyncExternalStore(subscribe, () => runtime.snapshot(key));
+}
 function Inline({ runtime, message }) {
-  import_api.React.useSyncExternalStore(runtime.subscribe, () => runtime.version);
-  const values = runtime.ctx.settings.use();
   const target = runtime.target();
   const key = cacheKey(message.id, target);
+  useMessageState(runtime, key);
   const entry = runtime.cache.peek(key);
   const view = runtime.views.peek(key);
   const content = typeof message.content === "string" ? message.content : "";
   import_api.React.useEffect(() => {
     if (!content)
       return;
+    const shown = runtime.views.peek(key) === "shown";
+    if (!shown && runtime.autoMode() === "off")
+      return;
     const cached = runtime.cache.peek(key);
     if (cached && cached.content === content)
       return;
-    if (runtime.views.peek(key) === "shown")
+    if (shown)
       return runtime.request(message, true);
     if (runtime.views.peek(key) !== "dismissed" && shouldAutoTranslate(message, runtime.autoOptions()))
       runtime.request(message, false);
-  }, [key, content, values.autoMode, values.autoLanguages, values.ignoreBots]);
+  }, [key, content, runtime.epoch]);
   if (!view || view === "dismissed" || !entry || entry.content !== content)
     return null;
   const dismiss = () => runtime.setView(key, "dismissed");
@@ -673,7 +724,7 @@ function TranslateIcon(props) {
   });
 }
 function HoverButton({ runtime, Button, message }) {
-  import_api.React.useSyncExternalStore(runtime.subscribe, () => runtime.version);
+  useMessageState(runtime, cacheKey(message.id, runtime.target()));
   const shown = runtime.isShown(message);
   return /* @__PURE__ */ jsx_runtime.jsx(Button, {
     label: shown ? "Hide Translation" : "Translate",
@@ -742,6 +793,21 @@ var inline_translate_default = import_api.definePlugin({
         action: () => runtime.toggle(message)
       }));
     });
-    ctx.settings.onChange(() => runtime.emit());
+    ctx.settings.onChange(() => runtime.invalidate());
+    const locale = store("LocaleStore");
+    let lastLocale = locale?.locale;
+    const onLocale = () => {
+      if (locale.locale === lastLocale)
+        return;
+      lastLocale = locale.locale;
+      runtime.invalidate();
+    };
+    locale?.addChangeListener?.(onLocale);
+    ctx.onDispose(() => locale?.removeChangeListener?.(onLocale));
+    ctx.flux.subscribe("CONNECTION_OPEN", () => {
+      me = undefined;
+      runtime.invalidate();
+    });
+    ctx.onDispose(() => void (me = undefined));
   }
 });
