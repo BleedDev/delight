@@ -1,10 +1,10 @@
 import { renameSync, rmSync, writeFileSync } from "fs";
 
+import { CHECKSUM_ASSET, EXE_ASSET } from "../shared/release";
 import { compareVersions } from "./discord";
 
+export { CHECKSUM_ASSET, EXE_ASSET };
 export const REPO = "BleedDev/evi";
-export const EXE_ASSET = "evi.exe";
-export const CHECKSUM_ASSET = "evi.exe.sha256";
 
 /** Overridable so tests can serve fake releases from a local server */
 const API = (process.env.EVI_UPDATE_API || "https://api.github.com").replace(/\/+$/, "");
@@ -27,7 +27,7 @@ interface GitHubRelease {
     assets: { name: string; browser_download_url: string; }[];
 }
 
-/** True when running as the compiled evi.exe rather than `bun src/cli/index.ts` */
+/** True when running as the compiled installer rather than `bun src/cli/index.ts` */
 export const COMPILED = !/^bun(-debug)?(\.exe)?$/i.test(process.execPath.split(/[\\/]/).pop() ?? "");
 
 /** "v1.2.3-beta" -> "1.2.3" */
@@ -74,7 +74,7 @@ async function download(url: string, timeout: number) {
     }
 }
 
-/** Downloads the release's evi.exe and checks it against the published SHA-256 */
+/** Downloads the release's installer for this system and checks it against the published SHA-256 */
 export async function downloadVerified(release: Release) {
     const checksumText = new TextDecoder().decode(await download(release.checksumUrl, 30_000));
     const expected = checksumText.match(/\b[a-f0-9]{64}\b/i)?.[0].toLowerCase();
@@ -93,7 +93,7 @@ export async function downloadVerified(release: Release) {
 export function replaceExecutable(exe: string, bytes: Uint8Array) {
     const next = `${exe}.new`;
     const old = `${exe}.old`;
-    writeFileSync(next, bytes);
+    writeFileSync(next, bytes, { mode: 0o755 });
     try {
         rmSync(old, { force: true });
         renameSync(exe, old);

@@ -19,7 +19,17 @@ With `bun run dev` running:
 
 Press `Ctrl+Shift+D` in Discord to open the settings panel, where you manage plugins, themes, Quick CSS and patch health, and try out new source patches in the Patch Helper. The same pages are also in Discord's own settings, under Evi.
 
-To ship it: `bun run compile` builds `dist/evi.exe`, a single-file installer with the core and official plugins embedded.
+To ship it: `bun run compile` builds `dist/evi.exe`, a single-file installer with the core and official plugins embedded. `bun scripts/build.ts --release` builds it for every system at once, from any machine: `evi.exe`, `evi-macos-arm64`, `evi-macos-x64`, `evi-linux-x64` and `evi-linux-arm64`, each with a `.sha256`. Bun's cross-compiled macOS binaries have signatures that don't match their contents, which Apple Silicon refuses to run, so `--release` re-signs them ad hoc with [rcodesign](https://github.com/indygreg/apple-platform-rs/releases) (on your `PATH`, or `RCODESIGN=`) and checks every page hash.
+
+Where it finds Discord and keeps its data:
+
+| | Discord | Evi's data |
+|---|---|---|
+| Windows | `%LOCALAPPDATA%\Discord\app-*` | `%APPDATA%\Evi` |
+| macOS | `Discord*.app` in `/Applications` or `~/Applications` | `~/Library/Application Support/Evi` |
+| Linux | `discord`, `discord-ptb`, ... in `/usr/share`, `/usr/lib`, `/opt` or `~/.local/share`, or the tarball in `~/Discord` | `~/.config/Evi` |
+
+Linux packages install Discord as root, so run `install`, `uninstall` and `update` there with `sudo`. Under sudo Evi's data still goes to your home and belongs to you, and Discord isn't restarted for you (it would run as root). A package upgrade puts Discord's own `app.asar` back: run `evi install` again. On macOS, the terminal needs **App Management** (System Settings → Privacy & Security) to change `Discord.app`. Flatpak and Snap aren't supported: Snap is read-only and Flatpak's sandbox can't see Evi's data.
 
 ```
 evi install   [--flavor stable|ptb|canary|development|all] [--restart] [--dev]
@@ -32,15 +42,15 @@ Launch `Discord.exe --vanilla` to start once without Evi, or `Discord.exe --evi-
 
 ### Updating
 
-`evi update` asks GitHub for the latest published release of `BleedDev/evi`. If it's newer than the running exe, it downloads the new `evi.exe` next to the current one and checks it against the release's `evi.exe.sha256`. A mismatch is rejected and nothing changes. Windows can't overwrite a running exe, so the current one is renamed to `evi.exe.old`, the new one takes its name, and the `.old` is removed the next time Evi runs. Then the new exe runs `install` (with your `--flavor` / `--restart`), which refreshes the core and official plugins in `%APPDATA%\Evi`.
+`evi update` asks GitHub for the latest published release of `BleedDev/evi`. If it's newer than the running exe, it downloads the new installer for your system (`evi.exe` on Windows) next to the current one and checks it against the release's `.sha256` for it. A mismatch is rejected and nothing changes. Windows can't overwrite a running exe, so the current one is renamed to `evi.exe.old`, the new one takes its name, and the `.old` is removed the next time Evi runs. Then the new exe runs `install` (with your `--flavor` / `--restart`), which refreshes the core and official plugins in `%APPDATA%\Evi`.
 
-Evi also updates from inside Discord: Evi settings → **Updates** shows the latest release and its notes, and **Update and restart Discord** installs it. It downloads `evi.exe`, checks it against `evi.exe.sha256`, keeps it as `%APPDATA%\Evi\evi.exe` and runs its `install --restart` as a separate process (output in `logs\update.log`). Evi checks when Discord starts and every few hours after, and shows a notice when a new version is out; the Updates tab can turn that off.
+Evi also updates from inside Discord: Evi settings → **Updates** shows the latest release and its notes, and **Update and restart Discord** installs it. It downloads `evi.exe`, checks it against `evi.exe.sha256`, keeps it as `%APPDATA%\Evi\evi.exe` and runs its `install --restart` as a separate process (output in `logs\update.log`). macOS and Linux do the same with their own installer when Discord's folder is writable; for a root-owned Linux install the Updates tab says to run `sudo evi update` instead. Evi checks when Discord starts and every few hours after, and shows a notice when a new version is out; the Updates tab can turn that off.
 
 `evi update --check` only reports whether a newer release exists. Source checkouts (`bun src/cli/index.ts`) don't replace themselves: update them with `git pull` and `bun run build`.
 
 ### Releasing
 
-`.github/workflows/release.yml` never publishes anything. It runs only when started from the Actions tab (with a `version` input) or when a `v*` tag is pushed. The version must match `package.json`. It builds, typechecks, runs the unit and CLI tests, compiles `evi.exe`, and creates a **draft** release with `evi.exe` and `evi.exe.sha256` attached. A maintainer reviews the draft and publishes it; only then does `evi update` see it. Versions with a `-suffix` are marked as prereleases, which `evi update` ignores.
+`.github/workflows/release.yml` never publishes anything. It runs only when started from the Actions tab (with a `version` input) or when a `v*` tag is pushed. The version must match `package.json`. It builds, typechecks, runs the unit and CLI tests, compiles the installers with `--release`, and creates a **draft** release with all five and their `.sha256` files attached. A maintainer reviews the draft and publishes it; only then does `evi update` see it. Versions with a `-suffix` are marked as prereleases, which `evi update` ignores.
 
 ## How it works
 

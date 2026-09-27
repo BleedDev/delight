@@ -27,7 +27,7 @@ function StatusLine({ status, checking }: { status?: UpdateStatus; checking: boo
         case "error": return <Status tone="danger">{status.error}</Status>;
         case "available": return status.installable
             ? <Status tone="warning">{`Evi ${status.release.version} is available`}</Status>
-            : <Status tone="warning">{`Evi ${status.release.version} is out. This is a dev build: update it with git pull and bun run build.`}</Status>;
+            : <Status tone="warning">{`Evi ${status.release.version} is out. ${status.blocked ?? "This is a dev build: update it with git pull and bun run build."}`}</Status>;
     }
 }
 

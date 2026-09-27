@@ -33,6 +33,15 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.3.1",
+        date: "2026-09-27",
+        sections: {
+            added: [
+                "**Evi on macOS and Linux.** Download the installer for your system from the release and run `evi install`. On Linux, run it with sudo.",
+            ],
+        },
+    },
+    {
         version: "0.3.0",
         date: "2026-09-27",
         sections: {
