@@ -2,9 +2,10 @@
     "id": "voice-message-download",
     "name": "Voice Message Download",
     "description": "Adds Download Voice Message to the message menu of voice messages, saving the recording as an .ogg file.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": ["Evi"],
     "tags": ["messages", "utility"],
-    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "permissions": { "network": ["cdn.discordapp.com", "media.discordapp.net"] },
+    "changelog": [{ "version": "1.0.1", "notes": ["Says what it needs (contacting cdn.discordapp.com and media.discordapp.net), and Evi holds it to that."] }, { "version": "1.0.0", "notes": ["First release."] }],
     "enabledByDefault": false
 }

@@ -1,5 +1,6 @@
 import * as api from "@evi/api";
 import { EviSettings, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import { applyPatchFixes, Hotfix, hotfixFor, hotfixTag } from "@shared/hotfixes";
 import { PulledPlugin, PulledPlugins, pullFor } from "@shared/pulls";
 
 import { Logger } from "../logger";
@@ -14,6 +15,8 @@ import { React, ReactDOM } from "../webpack/common";
 import { wreq } from "../webpack/runtime";
 import { PluginActivity } from "./activity";
 import { PluginContext } from "./context";
+import { PluginGuard } from "./guard";
+import { AppliedHotfixes } from "./hotfixes";
 import type { PluginDefinition } from "./types";
 
 export interface PluginState {
@@ -36,6 +39,11 @@ export interface PluginState {
      * that isn't pulled is installed.
      */
     pulled?: PulledPlugin;
+    /**
+     * Evi's fix for this version after a Discord update broke it (shared/hotfixes.ts), in its patches
+     * and lookups since it last started. One Evi withdraws stays until the plugin next starts.
+     */
+    hotfix?: Hotfix;
 }
 
 const logger = new Logger("Plugins", "#ff6fae");
@@ -44,6 +52,7 @@ const listeners = new Set<() => void>();
 let snapshot: PluginState[] = [];
 let ready = false;
 let pulls: PulledPlugins = {};
+let hotfixes: Hotfix[] = [];
 
 function emit() {
     snapshot = [...plugins.values()].sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
@@ -64,17 +73,22 @@ const requireMap: Record<string, unknown> = {
 
 function evaluate({ manifest, code }: PluginPayload): PluginDefinition {
     const module = { exports: {} as any };
+    // Held to the permissions it declares, in its own copy of the API and its network globals (guard.ts)
+    const guard = new PluginGuard(manifest);
+    const scopedApi = guard.api();
     const require = (name: string) => {
+        if (name === "@evi/api" || name === "@delight/api") return scopedApi;
         if (name in requireMap) return requireMap[name];
         throw new Error(`${manifest.id} tried to require "${name}". Only @evi/api and react are provided, bundle anything else.`);
     };
 
-    // Its own fetch, XMLHttpRequest and WebSocket, which note what it contacts (activity.ts). They're an
-    // outer function's parameters so a bundle declaring its own `const fetch` still evaluates, and the
-    // wrapper starts on the bundle's first line so stack line numbers don't move.
-    const net = PluginActivity.networkScope(manifest.id);
-    const outer = new Function("fetch", "XMLHttpRequest", "WebSocket", `return function (module, exports, require) {${code}\n};\n//# sourceURL=evi://plugins/${manifest.id}.js`);
-    const fn = outer(net.fetch, net.XMLHttpRequest, net.WebSocket);
+    // Its own fetch, XMLHttpRequest, WebSocket and EventSource, which note what it contacts (activity.ts)
+    // and refuse what it doesn't declare. They're an outer function's parameters so a bundle declaring
+    // its own `const fetch` still evaluates, and the wrapper starts on the bundle's first line so stack
+    // line numbers don't move.
+    const net = PluginActivity.networkScope(manifest.id, guard.checkRequest);
+    const outer = new Function("fetch", "XMLHttpRequest", "WebSocket", "EventSource", `return function (module, exports, require) {${code}\n};\n//# sourceURL=evi://plugins/${manifest.id}.js`);
+    const fn = outer(net.fetch, net.XMLHttpRequest, net.WebSocket, net.EventSource);
     fn(module, module.exports, require);
 
     const definition = module.exports?.default ?? module.exports;
@@ -114,7 +128,10 @@ function setPatches(state: PluginState, next: SourcePatch[] | undefined) {
 }
 
 function enablePatches(state: PluginState) {
-    if (!state.patchesRegistered) setPatches(state, state.definition?.patches);
+    if (state.patchesRegistered) return;
+    // A start from off takes Evi's fixes as they are now: a withdrawn one isn't applied again
+    if (!state.running) takeHotfix(state, hotfixOf(state));
+    setPatches(state, patchesOf(state));
 }
 
 function disablePatches(state: PluginState) {
@@ -126,6 +143,26 @@ function disablePatches(state: PluginState) {
 /** The pull that keeps this plugin off, if any. Dev builds are the developer's own and never pulled. */
 function pullOf({ manifest, source }: Pick<PluginState, "manifest" | "source">) {
     return source === "dev" ? undefined : pullFor(pulls, manifest.id, manifest.version);
+}
+
+// ---- hotfixes ---------------------------------------------------------------------------------
+
+/** Evi's fix for this plugin's version, if any. Dev builds are the developer's own, like with pulls. */
+function hotfixOf({ manifest, source }: Pick<PluginState, "manifest" | "source">) {
+    return source === "dev" ? undefined : hotfixFor(hotfixes, manifest.id, manifest.version);
+}
+
+const tagOf = (hotfix: Hotfix | undefined) => hotfix ? hotfixTag(hotfix) : "";
+
+/** What the plugin runs with from now on: its patches and, through its context, its lookups */
+function takeHotfix(state: PluginState, hotfix: Hotfix | undefined) {
+    state.hotfix = hotfix;
+    AppliedHotfixes.set(state.manifest.id, hotfix);
+}
+
+/** The plugin's source patches with Evi's fixes in place. Its definition keeps its own. */
+function patchesOf(state: PluginState, definition = state.definition): SourcePatch[] | undefined {
+    return applyPatchFixes(definition?.patches, state.hotfix);
 }
 
 /** Turned on, and not pulled by Evi */
@@ -228,7 +265,7 @@ function upsert(payload: PluginPayload) {
     }
 
     stop(previous);
-    const sameShape = patchesSignature(previous.definition?.patches);
+    const sameShape = patchesSignature(patchesOf(previous));
     const hadPatches = previous.patchesRegistered;
 
     let definition: PluginDefinition | undefined;
@@ -245,10 +282,12 @@ function upsert(payload: PluginPayload) {
     previous.definition = definition;
     previous.error = undefined;
     previous.pulled = pulled;
+    // A new version may have no fix, or its own
+    takeHotfix(previous, hotfixOf(previous));
 
     // Unchanged patches keep their records; modules patched earlier call $self, which now resolves to the new definition
-    if (patchesSignature(definition.patches) !== sameShape && (hadPatches || enabled)) {
-        setPatches(previous, enabled ? definition.patches : undefined);
+    if (patchesSignature(patchesOf(previous)) !== sameShape && (hadPatches || enabled)) {
+        setPatches(previous, enabled ? patchesOf(previous) : undefined);
     } else if (enabled) {
         // The version it replaces was pulled, so its patches were off
         enablePatches(previous);
@@ -304,14 +343,17 @@ async function applyEnabled(state: PluginState, enabled: boolean) {
 
 export const PluginManager = {
     /** Evaluate every plugin and register source patches of enabled ones. Runs before Discord's code. */
-    boot(payloads: PluginPayload[], pulled: PulledPlugins = {}) {
+    boot(payloads: PluginPayload[], pulled: PulledPlugins = {}, fixes: Hotfix[] = []) {
         pulls = pulled;
+        // Before any patch registers, so fixed patches apply as Discord's modules first load
+        hotfixes = fixes;
         for (const payload of payloads) load(payload);
         Native.onPluginChange((change: PluginChange) => {
             if (change.type === "upsert") upsert(change.plugin);
             else remove(change.id);
         });
         Native.onPullsChange?.(next => void PluginManager.setPulls(next));
+        Native.onHotfixesChange?.(next => void PluginManager.setHotfixes(next));
         emit();
     },
 
@@ -362,6 +404,37 @@ export const PluginManager = {
             else logger.info(`Evi lifted the pull on ${state.manifest.name}`);
             if (SafeMode.active || !isPluginEnabled(Settings.data, state.manifest)) continue;
             await applyEnabled(state, !state.pulled);
+        }
+        emit();
+    },
+
+    /**
+     * Evi's hotfixes changed (main heard from evi.rest). A plugin that's on and has a new or changed
+     * fix restarts with it, like a hot reload: its fixed patches re-run the modules they touch that
+     * already loaded (or ask for a reload when one can't run twice), and its lookups look again. A
+     * withdrawn fix stays in a running plugin until it next starts: pulling it out now could break
+     * what it's fixing mid-session.
+     */
+    async setHotfixes(next: Hotfix[]) {
+        if (JSON.stringify(next) === JSON.stringify(hotfixes)) return;
+        hotfixes = next;
+        for (const state of plugins.values()) {
+            const fix = hotfixOf(state);
+            if (tagOf(fix) === tagOf(state.hotfix)) continue;
+            const active = state.running || state.patchesRegistered;
+            if (!active || SafeMode.active) {
+                // Nothing of it runs: the fix is simply there when it starts
+                takeHotfix(state, fix);
+                continue;
+            }
+            if (!fix) continue;
+            logger.info(`Evi fixed ${state.manifest.name} for Discord's latest update (hotfix ${hotfixTag(fix)}): ${fix.note}`);
+            const wasRunning = state.running;
+            stop(state);
+            const before = patchesSignature(patchesOf(state));
+            takeHotfix(state, fix);
+            if (patchesSignature(patchesOf(state)) !== before) setPatches(state, patchesOf(state));
+            if (ready && wasRunning) await start(state);
         }
         emit();
     },

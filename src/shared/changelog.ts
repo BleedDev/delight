@@ -33,6 +33,29 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "0.7.0",
+        date: "2026-09-28",
+        sections: {
+            added: [
+                "**Plugins say what they need, and Evi holds them to it.** Which sites a plugin contacts, and whether it reads your messages, sends messages or changes your settings. Evi blocks the rest of what it tries through Evi, and anything blocked shows in the plugin's Activity.",
+                "**Evi fixes plugins Discord breaks, without waiting for an update.** When a Discord update breaks a plugin, Evi's team repairs it on evi.rest and every install picks up the fix within minutes. The plugin's details say what was fixed.",
+                "**Make your own theme.** Pick colours in the new Editor tab and watch Discord change as you go, then save it as a theme of your own.",
+                "**Community themes.** Send a theme to the Theme Store from the editor or your dashboard. Evi's team reviews each one, and community themes can't load anything from the internet, so nobody learns who uses them.",
+                "**DM Categories.** Sort your DMs into collapsible categories like Friends, Work or Gaming, at the top of your DM list. Right-click a DM to add it to one.",
+                "**View Icons.** Right-click someone for their avatar and banner at full size, or a server for its icon and banner, in Discord's image viewer. Download the original or copy its link.",
+                "**Calm Name Effects.** Opening a chat takes half the work: Nitro name styles like Prism and Neon animate while you hover a name, instead of on every message at once.",
+            ],
+            improved: [
+                "**An update that asks for more waits for your OK,** like full access does. Store pages, install questions and plugin details list what each plugin asks for, and older plugins that don't say are labelled.",
+                "**The store knows a fix is working.** A plugin Evi fixed shows as fixed instead of broken, and goes back to broken only if installs running the fix still have problems.",
+                "Themes in the store can be reported, like plugins.",
+            ],
+            fixed: [
+                "Platform Indicators' icon no longer grows to fill a whole message in places Evi's styles don't reach, like pop-out chats.",
+            ],
+        },
+    },
+    {
         version: "0.6.1",
         date: "2026-09-27",
         sections: {

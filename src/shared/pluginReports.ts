@@ -28,7 +28,10 @@ export type ReportStatus = "open" | "resolved" | "dismissed";
 /** A report as admins see it (GET /v1/admin/reports) */
 export interface PluginReport {
     id: string;
+    /** The plugin's id, or the theme's for a theme report */
     plugin: string;
+    /** Set for reports about a store theme (POST /v1/themes/:id/reports) */
+    kind?: "theme";
     version?: string;
     reason: ReportReason;
     details: string;

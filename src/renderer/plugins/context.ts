@@ -14,6 +14,8 @@ import { showToast, ToastOptions } from "../toolkit/toasts";
 import { Dispatcher, FluxAction, React } from "../webpack/common";
 import { Filter, FoundExport, waitFor } from "../webpack/find";
 import { PluginActivity } from "./activity";
+import { PluginGuard } from "./guard";
+import { fixedLookup } from "./hotfixes";
 import { diagnoseLookups, isLookupProblem, LOOKUP_GRACE_MS, trackLookup, untrackLookup } from "./lookups";
 import type { SettingsSchema, SettingsValues } from "./types";
 import { PluginUsage } from "./usage";
@@ -97,9 +99,12 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     readonly settings: PluginSettings<S>;
     private disposers: (() => void)[] = [];
     private lookupCheck?: ReturnType<typeof setTimeout>;
+    /** Holds what it registers to the permissions it declares (guard.ts) */
+    private readonly guard: PluginGuard;
 
     constructor(readonly manifest: PluginManifest, schema: S) {
         this.logger = new Logger(manifest.name);
+        this.guard = new PluginGuard(manifest);
         this.settings = new PluginSettings(manifest.id, schema, fn => this.onDispose(fn));
         // A context per start: what this run registers is what its details show
         PluginUsage.reset(manifest.id);
@@ -116,6 +121,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     }
 
     private addHook(target: any, key: PropertyKey, kind: HookKind, callback: HookCallback) {
+        this.guard.hook(target, key);
         PluginUsage.add(this.id, "hooks", String(key));
         return this.onDispose(hook(target, key, kind, callback, this.id));
     }
@@ -134,9 +140,10 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
      */
     hookExport(kind: HookKind, filter: Filter, callback: HookCallback): void;
     hookExport(kind: HookKind, filter: Filter, method: string, callback: HookCallback): void;
-    hookExport(kind: HookKind, filter: Filter, methodOrCallback: string | HookCallback, maybeCallback?: HookCallback) {
-        const method = typeof methodOrCallback === "string" ? methodOrCallback : undefined;
+    hookExport(kind: HookKind, lookupFilter: Filter, methodOrCallback: string | HookCallback, maybeCallback?: HookCallback) {
         const callback = maybeCallback ?? methodOrCallback as HookCallback;
+        // Evi's hotfix may point it somewhere else after a Discord update, method name included
+        const { filter, method } = fixedLookup(this.id, lookupFilter, typeof methodOrCallback === "string" ? methodOrCallback : undefined);
 
         this.lookup(filter, method, (value, found: FoundExport) => {
             if (method) return void this.addHook(value, method, kind, callback);
@@ -150,7 +157,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
 
     /** Like webpack waitFor, cancelled on stop. A target that never shows up is reported (see lookups.ts). */
     waitFor<T = any>(filter: Filter, callback: (value: T, found: FoundExport<T>) => void) {
-        return this.lookup(filter, undefined, callback);
+        return this.lookup(fixedLookup(this.id, filter).filter, undefined, callback);
     }
 
     private lookup<T>(filter: Filter, method: string | undefined, callback: (value: T, found: FoundExport<T>) => void) {
@@ -189,6 +196,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
 
     readonly flux = {
         subscribe: (type: string, handler: (action: FluxAction) => void) => {
+            this.guard.flux(type);
             const site = Perf.site(this.id, "flux", type);
             const safe = (action: FluxAction) => {
                 const start = Perf.begin();
@@ -245,7 +253,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     /** Registers a slash command that runs locally, listed with Discord's built-ins. Removed on stop. */
     command(definition: CommandDefinition) {
         PluginUsage.add(this.id, "commands", definition.name);
-        return this.onDispose(registerCommand(definition, this.id));
+        return this.onDispose(registerCommand(this.guard.command(definition), this.id));
     }
 
     /**

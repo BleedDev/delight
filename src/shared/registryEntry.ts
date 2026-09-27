@@ -4,6 +4,7 @@
  * plugins published from an approved submission), so both write entries the same way.
  * Nothing here touches the disk or the network.
  */
+import { readPermissions } from "./declaredPermissions";
 import type { PluginManifest } from "./ipc";
 import { parseRegistry, REGISTRY_SCHEMA, RegistryEntry, sha256Hex, STORE_FILES, StoreFileName, ThemeEntry, whyNotManifest } from "./store";
 
@@ -70,6 +71,8 @@ export async function buildEntry(files: Partial<Record<StoreFileName, Uint8Array
         ...(manifest.source ?? options.source) && { source: manifest.source ?? options.source },
         screenshots: manifest.screenshots ?? [],
         changelog: manifest.changelog ?? [],
+        // Checked strictly below (whyNotManifest): an entry never shows a declaration its manifest doesn't make
+        ...manifest.permissions !== undefined && { permissions: readPermissions(manifest.permissions) },
     } as RegistryEntry;
 
     // The app's own checks are the final word on what gets published

@@ -9,7 +9,7 @@
  * Admin actions (the /badge command) need evi-admin.json in the data folder, { "token": "…" }. The
  * token stays in main: the page can only ask for one of a few fixed actions.
  */
-import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, hasPullsEvent, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
+import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, hasHotfixesEvent, hasPullsEvent, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
 import { imageDataUrl, imageType } from "@shared/images";
 import { IPC } from "@shared/ipc";
 import { isPluginId } from "@shared/store";
@@ -144,6 +144,12 @@ export function onPullsAnnounced(listener: () => void) {
     pullsListeners.add(listener);
 }
 const announcePulls = () => pullsListeners.forEach(listener => listener());
+/** Told when the stream says Evi's hotfixes changed, and after it reconnects */
+const hotfixListeners = new Set<() => void>();
+export function onHotfixesAnnounced(listener: () => void) {
+    hotfixListeners.add(listener);
+}
+const announceHotfixes = () => hotfixListeners.forEach(listener => listener());
 /** Everyone reconnects at once after a server restart: spread them out */
 const jitter = (ms: number) => ms / 2 + Math.random() * ms;
 
@@ -174,6 +180,7 @@ async function listen() {
             if (end < 0) continue;
             const chunk = buffer.slice(0, end);
             if (hasPullsEvent(chunk)) announcePulls();
+            if (hasHotfixesEvent(chunk)) announceHotfixes();
             const etags = parseBadgeEvents(chunk);
             buffer = buffer.slice(end + 2);
             const latest = etags.at(-1);
@@ -208,6 +215,7 @@ async function stream() {
         // Whatever changed while we were away
         void getBadges();
         announcePulls();
+        announceHotfixes();
     }
 }
 

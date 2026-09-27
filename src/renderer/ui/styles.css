@@ -2181,6 +2181,29 @@
 .dl-activity-item[data-unexpected]:first-child { border-start-start-radius: var(--dl-radius-group); border-start-end-radius: var(--dl-radius-group); }
 .dl-activity-item[data-unexpected]:last-child { border-end-start-radius: var(--dl-radius-group); border-end-end-radius: var(--dl-radius-group); }
 
+/* Something Evi refused because it isn't declared: the icon and the word carry it, the tint only backs them */
+.dl-activity-item[data-blocked] {
+    background: var(--dl-bg-critical);
+    box-shadow: inset 2px 0 0 var(--dl-text-critical);
+}
+.dl-activity-item[data-blocked] > svg { color: var(--dl-text-critical); }
+.dl-activity-item[data-blocked]:first-child { border-start-start-radius: var(--dl-radius-group); border-start-end-radius: var(--dl-radius-group); }
+.dl-activity-item[data-blocked]:last-child { border-end-start-radius: var(--dl-radius-group); border-end-end-radius: var(--dl-radius-group); }
+
+/* ---- declared permissions (PluginPermissions.tsx) ------------------------------------------------ */
+
+/* What it asks for, then (a group gap below) what its code can reach */
+.dl-declared {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-block-end: 8px;
+}
+
+.dl-declared h4 { margin: 0; }
+
+.dl-declared-item > svg { color: var(--dl-text-subtle); }
+
 /* ---- end store --------------------------------------------------------------------------- */
 
 /* Discord's own inputs draw their focus border themselves: don't stack our outline on top.
@@ -2638,3 +2661,212 @@
     max-inline-size: 72ch;
     text-wrap: pretty;
 }
+
+/* ---- theme editor (ThemeEditor.tsx) ---------------------------------------------------------- */
+
+/* Save and discard stay in reach while the colours scroll past */
+.dl-editor-bar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 12px 12px 16px;
+    border: 1px solid var(--dl-border-divider);
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-bg-panel);
+}
+
+.dl-editor-starts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px;
+}
+
+.dl-editor-start {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--dl-border-group);
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-bg-group);
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    transition: scale var(--dl-duration-base) ease-out;
+}
+
+@media (hover: hover) {
+    .dl-editor-start:hover { background: var(--dl-bg-hover); }
+}
+
+.dl-editor-start:active { scale: 0.98; }
+
+.dl-editor-start:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+.dl-editor-start-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+
+/* Discord in miniature: the frame around a panel and the chat, a name, a line and the accent */
+.dl-editor-mini {
+    flex: none;
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 3px;
+    inline-size: 88px;
+    block-size: 56px;
+    padding: 4px;
+    border-radius: 6px;
+    outline: 1px solid rgb(128 128 128 / 0.2);
+    outline-offset: -1px;
+}
+
+.dl-editor-mini-panel {
+    border-radius: 3px;
+}
+
+.dl-editor-mini-chat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 7px 6px;
+    border-radius: 3px;
+}
+
+.dl-editor-mini-chat > span {
+    display: block;
+    block-size: 4px;
+    inline-size: 60%;
+    border-radius: 2px;
+}
+
+.dl-editor-mini-chat > span + span { inline-size: 85%; opacity: 0.8; }
+
+.dl-editor-mini-chat > .dl-editor-mini-accent {
+    inline-size: 18px;
+    block-size: 8px;
+    margin-block-start: auto;
+    border-radius: 4px;
+    opacity: 1;
+}
+
+.dl-editor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 16px;
+}
+
+.dl-editor-grid > [data-wide] { grid-column: 1 / -1; }
+
+.dl-color-controls {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+}
+
+.dl-color-swatch {
+    inline-size: 40px;
+    block-size: 40px;
+    padding: 0;
+    border: 1px solid var(--dl-border-control);
+    border-radius: var(--dl-radius-control);
+    background: none;
+    cursor: pointer;
+}
+
+.dl-color-swatch::-webkit-color-swatch-wrapper { padding: 3px; }
+.dl-color-swatch::-webkit-color-swatch { border: 0; border-radius: calc(var(--dl-radius-control) - 3px); }
+
+.dl-color-swatch:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+.dl-color-hex {
+    inline-size: 104px;
+    font-family: var(--dl-font-code);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+
+.dl-color-hex[aria-invalid] { border-color: var(--dl-text-critical); }
+
+.dl-editor-range {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 12px;
+}
+
+.dl-editor-range > input {
+    inline-size: 180px;
+    accent-color: var(--dl-brand);
+}
+
+.dl-editor-range-value {
+    min-inline-size: 64px;
+    text-align: end;
+    white-space: nowrap;
+}
+
+.dl-editor-css {
+    max-block-size: 360px;
+    margin: 0;
+    padding: 12px;
+    overflow: auto;
+    border: 1px solid var(--dl-border-divider);
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-code);
+    color: var(--dl-text-default);
+    font-family: var(--dl-font-code);
+    font-size: 12px;
+    line-height: 1.5;
+    tab-size: 4;
+}
+
+.dl-editor-css:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
+}
+
+/* Notes are prose, not code */
+.dl-editor-notes {
+    min-block-size: 72px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+/* An unsaved preview while the editor isn't open: which theme, and the two ways out */
+.dl-preview-bar {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 24px;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    inline-size: fit-content;
+    max-inline-size: calc(100vw - 32px);
+    margin-inline: auto;
+    padding: 8px 8px 8px 16px;
+    border: 1px solid var(--dl-border-divider);
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-bg-modal);
+    box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
+    color: var(--dl-text-default);
+}
+
+.dl-preview-bar > svg { flex: none; color: var(--dl-text-muted); }

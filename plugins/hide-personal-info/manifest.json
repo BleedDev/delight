@@ -2,9 +2,10 @@
     "id": "hide-personal-info",
     "name": "Hide Personal Info",
     "description": "Blurs your email, phone, billing details, connected accounts, session locations and IPs in User Settings, for streams and screenshots. Hover or click to reveal.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": ["Evi"],
     "tags": ["privacy"],
-    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "permissions": {},
+    "changelog": [{ "version": "1.0.1", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] }, { "version": "1.0.0", "notes": ["First release."] }],
     "enabledByDefault": false
 }

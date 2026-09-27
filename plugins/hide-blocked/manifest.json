@@ -2,9 +2,10 @@
     "id": "hide-blocked",
     "name": "Hide Blocked Completely",
     "description": "Blocked users' messages disappear from chat instead of sitting behind \"N blocked messages\". Ignored users too, and optionally replies to them, the member list and voice channels. /hideblocked toggles it.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "authors": ["Evi"],
     "tags": ["privacy", "messages"],
-    "changelog": [{ "version": "1.0.1", "notes": ["Smoother with \"Hide replies to them\" on: the open chat is only rebuilt when a message one of its replies points to changes."] }, { "version": "1.0.0", "notes": ["First release."] }],
+    "permissions": { "readMessages": true },
+    "changelog": [{ "version": "1.0.2", "notes": ["Says what it needs (reading messages), and Evi holds it to that."] }, { "version": "1.0.1", "notes": ["Smoother with \"Hide replies to them\" on: the open chat is only rebuilt when a message one of its replies points to changes."] }, { "version": "1.0.0", "notes": ["First release."] }],
     "enabledByDefault": false
 }

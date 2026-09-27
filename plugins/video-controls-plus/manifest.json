@@ -2,11 +2,13 @@
     "id": "video-controls-plus",
     "name": "Video Controls+",
     "description": "Playback speed from 0.25x to 3x, loop, frame stepping and picture-in-picture for videos in chat, plus YouTube-style keyboard shortcuts while you hover a video.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "authors": ["Evi"],
     "tags": ["media"],
     "minEviVersion": "0.3.2",
+    "permissions": {},
     "changelog": [
+        { "version": "1.0.2", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] },
         { "version": "1.0.1", "notes": ["The speed menu slides in like Discord's menus, and fades out instead of vanishing."] },
         { "version": "1.0.0", "notes": ["First release."] }
     ],

@@ -125,10 +125,16 @@ export function parseBadges(json: unknown): BadgesDocument | undefined {
     return clean;
 }
 
-/** Whether an SSE chunk says pulled plugins changed (a `pulls` event): the list is asked for then */
-export function hasPullsEvent(block: string) {
-    return block.split(/\r?\n\r?\n/).some(event => event.split(/\r?\n/).some(line => line.startsWith("event:") && line.slice(6).trim() === "pulls"));
+/** Whether an SSE chunk has an event with this name */
+export function hasEvent(block: string, name: string) {
+    return block.split(/\r?\n\r?\n/).some(event => event.split(/\r?\n/).some(line => line.startsWith("event:") && line.slice(6).trim() === name));
 }
+
+/** Whether an SSE chunk says pulled plugins changed (a `pulls` event): the list is asked for then */
+export const hasPullsEvent = (block: string) => hasEvent(block, "pulls");
+
+/** Whether an SSE chunk says Evi's hotfixes changed (a `hotfixes` event, shared/hotfixes.ts) */
+export const hasHotfixesEvent = (block: string) => hasEvent(block, "hotfixes");
 
 /** The `badges` events in an SSE chunk, as the etag each one carries */
 export function parseBadgeEvents(block: string): string[] {

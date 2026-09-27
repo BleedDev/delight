@@ -1,8 +1,10 @@
 /**
  * What keeps the store trustworthy, where people see it: a plugin Evi turned off on every install
- * (shared/pulls.ts), said in the Plugins list and the plugin's details, and reporting a store plugin
- * to Evi's team (shared/pluginReports.ts) from its store page or its details.
+ * (shared/pulls.ts) or fixed after a Discord update (shared/hotfixes.ts), said in the Plugins list and
+ * the plugin's details, and reporting a store plugin to Evi's team (shared/pluginReports.ts) from its
+ * store page or its details.
  */
+import type { Hotfix } from "@shared/hotfixes";
 import { REPORT_REASONS, ReportReason, validatePluginReport } from "@shared/pluginReports";
 import type { PulledPlugin } from "@shared/pulls";
 import { isVersion } from "@shared/store";
@@ -39,16 +41,30 @@ export function PulledNotice({ pull, update }: {
     );
 }
 
+// ---- hotfixed ---------------------------------------------------------------------------------
+
+/**
+ * Evi repaired this plugin after a Discord update (shared/hotfixes.ts). Nothing to do about it, so
+ * it's one quiet line: that it happened, and what Evi's team says it fixed.
+ */
+export function HotfixNote({ hotfix }: { hotfix: Hotfix; }) {
+    return (
+        <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note dl-hotfix-note">
+            {`${t("hotfix.body")} ${hotfix.note}`}
+        </Text>
+    );
+}
+
 // ---- reporting --------------------------------------------------------------------------------
 
-/** Plugins reported this session: the button says so instead of offering it again */
+/** Plugins and themes reported this session, as kind:id: the button says so instead of offering it again */
 const reported = new Set<string>();
 
 const MAX_DETAILS = 1000;
 
 type ReportError = { field?: "reason" | "details"; message: string; };
 
-function ReportForm({ id, version, onSent, onCancel }: { id: string; version?: string; onSent(): void; onCancel(): void; }) {
+function ReportForm({ id, kind, version, onSent, onCancel }: { id: string; kind: "plugin" | "theme"; version?: string; onSent(): void; onCancel(): void; }) {
     const [reason, setReason] = React.useState<ReportReason>();
     const [details, setDetails] = React.useState("");
     const [error, setError] = React.useState<ReportError>();
@@ -76,7 +92,8 @@ function ReportForm({ id, version, onSent, onCancel }: { id: string; version?: s
         setSending(true);
         setError(undefined);
         const { plugin, ...input } = checked.report;
-        const result = await Native.reportPlugin(plugin, input).catch(err => ({ ok: false as const, error: String((err as Error)?.message ?? err) }));
+        const send = kind === "theme" ? Native.reportTheme : Native.reportPlugin;
+        const result = await send(plugin, input).catch(err => ({ ok: false as const, error: String((err as Error)?.message ?? err) }));
         setSending(false);
         // The server's own words: "You already reported this plugin. It's being looked at."
         if (!result.ok) return setError({ message: result.error });
@@ -139,14 +156,15 @@ function ReportForm({ id, version, onSent, onCancel }: { id: string; version?: s
 }
 
 /**
- * A quiet line at the end of a store plugin's page and details: Report opens the form in a dialog,
- * and says Reported once it's sent.
+ * A quiet line at the end of a store plugin's or theme's page and a plugin's details: Report opens the
+ * form in a dialog, and says Reported once it's sent.
  */
-export function ReportRow({ id, name, version }: { id: string; name: string; version?: string; }) {
+export function ReportRow({ id, name, version, kind = "plugin" }: { id: string; name: string; version?: string; kind?: "plugin" | "theme"; }) {
+    const key = `${kind}:${id}`;
     const [open, setOpen] = React.useState(false);
-    const [done, setDone] = React.useState(() => reported.has(id));
+    const [done, setDone] = React.useState(() => reported.has(key));
     const [thanks, setThanks] = React.useState(false);
-    if (!Native.reportPlugin) return null;
+    if (!(kind === "theme" ? Native.reportTheme : Native.reportPlugin)) return null;
 
     return (
         <div className="dl-report-row" data-report={id}>
@@ -158,10 +176,11 @@ export function ReportRow({ id, name, version }: { id: string; name: string; ver
                     {close => (
                         <ReportForm
                             id={id}
+                            kind={kind}
                             version={version}
                             onCancel={close}
                             onSent={() => {
-                                reported.add(id);
+                                reported.add(key);
                                 setDone(true);
                                 setThanks(true);
                                 close();

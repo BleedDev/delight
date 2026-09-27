@@ -7,6 +7,7 @@
  * and a finished plugin folder is moved into place with a single rename, so the plugin watcher never
  * sees half a plugin.
  */
+import { describeGrowth, permissionGrowth, readPermissions } from "@shared/declaredPermissions";
 import { imageDataUrl } from "@shared/images";
 import { cleanSwitches, StorePreviewResult } from "@shared/pluginPermissions";
 import { IPC, PluginManifest } from "@shared/ipc";
@@ -173,7 +174,16 @@ function decodeText(name: string, data: Uint8Array) {
     }
 }
 
-async function install(id: string, sender: WebContents, pageAllowed: boolean, report: (p: StoreProgress) => void): Promise<StoreResult> {
+/** What the installed copy of a store plugin declares, read from its own manifest on disk */
+function installedPermissions(dir: string) {
+    try {
+        return readPermissions((JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8")) as PluginManifest).permissions);
+    } catch {
+        return undefined;
+    }
+}
+
+async function install(id: string, sender: WebContents, pageAllowed: { native: boolean; more: boolean; }, report: (p: StoreProgress) => void): Promise<StoreResult> {
     const entry = await getEntry(id);
     if (!meetsMinEvi(EVI_VERSION, entry.minEviVersion)) {
         throw new Error(`${entry.name} needs Evi ${entry.minEviVersion} or newer, this is ${EVI_VERSION}`);
@@ -193,10 +203,21 @@ async function install(id: string, sender: WebContents, pageAllowed: boolean, re
             message: `Install ${entry.name} with full access to your computer?`,
             detail: `${entry.name} by ${entry.authors.join(", ")} runs outside Discord's page. It can read and change files and run programs, like any app you install. Only install it if you trust it.`,
             confirm: "Install",
-            pageSaid: pageAllowed,
+            pageSaid: pageAllowed.native,
         })) {
             throw new Error(`${entry.name} runs with full access to your computer. Confirm that before installing it.`);
         }
+    }
+    // An update that asks for more than the installed version declares is a new decision, asked the
+    // same way. The download is checked against entry.permissions (whyNotManifest): this is what it gets.
+    const growth = existing && !confirmed ? permissionGrowth(installedPermissions(dir), entry.permissions) : undefined;
+    if (growth && !await confirmWithUser(sender, {
+        message: `Update ${entry.name}? It asks for more access.`,
+        detail: `${describeGrowth(growth)} Evi blocks what a plugin doesn't ask for when it goes through Evi. Only update it if you trust ${entry.authors.join(", ")} with this.`,
+        confirm: "Update",
+        pageSaid: pageAllowed.more,
+    })) {
+        throw new Error(`${entry.name} ${entry.version} asks for more access. Confirm that before updating it.`);
     }
 
     // Download and verify everything in memory first: any failure leaves the disk untouched
@@ -464,8 +485,8 @@ export function initStore() {
     rmSync(STAGING_DIR, { recursive: true, force: true });
 
     ipcMain.handle(IPC.STORE_LIST, () => fetchRegistry());
-    ipcMain.handle(IPC.STORE_INSTALL, (e, id: unknown, options?: { allowNative?: unknown; }) =>
-        exclusive(id, id => install(id, e.sender, options?.allowNative === true, progressTo(e.sender))));
+    ipcMain.handle(IPC.STORE_INSTALL, (e, id: unknown, options?: { allowNative?: unknown; allowMore?: unknown; }) =>
+        exclusive(id, id => install(id, e.sender, { native: options?.allowNative === true, more: options?.allowMore === true }, progressTo(e.sender))));
     ipcMain.handle(IPC.STORE_UNINSTALL, (e, id: unknown) => exclusive(id, id => uninstall(id, e.sender, progressTo(e.sender))));
     ipcMain.handle(IPC.STORE_THEME_INSTALL, (e, id: unknown) => exclusive(id, id => installTheme(id, progressTo(e.sender, "theme")), "theme"));
     ipcMain.handle(IPC.STORE_THEME_UNINSTALL, (e, id: unknown) => exclusive(id, id => uninstallTheme(id, progressTo(e.sender, "theme")), "theme"));

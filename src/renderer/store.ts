@@ -1,4 +1,5 @@
 import type { AuthorProfile } from "@shared/authors";
+import { permissionGrowth, PermissionGrowth, readPermissions } from "@shared/declaredPermissions";
 import type { PluginHealth } from "@shared/health";
 import type { PluginManifest } from "@shared/ipc";
 import { PulledPlugin, pullFor } from "@shared/pulls";
@@ -52,6 +53,8 @@ export interface UpdateAllResult {
     failed: string[];
     /** Full-access plugins left alone because nobody confirmed them */
     skippedNative: string[];
+    /** Updates that ask for more than the installed version, left alone because nobody confirmed them */
+    skippedMoreAccess: string[];
 }
 
 const logger = new Logger("Store", "#f0a35e");
@@ -246,6 +249,18 @@ export const Store = {
         return action;
     },
 
+    /**
+     * What the store's version of an installed plugin asks for that the installed one doesn't declare,
+     * or undefined when it asks for nothing more (or there's no update). Main asks again before it
+     * installs one that does (main/store.ts).
+     */
+    growthOf(id: string): PermissionGrowth | undefined {
+        const entry = state.plugins.find(p => p.id === id);
+        const installed = PluginManager.get(id)?.manifest;
+        if (!entry || !installed || Store.pluginAction(id) !== "update") return undefined;
+        return permissionGrowth(readPermissions(installed.permissions), entry.permissions);
+    },
+
     /** The pull on a version of a plugin, if Evi pulled it */
     pullOf: (id: string, version: string | undefined): PulledPlugin | undefined => pullFor(PluginManager.pulls(), id, version),
 
@@ -256,9 +271,10 @@ export const Store = {
 
     /**
      * Installs or updates a plugin and turns it on. Native plugins need `allowNative`, which the UI
-     * only passes after the user confirmed they trust it with full access to their computer.
+     * only passes after the user confirmed they trust it with full access to their computer, and an
+     * update that asks for more access needs `allowMore`, passed once they agreed to that.
      */
-    async install(id: string, options: { allowNative?: boolean; } = {}) {
+    async install(id: string, options: { allowNative?: boolean; allowMore?: boolean; } = {}) {
         if (Store.pluginAction(id) === "pulled") return { ok: false, error: t("op.pulled") } as StoreResult;
         const updating = !!state.installed[id];
         // Switched on before it arrives, so it starts however main's announcement and its answer are
@@ -325,9 +341,12 @@ export const Store = {
         return result;
     },
 
-    /** Everything with an update, one at a time. Full-access plugins only with `includeNative`. */
-    async updateAll(kind: StoreKind, { includeNative = false } = {}): Promise<UpdateAllResult> {
-        const result: UpdateAllResult = { updated: [], failed: [], skippedNative: [] };
+    /**
+     * Everything with an update, one at a time. Full-access plugins only with `includeNative`, updates
+     * that ask for more access only with `includeMoreAccess`.
+     */
+    async updateAll(kind: StoreKind, { includeNative = false, includeMoreAccess = false } = {}): Promise<UpdateAllResult> {
+        const result: UpdateAllResult = { updated: [], failed: [], skippedNative: [], skippedMoreAccess: [] };
         if (state.updatingAll) return result;
         set({ updatingAll: kind });
         try {
@@ -338,7 +357,12 @@ export const Store = {
                         result.skippedNative.push(entry.name);
                         continue;
                     }
-                    const r = await Store.install(entry.id, { allowNative: entry.native });
+                    const more = !!Store.growthOf(entry.id);
+                    if (more && !includeMoreAccess) {
+                        result.skippedMoreAccess.push(entry.name);
+                        continue;
+                    }
+                    const r = await Store.install(entry.id, { allowNative: entry.native, allowMore: more });
                     (r.ok ? result.updated : result.failed).push(entry.name);
                 }
             } else {
@@ -369,6 +393,9 @@ export const Store = {
         }
         if (plugins.skippedNative.length) {
             showToast(t("toast.nativeWaiting", { names: plugins.skippedNative.join(", "), count: plugins.skippedNative.length }), { duration: 6000 });
+        }
+        if (plugins.skippedMoreAccess.length) {
+            showToast(t("toast.moreAccessWaiting", { names: plugins.skippedMoreAccess.join(", "), count: plugins.skippedMoreAccess.length }), { duration: 6000 });
         }
     },
 

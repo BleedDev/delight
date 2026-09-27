@@ -7,6 +7,7 @@
  * admin can also set a status with a message ("Fix coming in 1.0.2"), which always wins.
  * GET /v1/health is the store-wide picture the app shows on store cards and the Plugins list.
  */
+import { isHotfixTag } from "./hotfixes";
 import { isPluginId, isVersion } from "./store";
 
 export type HealthState = "broken" | "investigating" | "fixed";
@@ -30,6 +31,11 @@ export interface PluginHealth {
     reports?: number;
     /** Who set it, for manual ones: the author's name, or "Evi" for admins */
     setBy?: string;
+    /**
+     * The revision of Evi's hotfix it's about (shared/hotfixes.ts): `fixed` while installs running it
+     * are fine, `broken` when enough of them still report problems
+     */
+    hotfix?: string;
 }
 
 export interface HealthReportInput {
@@ -38,6 +44,8 @@ export interface HealthReportInput {
     /** Discord's build id, from GLOBAL_ENV.SENTRY_TAGS.buildId */
     discordBuild: string;
     kind: HealthKind;
+    /** The revision of Evi's hotfix this install runs for the plugin, if any: the problem is still there with it */
+    hotfix?: string;
 }
 
 /** A manual status (PUT /v1/plugins/:id/status) */
@@ -54,7 +62,8 @@ export function validateHealthReport(raw: unknown): { report: HealthReportInput;
     if (!isVersion(e.version)) return { error: "version must look like 1.2.3" };
     if (typeof e.discordBuild !== "string" || !BUILD_RE.test(e.discordBuild)) return { error: "discordBuild must be Discord's build id" };
     if (!HEALTH_KINDS.includes(e.kind as HealthKind)) return { error: `kind must be one of ${HEALTH_KINDS.join(", ")}` };
-    return { report: { plugin: e.plugin, version: e.version, discordBuild: e.discordBuild, kind: e.kind as HealthKind } };
+    if (e.hotfix !== undefined && !isHotfixTag(e.hotfix)) return { error: "hotfix must be a hotfix revision like 12.3" };
+    return { report: { plugin: e.plugin, version: e.version, discordBuild: e.discordBuild, kind: e.kind as HealthKind, ...(isHotfixTag(e.hotfix) && { hotfix: e.hotfix }) } };
 }
 
 export function validateHealthStatus(raw: unknown): { status: HealthStatusInput; } | { error: string; } {
@@ -82,6 +91,7 @@ export function parseHealth(raw: unknown): Record<string, PluginHealth> {
             ...(isVersion(e.version) && { version: e.version }),
             ...(typeof e.reports === "number" && { reports: e.reports }),
             ...(typeof e.setBy === "string" && { setBy: e.setBy.slice(0, 40) }),
+            ...(isHotfixTag(e.hotfix) && { hotfix: e.hotfix }),
         };
     }
     return out;
@@ -99,6 +109,6 @@ export function healthWarns(health: PluginHealth | undefined, installedVersion?:
 /** How the app says it, short */
 export function healthLabel(health: PluginHealth): string {
     if (health.state === "investigating") return "Being looked into";
-    if (health.state === "fixed") return "Fixed";
+    if (health.state === "fixed") return health.hotfix ? "Fixed by Evi" : "Fixed";
     return health.automatic ? "Broken since Discord's update" : "Known to be broken";
 }

@@ -14,7 +14,8 @@
  *       },
  *       "updatedAt": "2026-09-26", "source": "https://github.com/…",
  *       "screenshots": ["https://…/shot.png"],
- *       "changelog": [{ "version": "1.0.0", "notes": ["First release"] }]
+ *       "changelog": [{ "version": "1.0.0", "notes": ["First release"] }],
+ *       "permissions": { "network": [], "readMessages": false, "sendMessages": false, "changeSettings": false }
  *     }],
  *     "themes": [{
  *       "id": "midnight", "name": "Midnight", "description": "…", "authors": ["Evi"], "version": "1.0.0",
@@ -25,6 +26,7 @@
  * Everything after `files` is optional and `themes` may be missing: older registries stay valid,
  * and older Evi versions ignore what they don't know.
  */
+import { DeclaredPermissions, readPermissions, samePermissions, whyNotPermissions } from "./declaredPermissions";
 import type { PluginManifest } from "./ipc";
 
 export const REGISTRY_SCHEMA = 1;
@@ -100,6 +102,11 @@ export interface RegistryEntry extends ListingInfo {
     native: boolean;
     minEviVersion?: string;
     files: Partial<Record<StoreFileName, StoreFile>> & Record<"manifest.json" | "index.js", StoreFile>;
+    /**
+     * What its manifest declares it needs (shared/declaredPermissions.ts), so the store can show it
+     * before anything is downloaded. Missing: it doesn't declare, and isn't held to anything.
+     */
+    permissions?: DeclaredPermissions;
 }
 
 export interface ThemeEntry extends ListingInfo {
@@ -311,6 +318,8 @@ export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error
     }
     if (!cleanFiles["manifest.json"] || !cleanFiles["index.js"]) return fail("files must include manifest.json and index.js");
     if (cleanFiles["native.js"] && !e.native) return fail("has native.js but isn't marked native");
+    const badPermissions = e.permissions !== undefined && whyNotPermissions(e.permissions);
+    if (badPermissions) return fail(badPermissions);
 
     return {
         entry: {
@@ -318,6 +327,7 @@ export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error
             native: e.native,
             ...(e.minEviVersion !== undefined && { minEviVersion: e.minEviVersion as string }),
             files: cleanFiles as RegistryEntry["files"],
+            ...(e.permissions !== undefined && { permissions: readPermissions(e.permissions) }),
         },
     };
 }
@@ -403,6 +413,10 @@ export function whyNotManifest(manifest: unknown, entry: RegistryEntry): string 
     if (!m.native && entry.files["native.js"]) return "the registry lists native.js but manifest.json doesn't use it";
     const runsOutsideRenderer = !!m.native || (m.chromiumSwitches !== undefined && Object.keys(m.chromiumSwitches).length > 0);
     if (runsOutsideRenderer && !entry.native) return "the plugin runs outside Discord's page but the registry doesn't mark it native";
+    // What the store showed (and an update was agreed to) is what it's held to
+    const badPermissions = m.permissions !== undefined && whyNotPermissions(m.permissions);
+    if (badPermissions) return `manifest.json: ${badPermissions}`;
+    if (!samePermissions(readPermissions(m.permissions), entry.permissions)) return "manifest.json's permissions don't match the registry's";
 }
 
 // ---- hashes -----------------------------------------------------------------------------------

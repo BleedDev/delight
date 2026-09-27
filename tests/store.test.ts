@@ -212,6 +212,26 @@ describe("downloaded manifests", () => {
         expect(whyNotManifest({ id: "my-plugin", name: "Mine" }, nativeEntry)).toBeDefined();
         expect(whyNotManifest({ id: "my-plugin", name: "Mine", native: "other.js" }, nativeEntry)).toBeDefined();
     });
+
+    test("declares exactly what the registry shows", () => {
+        const declaring = entryOf({ ...valid(), permissions: { network: ["api.example.com"], readMessages: true } });
+        expect(declaring.permissions).toEqual({ network: ["api.example.com"], readMessages: true, sendMessages: false, changeSettings: false });
+        // Written differently, read the same
+        expect(whyNotManifest({ id: "my-plugin", name: "Mine", permissions: { readMessages: true, network: ["API.example.com", "api.example.com"], sendMessages: false } }, declaring)).toBeUndefined();
+        expect(whyNotManifest({ id: "my-plugin", name: "Mine", permissions: { network: ["api.example.com"] } }, declaring)).toContain("don't match");
+        expect(whyNotManifest({ id: "my-plugin", name: "Mine" }, declaring)).toContain("don't match");
+        expect(whyNotManifest({ id: "my-plugin", name: "Mine", permissions: {} }, entry)).toContain("don't match");
+        expect(whyNotManifest({ id: "my-plugin", name: "Mine", permissions: { network: ["https://api.example.com"] } }, declaring)).toContain("isn't a site");
+    });
+
+    test("a registry entry's permissions are checked like the rest of it", () => {
+        expect(validateEntry({ ...valid(), permissions: { network: ["*.example.com"] } })).toHaveProperty("error");
+        expect(validateEntry({ ...valid(), permissions: { readMessages: "yes" } })).toHaveProperty("error");
+        expect(validateEntry({ ...valid(), permissions: { everything: true } })).toHaveProperty("error");
+        expect(validateEntry({ ...valid(), permissions: [] })).toHaveProperty("error");
+        expect(entryOf(valid())).not.toHaveProperty("permissions");
+        expect(entryOf({ ...valid(), permissions: {} }).permissions).toEqual({ network: [], readMessages: false, sendMessages: false, changeSettings: false });
+    });
 });
 
 describe("versions", () => {

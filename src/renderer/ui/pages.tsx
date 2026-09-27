@@ -16,6 +16,7 @@ import { PerformanceTab } from "./PerformanceTab";
 import { InstalledPlugins } from "./PluginsTab";
 import { QuickCssTab } from "./QuickCssTab";
 import { StoreView } from "./Store";
+import { ThemeEditorTab } from "./ThemeEditor";
 import { InstalledThemes } from "./ThemesTab";
 import { UpdatesTab } from "./UpdatesTab";
 
@@ -59,6 +60,7 @@ export const pages: readonly Page[] = [
         tabs: [
             { id: "installed", label: () => t("tabs.installed"), icon: "circleCheck", Component: InstalledThemes },
             { id: "store", label: () => t("common.store"), icon: "store", Component: ThemeStore, count: themeUpdates },
+            { id: "editor", label: () => t("themeEditor.tab"), icon: "pencil", Component: ThemeEditorTab },
             { id: "quickcss", label: () => "Quick CSS", icon: "code", Component: QuickCssTab },
         ],
     },

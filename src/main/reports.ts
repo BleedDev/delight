@@ -11,6 +11,10 @@
  * plugin, its version, Discord's build and the kind of problem, nothing else), and a store plugin
  * reported to Evi's team.
  *
+ * Evi's hotfixes for broken plugins (shared/hotfixes.ts) are one more cached list: asked for as soon
+ * as Discord starts, so the page usually boots with the fresh one, and handed to the page from disk
+ * when evi.rest is slow or down.
+ *
  * Plugins run in the same page as the buttons that send these, so main checks what it can itself:
  * crash and health reports only for a plugin the store installed here, at the version reported, and
  * a handful of plugin reports an hour, so no plugin can use every install to flood evi.rest.
@@ -18,6 +22,7 @@
 import { parseAuthors } from "@shared/authors";
 import { validateCrashReport } from "@shared/crashReports";
 import { parseHealth, validateHealthReport } from "@shared/health";
+import { Hotfix, parseHotfixes } from "@shared/hotfixes";
 import { AuthorsResult, CrashReportResult, HealthReportResult, HealthResult, IPC, PluginReportResult } from "@shared/ipc";
 import { validatePluginReport } from "@shared/pluginReports";
 import { parsePulled, PulledPlugins } from "@shared/pulls";
@@ -26,7 +31,7 @@ import { app, ipcMain, webContents } from "electron";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
-import { onPullsAnnounced } from "./badges";
+import { onHotfixesAnnounced, onPullsAnnounced } from "./badges";
 import { apiRequest, apiUrl } from "./evirest";
 import { DATA_DIR, PLUGINS_DIR } from "./paths";
 
@@ -132,6 +137,29 @@ function updatePulls(next: PulledPlugins) {
     }
 }
 
+// ---- hotfixes ---------------------------------------------------------------------------------
+
+const hotfixes = cachedGet("hotfixes.json", "/hotfixes", parseHotfixes);
+let hotfixList: Hotfix[] | undefined;
+
+/** Evi's hotfixes as evi.rest last said, from the copy on disk until it answers */
+export function currentHotfixes(): Hotfix[] {
+    return (hotfixList ??= hotfixes.saved());
+}
+
+/** Asks evi.rest, and tells every Discord window when the list changed */
+async function refreshHotfixes() {
+    const result = await hotfixes();
+    if (!result.ok) return;
+    const before = currentHotfixes();
+    hotfixList = result.value;
+    if (JSON.stringify(before) === JSON.stringify(result.value)) return;
+    console.log(`[Evi] Reports: hotfixes for ${[...new Set(result.value.map(h => h.plugin))].join(", ") || "no plugins"}`);
+    for (const wc of webContents.getAllWebContents()) {
+        if (!wc.isDestroyed()) wc.send(IPC.HOTFIXES_CHANGED, result.value);
+    }
+}
+
 // ---- reports ----------------------------------------------------------------------------------
 
 /**
@@ -214,5 +242,11 @@ export function initReports() {
         // evi.rest says so the moment a plugin is pulled: asked for within a few seconds, spread out so
         // every install doesn't ask in the same instant
         onPullsAnnounced(() => void new Promise(resolve => setTimeout(resolve, Math.random() * 5000)).then(() => getHealth()));
+
+        // Right away, not after startup settles: a fix that's here before the page boots applies as
+        // Discord's modules first load, with nothing to re-run
+        void refreshHotfixes();
+        setInterval(() => void refreshHotfixes(), PULLS_EVERY);
+        onHotfixesAnnounced(() => void new Promise(resolve => setTimeout(resolve, Math.random() * 5000)).then(() => refreshHotfixes()));
     });
 }

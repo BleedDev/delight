@@ -1,6 +1,9 @@
+import type { PermissionKey } from "./declaredPermissions";
+
 /**
  * What each plugin actually did, as opposed to what it can do (pluginPermissions.ts): the requests it
- * sent and the full-access calls it made, for the "Activity" section of its details.
+ * sent, the full-access calls it made and what Evi refused because its manifest doesn't declare it
+ * (declaredPermissions.ts), for the "Activity" section of its details.
  *
  * Privacy first: a request is kept as its method, host and path, never its query string, fragment,
  * credentials or body, and path segments that look like keys or tokens are masked. Pure: no DOM, no
@@ -16,7 +19,9 @@ export type ActivityKind =
     /** A WebSocket */
     | "socket"
     /** A call into its full-access part (native.js), which runs outside Discord */
-    | "native";
+    | "native"
+    /** Something else that needs a permission it doesn't declare: always blocked */
+    | "permission";
 
 export interface ActivityEvent {
     kind: ActivityKind;
@@ -30,8 +35,10 @@ export interface ActivityEvent {
     path?: string;
     /** HTTP status, "error" when it failed, undefined while it's pending. Native calls: 200 or "error". */
     status?: number | "error";
-    /** Native calls: the method it called */
+    /** Native calls: the method it called. Permission events: what it tried ("MESSAGE_CREATE", "/snip"). */
     target?: string;
+    /** Evi refused it: the permission its manifest doesn't declare. Nothing was sent or run. */
+    blocked?: PermissionKey;
 }
 
 /** A masked path segment */
@@ -112,24 +119,33 @@ export class ActivityLog {
 }
 
 export interface ActivityGroup {
-    /** Stable key: "request:api.example.com", "native:readFile" */
+    /** Stable key: "request:api.example.com", "native:readFile", "permission:sendMessages" */
     key: string;
     kind: ActivityKind;
-    /** Host for requests and sockets, method name for native calls */
+    /** Host for requests and sockets, method name for native calls, the permission for permission events */
     target: string;
     count: number;
     lastAt: number;
-    /** Hosts its code doesn't name (see isExpectedHost). Always false for native calls. */
+    /** Hosts its code doesn't name (see isExpectedHost). Always false for native calls and permission events. */
     unexpected: boolean;
-    /** Up to `recentLimit` distinct "GET /v1/thing 200" lines, newest first */
+    /** Up to `recentLimit` distinct "GET /v1/thing 200" lines (what it tried, for permission events), newest first */
     recent: string[];
     /** How many of them failed */
     errors: number;
+    /** How many of them Evi blocked */
+    blocked: number;
 }
 
 function describe(e: ActivityEvent) {
-    const status = e.status === undefined ? "" : ` ${e.status === "error" ? "failed" : e.status}`;
+    const status = e.blocked ? " blocked" : e.status === undefined ? "" : ` ${e.status === "error" ? "failed" : e.status}`;
     return `${e.method ?? ""} ${e.path ?? ""}${status}`.trim();
+}
+
+/** What a group is about: the host, the native method, or the permission a blocked action needed */
+function targetOf(e: ActivityEvent) {
+    if (e.kind === "native") return e.target;
+    if (e.kind === "permission") return e.blocked;
+    return e.host;
 }
 
 /** One group per host (and per native method), most recently used first */
@@ -138,21 +154,22 @@ export function groupActivity(events: readonly ActivityEvent[], named: readonly 
     // Newest first, so each group's first lines are its latest
     for (let i = events.length - 1; i >= 0; i--) {
         const e = events[i];
-        const target = e.kind === "native" ? e.target : e.host;
+        const target = targetOf(e);
         if (!target) continue;
         const key = `${e.kind}:${target}`;
         let group = groups.get(key);
         if (!group) {
             group = {
-                key, kind: e.kind, target, count: 0, lastAt: e.at, errors: 0, recent: [],
-                unexpected: e.kind !== "native" && !isExpectedHost(target, named),
+                key, kind: e.kind, target, count: 0, lastAt: e.at, errors: 0, blocked: 0, recent: [],
+                unexpected: (e.kind === "request" || e.kind === "socket") && !isExpectedHost(target, named),
             };
             groups.set(key, group);
         }
         group.count++;
         group.lastAt = Math.max(group.lastAt, e.at);
         if (e.status === "error") group.errors++;
-        const line = e.kind === "native" ? "" : describe(e);
+        if (e.blocked) group.blocked++;
+        const line = e.kind === "native" ? "" : e.kind === "permission" ? e.target ?? "" : describe(e);
         if (line && group.recent.length < recentLimit && !group.recent.includes(line)) group.recent.push(line);
     }
     return [...groups.values()].sort((a, b) => b.lastAt - a.lastAt);

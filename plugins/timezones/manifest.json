@@ -2,11 +2,13 @@
     "id": "timezones",
     "name": "Timezones",
     "description": "Set someone's timezone from their right-click menu and see their local time next to their name in chat, on their profile and in the member list. Kept on this device.",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "authors": ["Evi"],
     "tags": ["social"],
     "minEviVersion": "0.3.2",
+    "permissions": {},
     "changelog": [
+        { "version": "1.0.3", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] },
         { "version": "1.0.2", "notes": ["Smoother chats and profiles: times are formatted without rebuilding a formatter each time, and profiles no longer redraw their badges on every render."] },
         { "version": "1.0.1", "notes": ["The timezone picker opens and closes with Discord's own animation."] },
         { "version": "1.0.0", "notes": ["First release."] }

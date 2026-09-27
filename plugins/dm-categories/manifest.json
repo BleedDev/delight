@@ -1,0 +1,23 @@
+{
+    "id": "dm-categories",
+    "name": "DM Categories",
+    "description": "Sort your DMs into categories like Friends, Work or Gaming, each a collapsible section at the top of your DM list. Right-click a DM or group DM to add it to one. Collapsed categories still show the DM you have open and any with unread messages.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "social",
+        "utility"
+    ],
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "permissions": {},
+    "enabledByDefault": false
+}

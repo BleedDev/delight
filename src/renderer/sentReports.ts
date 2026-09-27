@@ -10,7 +10,8 @@ export const HEALTH_REPORT_EVERY = 24 * 60 * 60 * 1000;
 /** Sent health reports: key -> epoch ms */
 export type HealthMemory = Record<string, number>;
 
-export const healthKey = (r: Pick<HealthReportInput, "plugin" | "version" | "discordBuild">) => `${r.plugin}@${r.version}#${r.discordBuild}`;
+/** Running with a new hotfix revision is a new report: the problem outlived the fix */
+export const healthKey = (r: Pick<HealthReportInput, "plugin" | "version" | "discordBuild" | "hotfix">) => `${r.plugin}@${r.version}#${r.discordBuild}${r.hotfix ? `~${r.hotfix}` : ""}`;
 
 /**
  * Which reports are due, and the memory without entries older than a day. The kind isn't part of

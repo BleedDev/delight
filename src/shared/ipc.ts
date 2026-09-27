@@ -1,6 +1,7 @@
 import type { AuthorProfile } from "./authors";
 import type { ImportMode, ImportPreview } from "./backup";
 import type { PluginHealth } from "./health";
+import type { Hotfix } from "./hotfixes";
 import type { PulledPlugins } from "./pulls";
 
 /** IPC channel names shared by main, preload and renderer. */
@@ -27,6 +28,12 @@ export const IPC = {
     THEME_CHANGED: "evi:theme-changed",
     /** download a theme from an https URL into the themes folder */
     THEME_ADD_URL: "evi:theme-add-url",
+    /** write a theme from the theme editor into the themes folder, see ThemeSaveInput */
+    THEME_SAVE: "evi:theme-save",
+    /** send a theme to evi.rest for review, as the account this install is linked to (shared/themeSubmissions.ts) */
+    THEME_SUBMIT: "evi:theme-submit",
+    /** report a store theme to Evi's team */
+    THEME_REPORT: "evi:theme-report",
     /** save a backup file, see shared/backup.ts */
     BACKUP_EXPORT: "evi:backup-export",
     /** pick and validate a backup file, answers with what importing it would change */
@@ -59,6 +66,8 @@ export const IPC = {
     HEALTH_REPORT: "evi:health-report",
     /** main -> renderer: the plugins Evi pulled changed (see shared/pulls.ts) */
     PULLS_CHANGED: "evi:pulls-changed",
+    /** main -> renderer: Evi's hotfixes for broken plugins changed (see shared/hotfixes.ts) */
+    HOTFIXES_CHANGED: "evi:hotfixes-changed",
     /** report a store plugin to Evi's team */
     PLUGIN_REPORT: "evi:plugin-report",
     /** Evi's own updates: is a newer release published; download and install it (restarts Discord) */
@@ -110,6 +119,17 @@ export interface PluginManifest {
      * `true` for flags without a value. Changes take effect after restarting Discord.
      */
     chromiumSwitches?: Record<string, string | true>;
+    /**
+     * What it needs from Discord's page: sites, reading and sending messages, changing settings.
+     * Evi blocks anything else it does through Evi (shared/declaredPermissions.ts). Missing: made
+     * before Evi 0.7.0, not held to anything.
+     */
+    permissions?: {
+        network?: string[];
+        readMessages?: boolean;
+        sendMessages?: boolean;
+        changeSettings?: boolean;
+    };
 }
 
 export interface PluginPayload {
@@ -142,6 +162,19 @@ export type ThemeChange =
     | { type: "remove"; file: string; };
 
 export type AddThemeResult = { ok: true; file: string; } | { ok: false; error: string; };
+
+/**
+ * A theme from the editor. With `file`, it replaces that theme, which must be one the editor made and
+ * the store didn't install; without, it gets a free file name made from `name`.
+ */
+export interface ThemeSaveInput {
+    css: string;
+    name: string;
+    file?: string;
+}
+export type ThemeSaveResult = { ok: true; file: string; } | { ok: false; error: string; };
+/** `submission` as evi.rest answered: waiting for review */
+export type ThemeSubmitResult = { ok: true; submission: { id: number; version: string; }; } | { ok: false; error: string; };
 
 export interface PluginSettingsEntry {
     enabled?: boolean;
@@ -198,6 +231,8 @@ export interface BootData {
     safeMode?: SafeModeInfo;
     /** Plugins Evi turned off everywhere, from the last health answer on disk: they never start */
     pulled?: PulledPlugins;
+    /** Evi's fixes for plugins a Discord update broke, as evi.rest last said: applied before their patches register */
+    hotfixes?: Hotfix[];
 }
 
 /**

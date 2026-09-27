@@ -1,8 +1,9 @@
 import type { ImportMode } from "@shared/backup";
-import { AddThemeResult, AuthorsResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, CrashReportResult, EviSettings, HealthReportResult, HealthResult, IPC, OpenPathTarget, PluginChange, PluginReportResult, SettingsSaveResult, ThemeChange } from "@shared/ipc";
+import { AddThemeResult, AuthorsResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, CrashReportResult, EviSettings, HealthReportResult, HealthResult, IPC, OpenPathTarget, PluginChange, PluginReportResult, SettingsSaveResult, ThemeChange, ThemeSaveInput, ThemeSaveResult, ThemeSubmitResult } from "@shared/ipc";
 import type { AccountLinkResult, AccountStatus } from "@shared/account";
 import type { CrashReportInput } from "@shared/crashReports";
 import type { HealthReportInput } from "@shared/health";
+import type { Hotfix } from "@shared/hotfixes";
 import type { PluginReportInput } from "@shared/pluginReports";
 import type { PulledPlugins } from "@shared/pulls";
 import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesResult } from "@shared/badges";
@@ -10,6 +11,7 @@ import type { UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/
 import type { StarKind, StarResult, StarsResult } from "@shared/stars";
 import type { StorePreviewResult } from "@shared/pluginPermissions";
 import type { StoreImageResult, StoreListing, StoreProgress, StoreResult } from "@shared/store";
+import type { ThemeSubmissionInput } from "@shared/themeSubmissions";
 import { contextBridge, ipcRenderer, webFrame } from "electron";
 
 /** The bridge the renderer uses to reach the main process. Mirrored by src/renderer/native.ts */
@@ -29,8 +31,11 @@ const EviNative = {
         ipcRenderer.on(IPC.THEME_CHANGED, (_, change) => cb(change));
     },
     addThemeFromUrl: (url: string): Promise<AddThemeResult> => ipcRenderer.invoke(IPC.THEME_ADD_URL, url),
+    saveTheme: (input: ThemeSaveInput): Promise<ThemeSaveResult> => ipcRenderer.invoke(IPC.THEME_SAVE, input),
+    submitTheme: (input: ThemeSubmissionInput): Promise<ThemeSubmitResult> => ipcRenderer.invoke(IPC.THEME_SUBMIT, input),
+    reportTheme: (id: string, input: PluginReportInput): Promise<PluginReportResult> => ipcRenderer.invoke(IPC.THEME_REPORT, id, input),
     storeList: (): Promise<StoreListing> => ipcRenderer.invoke(IPC.STORE_LIST),
-    storeInstall: (id: string, options?: { allowNative?: boolean; }): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_INSTALL, id, options),
+    storeInstall: (id: string, options?: { allowNative?: boolean; allowMore?: boolean; }): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_INSTALL, id, options),
     storeUninstall: (id: string): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_UNINSTALL, id),
     storeInstallTheme: (id: string): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_THEME_INSTALL, id),
     storeUninstallTheme: (id: string): Promise<StoreResult> => ipcRenderer.invoke(IPC.STORE_THEME_UNINSTALL, id),
@@ -44,6 +49,9 @@ const EviNative = {
     reportHealth: (input: HealthReportInput): Promise<HealthReportResult> => ipcRenderer.invoke(IPC.HEALTH_REPORT, input),
     onPullsChange(cb: (pulled: PulledPlugins) => void) {
         ipcRenderer.on(IPC.PULLS_CHANGED, (_, pulled) => cb(pulled));
+    },
+    onHotfixesChange(cb: (hotfixes: Hotfix[]) => void) {
+        ipcRenderer.on(IPC.HOTFIXES_CHANGED, (_, hotfixes) => cb(hotfixes));
     },
     reportPlugin: (id: string, input: PluginReportInput): Promise<PluginReportResult> => ipcRenderer.invoke(IPC.PLUGIN_REPORT, id, input),
     getBadges: (cachedOnly = false): Promise<BadgesResult> => ipcRenderer.invoke(IPC.BADGES_GET, cachedOnly),

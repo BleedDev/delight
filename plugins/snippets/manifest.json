@@ -2,11 +2,13 @@
     "id": "snippets",
     "name": "Snippets",
     "description": "Saved replies. Pick one from the chat bar or send it with /snip, with placeholders like {user} and {date}. Right-click a message to save it as a snippet.",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "authors": ["Evi"],
     "tags": ["messages", "utility"],
     "minEviVersion": "0.3.2",
+    "permissions": { "sendMessages": true },
     "changelog": [
+        { "version": "1.0.3", "notes": ["Says what it needs (sending messages), and Evi holds it to that."] },
         { "version": "1.0.2", "notes": ["Typing stays smooth even if Discord changes its chat bar buttons: the button no longer searches Discord's code on every keystroke."] },
         { "version": "1.0.1", "notes": ["The snippets menu and the Save as snippet dialog open and close with Discord's own animations."] },
         { "version": "1.0.0", "notes": ["First release."] }

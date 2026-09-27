@@ -3,10 +3,12 @@
  * patches fail, or it doesn't start. Enough installs saying the same marks the plugin broken for
  * everyone (the pill on store cards and in the Plugins list), usually before anyone files a bug.
  *
- * Only store plugins, and only the plugin, its version, Discord's build and the kind of problem.
+ * Only store plugins, and only the plugin, its version, Discord's build and the kind of problem, and
+ * the revision of Evi's hotfix when the plugin runs with one (shared/hotfixes.ts).
  * At most once a day per plugin, version and build. Off with "Help spot broken plugins".
  */
 import type { HealthKind, HealthReportInput } from "@shared/health";
+import { hotfixTag, inHotfixRange } from "@shared/hotfixes";
 import { isPluginEnabled } from "@shared/ipc";
 import { isVersion } from "@shared/store";
 
@@ -84,7 +86,9 @@ export async function checkHealth() {
             const installed = Store.installedPlugin(state.manifest.id);
             const version = installed?.version ?? state.manifest.version;
             if (!installed?.fromStore || !isVersion(version)) continue;
-            reports.push({ plugin: state.manifest.id, version, discordBuild: build, kind });
+            // Still broken with Evi's fix: said so, so evi.rest knows the fix isn't enough
+            const hotfix = state.hotfix && inHotfixRange(state.hotfix, version) ? hotfixTag(state.hotfix) : undefined;
+            reports.push({ plugin: state.manifest.id, version, discordBuild: build, kind, ...(hotfix && { hotfix }) });
         }
 
         const { due, memory } = dueHealthReports(reports, readMemory(), Date.now());

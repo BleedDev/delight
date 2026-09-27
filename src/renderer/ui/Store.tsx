@@ -5,6 +5,7 @@
  * and the first install of each asks first.
  */
 import { AuthorProfile, authorPageUrl, isOfficialListing, OFFICIAL_AUTHOR } from "@shared/authors";
+import type { DeclaredPermissions, PermissionGrowth } from "@shared/declaredPermissions";
 import { healthWarns, PluginHealth } from "@shared/health";
 import { entriesBetween } from "@shared/pluginChangelog";
 import type { PulledPlugin } from "@shared/pulls";
@@ -18,14 +19,14 @@ import { React } from "../webpack/common";
 import { Badge, Button, Collapse, Dialog, Dropdown, EmptyState, FilterChips, Icon, IconButton, List, Notice, Pagination, scrollToTop, SearchField, Status, SwitchRow, Text, Tooltip, usePages, useStore } from "./components";
 import { takeStoreTarget } from "./nav";
 import { PluginChangelogSetting } from "./PluginChangelog";
-import { StorePluginPermissions } from "./PluginPermissions";
+import { DeclaredPermissionsList, PermissionGrowthList, StorePluginPermissions } from "./PluginPermissions";
 import { ReportRow } from "./Trust";
 
 const storeName = (kind: StoreKind) => t(`store.name.${kind}`);
 
 const healthLabel = (health: PluginHealth) => t(
     health.state === "investigating" ? "health.investigating"
-        : health.state === "fixed" ? "health.fixed"
+        : health.state === "fixed" ? health.hotfix ? "hotfix.label" : "health.fixed"
             : health.automatic ? "health.brokenAuto" : "health.broken",
 );
 
@@ -46,7 +47,13 @@ interface Item {
     official: boolean;
     /** Evi pulled the listed version: it can't be installed */
     pulled?: PulledPlugin;
-    install(allowNative?: boolean): Promise<unknown>;
+    /** Plugins: what it declares it needs. Undefined: it doesn't declare (see `declares`), or a theme. */
+    permissions?: DeclaredPermissions;
+    /** A plugin that says what it needs, so Evi holds it to that. Always true for themes. */
+    declares: boolean;
+    /** An update that asks for more than the installed version: asked before it's installed */
+    growth?: PermissionGrowth;
+    install(options?: { allowNative?: boolean; allowMore?: boolean; }): Promise<unknown>;
     uninstall(): Promise<unknown>;
 }
 
@@ -65,7 +72,10 @@ function itemsOf(kind: StoreKind): Item[] {
                 health: healthWarns(health, installed?.version ?? entry.version) ? health : undefined,
                 official: isOfficialListing(entry),
                 pulled: Store.pullOf(entry.id, entry.version),
-                install: (allowNative = false) => Store.install(entry.id, { allowNative }),
+                permissions: entry.permissions,
+                declares: !!entry.permissions,
+                growth: Store.growthOf(entry.id),
+                install: (options = {}) => Store.install(entry.id, options),
                 uninstall: () => Store.uninstall(entry.id),
             };
         });
@@ -79,6 +89,7 @@ function itemsOf(kind: StoreKind): Item[] {
             fromStore: !!installed,
             op: state.themeOps[entry.id],
             official: isOfficialListing(entry),
+            declares: true,
             install: () => Store.installTheme(entry.id),
             uninstall: () => Store.uninstallTheme(entry.id),
         };
@@ -162,6 +173,7 @@ function CommunityConfirm({ item, onConfirm, onClose }: { item: Item; onConfirm(
             {close => (
                 <div className="dl-stack">
                     <Text tag="p" variant="text-sm/normal" color="text-subtle">{trustNote(item.entry)}</Text>
+                    <DeclaredPermissionsList permissions={item.permissions} native={item.native} />
                     <div className="dl-toolbar">
                         <Button
                             variant="accent"
@@ -191,6 +203,7 @@ function NativeConfirm({ item, onConfirm, onClose }: { item: Item; onConfirm(): 
             {close => (
                 <div className="dl-stack">
                     <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("store.nativeBody", { authors: item.entry.authors.join(", ") })}</Text>
+                    <DeclaredPermissionsList permissions={item.permissions} native={false} />
                     <div className="dl-toolbar">
                         <Button
                             variant="accent"
@@ -210,15 +223,45 @@ function NativeConfirm({ item, onConfirm, onClose }: { item: Item; onConfirm(): 
 }
 
 /**
- * Install / Update / Uninstall, with a step in between for native plugins (full access) and for the
- * first install of a community plugin (who made it)
+ * An update that asks for more than the installed version declares gets its own step, like full
+ * access: what's new, and a button that says it allows it. Main asks once more before installing.
+ */
+function MoreAccessConfirm({ item, growth, onConfirm, onClose }: { item: Item; growth: PermissionGrowth; onConfirm(): void; onClose(): void; }) {
+    return (
+        <Dialog id={`dl-store-more-${item.entry.id}`} title={t("declared.moreTitle", { name: item.entry.name })} onClose={onClose}>
+            {close => (
+                <div className="dl-stack">
+                    <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("declared.moreBody", { version: item.entry.version })}</Text>
+                    <PermissionGrowthList growth={growth} />
+                    <div className="dl-toolbar">
+                        <Button
+                            variant="accent"
+                            onClick={() => {
+                                onConfirm();
+                                close();
+                            }}
+                        >
+                            {t("declared.allowAndUpdate")}
+                        </Button>
+                        <Button onClick={close}>{t("common.cancel")}</Button>
+                    </div>
+                </div>
+            )}
+        </Dialog>
+    );
+}
+
+/**
+ * Install / Update / Uninstall, with a step in between for native plugins (full access), for updates
+ * that ask for more access, and for the first install of a community plugin (who made it)
  */
 function useItemActions(item: Item) {
-    const [confirming, setConfirming] = React.useState<"native" | "community">();
+    const [confirming, setConfirming] = React.useState<"native" | "more" | "community">();
     const busy = item.op?.type === "busy";
     const install = () => {
         // Updates ask again: a new version may do more than the one you agreed to
         if (item.native) return setConfirming("native");
+        if (item.growth) return setConfirming("more");
         if (item.kind === "plugin" && item.action === "install" && !item.official && !communityInstalls().includes(item.entry.id)) return setConfirming("community");
         item.install();
     };
@@ -233,8 +276,11 @@ function useItemActions(item: Item) {
         </>
     );
     // The dialog closes itself (with its exit), then says so; installing starts as soon as it's confirmed
+    // Full access covers whatever else a native update asks for
     const confirm = confirming === "native"
-        ? <NativeConfirm item={item} onClose={() => setConfirming(undefined)} onConfirm={() => item.install(true)} />
+        ? <NativeConfirm item={item} onClose={() => setConfirming(undefined)} onConfirm={() => item.install({ allowNative: true, allowMore: true })} />
+        : confirming === "more" && item.growth
+        ? <MoreAccessConfirm item={item} growth={item.growth} onClose={() => setConfirming(undefined)} onConfirm={() => item.install({ allowMore: true })} />
         : confirming === "community" && (
             <CommunityConfirm
                 item={item}
@@ -375,11 +421,12 @@ function StoreCard({ item, onOpen, onAuthor }: { item: Item; onOpen(): void; onA
             </div>
             {entry.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-store-card-desc">{entry.description}</Text>}
             {/* Categories are in the filter and on the item's page, the card keeps to what to watch out for */}
-            {(item.native || item.health || !item.official) && (
+            {(item.native || item.health || !item.official || !item.declares) && (
                 <div className="dl-store-card-tags">
                     {item.health && <HealthPill health={item.health} />}
                     {!item.official && <CommunityLabel />}
                     {item.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
+                    {!item.declares && <Badge>{t("declared.undeclared")}</Badge>}
                 </div>
             )}
             <div className="dl-store-card-foot">
@@ -411,9 +458,10 @@ function UpdateRow({ item }: { item: Item; }) {
                     {installedVersion ? `${installedVersion} → ${entry.version}` : entry.version}
                 </span>
                 {item.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
+                {!item.native && item.growth && <Badge tone="warning">{t("declared.asksForMore")}</Badge>}
                 <span className="dl-grow" />
-                {/* Full-access plugins go through Update all, which asks first */}
-                {!item.native && (
+                {/* Full-access plugins and updates that ask for more go through Update all, which asks first */}
+                {!item.native && !item.growth && (
                     <Button size="sm" disabled={busy} onClick={() => void item.install()} aria-label={t("store.updateName", { name: entry.name })}>
                         {busy ? t("common.updating") : t("common.update")}
                     </Button>
@@ -440,17 +488,21 @@ function UpdateRow({ item }: { item: Item; }) {
     );
 }
 
-/** Update all, with one question for the full-access plugins among the updates */
+/**
+ * Update all, with one question for the updates that need one: full-access plugins, and updates that
+ * ask for more than the installed version declares
+ */
 function UpdateAll({ kind, items }: { kind: StoreKind; items: Item[]; }) {
     const state = useStore(Store.subscribe, Store.getSnapshot);
     const [asking, setAsking] = React.useState(false);
     const [result, setResult] = React.useState<UpdateAllResult>();
     const updates = items.filter(i => i.action === "update");
     const native = updates.filter(i => i.native);
+    const more = updates.filter(i => !i.native && i.growth);
 
-    const run = async (includeNative: boolean) => {
+    const run = async (includeAsking: boolean) => {
         setAsking(false);
-        setResult(await Store.updateAll(kind, { includeNative }));
+        setResult(await Store.updateAll(kind, { includeNative: includeAsking, includeMoreAccess: includeAsking }));
     };
 
     if (result && !updates.length) {
@@ -472,7 +524,7 @@ function UpdateAll({ kind, items }: { kind: StoreKind; items: Item[]; }) {
                     variant="accent"
                     id={`dl-${kind}-update-all`}
                     disabled={!!state.updatingAll || asking}
-                    onClick={() => native.length ? setAsking(true) : run(false)}
+                    onClick={() => native.length || more.length ? setAsking(true) : run(false)}
                 >
                     {state.updatingAll === kind ? t("common.updating") : t("store.updateAll")}
                 </Button>
@@ -481,12 +533,13 @@ function UpdateAll({ kind, items }: { kind: StoreKind; items: Item[]; }) {
                 {updates.map(item => <UpdateRow key={item.entry.id} item={item} />)}
             </ul>
             {asking && (
-                <div className="dl-store-confirm" role="group" aria-label={t("store.fullAccessUpdates")}>
-                    <p className="dl-store-confirm-title"><Icon name="warning" size={20} />{t("store.nativeUpdateTitle", { names: native.map(i => i.entry.name).join(", "), count: native.length })}</p>
-                    <p className="dl-hint">{t("store.nativeUpdateHint", { count: native.length })}</p>
+                <div className="dl-store-confirm" role="group" aria-label={t(native.length ? "store.fullAccessUpdates" : "declared.moreUpdates")}>
+                    {native.length > 0 && <p className="dl-store-confirm-title"><Icon name="warning" size={20} />{t("store.nativeUpdateTitle", { names: native.map(i => i.entry.name).join(", "), count: native.length })}</p>}
+                    {more.length > 0 && <p className="dl-store-confirm-title"><Icon name="warning" size={20} />{t("declared.moreUpdateTitle", { names: more.map(i => i.entry.name).join(", "), count: more.length })}</p>}
+                    <p className="dl-hint">{t("store.nativeUpdateHint", { count: native.length + more.length })}</p>
                     <div className="dl-toolbar">
-                        <Button variant="accent" onClick={() => run(true)}>{t("store.updateAllNative")}</Button>
-                        {updates.length > native.length && <Button onClick={() => run(false)}>{t("store.onlyOthers")}</Button>}
+                        <Button variant="accent" onClick={() => run(true)}>{t(native.length ? "store.updateAllNative" : "declared.updateAllMore")}</Button>
+                        {updates.length > native.length + more.length && <Button onClick={() => run(false)}>{t("store.onlyOthers")}</Button>}
                         <Button onClick={() => setAsking(false)}>{t("common.cancel")}</Button>
                     </div>
                 </div>
@@ -799,13 +852,14 @@ function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; o
                         <Text tag="h2" variant="heading-xl/bold" color="text-strong" id={headingId}>{entry.name}</Text>
                         {!item.official && <CommunityLabel />}
                         {item.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
+                        {!item.declares && <Badge>{t("declared.undeclared")}</Badge>}
                     </div>
                     <Text variant="text-sm/normal" color="text-subtle">{tNodes("store.byAuthors", { authors: <Authors entry={entry} onAuthor={onAuthor} /> })}</Text>
                     <span className="dl-store-status" role="status"><ItemStatus item={item} /></span>
                 </div>
                 <div className="dl-row-controls"><StarButton item={item} large />{buttons}</div>
             </header>
-            {!item.official && kind === "plugin" && (
+            {!item.official && (
                 <p className="dl-store-trust"><Icon name="info" size={16} /><span>{trustNote(entry)}</span></p>
             )}
             {confirm}
@@ -840,7 +894,7 @@ function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; o
                     </Text>
                 </div>
             </section>
-            {kind === "plugin" && <StorePluginPermissions id={entry.id} version={entry.version} native={item.native} headingId={`${headingId}-permissions`} />}
+            {kind === "plugin" && <StorePluginPermissions id={entry.id} version={entry.version} native={item.native} permissions={item.permissions} headingId={`${headingId}-permissions`} />}
 
             {entry.source && (
                 <div>
@@ -869,7 +923,7 @@ function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; o
                 )}
             </section>
 
-            {kind === "plugin" && <ReportRow id={entry.id} name={entry.name} version={item.installedVersion ?? entry.version} />}
+            <ReportRow kind={kind} id={entry.id} name={entry.name} version={item.installedVersion ?? entry.version} />
         </article>
     );
 }

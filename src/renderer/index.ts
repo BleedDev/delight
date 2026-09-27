@@ -88,7 +88,7 @@ function boot() {
     // Plugins Evi pulled never run (shared/pulls.ts), so their code doesn't count either
     const runs = (p: typeof data.plugins[number]) => isPluginEnabled(data.settings, p.manifest) && (p.source === "dev" || !pullFor(data.pulled, p.manifest.id, p.manifest.version));
     if (!SafeMode.active) registerToolkitPatches(data.plugins.filter(runs).map(p => p.code));
-    PluginManager.boot(data.plugins, data.pulled);
+    PluginManager.boot(data.plugins, data.pulled, data.hotfixes);
     installHotkey();
     installSettingsEntry();
 

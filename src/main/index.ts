@@ -13,9 +13,10 @@ import { applyChromiumSwitches, askToEnable, enablesNeedingConsent, getPluginPay
 import { SafeMode } from "./safeMode";
 import { saveSettings, settings } from "./settings";
 import { initBadges } from "./badges";
-import { currentPulls, initReports } from "./reports";
+import { currentHotfixes, currentPulls, initReports } from "./reports";
 import { initStars } from "./stars";
 import { initStore } from "./store";
+import { initThemeSubmit } from "./themeSubmit";
 import { getThemePayloads, initThemes } from "./themes";
 import { initUpdater } from "./updater";
 
@@ -61,6 +62,7 @@ function registerIpc() {
             themes: getThemePayloads(),
             safeMode: SafeMode.info,
             pulled: currentPulls(),
+            hotfixes: currentHotfixes(),
         };
         e.returnValue = boot;
     });
@@ -200,6 +202,7 @@ function setup() {
     initStars();
     initReports();
     initAccount();
+    initThemeSubmit();
     initBadges();
     initUpdater();
     watchQuickCss();

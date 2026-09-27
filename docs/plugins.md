@@ -50,6 +50,7 @@ Multiple files are normal. The convention is: Discord-facing code in `index.tsx`
     "version": "1.0.0",
     "authors": ["You"],
     "tags": ["messages"],
+    "permissions": { "readMessages": true },
     "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
     "enabledByDefault": false
 }
@@ -69,8 +70,35 @@ Multiple files are normal. The convention is: Discord-facing code in `index.tsx`
 | `minEviVersion` | | Oldest Evi it works with. Defaults to the current Evi version when published |
 | `enabledByDefault` | | On when first installed. Official plugins are off unless they're safe and broadly wanted |
 | `chromiumSwitches` | | `{ "switch-name": "value" }` or `true` for bare flags. Applied at Discord start while the plugin is on, so changes need a restart. Makes the plugin *native* in the store |
+| `permissions` | for the store | What it needs from Discord's page, see below. Evi blocks the rest. Required for store uploads |
 
 `main` and `native` are set by the build; don't write them yourself.
+
+### Permissions
+
+Say what the plugin needs, and Evi holds it to that: anything else it tries through Evi fails and shows as **Blocked** in its Activity. The store page, the install question and the plugin's details list it in plain words.
+
+```json
+"permissions": {
+    "network": ["api.example.com", "cdn.discordapp.com"],
+    "readMessages": true,
+    "sendMessages": false,
+    "changeSettings": false
+}
+```
+
+| Key | Covers |
+|---|---|
+| `network` | Sites it contacts, Discord's own included. Just the host (`api.example.com`, no `https://`, port, path or `*`); a host covers its subdomains, so `discordapp.com` covers `cdn.discordapp.com`. Relative URLs are `discord.com` |
+| `readMessages` | Subscribing to message events (`MESSAGE_CREATE`, `LOAD_MESSAGES_SUCCESS`, `DRAFT_CHANGE`...), looking up message stores by name (`MessageStore`, `ReferencedMessageStore`, `DraftStore`...), hooking the Flux dispatcher's `dispatch`, Discord's message actions (`sendMessage`, `editMessage`...) or a message store |
+| `sendMessages` | A slash command that returns `{ content }`, and posting, editing or deleting through Discord's message, interaction and webhook endpoints |
+| `changeSettings` | Changing your account or settings through Discord's settings endpoints, and your Evi badges (`Badges.setPrefs`, `Badges.manage`) |
+
+Anything left out is no, so `"permissions": {}` asks for nothing. A refused `fetch` rejects with a `PluginPermissionError`; everything else throws one, with a message that says what to add.
+
+What Evi can hold a plugin to is what goes through Evi: the `fetch`, `XMLHttpRequest`, `WebSocket` and `EventSource` its code sees, its `ctx`, and its own copy of `@evi/api`. Plugins share Discord's page, so code that reaches around those (`window.fetch`, a finder by props that returns `MessageStore`, a source patch, Discord's own send function) can still do more; that's why store plugins are still reviewed, and declarations are checked against the code. A full-access part (`native.ts`) isn't limited at all: list the sites it contacts in `network` anyway, so people know.
+
+A plugin without `permissions` isn't held to anything and is labelled *Doesn't declare its permissions*. An update that asks for more than the installed version (a new site, a new yes, or dropping `permissions`) asks the user before it's installed, and background updates wait for them.
 
 ## 3. The plugin definition
 
@@ -247,6 +275,8 @@ Rules for patches that don't break Discord:
 Build patches in the **Patch Helper** tab: it shows as you type which modules `find` hits, what `match` catches with context, the before and after code, and whether the result compiles, then gives you the finished patch to paste. The **Patches** tab reports every patch as `applied`, `waiting` (lazy chunk not loaded yet), `broken` or `ambiguous`.
 
 Changing a patch hot-reloads in most cases: the module is re-run with the new patch set (*live module replacement*). Modules that can't safely run twice (Flux stores, bare-function exports, modules that subscribe to Flux when they run) get a reload banner instead.
+
+When a Discord update breaks a store plugin's patch, Evi's team can fix it on every install without a new version (a *hotfix*). It finds the patch by its place in `patches` and the `find` it has, and a lookup by what the Patches tab shows for it, so keep your patches in the same order between versions. The plugin's details then say Evi fixed it. A hotfix covers the versions Evi's team picks, usually the ones that broke, so your next version runs as you wrote it.
 
 ## 8. Flux
 
@@ -465,7 +495,7 @@ Store installs are limited to `manifest.json`, `index.js` and `native.js`, so ev
 - **Don't use `find` at module top level** for anything lazy; use a `*Lazy` finder or `ctx.waitFor`.
 - **No `fetch` to outside hosts** from the renderer; it's blocked. Use `native.ts`.
 - **No `eval` or `new Function`.** The plugin's permissions report flags dynamic code, and users see it.
-- **Only request what you need.** The Plugins tab and the store show what each plugin can touch (network, clipboard, patches, hooks, native...), read from its code.
+- **Only request what you need.** Declare it in `permissions` (§2): the store shows it, and Evi blocks the rest. The Plugins tab and the store also show what each plugin can touch (network, clipboard, patches, hooks, native...), read from its code.
 - **Keep it fast.** Hooks on hot paths (message rendering, store getters) run constantly: do the cheap check first and bail out.
 - **Respect privacy.** Keep data on the device unless the plugin's purpose is to send it somewhere, and say so in the description.
 

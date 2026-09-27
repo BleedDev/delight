@@ -3,8 +3,9 @@ import type { EviKey } from "@shared/locales";
 import { t } from "../i18n";
 import { diagnosePatches, PatchDiagnosis, PatchHealth } from "../patching/diagnose";
 import { diagnoseLookups, LookupDiagnosis, LookupHealth } from "../plugins/lookups";
+import { PluginManager } from "../plugins/manager";
 import { React } from "../webpack/common";
-import { Button, EmptyState, List, Section, Status, Text, Tone } from "./components";
+import { Badge, Button, EmptyState, List, Section, Status, Text, Tone } from "./components";
 
 const health: Record<PatchHealth, { tone: Tone; label: EviKey; hint?: EviKey; order: number; }> = {
     broken: { tone: "danger", label: "patches.broken", hint: "patches.brokenHint", order: 0 },
@@ -18,6 +19,8 @@ const health: Record<PatchHealth, { tone: Tone; label: EviKey; hint?: EviKey; or
 function PatchRow({ d }: { d: PatchDiagnosis; }) {
     const info = health[d.health];
     const titleId = `dl-patch-${d.plugin}-${d.index}`;
+    // Registered with Evi's fix in place (shared/hotfixes.ts), so what's checked here is the fix
+    const fixed = !!PluginManager.get(d.plugin)?.hotfix?.patches.some(p => p.index === d.index);
     return (
         <li className="dl-row" aria-labelledby={titleId}>
             <div className="dl-row-head">
@@ -25,6 +28,7 @@ function PatchRow({ d }: { d: PatchDiagnosis; }) {
                     <div className="dl-row-title">
                         <Text tag="h3" variant="heading-md/medium" color="text-strong" id={titleId}>{d.plugin}</Text>
                         <Text variant="text-xs/medium" color="text-muted" className="dl-version" tabular>{t("patches.patchNumber", { n: d.index + 1 })}</Text>
+                        {fixed && <Badge>{t("hotfix.label")}</Badge>}
                     </div>
                     <p className="dl-code-inline"><span className="dl-code-key">find</span>{String(d.patch.find)}</p>
                     {info.hint && <Text tag="p" variant="text-sm/normal" color="text-subtle">{t(info.hint)}</Text>}

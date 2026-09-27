@@ -2,9 +2,10 @@
     "id": "fast-lists",
     "name": "Fast Lists",
     "description": "Keeps Discord smooth with hundreds of servers and long chats. Servers, messages and members far out of view skip rendering work, without ever being removed, so nothing flickers, disappears or jumps.",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "authors": ["Evi"],
     "tags": ["performance"],
-    "changelog": [{ "version": "2.0.1", "notes": ["Faster start: the server list's GPU-layer fix is worked out in idle time instead of freezing Discord for a moment."] }, { "version": "2.0.0", "notes": ["Servers, messages and members far out of view skip rendering work instead of being removed, so nothing flickers or jumps."] }],
+    "permissions": {},
+    "changelog": [{ "version": "2.0.2", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] }, { "version": "2.0.1", "notes": ["Faster start: the server list's GPU-layer fix is worked out in idle time instead of freezing Discord for a moment."] }, { "version": "2.0.0", "notes": ["Servers, messages and members far out of view skip rendering work instead of being removed, so nothing flickers or jumps."] }],
     "enabledByDefault": true
 }

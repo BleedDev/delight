@@ -18,7 +18,7 @@ import { openStore, showTab } from "./nav";
 import { PluginDetailsButton } from "./PluginPermissions";
 import { SafeModeNotice } from "./SafeModeNotice";
 import { Glyph, HealthPill, useStoreState } from "./Store";
-import { PulledNotice } from "./Trust";
+import { HotfixNote, PulledNotice } from "./Trust";
 
 type Filter = "all" | "enabled" | "disabled" | "settings" | "dev";
 
@@ -190,8 +190,8 @@ function PluginCard({ state }: { state: PluginState; }) {
     const removeLabel = fromStore ? t("common.uninstallName", { name: manifest.name }) : t("common.removeName", { name: manifest.name });
     const reloadNote = state.needsReload && state.reloadReason;
 
-    // Full-access updates go through the plugin's store page, which asks first
-    const update = () => entry?.native ? openStore("plugin", manifest.id) : Store.install(manifest.id);
+    // Full-access updates, and ones that ask for more, go through the plugin's store page, which asks first
+    const update = () => entry?.native || Store.growthOf(manifest.id) ? openStore("plugin", manifest.id) : Store.install(manifest.id);
 
     return (
         <li className="dl-plugin-card" aria-labelledby={titleId}>
@@ -257,6 +257,7 @@ function PluginCard({ state }: { state: PluginState; }) {
             {health?.message && (
                 <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">{health.setBy ? `${health.setBy}: ` : ""}{health.message}</Text>
             )}
+            {state.hotfix && enabled && !pulled && !health && <HotfixNote hotfix={state.hotfix} />}
             {(state.error || lookupProblems.length > 0) && <CrashReport state={state} />}
             {reloadNote && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-row-note">{t("plugins.couldntApplyLive", { reason: reloadNote })}</Text>}
             {confirmingUninstall && (

@@ -1,11 +1,12 @@
-import { AddThemeResult, IPC, ThemeChange, ThemePayload } from "@shared/ipc";
+import { AddThemeResult, IPC, ThemeChange, ThemePayload, ThemeSaveResult } from "@shared/ipc";
+import { isEditorTheme, themeSlug } from "@shared/themeEditor";
 import { isThemeFile, MAX_THEME_BYTES, parseThemeMeta, themeFileName, whyNotCss } from "@shared/themes";
 import { ipcMain, webContents } from "electron";
-import { existsSync, FSWatcher, mkdirSync, readdirSync, readFileSync, watch, writeFileSync } from "fs";
-import { join } from "path";
+import { existsSync, FSWatcher, mkdirSync, readdirSync, readFileSync, renameSync, watch, writeFileSync } from "fs";
+import { basename, join } from "path";
 
 import { downloadHttps } from "./download";
-import { THEMES_DIR } from "./paths";
+import { DATA_DIR, THEMES_DIR } from "./paths";
 import { SafeMode } from "./safeMode";
 
 const themes = new Map<string, ThemePayload>();
@@ -121,6 +122,49 @@ export async function addThemeFromUrl(input: string): Promise<AddThemeResult> {
     return { ok: true, file };
 }
 
+/** Theme files the store put there (store.ts keeps the list): the editor saves a copy of those instead */
+function storeThemeFiles() {
+    try {
+        const record = JSON.parse(readFileSync(join(DATA_DIR, "store-themes.json"), "utf8"));
+        return new Set(Object.values(record ?? {}).map(t => (t as { file?: unknown; })?.file));
+    } catch {
+        return new Set();
+    }
+}
+
+/**
+ * A theme from the editor. Replacing one is only for files the editor wrote itself and the store
+ * doesn't manage, so the editor can't overwrite a theme it merely started from; anything else gets
+ * a new file named after the theme.
+ */
+export function saveTheme(input: unknown): ThemeSaveResult {
+    const { css, name, file } = (input ?? {}) as Record<string, unknown>;
+    if (typeof css !== "string" || typeof name !== "string") return { ok: false, error: "Nothing to save" };
+    if (new TextEncoder().encode(css).length > MAX_THEME_BYTES) return { ok: false, error: "That theme is too large to save" };
+    const problem = whyNotCss(css, "text/css");
+    if (problem) return { ok: false, error: problem };
+
+    let target: string | undefined;
+    if (file !== undefined) {
+        if (typeof file !== "string" || basename(file) !== file || !isThemeFile(file) || file.startsWith(".")) return { ok: false, error: "That isn't a theme file name" };
+        let current: string | undefined;
+        try {
+            current = readFileSync(join(THEMES_DIR, file), "utf8");
+        } catch { }
+        // Gone meanwhile, or not the editor's to replace: a new file instead
+        if (current !== undefined && isEditorTheme(current) && !storeThemeFiles().has(file)) target = file;
+    }
+    target ??= pickFile(`${themeSlug(name)}.css`, css);
+
+    mkdirSync(THEMES_DIR, { recursive: true });
+    // Write then rename, so the theme watcher never reads half a file
+    const tmp = join(THEMES_DIR, `.${target}.evi-tmp`);
+    writeFileSync(tmp, css);
+    renameSync(tmp, join(THEMES_DIR, target));
+    reloadTheme(target);
+    return { ok: true, file: target };
+}
+
 export function getThemePayloads() {
     return [...themes.values()];
 }
@@ -133,4 +177,5 @@ export function initThemes() {
     watchThemes();
 
     ipcMain.handle(IPC.THEME_ADD_URL, (_, url: string) => addThemeFromUrl(String(url)));
+    ipcMain.handle(IPC.THEME_SAVE, (_, input: unknown) => saveTheme(input));
 }

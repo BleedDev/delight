@@ -4,6 +4,7 @@ import { t } from "../i18n";
 import { Native } from "../native";
 import { Settings } from "../settings";
 import { Store } from "../store";
+import { ThemeEditor } from "../themeEditor";
 import { Themes } from "../themes";
 import { React } from "../webpack/common";
 import { Badge, Button, EmptyState, IconButton, List, Notice, Status, Switch, Text, TextField, useStore } from "./components";
@@ -49,6 +50,15 @@ function ThemeRow({ theme }: { theme: ThemePayload; }) {
                     </Text>
                 </div>
                 <div className="dl-row-controls">
+                    <IconButton
+                        icon="pencil"
+                        label={t("themeEditor.edit", { name: theme.name })}
+                        onClick={() => {
+                            // A theme being edited stays open in the editor rather than being replaced
+                            if (!ThemeEditor.dirty()) ThemeEditor.startFrom(theme.file);
+                            showTab("themes", "editor");
+                        }}
+                    />
                     {update && <Button variant="accent" icon="download" disabled={busy} onClick={() => Store.installTheme(storeId)}>{t("common.update")}</Button>}
                     {storeId && <IconButton icon="trash" label={t("common.uninstallName", { name: theme.name })} onClick={() => !busy && Store.uninstallTheme(storeId)} />}
                     <Switch checked={Themes.isEnabled(theme.file)} labelledBy={titleId} onChange={v => Themes.setEnabled(theme.file, v)} />

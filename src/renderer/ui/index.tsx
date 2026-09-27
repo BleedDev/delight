@@ -38,6 +38,8 @@ const tabs = pages;
 
 // Remembered across closing and reopening, like Discord's settings remember their last page
 let lastTab = tabs[0].id;
+/** The open panel's page switch, for SettingsUI.open(page) while it's already open */
+let switchPage: ((id: string) => void) | undefined;
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -55,6 +57,11 @@ function Panel() {
         setTabState(id);
         bodyRef.current?.scrollTo({ top: 0 });
     };
+
+    React.useEffect(() => {
+        switchPage = setTab;
+        return () => void (switchPage = undefined);
+    }, []);
 
     React.useEffect(() => {
         const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -166,7 +173,13 @@ function mount() {
 }
 
 export const SettingsUI = {
-    open() {
+    /** Opens the panel, on `page` when given (see pages.tsx) */
+    open(page?: string) {
+        if (page && tabs.some(t => t.id === page)) {
+            lastTab = page;
+            // Already open on another page: go there
+            switchPage?.(page);
+        }
         mount();
         setView("open");
     },

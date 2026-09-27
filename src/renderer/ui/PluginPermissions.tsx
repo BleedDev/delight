@@ -1,8 +1,10 @@
 /**
- * What a plugin can touch, as a short list of rows with a risk level each: in an installed plugin's
- * details (the Plugins tab) and on a store plugin's page, before it's installed. The analysis itself
- * is src/shared/pluginPermissions.ts.
+ * What a plugin can touch: what it declares it needs (shared/declaredPermissions.ts), which Evi holds
+ * it to, then a short list of rows with a risk level each, read from its code. In an installed
+ * plugin's details (the Plugins tab), on a store plugin's page before it's installed, and in the
+ * store's install and update questions. The analysis itself is src/shared/pluginPermissions.ts.
  */
+import { DeclaredPermissions, PERMISSION_FLAGS, PermissionFlag, PermissionGrowth, readPermissions } from "@shared/declaredPermissions";
 import { analyzePermissions, Capability, PermissionsReport, Risk, StorePreviewResult } from "@shared/pluginPermissions";
 
 import { t } from "../i18n";
@@ -13,10 +15,84 @@ import { Store } from "../store";
 import { React } from "../webpack/common";
 import { Badge, Dialog, Icon, IconButton, IconName, Status, Text, Tone } from "./components";
 import { PluginActivitySection } from "./PluginActivity";
-import { PulledNotice, ReportRow } from "./Trust";
+import { HotfixNote, PulledNotice, ReportRow } from "./Trust";
 
 const riskTone: Record<Risk, Tone> = { low: "success", medium: "warning", high: "danger" };
 const riskIcon: Record<Risk, IconName> = { low: "circleCheck", medium: "info", high: "warning" };
+
+// ---- declared ---------------------------------------------------------------------------------
+
+const flagIcon: Record<PermissionFlag, IconName> = { readMessages: "search", sendMessages: "pencil", changeSettings: "settings" };
+
+function DeclaredRow({ icon, title, hint, details, risk, permission }: {
+    icon: IconName;
+    title: string;
+    hint: string;
+    details?: string[];
+    risk?: Risk;
+    permission: string;
+}) {
+    return (
+        <li className="dl-perms-item dl-declared-item" data-risk={risk} data-permission={permission}>
+            <Icon name={icon} size={16} />
+            <div className="dl-perms-text">
+                <Text variant="text-sm/semibold" color="text-strong">{title}</Text>
+                <Text tag="p" variant="text-sm/normal" color="text-subtle">{hint}</Text>
+                {details && details.length > 0 && (
+                    <ul className="dl-perms-details" aria-label={title}>
+                        {details.map(d => <li key={d} className="dl-perms-detail">{d}</li>)}
+                    </ul>
+                )}
+            </div>
+        </li>
+    );
+}
+
+/** One row per thing it asks for: its sites (as chips), then each yes, then full access */
+function DeclaredRows({ hosts, flags, native }: { hosts: string[]; flags: readonly PermissionFlag[]; native?: boolean; }) {
+    return (
+        <ul className="dl-perms-list">
+            {native && <DeclaredRow permission="native" icon="warning" risk="high" title={t("store.access.native")} hint={t("declared.nativeHint")} />}
+            {hosts.length > 0 && <DeclaredRow permission="network" icon="link" title={t("declared.network", { count: hosts.length })} hint={t("declared.networkHint")} details={hosts} />}
+            {flags.map(f => <DeclaredRow key={f} permission={f} icon={flagIcon[f]} title={t(`declared.${f}`)} hint={t(`declared.${f}Hint`)} />)}
+        </ul>
+    );
+}
+
+/**
+ * What a plugin declares it needs, in plain words, and what that means: Evi blocks the rest of what
+ * it does through Evi. A plugin that doesn't declare is labelled so, since nothing holds it.
+ */
+export function DeclaredPermissionsList({ permissions, native }: { permissions: DeclaredPermissions | undefined; native: boolean; }) {
+    if (!permissions) {
+        return (
+            <div className="dl-declared" data-declared="none">
+                <Status tone="warning">{t("declared.undeclared")}</Status>
+                <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-perms-note">{t("declared.undeclaredHint")}</Text>
+            </div>
+        );
+    }
+    const flags = PERMISSION_FLAGS.filter(f => permissions[f]);
+    const asksForSomething = native || flags.length > 0 || permissions.network.length > 0;
+    return (
+        <div className="dl-declared" data-declared="">
+            <Text tag="h4" variant="text-sm/semibold" color="text-strong">{t("declared.title")}</Text>
+            {asksForSomething
+                ? <DeclaredRows hosts={permissions.network} flags={flags} native={native} />
+                : <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("declared.nothing")}</Text>}
+            <Text tag="p" variant="text-xs/normal" color="text-muted" className="dl-perms-note">{t("declared.note")}</Text>
+        </div>
+    );
+}
+
+/** What an update asks for beyond what the installed version declares, for the store's question */
+export function PermissionGrowthList({ growth }: { growth: PermissionGrowth; }) {
+    if (growth.undeclared) return <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("declared.growthUndeclared")}</Text>;
+    return <DeclaredRows hosts={growth.hosts} flags={growth.flags} />;
+}
+
+/** Whether a manifest reaches beyond Discord's page: native code or Chromium switches */
+const reachesBeyondPage = (manifest: PluginState["manifest"]) => !!manifest.native || Object.keys(manifest.chromiumSwitches ?? {}).length > 0;
 
 /** One line on the overall picture, for the top of the list (shared/pluginPermissions.ts riskSummary) */
 function riskSummary(report: PermissionsReport) {
@@ -111,21 +187,25 @@ function PluginDetails({ state }: { state: PluginState; }) {
     const fromStore = state.source !== "dev" && !!Store.installedPlugin(manifest.id)?.fromStore;
     // A store plugin's reviewed names, not what its manifest claims
     const authors = Store.authorsOf(state);
-    // A pulled plugin's way back: the store's newer version (full-access ones update from their store page)
+    // A pulled plugin's way back: the store's newer version (full-access ones, and ones that ask for more,
+    // update from their store page, which asks first)
     const entry = Store.getSnapshot().plugins.find(p => p.id === manifest.id);
-    const update = state.pulled && entry && !entry.native && Store.pluginAction(manifest.id) === "update"
+    const update = state.pulled && entry && !entry.native && Store.pluginAction(manifest.id) === "update" && !Store.growthOf(manifest.id)
         ? { version: entry.version, busy: Store.getSnapshot().ops[manifest.id]?.type === "busy", run: () => void Store.install(manifest.id) }
         : undefined;
     return (
         <div className="dl-stack dl-plugin-details">
             {state.pulled && <PulledNotice pull={state.pulled} update={update} />}
             {manifest.description && <Text tag="p" variant="text-md/normal" color="text-default">{manifest.description}</Text>}
+            {state.hotfix && state.running && <HotfixNote hotfix={state.hotfix} />}
             <Text variant="text-sm/normal" color="text-subtle" tabular>
                 {[manifest.version && `v${manifest.version}`, authors.length > 0 && t("common.by", { author: authors.join(", ") })].filter(Boolean).join(" · ")}
             </Text>
 
             <section className="dl-stack" aria-labelledby={`${headingId}-access`}>
                 <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={`${headingId}-access`}>{t("perms.title")}</Text>
+                <DeclaredPermissionsList permissions={readPermissions(manifest.permissions)} native={reachesBeyondPage(manifest)} />
+                <Text tag="h4" variant="text-sm/semibold" color="text-strong">{t("declared.codeTitle")}</Text>
                 <InstalledPluginPermissions state={state} />
             </section>
 
@@ -189,8 +269,17 @@ function preview(id: string, version: string) {
     return pending;
 }
 
-/** On a store plugin's page: from the registry right away, then from its code once main fetched it */
-export function StorePluginPermissions({ id, version, native, headingId }: { id: string; version: string; native: boolean; headingId: string; }) {
+/**
+ * On a store plugin's page: what it declares, from the registry, then what its code can reach, from the
+ * registry right away and from its code once main fetched it
+ */
+export function StorePluginPermissions({ id, version, native, permissions, headingId }: {
+    id: string;
+    version: string;
+    native: boolean;
+    permissions: DeclaredPermissions | undefined;
+    headingId: string;
+}) {
     const [result, setResult] = React.useState<StorePreviewResult>();
     React.useEffect(() => {
         let live = true;
@@ -206,6 +295,8 @@ export function StorePluginPermissions({ id, version, native, headingId }: { id:
     return (
         <section className="dl-stack" aria-labelledby={headingId} data-store-permissions={id}>
             <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={headingId}>{t("perms.title")}</Text>
+            <DeclaredPermissionsList permissions={permissions} native={native} />
+            <Text tag="h4" variant="text-sm/semibold" color="text-strong">{t("declared.codeTitle")}</Text>
             <PermissionsList report={report} pending={!result} error={result && !result.ok ? result.error : undefined} />
         </section>
     );

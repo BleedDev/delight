@@ -3,9 +3,10 @@ const SYM_LAZY_GET = Symbol("evi.lazyGet");
 /**
  * A stand-in for a value that doesn't exist yet. The getter runs on first use and its result is
  * cached once it succeeds. `knownKeys` lets code that copies properties early (like CommonJS
- * interop helpers) see the keys before the value has resolved.
+ * interop helpers) see the keys before the value has resolved. `overrides` answer for those keys
+ * instead of the value (a plugin's own Dispatcher.subscribe, guard.ts); unlazy still gives the real one.
  */
-export function lazy<T>(getter: () => T, knownKeys: readonly string[] = []): T {
+export function lazy<T>(getter: () => T, knownKeys: readonly string[] = [], overrides?: Partial<Record<PropertyKey, unknown>>): T {
     let cached: any;
     const resolve = () => cached ??= getter();
 
@@ -15,6 +16,7 @@ export function lazy<T>(getter: () => T, knownKeys: readonly string[] = []): T {
     return new Proxy(target, {
         get(_, key) {
             if (key === SYM_LAZY_GET) return resolve;
+            if (overrides && Object.hasOwn(overrides, key)) return overrides[key];
             const value = resolve();
             return Reflect.get(value, key, value);
         },
