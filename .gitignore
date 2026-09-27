@@ -19,3 +19,9 @@ server/data/
 .env.*
 !.env.example
 site/*.tsbuildinfo
+
+# evi.rest API: private, kept out of this repo
+server/
+tests/server.test.ts
+tests/accounts.test.ts
+tests/site.test.ts
