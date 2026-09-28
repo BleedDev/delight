@@ -5,7 +5,8 @@
  * (what it hooked, which action it handles...). The Performance tab (ui/PerformanceTab.tsx) shows it.
  *
  * Always on, so it has to cost next to nothing: a measured call reads the clock twice and updates a
- * few numbers on a Site resolved when the callback was registered. No lookup, no allocation.
+ * few numbers on a Site resolved when the callback was registered. No lookup, no allocation. `begin`
+also notes which site is running, for Crash Detective's breadcrumbs (crashDetective.ts).
  *
  * Time is self time. A measurement inside another one (a hook whose callback calls a function another
  * plugin hooked, an `instead` hook calling through to Discord's original) is taken out of the outer
@@ -17,7 +18,7 @@
  * is only as fine as the clock.
  */
 
-export type SiteKind = "hook" | "flux" | "patch" | "badges" | "menu" | "timer" | "start";
+export type SiteKind = "hook" | "flux" | "patch" | "badges" | "menu" | "timer" | "keybind" | "start";
 
 /** Seconds kept for "recently", one slot per second */
 export const WINDOW_S = 10;
@@ -101,10 +102,23 @@ let slowCalls: SlowCall[] = [];
 
 const now = () => performance.now();
 
-/** Starts a measurement: pass what it returns to `end` (or `pass`), in a finally */
-function begin() {
-    if (++depth < MAX_DEPTH) nested[depth] = 0;
-    return now();
+/**
+ * The site measured at each depth and when it began, so a crash breadcrumb can say what's running
+ * (crashDetective.ts). Undefined for a pass-through (callOriginal): the frame under it is still running.
+ * Frames above `depth` are stale, never read.
+ */
+const runningSite: (Site | undefined)[] = new Array(MAX_DEPTH).fill(undefined);
+const runningSince = new Float64Array(MAX_DEPTH);
+
+/** Starts a measurement at `site`: pass what it returns to `end` (or `pass`), in a finally */
+function begin(site?: Site) {
+    const at = now();
+    if (++depth < MAX_DEPTH) {
+        nested[depth] = 0;
+        runningSite[depth] = site;
+        runningSince[depth] = at;
+    }
+    return at;
 }
 
 /** Ends a measurement, charging its self time to `site` */
@@ -161,7 +175,7 @@ function site(plugin: string, kind: SiteKind, name: string) {
 /** `fn`, measured at `site` on every call */
 function measure<F extends (...args: any[]) => any>(site: Site, fn: F): F {
     return function (this: unknown) {
-        const start = begin();
+        const start = begin(site);
         try {
             // `arguments` rather than a rest parameter: no array per call
             return fn.apply(this, arguments as any);
@@ -209,7 +223,7 @@ function wrapSelf(plugin: string, definition: object, self: object, key: string,
 
     const at = site(plugin, "patch", `$self.${key}`);
     const measured = function (this: unknown) {
-        const start = begin();
+        const start = begin(at);
         try {
             // Called as $self.method(): the method sees its real definition as `this`, like before
             return fn.apply(this === self ? definition : this, arguments);
@@ -262,6 +276,34 @@ function snapshot(): PluginReport[] {
         out.push(report);
     }
     return out.sort(byTime);
+}
+
+/** The innermost site running right now and when it began (performance.now() time), if any */
+function current(): { site: Site; since: number; } | undefined {
+    for (let d = Math.min(depth, MAX_DEPTH - 1); d > 0; d--) {
+        const site = runningSite[d];
+        if (site) return { site, since: runningSince[d] };
+    }
+}
+
+/**
+ * The sites that took the most time within the last `seconds` (at most WINDOW_S), slowest first.
+ * From the per-second slots, so it only reads what `end` already keeps. `include` filters by plugin id.
+ */
+function busiest(seconds: number, limit: number, include?: (plugin: string) => boolean) {
+    const second = (now() / 1000) | 0;
+    const out: { plugin: string; kind: SiteKind; name: string; ms: number; }[] = [];
+    for (const [plugin, byName] of sites) {
+        if (include && !include(plugin)) continue;
+        for (const s of byName.values()) {
+            let ms = 0;
+            for (let i = 0; i < WINDOW_S; i++) {
+                if (s.second[i] > second - seconds) ms += s.secondMs[i];
+            }
+            if (ms > 0) out.push({ plugin, kind: s.kind, name: s.name, ms });
+        }
+    }
+    return out.sort((a, b) => b.ms - a.ms).slice(0, limit);
 }
 
 // ---- recording ----------------------------------------------------------------------------------
@@ -340,7 +382,7 @@ function measureOverhead(iterations = 200_000) {
     const wasRecording = recording;
     recording = false;
     const start = now();
-    for (let i = 0; i < iterations; i++) end(scratch, begin());
+    for (let i = 0; i < iterations; i++) end(scratch, begin(scratch));
     const took = now() - start;
     recording = wasRecording;
     return overhead = took / iterations * 1000;
@@ -356,6 +398,8 @@ export const Perf = {
     measure,
     measuredSelf,
     snapshot,
+    current,
+    busiest,
     startRecording,
     stopRecording,
     get recording() {

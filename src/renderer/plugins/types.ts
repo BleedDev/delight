@@ -35,7 +35,16 @@ export interface SelectSetting<V extends string = string> extends BaseSetting {
     options: readonly { label: string; value: V; }[];
 }
 
-export type SettingDefinition = BooleanSetting | StringSetting | NumberSetting | SelectSetting;
+/**
+ * A keyboard shortcut the user records, stored like "Ctrl+Shift+KeyG" ("" for none). Declaring it
+ * only shows the field: `ctx.keybind(key, handler)` is what runs something when it's pressed.
+ */
+export interface KeybindSetting extends BaseSetting {
+    type: "keybind";
+    default: string;
+}
+
+export type SettingDefinition = BooleanSetting | StringSetting | NumberSetting | SelectSetting | KeybindSetting;
 export type SettingsSchema = Record<string, SettingDefinition>;
 
 export type SettingValue<D extends SettingDefinition> =

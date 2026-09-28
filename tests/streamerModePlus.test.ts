@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-    ACTIVE_CLASS, ALL_CLASSES, autoActive, bodyClasses, buildCss, HOVER_CLASS, IN_DM_CLASS, matchesHotkey, optionClass,
-    parseHotkey, SELECTORS, shouldActivate, toggledOverride, transitionMessage,
+    ACTIVE_CLASS, ALL_CLASSES, autoActive, bodyClasses, buildCss, HOVER_CLASS, IN_DM_CLASS, optionClass,
+    migrateHotkey, parseHotkey, SELECTORS, shouldActivate, toggledOverride, transitionMessage,
 } from "../plugins/streamer-mode-plus/state";
 import type { BlurOptions } from "../plugins/streamer-mode-plus/state";
 
@@ -108,10 +108,7 @@ describe("css", () => {
 });
 
 describe("hotkey", () => {
-    const ev = (key: string, mods: Partial<Record<"ctrlKey" | "shiftKey" | "altKey" | "metaKey", boolean>> = {}) =>
-        ({ key, ctrlKey: false, shiftKey: false, altKey: false, metaKey: false, ...mods });
-
-    test("parses", () => {
+    test("parses what the old text field took", () => {
         expect(parseHotkey("Ctrl+Shift+S")).toEqual({ ctrl: true, shift: true, alt: false, meta: false, key: "s" });
         expect(parseHotkey(" alt + F9 ")).toEqual({ ctrl: false, shift: false, alt: true, meta: false, key: "f9" });
         expect(parseHotkey("")).toBeUndefined();
@@ -119,12 +116,20 @@ describe("hotkey", () => {
         expect(parseHotkey("A+B")).toBeUndefined();
     });
 
-    test("matches exactly", () => {
-        const hk = parseHotkey("Ctrl+Shift+S");
-        expect(matchesHotkey(hk, ev("S", { ctrlKey: true, shiftKey: true }))).toBe(true);
-        expect(matchesHotkey(hk, ev("s", { ctrlKey: true }))).toBe(false);
-        expect(matchesHotkey(hk, ev("s", { ctrlKey: true, shiftKey: true, altKey: true }))).toBe(false);
-        expect(matchesHotkey(undefined, ev("s"))).toBe(false);
+    test("old typed shortcuts become recorded ones", () => {
+        expect(migrateHotkey("Ctrl+Shift+S")).toBe("Ctrl+Shift+KeyS");
+        expect(migrateHotkey(" alt + f9 ")).toBe("Alt+F9");
+        expect(migrateHotkey("cmd+shift+1")).toBe("Shift+Meta+Digit1");
+        expect(migrateHotkey("ctrl+space")).toBe("Ctrl+Space");
+    });
+
+    test("recorded shortcuts, and ones that can't be carried over", () => {
+        expect(migrateHotkey("Ctrl+Shift+KeyS")).toBe("Ctrl+Shift+KeyS");
+        expect(migrateHotkey("Alt+F9")).toBe("Alt+F9");
+        expect(migrateHotkey("")).toBe("");
+        expect(migrateHotkey(undefined)).toBe("");
+        expect(migrateHotkey("Ctrl+Shift")).toBe("");
+        expect(migrateHotkey("Ctrl+ä")).toBe("");
     });
 });
 

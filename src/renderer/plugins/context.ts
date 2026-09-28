@@ -13,6 +13,7 @@ import { addContextMenuPatch, ContextMenuCallback } from "../toolkit/contextMenu
 import { showToast, ToastOptions } from "../toolkit/toasts";
 import { Dispatcher, FluxAction, React } from "../webpack/common";
 import { Filter, FoundExport, waitFor } from "../webpack/find";
+import { Keybinds } from "../keybinds";
 import { PluginActivity } from "./activity";
 import { PluginGuard } from "./guard";
 import { fixedLookup } from "./hotfixes";
@@ -23,7 +24,7 @@ import { PluginUsage } from "./usage";
 export class PluginSettings<S extends SettingsSchema> {
     constructor(
         private readonly id: string,
-        private readonly schema: S,
+        readonly schema: S,
         private readonly onDispose: (fn: () => void) => void = () => { },
     ) { }
 
@@ -199,7 +200,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
             this.guard.flux(type);
             const site = Perf.site(this.id, "flux", type);
             const safe = (action: FluxAction) => {
-                const start = Perf.begin();
+                const start = Perf.begin(site);
                 try {
                     handler(action);
                 } catch (err) {
@@ -262,6 +263,16 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
      */
     profileBadges(provider: ProfileBadgeProvider) {
         return this.onDispose(ProfileBadges.add(this.manifest.name, Perf.measure(Perf.site(this.id, "badges", "profile badges"), provider)));
+    }
+
+    /**
+     * Runs `handler` when the shortcut in the `keybind` setting `key` is pressed, anywhere in Discord.
+     * Reads the setting on every press, so a new shortcut applies at once. Removed on stop.
+     */
+    keybind(key: keyof S & string, handler: () => void) {
+        const definition = this.settings.schema[key];
+        if (definition?.type !== "keybind") throw new Error(`${this.id}: "${key}" isn't a keybind setting`);
+        return this.onDispose(Keybinds.add(this.id, definition.label, () => String(this.settings.get(key) ?? ""), handler));
     }
 
     setInterval(fn: () => void, ms: number) {

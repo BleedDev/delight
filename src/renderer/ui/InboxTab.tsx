@@ -1,0 +1,107 @@
+/**
+ * The store's inbox (renderer/inbox.ts): your account's notifications from evi.rest and this Evi's own,
+ * newest first. Opening a notification goes to what it's about; Mark all as read clears the count.
+ */
+import type { EviNotification, NotificationKind } from "@shared/notifications";
+
+import { Inbox } from "../inbox";
+import { I18n, t, timeAgo as ago } from "../i18n";
+import { React } from "../webpack/common";
+import { Button, EmptyState, Icon, IconName, IconButton, Notice, Status, Text, useStore } from "./components";
+import { openStore, showTab } from "./nav";
+
+const kindIcon: Record<NotificationKind, IconName> = {
+    review: "star",
+    submission: "puzzle",
+    theme: "palette",
+    follow: "people",
+    api: "code",
+    wishlist: "heart",
+    fixed: "circleCheck",
+    update: "download",
+};
+
+/** Which day a notification is from, for the list's headings */
+function dayLabel(at: number) {
+    const day = new Date(at).toDateString();
+    if (day === new Date().toDateString()) return t("inbox.today");
+    if (day === new Date(Date.now() - 86_400_000).toDateString()) return t("inbox.yesterday");
+    return new Date(at).toLocaleDateString(I18n.discordLocale, { dateStyle: "medium" });
+}
+
+function open(n: EviNotification) {
+    const link = n.link;
+    if (!link) return;
+    if (link.kind === "plugin" || link.kind === "theme") openStore(link.kind, link.id);
+    else if (link.kind === "url") window.open(link.url, "_blank", "noopener");
+    else if (link.kind === "author") openStore("plugin");
+}
+
+function Row({ n }: { n: EviNotification; }) {
+    const body = (
+        <>
+            <span className="dl-inbox-icon" data-kind={n.kind} aria-hidden="true"><Icon name={kindIcon[n.kind]} size={16} /></span>
+            <span className="dl-inbox-text">
+                <Text tag="span" variant={n.read ? "text-sm/medium" : "text-sm/semibold"} color="text-strong">{n.title}</Text>
+                {n.body && <Text tag="span" variant="text-sm/normal" color="text-subtle" className="dl-inbox-body">{n.body}</Text>}
+                <Text tag="span" variant="text-xs/normal" color="text-muted">{ago(n.at)}</Text>
+            </span>
+            {!n.read && <span className="dl-inbox-unread"><span className="dl-sr-only">{t("inbox.unread")}</span></span>}
+        </>
+    );
+    return (
+        <li className="dl-inbox-row" data-read={n.read ? "" : undefined}>
+            {n.link
+                ? <button type="button" className="dl-inbox-link" onClick={() => open(n)}>{body}</button>
+                : <div className="dl-inbox-link">{body}</div>}
+            {n.id.startsWith("local:") && <IconButton icon="close" label={t("inbox.dismiss", { title: n.title })} onClick={() => Inbox.dismiss(n.id)} />}
+        </li>
+    );
+}
+
+export function InboxTab() {
+    const list = useStore(Inbox.subscribe, Inbox.getSnapshot);
+    const state = Inbox.state();
+    React.useEffect(() => {
+        Inbox.start();
+        void Inbox.refresh();
+    }, []);
+
+    // Grouped by day, newest first
+    const days: { label: string; items: EviNotification[]; }[] = [];
+    for (const n of list) {
+        const label = dayLabel(n.at);
+        const last = days.at(-1);
+        if (last?.label === label) last.items.push(n);
+        else days.push({ label, items: [n] });
+    }
+    const unread = list.filter(n => !n.read).length;
+
+    return (
+        <div className="dl-tab dl-tab-compact">
+            {state.linked === false && (
+                <Notice tone="info" action={<Button icon="link" onClick={() => showTab("general", "account")}>{t("community.linkAccount")}</Button>}>
+                    {t("inbox.linkHint")}
+                </Notice>
+            )}
+            <div className="dl-toolbar">
+                <Text variant="text-sm/medium" color="text-subtle" role="status" tabular className="dl-grow">
+                    {state.loading && !list.length ? t("inbox.loading") : unread ? t("inbox.unreadCount", { count: unread }) : t("inbox.allRead")}
+                </Text>
+                <Button disabled={!unread} onClick={() => void Inbox.markAllRead()}>{t("inbox.markAllRead")}</Button>
+                <IconButton icon="refresh" label={t("common.refresh")} onClick={() => void Inbox.refresh()} />
+            </div>
+            {state.error && <Status tone="danger">{state.error}</Status>}
+            {list.length ? (
+                days.map(day => (
+                    <section key={day.label} className="dl-stack" aria-label={day.label}>
+                        <Text tag="h3" variant="text-xs/semibold" color="text-muted" className="dl-inbox-day">{day.label}</Text>
+                        <ul className="dl-inbox">{day.items.map(n => <Row key={n.id} n={n} />)}</ul>
+                    </section>
+                ))
+            ) : !state.loading && (
+                <EmptyState icon="bell" title={t("inbox.emptyTitle")}>{t("inbox.emptyBody")}</EmptyState>
+            )}
+        </div>
+    );
+}

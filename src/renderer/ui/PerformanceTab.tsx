@@ -44,6 +44,7 @@ const builtIn: Record<string, string> = {
     "evi": "Evi menus and commands",
     "evi-settings": "Evi in Discord settings",
     "evi-badges": "Evi badges",
+    "evi-devtools": "Evi DevTools",
 };
 
 const pluginName = (id: string) => PluginManager.get(id)?.manifest.name ?? builtIn[id] ?? id;
@@ -55,6 +56,7 @@ const kindLabel: Record<SiteKind, string> = {
     badges: "Badges",
     menu: "Menu",
     timer: "Timer",
+    keybind: "Shortcut",
     start: "Start",
 };
 

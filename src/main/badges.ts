@@ -9,7 +9,7 @@
  * Admin actions (the /badge command) need evi-admin.json in the data folder, { "token": "…" }. The
  * token stays in main: the page can only ask for one of a few fixed actions.
  */
-import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, hasHotfixesEvent, hasPullsEvent, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
+import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, hasHotfixesEvent, hasNotificationsEvent, hasPullsEvent, isBadgeColor, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
 import { imageDataUrl, imageType } from "@shared/images";
 import { IPC } from "@shared/ipc";
 import { isPluginId } from "@shared/store";
@@ -150,6 +150,12 @@ export function onHotfixesAnnounced(listener: () => void) {
     hotfixListeners.add(listener);
 }
 const announceHotfixes = () => hotfixListeners.forEach(listener => listener());
+/** Told when the stream says this account's inbox changed, and after it reconnects */
+const inboxListeners = new Set<() => void>();
+export function onInboxAnnounced(listener: () => void) {
+    inboxListeners.add(listener);
+}
+const announceInbox = () => inboxListeners.forEach(listener => listener());
 /** Everyone reconnects at once after a server restart: spread them out */
 const jitter = (ms: number) => ms / 2 + Math.random() * ms;
 
@@ -181,6 +187,7 @@ async function listen() {
             const chunk = buffer.slice(0, end);
             if (hasPullsEvent(chunk)) announcePulls();
             if (hasHotfixesEvent(chunk)) announceHotfixes();
+            if (hasNotificationsEvent(chunk)) announceInbox();
             const etags = parseBadgeEvents(chunk);
             buffer = buffer.slice(end + 2);
             const latest = etags.at(-1);
@@ -216,6 +223,7 @@ async function stream() {
         void getBadges();
         announcePulls();
         announceHotfixes();
+        announceInbox();
     }
 }
 
@@ -317,9 +325,15 @@ async function admin(input: BadgeAdminAction, sender: WebContents): Promise<Badg
 }
 
 /** Your own arrangement, from Discord's badge settings; evi.rest checks this install is linked to that account */
-async function setPrefs(userId: unknown, prefs: Partial<BadgePrefs> | undefined): Promise<BadgePrefsResult> {
+async function setPrefs(userId: unknown, prefs: (Omit<Partial<BadgePrefs>, "color"> & { color?: string | null; }) | undefined): Promise<BadgePrefsResult> {
     if (!isDiscordId(userId) || !prefs || typeof prefs !== "object") return { ok: false, error: "Nothing to save" };
-    const body = { userId, ...(Array.isArray(prefs.order) && { order: prefs.order }), ...(Array.isArray(prefs.hidden) && { hidden: prefs.hidden }) };
+    const body = {
+        userId,
+        ...(Array.isArray(prefs.order) && { order: prefs.order }),
+        ...(Array.isArray(prefs.hidden) && { hidden: prefs.hidden }),
+        // A supporter's badge colour, or null to go back to their level's
+        ...((prefs.color === null || isBadgeColor(prefs.color)) && { color: prefs.color }),
+    };
     try {
         await apiRequest("PUT", "/me/badges", { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     } catch (err) {

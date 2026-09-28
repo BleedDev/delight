@@ -1,6 +1,7 @@
 /**
  * Safe mode rules shared by main, renderer and tests. Pure functions, no Electron.
  */
+import { CrashRecord, parseCrashRecord } from "./crashDetective";
 import { EviSettings, isPluginEnabled, PluginManifest, RecentChange } from "./ipc";
 
 /** Starts in a row that never reached a healthy boot before the next start is in safe mode */
@@ -24,9 +25,27 @@ export interface StartupState {
     forceSafe?: "crash-loop" | "renderer-crash";
     /** Newest first */
     changes: RecentChange[];
+    /** The last time Discord's page crashed or froze, and who Crash Detective blames (shared/crashDetective.ts) */
+    crash?: CrashRecord;
 }
 
 export const EMPTY_STATE: StartupState = { pendingStarts: 0, changes: [] };
+
+/** safe-mode.json as read from disk. Files from before a field existed, or damaged ones, still load. */
+export function parseState(raw: unknown): StartupState {
+    const v = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, any> : {};
+    // Fields this version doesn't know are kept: a newer Evi may have written them
+    const state: StartupState = {
+        ...v,
+        pendingStarts: Number.isInteger(v.pendingStarts) && v.pendingStarts >= 0 ? v.pendingStarts : 0,
+        changes: Array.isArray(v.changes) ? v.changes : [],
+    };
+    if (v.forceSafe !== "crash-loop" && v.forceSafe !== "renderer-crash") delete state.forceSafe;
+    const crash = parseCrashRecord(v.crash);
+    if (crash) state.crash = crash;
+    else delete state.crash;
+    return state;
+}
 
 /** What this start should be, given the state left by the previous ones */
 export function startupMode(state: StartupState, flag: boolean): StartupMode {

@@ -12,6 +12,7 @@ import { whenAppReady } from "./appReady";
 import { Badge, Button, Icon, IconButton, Section, Status, SwitchRow, Text, useExit, useStore } from "./components";
 import { ensureStyles } from "./index";
 import { DiscordContext } from "./discordContext";
+import { Credits } from "./SupporterPerks";
 
 type Available = Extract<UpdateStatus, { state: "available"; }>;
 
@@ -30,6 +31,7 @@ function StatusLine({ status, checking }: { status?: UpdateStatus; checking: boo
         case "error": return <Status tone="danger">{status.error}</Status>;
         case "available": {
             const beta = status.release.prerelease && <Badge>{t("updates.beta")}</Badge>;
+            if (status.ready) return <Status tone="success">{t("updates.silentReady", { version: status.release.version })}{beta}</Status>;
             return status.installable
                 ? <Status tone="warning">{t("updates.available", { version: status.release.version })}{beta}</Status>
                 : <Status tone="warning">{`${t("updates.isOut", { version: status.release.version })} ${status.blocked ?? t("updates.devBuild")}`}{beta}</Status>;
@@ -64,6 +66,7 @@ export function UpdatesTab() {
     const { status, checking, installing, error } = useStore(Updates.subscribe, Updates.getSnapshot);
     const [autoCheck, setAutoCheck] = React.useState(Updates.autoCheck);
     const [beta, setBeta] = React.useState(Updates.beta);
+    const [silent, setSilent] = React.useState(Updates.silent);
 
     // Opening the tab always looks again
     React.useEffect(() => void Updates.check(true), []);
@@ -114,6 +117,16 @@ export function UpdatesTab() {
                     }}
                 />
                 <SwitchRow
+                    id="dl-update-silent"
+                    label={t("updates.silentSwitch")}
+                    description={t("updates.silentSwitchHint")}
+                    checked={silent}
+                    onChange={on => {
+                        setSilent(on);
+                        void Updates.setSilent(on);
+                    }}
+                />
+                <SwitchRow
                     id="dl-update-beta"
                     label={t("updates.betaSwitch")}
                     description={t("updates.betaSwitchHint")}
@@ -124,6 +137,7 @@ export function UpdatesTab() {
                     }}
                 />
             </Section>
+            <Credits />
         </div>
     );
 }

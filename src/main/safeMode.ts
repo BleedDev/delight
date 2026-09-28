@@ -13,8 +13,9 @@
  * Safe mode caused by crashes is sticky across restarts until the user leaves it from the notice.
  * `--evi-safe` is for one start only.
  */
+import { Breadcrumb, CrashRecord, parseBreadcrumb, pickCrashSuspect } from "@shared/crashDetective";
 import { RecentChange, SafeModeInfo, SafeModeReason } from "@shared/ipc";
-import { addChange, CRASH_LOOP_STARTS, CRASH_WINDOW_MS, EMPTY_STATE, RENDERER_CRASHES, StartupMode, startupMode, StartupState } from "@shared/safeMode";
+import { addChange, CRASH_LOOP_STARTS, CRASH_WINDOW_MS, EMPTY_STATE, parseState, RENDERER_CRASHES, StartupMode, startupMode, StartupState } from "@shared/safeMode";
 import { app, WebContents } from "electron";
 import { readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
@@ -26,10 +27,26 @@ const STATE_FILE = join(DATA_DIR, "safe-mode.json");
 
 function load(): StartupState {
     try {
-        return { ...structuredClone(EMPTY_STATE), ...JSON.parse(readFileSync(STATE_FILE, "utf8")) };
+        return parseState(JSON.parse(readFileSync(STATE_FILE, "utf8")));
     } catch {
         return structuredClone(EMPTY_STATE);
     }
+}
+
+/** The latest breadcrumb from each Discord page, see shared/crashDetective.ts. Memory only. */
+const breadcrumbs = new WeakMap<WebContents, Breadcrumb>();
+const watchedPages = new WeakSet<WebContents>();
+
+/** Writes down that the page died or froze, and who was busiest right before */
+function recordCrash(wc: WebContents, reason: string) {
+    const at = Date.now();
+    // Nothing of the plugins ran in safe mode, whatever an old breadcrumb says
+    const breadcrumb = info ? undefined : breadcrumbs.get(wc);
+    const record: CrashRecord = { at, reason, suspect: pickCrashSuspect(breadcrumb, at), breadcrumb };
+    state.crash = record;
+    save();
+    if (record.suspect) console.warn(`[Evi] Crash Detective: ${record.suspect.plugin} was ${record.suspect.why} (${record.suspect.site.kind} ${record.suspect.site.name})`);
+    return record;
 }
 
 let state = load();
@@ -69,7 +86,7 @@ export const SafeMode = {
 
     /** For the renderer's boot data */
     get info(): SafeModeInfo | undefined {
-        return info && { ...info, changes: state.changes };
+        return info && { ...info, changes: state.changes, crash: state.crash?.seen ? undefined : state.crash };
     },
 
     /** Decides what this start is and counts it. Runs first thing in main. */
@@ -108,6 +125,8 @@ export const SafeMode = {
     exit() {
         state.pendingStarts = 0;
         delete state.forceSafe;
+        // The safe mode notice already told them about it
+        if (state.crash) state.crash.seen = true;
         save();
         app.relaunch({ args: process.argv.slice(1).filter(a => a !== SAFE_FLAG) });
         app.exit(0);
@@ -123,10 +142,55 @@ export const SafeMode = {
         enterListeners.add(listener);
     },
 
+    /** The renderer's latest breadcrumb (IPC.CRASH_BREADCRUMB) */
+    breadcrumb(wc: WebContents, raw: unknown) {
+        if (info || !isDiscordApp(wc)) return;
+        const breadcrumb = parseBreadcrumb(raw);
+        if (!breadcrumb) return;
+        breadcrumbs.set(wc, breadcrumb);
+        if (watchedPages.has(wc)) return;
+        watchedPages.add(wc);
+        // A reload starts a new page: what the old one was doing says nothing about it
+        wc.on("did-navigate", () => void breadcrumbs.delete(wc));
+    },
+
+    /** The last crash, if the user hasn't seen it yet */
+    get unseenCrash(): CrashRecord | undefined {
+        return state.crash?.seen ? undefined : state.crash;
+    },
+
+    markCrashSeen() {
+        if (!state.crash || state.crash.seen) return;
+        state.crash.seen = true;
+        save();
+    },
+
     watchCrashes() {
+        // A freeze: Chromium's hang monitor gave up waiting for the page. If it recovers on its own,
+        // there's nothing to offer after the next reload.
+        app.on("browser-window-created", (_, win) => {
+            let frozeAt: number | undefined;
+            win.on("unresponsive", () => {
+                if (win.isDestroyed() || !isDiscordApp(win.webContents)) return;
+                console.error("[Evi] Discord's window stopped responding");
+                frozeAt = recordCrash(win.webContents, "unresponsive").at;
+            });
+            win.on("responsive", () => {
+                if (frozeAt !== undefined && state.crash?.at === frozeAt && !state.crash.seen) {
+                    delete state.crash;
+                    save();
+                }
+                frozeAt = undefined;
+            });
+        });
+
         let crashes: number[] = [];
         app.on("render-process-gone", (_, wc, details) => {
             if (details.reason === "clean-exit" || !isDiscordApp(wc)) return;
+
+            // Before safe mode may switch on below: the record is about the plugins that were running
+            recordCrash(wc, details.reason);
+            breadcrumbs.delete(wc);
 
             const now = Date.now();
             crashes = [...crashes.filter(t => now - t < CRASH_WINDOW_MS), now];

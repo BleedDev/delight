@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { DEFAULT_SETTINGS, EviSettings, PluginManifest, RecentChange } from "../src/shared/ipc";
-import { addChange, diffSettings, MAX_CHANGES, pickSuspect, startupMode } from "../src/shared/safeMode";
+import { addChange, diffSettings, MAX_CHANGES, parseState, pickSuspect, startupMode, StartupState } from "../src/shared/safeMode";
 
 const settings = (patch: Partial<EviSettings> = {}): EviSettings => ({ ...structuredClone(DEFAULT_SETTINGS), ...patch });
 const change = (c: Partial<RecentChange>): RecentChange => ({ kind: "plugin", id: "a", action: "enabled", at: 1, ...c });
@@ -58,5 +58,23 @@ describe("recent changes", () => {
         expect(pickSuspect(changes, settings(), manifests)?.id).toBe("b");
         // A plugin that's gone can't be it
         expect(pickSuspect([change({ id: "gone" })], settings({ plugins: { gone: { enabled: true } } }), manifests)).toBeUndefined();
+    });
+});
+
+describe("reading safe-mode.json", () => {
+    test("files from before crash records still load", () => {
+        const old: StartupState = { pendingStarts: 1, forceSafe: "renderer-crash", changes: [change({})] };
+        expect(parseState(old)).toEqual(old);
+    });
+
+    test("damaged fields fall back, unknown ones are kept", () => {
+        expect(parseState(null)).toEqual({ pendingStarts: 0, changes: [] });
+        expect(parseState({ pendingStarts: -3, forceSafe: "maybe", changes: "x", crash: { at: "?" }, future: 1 }))
+            .toEqual({ pendingStarts: 0, changes: [], future: 1 } as any);
+    });
+
+    test("the crash record comes through", () => {
+        const crash = { at: 5, reason: "crashed", suspect: { plugin: "a", why: "busiest", site: { kind: "hook", name: "x", ms: 200 } } };
+        expect(parseState({ pendingStarts: 0, changes: [], crash }).crash).toEqual(crash as any);
     });
 });

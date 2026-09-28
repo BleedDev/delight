@@ -70,6 +70,7 @@ export async function buildEntry(files: Partial<Record<StoreFileName, Uint8Array
         updatedAt: options.previous?.version === version && options.previous.updatedAt ? options.previous.updatedAt : options.today,
         ...(manifest.source ?? options.source) && { source: manifest.source ?? options.source },
         screenshots: manifest.screenshots ?? [],
+        ...manifest.preview && { preview: manifest.preview },
         changelog: manifest.changelog ?? [],
         // Checked strictly below (whyNotManifest): an entry never shows a declaration its manifest doesn't make
         ...manifest.permissions !== undefined && { permissions: readPermissions(manifest.permissions) },

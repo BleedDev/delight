@@ -1,8 +1,11 @@
 import type { AuthorProfile } from "./authors";
+import type { CrashRecord } from "./crashDetective";
 import type { ImportMode, ImportPreview } from "./backup";
 import type { PluginHealth } from "./health";
 import type { Hotfix } from "./hotfixes";
+import type { EviNotification } from "./notifications";
 import type { PulledPlugins } from "./pulls";
+import type { WallpaperKind, WallpaperSettings } from "./wallpaper";
 
 /** IPC channel names shared by main, preload and renderer. */
 export const IPC = {
@@ -75,6 +78,8 @@ export const IPC = {
     UPDATE_INSTALL: "evi:update-install",
     /** main -> renderer: download and install progress of an update */
     UPDATE_PROGRESS: "evi:update-progress",
+    /** main -> renderer: a silent update finished downloading (its version) and installs when Discord quits */
+    UPDATE_READY: "evi:update-ready",
     /** main -> renderer: the badge list changed (evi.rest said so over its change stream) */
     BADGES_CHANGED: "evi:badges-changed",
     /** who this install is linked to on evi.rest; starting a link (opens the site to confirm it) */
@@ -89,6 +94,40 @@ export const IPC = {
     BOOT_OK: "evi:boot-ok",
     /** leave safe mode: forget the crash history and restart Discord normally */
     SAFE_MODE_EXIT: "evi:safe-mode-exit",
+    /** renderer -> main, one-way: what plugins are doing, kept in case the page crashes (shared/crashDetective.ts) */
+    CRASH_BREADCRUMB: "evi:crash-breadcrumb",
+    /** the last crash record if the user hasn't seen it yet; marking it seen */
+    CRASH_RECORD_GET: "evi:crash-record-get",
+    CRASH_RECORD_SEEN: "evi:crash-record-seen",
+    /** Dynamic Wallpaper: pick a file and copy it into Evi's folder; the copied file's bytes; remove it */
+    WALLPAPER_PICK: "evi:wallpaper-pick",
+    WALLPAPER_READ: "evi:wallpaper-read",
+    WALLPAPER_REMOVE: "evi:wallpaper-remove",
+    /** Whether the computer runs on battery now */
+    POWER_ON_BATTERY: "evi:power-on-battery",
+    /** main -> renderer: the computer switched between battery and mains power */
+    POWER_CHANGED: "evi:power-changed",
+    /** The store's community side on evi.rest (main/community.ts): its front page, ratings, a plugin's page */
+    COMMUNITY_HOME: "evi:community-home",
+    COMMUNITY_RATINGS: "evi:community-ratings",
+    COMMUNITY_PAGE: "evi:community-page",
+    /** Write, change or take back this account's review of a plugin; report someone's */
+    COMMUNITY_REVIEW: "evi:community-review",
+    COMMUNITY_REVIEW_REPORT: "evi:community-review-report",
+    /** Follow or unfollow an author; who this account follows */
+    COMMUNITY_FOLLOW: "evi:community-follow",
+    COMMUNITY_FOLLOWING: "evi:community-following",
+    /** This account's inbox, and marking it read */
+    COMMUNITY_INBOX: "evi:community-inbox",
+    COMMUNITY_INBOX_READ: "evi:community-inbox-read",
+    /** main -> renderer: the account's inbox changed (evi.rest's stream said so) */
+    COMMUNITY_INBOX_CHANGED: "evi:community-inbox-changed",
+    /** Supporters who chose to be named; whether you're one of them, and changing that */
+    COMMUNITY_CREDITS: "evi:community-credits",
+    COMMUNITY_CREDITED: "evi:community-credited",
+    COMMUNITY_SET_CREDITED: "evi:community-set-credited",
+    /** A store plugin's preview video or GIF, as bytes (only ones the registry lists) */
+    STORE_PREVIEW_MEDIA: "evi:store-preview-media",
 } as const;
 
 export interface PluginManifest {
@@ -104,6 +143,8 @@ export interface PluginManifest {
     source?: string;
     /** https image links, published to the store registry */
     screenshots?: string[];
+    /** https link to a short .mp4, .webm, .gif or .webp of it in use, played on its store page */
+    preview?: string;
     /** Newest first, published to the store registry */
     changelog?: { version: string; notes: string[]; }[];
     /** Oldest Evi the plugin works with, published to the store registry */
@@ -194,6 +235,8 @@ export interface EviSettings {
     betaUpdates?: boolean;
     /** The version whose "update available" notice was dismissed, so it doesn't come back */
     dismissedUpdate?: string;
+    /** Download new versions of Evi in the background and install them when Discord quits. Off by default */
+    silentUpdates?: boolean;
     /** The Evi version whose "What's new" was last shown, to show it once after each update */
     lastSeenVersion?: string;
     /** Each plugin's version when it was last seen, to show its changelog once after it updates */
@@ -204,7 +247,26 @@ export interface EviSettings {
     healthReports?: boolean;
     /** Send to author without showing the report first ("Don't ask again") */
     crashReportConsent?: boolean;
+    /** An image or video behind Discord's panels, see shared/wallpaper.ts. Missing: off */
+    wallpaper?: WallpaperSettings;
+    /** Store items you hearted ("plugin:id", "theme:id"): you hear when they update or get fixed */
+    wishlist?: string[];
+    /** The version of each hearted item last seen, and of its beta, so each update is told once */
+    wishlistSeen?: Record<string, string>;
+    /** Plugins you get beta versions of, when their authors publish one */
+    pluginBetas?: string[];
+    /** Once a day, tell evi.rest which store plugins you have (shared/analytics.ts). Missing: on */
+    shareUsage?: boolean;
+    /** Evi's own notifications for this install (wishlist, fixes, updates), shown with the account's */
+    localNotifications?: EviNotification[];
+    /** Plugins you have or hearted that evi.rest said were broken, so a fix is told once */
+    brokenSeen?: string[];
 }
+
+/** An answer from evi.rest's community side; `unlinked` when it needs this Evi linked to an account */
+export type CommunityResult<T> = { ok: true; value: T; } | { ok: false; error: string; unlinked?: boolean; };
+
+export type PreviewMediaResult = { ok: true; bytes: Uint8Array; mime: string; } | { ok: false; error: string; };
 
 export const DEFAULT_SETTINGS: EviSettings = {
     plugins: {},
@@ -257,6 +319,8 @@ export interface SafeModeInfo {
     failures: number;
     /** Newest first */
     changes: RecentChange[];
+    /** The crash that led here, if Crash Detective has a record the user hasn't seen */
+    crash?: CrashRecord;
 }
 
 export type OpenPathTarget = "data" | "plugins" | "themes" | "quickCss";
@@ -273,6 +337,11 @@ export type CrashReportResult = { ok: true; author?: string; } | { ok: false; er
 export type HealthReportResult = { ok: true; } | { ok: false; error: string; };
 
 export type BackupExportResult = { ok: true; path: string; } | Failed;
+
+/** `file`: the copy's name inside Evi's wallpaper folder, for settings */
+export type WallpaperPickResult = { ok: true; file: string; kind: WallpaperKind; } | Failed;
+/** The current wallpaper, the only file this reads */
+export type WallpaperReadResult = { ok: true; file: string; mime: string; bytes: Uint8Array; } | { ok: false; error: string; };
 
 export type BackupOpenResult = {
     ok: true;

@@ -37,6 +37,25 @@ export interface AuthorProfile {
     links: AuthorLinks;
     /** Ids of the store plugins they own */
     plugins: string[];
+    /** Their page's banner image (https), missing without one. Profiles from before 1.0 don't have these. */
+    banner?: string | null;
+    /** Up to MAX_PINNED of their plugins, shown first */
+    pinned?: string[];
+    /** People following them */
+    followers?: number;
+    /** Installs running any of their plugins, null while that's too few to show */
+    installs?: number | null;
+}
+
+export const MAX_PINNED = 3;
+/** Banner uploads: PNG, JPEG, GIF or WebP, like badge icons, but bigger */
+export const MAX_BANNER_BYTES = 2 * 1024 * 1024;
+
+/** Which of `plugins` to pin, in order, or why not */
+export function validatePinned(raw: unknown, plugins: string[]): { pinned: string[]; } | { error: string; } {
+    if (!Array.isArray(raw) || raw.length > MAX_PINNED) return { error: `Pin at most ${MAX_PINNED} plugins` };
+    if (!raw.every(id => typeof id === "string" && plugins.includes(id))) return { error: "You can only pin your own plugins" };
+    return { pinned: [...new Set(raw as string[])] };
 }
 
 /** A request to become an author (POST /v1/me/author-claim) */
@@ -158,6 +177,11 @@ export function parseAuthors(raw: unknown): Record<string, AuthorProfile> {
             userId: e.userId,
             avatar: typeof e.avatar === "string" && /^(a_)?[0-9a-f]{32}$/.test(e.avatar) ? e.avatar : null,
             plugins: Array.isArray(e.plugins) ? e.plugins.filter(isPluginId) : [],
+            // Author pages from Evi 1.0 on: only evi.rest's own banner addresses, only their own plugins pinned
+            banner: typeof e.banner === "string" && /^https:\/\/[^\s/]+\/banners\/[a-z0-9-]+-[0-9a-z]{1,16}\.(png|jpg|gif|webp)$/.test(e.banner) ? e.banner : null,
+            pinned: Array.isArray(e.pinned) ? e.pinned.filter(id => isPluginId(id) && Array.isArray(e.plugins) && e.plugins.includes(id)).slice(0, MAX_PINNED) : [],
+            followers: typeof e.followers === "number" && e.followers >= 0 ? Math.floor(e.followers) : 0,
+            installs: typeof e.installs === "number" && e.installs >= 0 ? Math.floor(e.installs) : null,
         };
     }
     return out;

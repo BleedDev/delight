@@ -48,7 +48,7 @@ interface Cache {
  * when the server can't be reached. One request at a time; everyone asking meanwhile shares it.
  * `saved()` is the copy on disk as it is, without asking the server.
  */
-function cachedGet<T>(file: string, path: string, parse: (json: unknown) => T) {
+export function cachedGet<T>(file: string, path: string, parse: (json: unknown) => T) {
     const cacheFile = join(CACHE_DIR, file);
     let cache: Cache | undefined;
     let pending: Promise<{ ok: true; value: T; } | { ok: false; error: string; }> | undefined;
@@ -92,6 +92,11 @@ function cachedGet<T>(file: string, path: string, parse: (json: unknown) => T) {
 }
 
 const authors = cachedGet("authors.json", "/authors", parseAuthors);
+
+/** Authors' banners as evi.rest listed them: the only banners the store downloads */
+export function authorBanners(): Set<string> {
+    return new Set(Object.values(authors.saved()).flatMap(a => a.banner ? [a.banner] : []));
+}
 const health = cachedGet("health.json", "/health", json => ({ plugins: parseHealth(json), pulled: parsePulled(json) }));
 
 async function getAuthors(): Promise<AuthorsResult> {

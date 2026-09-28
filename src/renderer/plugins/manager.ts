@@ -185,12 +185,13 @@ async function start(state: PluginState) {
         if (definition.css) ctx.addStyle(definition.css);
         for (const [type, handler] of Object.entries(definition.flux ?? {})) ctx.flux.subscribe(type, handler.bind(definition));
         // Only until start() returns: an async start's awaits don't hold up Discord
-        const began = Perf.begin();
+        const startSite = Perf.site(state.manifest.id, "start", "start()");
+        const began = Perf.begin(startSite);
         let started: void | Promise<void>;
         try {
             started = definition.start?.(ctx);
         } finally {
-            Perf.end(Perf.site(state.manifest.id, "start", "start()"), began);
+            Perf.end(startSite, began);
         }
         await started;
         logger.info(`Started ${state.manifest.name}`);

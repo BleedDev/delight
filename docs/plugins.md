@@ -1,7 +1,8 @@
 # Writing Evi plugins
 
-A complete guide to building an Evi plugin, from an empty folder to a store release. It's written so a person or an AI assistant can follow it start to finish. The README's [Writing a plugin](../README.md#writing-a-plugin) section is the short version.
+A complete guide to building an Evi plugin, from an empty folder to a store release. It's written so a person or an AI assistant can follow it start to finish. [Developing Evi](development.md)'s [Writing a plugin](development.md#writing-a-plugin) section is the short version.
 
+- [0. Start in a minute](#0-start-in-a-minute)
 - [1. Anatomy](#1-anatomy)
 - [2. The manifest](#2-the-manifest)
 - [3. The plugin definition](#3-the-plugin-definition)
@@ -17,6 +18,18 @@ A complete guide to building an Evi plugin, from an empty folder to a store rele
 - [13. Publishing to the store](#13-publishing-to-the-store)
 - [14. Rules and pitfalls](#14-rules-and-pitfalls)
 - [15. Generating a plugin with Claude](#15-generating-a-plugin-with-claude)
+- [16. DevTools and API changes](#16-devtools-and-api-changes)
+
+## 0. Start in a minute
+
+```sh
+bun run new-plugin my-plugin          # userplugins/my-plugin/, ready to run
+bun run dev                           # builds it, and reloads it in Discord as you save
+bun test userplugins/my-plugin        # its test
+bun run preview-plugin my-plugin --open   # its store page, and what the store would say about it
+```
+
+`new-plugin` writes a manifest, an `index.tsx` with a setting, a keyboard shortcut and a slash command, a pure `greeting.ts` and its test, all following this guide. Turn it on in Evi (`Ctrl+Shift+D`, Plugins), try its command, then make it yours. Options: `--name "My Plugin"`, `--author "You"`, and `--official` for a plugin in `plugins/` with its test in `tests/`.
 
 ## 1. Anatomy
 
@@ -67,6 +80,7 @@ Multiple files are normal. The convention is: Discord-facing code in `index.tsx`
 | `changelog` | | Newest first. Shown in the plugin's details and store page |
 | `source` | | `https` link to the source, published to the registry |
 | `screenshots` | | `https` image links, published to the registry |
+| `preview` | | `https` link to a short `.mp4`, `.webm`, `.gif` or `.webp` of it in use, played at the top of its store page (12 MB at most) |
 | `minEviVersion` | | Oldest Evi it works with. Defaults to the current Evi version when published |
 | `enabledByDefault` | | On when first installed. Official plugins are off unless they're safe and broadly wanted |
 | `chromiumSwitches` | | `{ "switch-name": "value" }` or `true` for bare flags. Applied at Discord start while the plugin is on, so changes need a restart. Makes the plugin *native* in the store |
@@ -148,6 +162,7 @@ Everything registered through `ctx` is undone automatically when the plugin stop
 | `ctx.contextMenu(navId, cb)` | Add items to a Discord menu |
 | `ctx.command(definition)` | A local slash command |
 | `ctx.addStyle(css)` | A stylesheet. Returns a handle you can update or remove |
+| `ctx.keybind(key, handler)` | Run `handler` when the shortcut in the `keybind` setting `key` is pressed, see §4 |
 | `ctx.setInterval / setTimeout` | Timers cleared on stop |
 | `ctx.onDispose(fn)` | Run `fn` on stop. For anything else you set up |
 
@@ -167,8 +182,26 @@ const settings = {
         type: "select", label: "Mode", default: "send",
         options: [{ label: "Send it", value: "send" }, { label: "Insert it", value: "insert" }],
     },
+    shortcut: { type: "keybind", label: "Shortcut", description: "Does the thing from anywhere in Discord.", default: "" },
 } as const;
 ```
+
+The Plugins tab's search finds settings too, by label, description and option: write them so someone looking for what the setting does would find it.
+
+### Keyboard shortcuts
+
+A `keybind` setting is a field people set by pressing the keys, like Discord's own keybinds. `ctx.keybind` runs something when they're pressed, anywhere in Discord:
+
+```ts
+ctx.keybind("shortcut", () => toggle());
+```
+
+- The value is stored as physical keys, `"Ctrl+Shift+KeyS"` (modifiers, then the key's [`code`](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code)), and `""` for none. The field shows it as keycaps, `⌘` and `⌥` on macOS.
+- It's read on every key press, so a new shortcut works at once. It's removed when the plugin stops.
+- A shortcut needs Ctrl, Alt or Meta (Shift+G is just a capital G while typing); F1 to F24 work alone. `Ctrl+Shift+D` is Evi's.
+- Leave the default `""` unless the plugin is about the shortcut: people pick their own, and the field says when two plugins want the same keys.
+- The keys don't reach Discord, so a shortcut that's also Discord's runs yours instead.
+- Needs Evi 1.0.0: set `"minEviVersion": "1.0.0"`.
 
 | Call | What it does |
 |---|---|
@@ -477,6 +510,27 @@ Then check it for real:
 
 ## 13. Publishing to the store
 
+### Your own plugin
+
+Check it first:
+
+```sh
+bun run preview-plugin my-plugin --open
+```
+
+It builds, runs the checks evi.rest runs on an upload (a missing or malformed `permissions`, an id or name that's Evi's, a version that isn't newer than the store's, invisible characters, a `native.js` the manifest doesn't mention...) and the app's own checks on the store entry it would make, and says what a reviewer would ask about: a site the code contacts that `network` doesn't list, message events or stores without `readMessages`, no changelog entry for this version. It also writes `dist/preview/my-plugin.html`, the plugin's store page as people would see it, with what it asks for and what its code can reach. It exits 1 when an upload would be refused, so it can run in CI. `--offline` skips comparing with the store's version, `--no-build` uses what's already in `dist/`.
+
+Then upload `manifest.json` and `index.js` (and `native.js`) from `dist/plugins/my-plugin/` on your dashboard on evi.rest. Evi's team reads every version before it goes in.
+
+### Betas, notes and numbers
+
+- **Betas.** Once a plugin is in the store, upload a newer version with the **Beta** channel. After review it's published next to the stable version: only people who turn on *Get beta versions* on its store page get it. A stable version at or above the beta's replaces it. Give betas prerelease versions like `1.2.0-beta.1`.
+- **A note on a version.** Your dashboard's analytics has a note per version ("Known issue with voice, fix in 1.2.1"). It shows on the plugin's store page, under *From the author*.
+- **Numbers.** Your dashboard shows installs, active installs and the crash rate per version for the last 30 days. They come from Evi's anonymous daily check-in: plugin ids, versions and Evi's version, nothing about people. People can turn it off, so they're a floor, not a census.
+- **Reviews** of your plugins land in your inbox, on the dashboard and in Evi. You can't review your own.
+
+### Official plugins
+
 ```sh
 bun run build
 bun scripts/registry.ts --only my-plugin
@@ -522,3 +576,9 @@ What to expect back, and what to check:
 - A header comment in `index.tsx` explaining how it hooks into Discord, and a comment above each patch describing the code it matches.
 - Source patches are the part most likely to be wrong, because they depend on Discord's current minified code. Paste each one into the Patch Helper, or check the Patches tab after `bun run dev`, before trusting it.
 - Try the plugin in Discord, then turn it off and back on to confirm it cleans up.
+
+## 16. DevTools and API changes
+
+Evi's **DevTools** tab (Advanced) is for plugin authors: a live Flux log with every action as a tree, Discord's stores and what their getters return, how often your patched code calls into your plugin through `$self`, the plugins taking the most time, and a searchable reference of `@evi/api` and `ctx`. Patch Helper shows the same reference when you hover a name in its code. The reference is generated from Evi's source with `bun scripts/api-docs.ts` (into `src/shared/apiDocs.json`), and a test fails when it's out of date.
+
+The plugin API's changes, version by version, are in [`src/shared/apiChangelog.ts`](../src/shared/apiChangelog.ts) and on evi.rest. DevTools shows them under *What's new in the API*.

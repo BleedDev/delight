@@ -1,6 +1,7 @@
 import { MAX_REPORT_CHARS } from "@shared/crashReports";
 import { healthWarns } from "@shared/health";
 import { isPluginEnabled } from "@shared/ipc";
+import { keybindConflict, KeybindOwner, matchesPlugin, matchingSettings } from "@shared/pluginSearch";
 
 import { buildCrashReport, copyText, discordBuild } from "../crashReport";
 import { t } from "../i18n";
@@ -13,7 +14,7 @@ import { crashKey, fitReport } from "../sentReports";
 import { Settings } from "../settings";
 import { Store } from "../store";
 import { React } from "../webpack/common";
-import { Badge, Button, Dialog, Dropdown, EmptyState, IconButton, Notice, Pagination, scrollToTop, SearchField, SettingField, Status, Switch, Text, usePages, useStore } from "./components";
+import { Badge, Button, Dialog, Icon, Dropdown, EmptyState, IconButton, Notice, Pagination, scrollToTop, SearchField, SettingField, Status, Switch, Text, usePages, useStore } from "./components";
 import { openStore, showTab } from "./nav";
 import { PluginDetailsButton } from "./PluginPermissions";
 import { SafeModeNotice } from "./SafeModeNotice";
@@ -35,8 +36,28 @@ const filterTests: Record<Filter, (p: PluginState) => boolean> = {
     dev: p => p.source === "dev",
 };
 
-const matchesQuery = (p: PluginState, q: string) =>
-    !q || `${p.manifest.name} ${p.manifest.description ?? ""} ${p.manifest.id} ${Store.authorsOf(p).join(" ")}`.toLowerCase().includes(q);
+const matchesQuery = (p: PluginState, q: string) => matchesPlugin({
+    name: p.manifest.name,
+    description: p.manifest.description,
+    id: p.manifest.id,
+    authors: Store.authorsOf(p),
+    settings: p.definition?.settings,
+}, q);
+
+/** Every shortcut set in a turned-on plugin, to say when two plugins want the same keys */
+function keybindOwners(): KeybindOwner[] {
+    const owners: KeybindOwner[] = [];
+    for (const p of PluginManager.getSnapshot()) {
+        if (!isPluginEnabled(Settings.data, p.manifest)) continue;
+        const stored = Settings.plugin(p.manifest.id).settings ?? {};
+        for (const [key, def] of Object.entries(p.definition?.settings ?? {})) {
+            if (def.type !== "keybind") continue;
+            const value = key in stored ? String(stored[key] ?? "") : def.default;
+            if (value) owners.push({ pluginId: p.manifest.id, pluginName: p.manifest.name, key, label: def.label, value });
+        }
+    }
+    return owners;
+}
 
 /** Only when something went wrong: working patches are the expected state, Advanced > Patches lists them all */
 function PatchFailures({ id }: { id: string; }) {
@@ -54,7 +75,7 @@ function LookupSummary({ problems }: { problems: LookupDiagnosis[]; }) {
     return <Status tone={broken ? "danger" : "warning"}>{t("plugins.lookupProblems", { count: n })}</Status>;
 }
 
-function PluginSettings({ state }: { state: PluginState; }) {
+function PluginSettings({ state, highlight = [] }: { state: PluginState; highlight?: string[]; }) {
     const { definition, ctx, manifest } = state;
     const schema = definition?.settings ?? {};
     // Re-render on any settings change
@@ -65,17 +86,26 @@ function PluginSettings({ state }: { state: PluginState; }) {
         ((d.plugins[manifest.id] ??= {}).settings ??= {})[key] = value;
     });
 
+    // The first setting the search found, brought into view as the dialog opens
+    const firstMatch = React.useRef<HTMLDivElement>(null);
+    React.useEffect(() => firstMatch.current?.scrollIntoView({ block: "nearest" }), []);
+
     return (
         <div className="dl-row-settings">
-            {Object.entries(schema).map(([key, def]) => (
-                <SettingField
-                    key={key}
-                    id={`dl-setting-${manifest.id}-${key}`}
-                    definition={def}
-                    value={key in stored ? stored[key] : def.default}
-                    onChange={v => set(key, v)}
-                />
-            ))}
+            {Object.entries(schema).map(([key, def]) => {
+                const field = (
+                    <SettingField
+                        key={key}
+                        id={`dl-setting-${manifest.id}-${key}`}
+                        definition={def}
+                        value={key in stored ? stored[key] : def.default}
+                        onChange={v => set(key, v)}
+                        keybindUsedBy={value => keybindConflict(keybindOwners(), value, { pluginId: manifest.id, key })}
+                    />
+                );
+                if (!highlight.includes(key)) return field;
+                return <div key={key} className="dl-setting-match" ref={key === highlight[0] ? firstMatch : undefined}>{field}</div>;
+            })}
             {ctx && definition?.settingsPanel?.(ctx)}
         </div>
     );
@@ -165,14 +195,18 @@ function SendToAuthor({ state, version, author }: { state: PluginState; version:
 /** Cards per page: six rows of two */
 const PAGE_SIZE = 12;
 
-function PluginCard({ state }: { state: PluginState; }) {
+function PluginCard({ state, query }: { state: PluginState; query: string; }) {
     const { manifest } = state;
     const [settingsOpen, setSettingsOpen] = React.useState(false);
+    // Settings the search found, highlighted when the dialog opens from the card's link
+    const [highlight, setHighlight] = React.useState<string[]>([]);
     const [confirmingUninstall, setConfirmingUninstall] = React.useState(false);
     const enabled = isPluginEnabled(Settings.data, manifest);
     const titleId = `dl-plugin-${manifest.id}`;
     const settingsId = `dl-plugin-${manifest.id}-settings`;
     const withSettings = hasSettings(state);
+    const schema = state.definition?.settings ?? {};
+    const matched = withSettings ? matchingSettings(schema, query) : [];
     const paused = SafeMode.active && enabled;
 
     const fromStore = !!Store.installedPlugin(manifest.id)?.fromStore;
@@ -212,6 +246,21 @@ function PluginCard({ state }: { state: PluginState; }) {
                 <Switch checked={enabled && !pulled} disabled={!!pulled} labelledBy={titleId} onChange={v => PluginManager.setEnabled(manifest.id, v)} />
             </div>
             {manifest.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-plugin-card-desc">{manifest.description}</Text>}
+            {matched.length > 0 && (
+                <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-plugin-card-matches">
+                    <Icon name="settings" size={14} />
+                    <button
+                        type="button"
+                        className="dl-link-button"
+                        onClick={() => {
+                            setHighlight(matched);
+                            setSettingsOpen(true);
+                        }}
+                    >
+                        {t("plugins.matchingSettings", { names: matched.map(key => schema[key].label).join(", ") })}
+                    </button>
+                </Text>
+            )}
             <div className="dl-plugin-card-foot">
                 {/* Only what needs you: a plugin that just works says nothing */}
                 <span className="dl-row-meta dl-grow" role="status">
@@ -234,7 +283,10 @@ function PluginCard({ state }: { state: PluginState; }) {
                             icon="settings"
                             label={t("plugins.settingsOf", { name: manifest.name })}
                             aria-controls={settingsOpen ? settingsId : undefined}
-                            onClick={() => setSettingsOpen(true)}
+                            onClick={() => {
+                                setHighlight(matched);
+                                setSettingsOpen(true);
+                            }}
                         />
                     )}
                     <PluginDetailsButton state={state} />
@@ -288,7 +340,7 @@ function PluginCard({ state }: { state: PluginState; }) {
             )}
             {withSettings && settingsOpen && (
                 <Dialog id={settingsId} title={t("plugins.settingsOf", { name: manifest.name })} onClose={() => setSettingsOpen(false)}>
-                    <PluginSettings state={state} />
+                    <PluginSettings state={state} highlight={highlight} />
                 </Dialog>
             )}
         </li>
@@ -432,7 +484,7 @@ export function InstalledPlugins() {
                 )}
                 {visible.length ? (
                     <>
-                        <ul className="dl-plugin-grid" aria-label={t("tabs.plugins")}>{paged.items.map(p => <PluginCard key={p.manifest.id} state={p} />)}</ul>
+                        <ul className="dl-plugin-grid" aria-label={t("tabs.plugins")}>{paged.items.map(p => <PluginCard key={p.manifest.id} state={p} query={q} />)}</ul>
                         <Pagination
                             label={t("plugins.pages")}
                             page={paged.page}

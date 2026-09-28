@@ -10,9 +10,12 @@
 import { describeGrowth, permissionGrowth, readPermissions } from "@shared/declaredPermissions";
 import { imageDataUrl } from "@shared/images";
 import { cleanSwitches, StorePreviewResult } from "@shared/pluginPermissions";
-import { IPC, PluginManifest } from "@shared/ipc";
+import { IPC, isPluginEnabled, PluginManifest, PreviewMediaResult } from "@shared/ipc";
 import {
+    betaOf,
     DEFAULT_REGISTRY_URL,
+    MAX_PREVIEW_BYTES,
+    previewType,
     InstalledPlugin,
     InstalledTheme,
     isPluginId,
@@ -44,6 +47,8 @@ import { confirmWithUser } from "./confirm";
 import { downloadHttps } from "./download";
 import { DATA_DIR, PLUGINS_DIR, THEMES_DIR } from "./paths";
 import { consentToRun, hideDevPlugin, pluginLocation, refreshUserPlugin, setRemoved } from "./plugins";
+import { authorBanners } from "./reports";
+import { settings } from "./settings";
 import { reloadTheme } from "./themes";
 
 /** Outside the plugins folder, so the plugin watcher never loads a half-written plugin */
@@ -53,7 +58,7 @@ const CONFIG_FILE = join(DATA_DIR, "store.json");
 /** Themes are single files with no room for a marker, so the store remembers its own here */
 const THEMES_RECORD = join(DATA_DIR, "store-themes.json");
 
-let cache: { url: string; entries: Map<string, RegistryEntry>; themes: Map<string, ThemeEntry>; images: Set<string>; } | undefined;
+let cache: { url: string; entries: Map<string, RegistryEntry>; themes: Map<string, ThemeEntry>; images: Set<string>; previews: Set<string>; } | undefined;
 const busy = new Set<string>();
 
 export function getRegistryUrl() {
@@ -91,6 +96,22 @@ function listInstalled(): InstalledPlugin[] {
         } catch { }
     }
     return installed;
+}
+
+/**
+ * The store plugins this install has, at the version it has, and whether each is on: what the daily
+ * usage check-in says (main/community.ts). Only ids the registry lists: a local plugin's stays here.
+ */
+export async function storeUsage(): Promise<{ id: string; version: string; enabled: boolean; }[]> {
+    const listed = (await current()).entries;
+    return listInstalled().flatMap(p => {
+        if (!listed.has(p.id) || !p.version) return [];
+        let manifest: PluginManifest = { id: p.id, name: p.id };
+        try {
+            manifest = JSON.parse(readFileSync(join(PLUGINS_DIR, p.id, "manifest.json"), "utf8"));
+        } catch { }
+        return [{ id: p.id, version: p.version, enabled: isPluginEnabled(settings, { ...manifest, id: p.id }) }];
+    });
 }
 
 type ThemesRecord = Record<string, { version: string; file: string; }>;
@@ -144,6 +165,7 @@ async function fetchRegistry(): Promise<StoreListing> {
         entries: new Map(plugins.map(p => [p.id, p])),
         themes: new Map(themes.map(t => [t.id, t])),
         images: new Set([...plugins, ...themes].flatMap(e => e.screenshots)),
+        previews: new Set([...plugins, ...themes].flatMap(e => e.preview ? [e.preview] : [])),
     };
     if (parsed.problems.length) console.warn(`[Evi] Store registry: skipped ${parsed.problems.length} entries`, parsed.problems);
     return { ok: true, registryUrl, plugins, themes, problems: parsed.problems, installed, installedThemes };
@@ -184,7 +206,11 @@ function installedPermissions(dir: string) {
 }
 
 async function install(id: string, sender: WebContents, pageAllowed: { native: boolean; more: boolean; }, report: (p: StoreProgress) => void): Promise<StoreResult> {
-    const entry = await getEntry(id);
+    const stable = await getEntry(id);
+    // Its beta, when you opted into this plugin's betas (read from the settings file, not what the page
+    // says) and this Evi can run it; checked and held to exactly like a stable version
+    const beta = settings.pluginBetas?.includes(id) ? betaOf(stable) : undefined;
+    const entry = beta && meetsMinEvi(EVI_VERSION, beta.minEviVersion) ? beta : stable;
     if (!meetsMinEvi(EVI_VERSION, entry.minEviVersion)) {
         throw new Error(`${entry.name} needs Evi ${entry.minEviVersion} or newer, this is ${EVI_VERSION}`);
     }
@@ -385,7 +411,7 @@ const images = new Map<string, Promise<StoreImageResult>>();
 async function fetchImage(url: unknown): Promise<StoreImageResult> {
     if (typeof url !== "string") return { ok: false, error: "Not a URL" };
     try {
-        if (!(await current()).images.has(url)) return { ok: false, error: "That image isn't in the store" };
+        if (!(await current()).images.has(url) && !authorBanners().has(url)) return { ok: false, error: "That image isn't in the store" };
     } catch (err) {
         return { ok: false, error: (err as Error).message };
     }
@@ -401,6 +427,44 @@ async function fetchImage(url: unknown): Promise<StoreImageResult> {
         images.set(url, pending);
         // Failures aren't remembered, the next look tries again
         pending.then(r => !r.ok && images.delete(url));
+    }
+    return pending;
+}
+
+// ---- preview videos and GIFs -----------------------------------------------------------------------
+
+const media = new Map<string, Promise<PreviewMediaResult>>();
+
+/** The first bytes of each kind of preview, so a file can't pass for one it isn't */
+function sniffPreview(bytes: Uint8Array): string | undefined {
+    const ascii = (from: number, to: number) => String.fromCharCode(...bytes.subarray(from, to));
+    if (ascii(4, 8) === "ftyp") return "video/mp4";
+    if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return "video/webm";
+    if (ascii(0, 4) === "GIF8") return "image/gif";
+    if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
+}
+
+/** A store item's preview, only one the registry lists, as bytes for the page to show */
+async function fetchPreviewMedia(url: unknown): Promise<PreviewMediaResult> {
+    if (typeof url !== "string") return { ok: false, error: "Not a URL" };
+    try {
+        if (!(await current()).previews.has(url)) return { ok: false, error: "That preview isn't in the store" };
+    } catch (err) {
+        return { ok: false, error: (err as Error).message };
+    }
+    let pending = media.get(url);
+    if (!pending) {
+        pending = (async (): Promise<PreviewMediaResult> => {
+            const download = await downloadHttps(url, MAX_PREVIEW_BYTES, { what: "The preview" });
+            if (!download.ok) return download;
+            const mime = sniffPreview(download.body);
+            if (!mime || mime !== previewType(url)) return { ok: false, error: "Not the MP4, WebM, GIF or WebP its link says" };
+            return { ok: true, bytes: download.body, mime };
+        })();
+        // One at a time in memory: previews are big
+        media.clear();
+        media.set(url, pending);
+        pending.then(r => !r.ok && media.delete(url));
     }
     return pending;
 }
@@ -491,5 +555,6 @@ export function initStore() {
     ipcMain.handle(IPC.STORE_THEME_INSTALL, (e, id: unknown) => exclusive(id, id => installTheme(id, progressTo(e.sender, "theme")), "theme"));
     ipcMain.handle(IPC.STORE_THEME_UNINSTALL, (e, id: unknown) => exclusive(id, id => uninstallTheme(id, progressTo(e.sender, "theme")), "theme"));
     ipcMain.handle(IPC.STORE_IMAGE, (_, url: unknown) => fetchImage(url));
+    ipcMain.handle(IPC.STORE_PREVIEW_MEDIA, (_, url: unknown) => fetchPreviewMedia(url));
     ipcMain.handle(IPC.STORE_PREVIEW, (_, id: unknown) => previewPlugin(id));
 }

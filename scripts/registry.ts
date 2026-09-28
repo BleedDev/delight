@@ -129,6 +129,8 @@ for (const name of themeFiles) {
     const meta = parseThemeMeta(css, name);
     const tags = css.match(/^\s*\/\*[\s\S]*?@tags[ \t]+(.+)/)?.[1].split(",").map(t => t.trim()).filter(Boolean) ?? [];
     const version = meta.version ?? "1.0.0";
+    // A thank-you for supporters (@supporters true): listed for everyone, installable by supporters
+    const supporters = /^\s*\/\*[\s\S]*?@supporters[ \t]+true\b/.test(css);
 
     themeEntries.push({
         id,
@@ -141,6 +143,7 @@ for (const name of themeFiles) {
         source: `${SOURCE}/themes/${name}`,
         screenshots: [],
         changelog: [],
+        ...supporters && { supporters: true },
         minEviVersion: pkg.version,
         file: { url: versioned(`${themesBase}/${storeThemeFile(id)}`, await sha256Hex(raw)), sha256: await sha256Hex(raw) },
     });

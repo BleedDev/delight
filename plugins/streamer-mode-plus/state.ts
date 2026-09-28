@@ -173,7 +173,7 @@ export interface Hotkey {
     key: string;
 }
 
-/** Parses "Ctrl+Shift+S" style strings. Returns undefined for an empty or modifier-only string. */
+/** Parses the "Ctrl+Shift+S" typed into the old Hotkey text field. Undefined for an empty or modifier-only one. */
 export function parseHotkey(input: string): Hotkey | undefined {
     const parts = input.split("+").map(p => p.trim()).filter(Boolean);
     const hotkey: Hotkey = { ctrl: false, shift: false, alt: false, meta: false, key: "" };
@@ -189,16 +189,28 @@ export function parseHotkey(input: string): Hotkey | undefined {
     return hotkey.key ? hotkey : undefined;
 }
 
-export function matchesHotkey(
-    hotkey: Hotkey | undefined,
-    event: { key: string; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; metaKey: boolean; },
-): boolean {
-    if (!hotkey) return false;
-    return event.key.toLowerCase() === hotkey.key
-        && event.ctrlKey === hotkey.ctrl
-        && event.shiftKey === hotkey.shift
-        && event.altKey === hotkey.alt
-        && event.metaKey === hotkey.meta;
+/**
+ * The shortcut setting before 1.1.0 was typed in ("Ctrl+Shift+S", "alt+f9"); Evi's shortcut field
+ * stores physical keys ("Ctrl+Shift+KeyS"). Returns the stored form of an old value, the value itself
+ * if it's already one, and "" for what can't be carried over.
+ */
+export function migrateHotkey(value: unknown): string {
+    if (typeof value !== "string" || !value.trim()) return "";
+    // Already recorded: every key code is longer than one character, and modifiers are spelled Evi's way
+    const parts = value.split("+");
+    const code = parts.at(-1)!;
+    const modifiers = ["Ctrl", "Alt", "Shift", "Meta"];
+    if (code.length > 1 && /^[A-Z]/.test(code) && !modifiers.includes(code) && parts.slice(0, -1).every(m => modifiers.includes(m))) return value;
+
+    const old = parseHotkey(value);
+    if (!old) return "";
+    let key: string | undefined;
+    if (/^[a-z]$/.test(old.key)) key = `Key${old.key.toUpperCase()}`;
+    else if (/^[0-9]$/.test(old.key)) key = `Digit${old.key}`;
+    else if (/^f([1-9]|1[0-9]|2[0-4])$/.test(old.key)) key = old.key.toUpperCase();
+    else if (old.key === " ") key = "Space";
+    if (!key) return "";
+    return [old.ctrl && "Ctrl", old.alt && "Alt", old.shift && "Shift", old.meta && "Meta", key].filter(Boolean).join("+");
 }
 
 /** The toast when blurring turns on or off by itself */

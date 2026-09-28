@@ -239,6 +239,15 @@ export function findStore<T = any>(name: string): T | undefined {
     return store;
 }
 
+/**
+ * Names of every Flux store loaded so far, sorted (a store with both a class name and a getName()
+ * is listed under both). Indexes the loaded modules on first use, like findStore.
+ */
+export function listStores(): string[] {
+    if (!storesIndexed) indexStores(requireWreq());
+    return [...stores.keys()].sort((a, b) => a.localeCompare(b));
+}
+
 interface Waiter {
     filter: Filter;
     callback: (value: any, found: FoundExport) => void;

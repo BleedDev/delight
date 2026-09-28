@@ -34,6 +34,16 @@ export interface BadgesDocument {
 export interface BadgePrefs {
     order: (number | string)[];
     hidden: string[];
+    /** A supporter's own colour for their supporter badge, "#rrggbb"; missing keeps its level's */
+    color?: string;
+}
+
+/** A badge colour someone can pick: a plain #rrggbb */
+export const isBadgeColor = (v: unknown): v is string => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v);
+
+/** GET /v1/credits: supporters who chose to be named, longest supporting first */
+export interface CreditsDocument {
+    supporters: { name: string; avatar: string | null; userId: string; since: number; level: string; }[];
 }
 
 /** Ours, as Discord's badge settings hold them: "evi-developer", "evi-supporter" */
@@ -119,7 +129,9 @@ export function parseBadges(json: unknown): BadgesDocument | undefined {
             if (!clean.users[user] || !p || typeof p !== "object") continue;
             const order = Array.isArray(p.order) ? p.order.filter((v: unknown) => (typeof v === "number" && Number.isSafeInteger(v)) || (typeof v === "string" && isPluginId(v))).slice(0, 64) : [];
             const hidden = Array.isArray(p.hidden) ? p.hidden.filter((v: unknown): v is string => typeof v === "string" && isPluginId(v)).slice(0, 64) : [];
-            if (order.length || hidden.length) clean.prefs[user] = { order, hidden };
+            // A supporter's colour, only while they're supporting (the server drops it otherwise too)
+            const color = isBadgeColor(p.color) && clean.supporters[user] ? p.color.toLowerCase() : undefined;
+            if (order.length || hidden.length || color) clean.prefs[user] = { order, hidden, ...(color && { color }) };
         }
     }
     return clean;
@@ -135,6 +147,9 @@ export const hasPullsEvent = (block: string) => hasEvent(block, "pulls");
 
 /** Whether an SSE chunk says Evi's hotfixes changed (a `hotfixes` event, shared/hotfixes.ts) */
 export const hasHotfixesEvent = (block: string) => hasEvent(block, "hotfixes");
+
+/** Whether an SSE chunk says this account's inbox changed (a `notifications` event, sent only to its installs) */
+export const hasNotificationsEvent = (block: string) => hasEvent(block, "notifications");
 
 /** The `badges` events in an SSE chunk, as the etag each one carries */
 export function parseBadgeEvents(block: string): string[] {
@@ -167,3 +182,16 @@ export type BadgeAdminAction =
     | { action: "unsupport"; userId: string; };
 
 export type BadgeAdminResult = { ok: true; message: string; } | { ok: false; error: string; };
+
+export function parseCredits(raw: unknown): CreditsDocument {
+    const list = (raw as { supporters?: unknown; } | null)?.supporters;
+    if (!Array.isArray(list)) return { supporters: [] };
+    return {
+        supporters: list.flatMap(s => {
+            const r = (s ?? {}) as Record<string, unknown>;
+            if (typeof r.userId !== "string" || !/^\d{5,25}$/.test(r.userId) || typeof r.name !== "string" || typeof r.since !== "number" || typeof r.level !== "string") return [];
+            const avatar = typeof r.avatar === "string" && /^(a_)?[0-9a-f]{32}$/.test(r.avatar) ? r.avatar : null;
+            return [{ name: r.name.slice(0, 80), avatar, userId: r.userId, since: r.since, level: r.level.slice(0, 32) }];
+        }).slice(0, 500),
+    };
+}

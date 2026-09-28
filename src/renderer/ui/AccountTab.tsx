@@ -9,6 +9,7 @@ import { t } from "../i18n";
 import { Native } from "../native";
 import { React } from "../webpack/common";
 import { Button, Section, Status, Text } from "./components";
+import { SupporterPerks } from "./SupporterPerks";
 
 const POLL_MS = 3000;
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -57,6 +58,7 @@ export function AccountTab() {
     };
 
     return (
+        <>
         <Section
             title={t("account.title")}
             description={t("account.description")}
@@ -111,5 +113,8 @@ export function AccountTab() {
                 )}
             </div>
         </Section>
+        {/* Perks follow the account: evi.rest only takes them from a linked Evi */}
+        {state.kind === "linked" && <SupporterPerks />}
+        </>
     );
 }

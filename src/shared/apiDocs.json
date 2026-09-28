@@ -1,0 +1,736 @@
+[
+    {
+        "name": "Badges",
+        "kind": "const",
+        "signature": "const Badges: { use(), refresh(), forUser(), allForUser(), prefsFor(), supporterSince(), info(), setPrefs(), getVersion(), subscribe(), canManage(), manage() }",
+        "doc": ""
+    },
+    {
+        "name": "Badge",
+        "kind": "interface",
+        "signature": "interface Badge {\n    id: string;\n    name: string;\n    description: string;\n    icon: string;\n    key: string;\n    hidden: boolean;\n}",
+        "doc": ""
+    },
+    {
+        "name": "BadgeAdminAction",
+        "kind": "type",
+        "signature": "type BadgeAdminAction = | { action: \"list\"; } | { action: \"create\"; id: string; name: string; description?: string; iconUrl: string; } | { action: \"delete\"; id: string; } | { action: \"grant\"; userId: string; badgeId: string; } | { action: \"revoke\"; userId: string; badgeId: string; } | { action: \"supporter\"; userId: string; } | { action: \"time\"; userId: string; days: number; } | { action: \"unsuppo…",
+        "doc": ""
+    },
+    {
+        "name": "defineStrings",
+        "kind": "function",
+        "signature": "defineStrings<const E extends Record<string, Message>>(strings: { en: E; } & Record<string, Partial<Record<keyof E, Message>>>)",
+        "doc": "A plugin's own strings, by locale: `{ en: {...}, es: {...}, \"pt-BR\": {...} }`. English is the fallback and the source of the keys. Returns a `t(key, vars)` that follows Discord's language."
+    },
+    {
+        "name": "I18n",
+        "kind": "const",
+        "signature": "const I18n: { locale, discordLocale, subscribe() }",
+        "doc": ""
+    },
+    {
+        "name": "useLocale",
+        "kind": "function",
+        "signature": "useLocale()",
+        "doc": "React hook: the current language. Call it at a tree's root so the tree re-renders when it changes."
+    },
+    {
+        "name": "Message",
+        "kind": "type",
+        "signature": "type Message = string | PluralMessage;",
+        "doc": ""
+    },
+    {
+        "name": "PluralMessage",
+        "kind": "type",
+        "signature": "type PluralMessage = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string; };",
+        "doc": "Evi's translations, the pure part: picking a language, filling in `{name}` placeholders and choosing plural forms. English is the source: a key another language lacks falls back to it."
+    },
+    {
+        "name": "Vars",
+        "kind": "type",
+        "signature": "type Vars = Record<string, string | number>;",
+        "doc": ""
+    },
+    {
+        "name": "Logger",
+        "kind": "class",
+        "signature": "class Logger",
+        "doc": ""
+    },
+    {
+        "name": "getUnhooked",
+        "kind": "function",
+        "signature": "getUnhooked<F extends Function>(fn: F): F",
+        "doc": "The unhooked version of a possibly hooked function"
+    },
+    {
+        "name": "hook",
+        "kind": "function",
+        "signature": "hook<T extends object, K extends keyof T>(target: T, key: K, kind: HookKind, callback: HookCallback, owner = \"unknown\"): () => void",
+        "doc": ""
+    },
+    {
+        "name": "HookCallback",
+        "kind": "type",
+        "signature": "type HookCallback<Args extends any[] = any[], Result = any> = (ctx: HookContext<Args, Result>) => any;",
+        "doc": "before:  runs first, may mutate ctx.args\nafter:   runs last, a non-undefined return value replaces the result\ninstead: replaces the call, use ctx.callOriginal() to continue the chain"
+    },
+    {
+        "name": "HookContext",
+        "kind": "interface",
+        "signature": "interface HookContext<Args extends any[] = any[], Result = any> {\n    readonly self: any;\n    args: Args;\n    result: Result;\n    readonly isConstruct: boolean;\n    readonly original: (...args: Args) => Result;\n    callOriginal(...args: Args): Result;\n}",
+        "doc": ""
+    },
+    {
+        "name": "HookKind",
+        "kind": "type",
+        "signature": "type HookKind = \"before\" | \"after\" | \"instead\";",
+        "doc": ""
+    },
+    {
+        "name": "PatchRecord",
+        "kind": "interface",
+        "signature": "interface PatchRecord {\n    plugin: string;\n    index: number;\n    patch: SourcePatch;\n    state: PatchState;\n    modules: string[];\n    errors: string[];\n}",
+        "doc": ""
+    },
+    {
+        "name": "Replacement",
+        "kind": "interface",
+        "signature": "interface Replacement {\n    match: string | RegExp;\n    with: string | ((substring: string, ...args: any[]) => string);\n}",
+        "doc": ""
+    },
+    {
+        "name": "SourcePatch",
+        "kind": "interface",
+        "signature": "interface SourcePatch {\n    find: string | RegExp;\n    replace: Replacement | Replacement[];\n    all?: boolean;\n    group?: boolean;\n    optional?: boolean;\n    predicate?: () => boolean;\n    live?: boolean;\n}",
+        "doc": ""
+    },
+    {
+        "name": "PluginContext",
+        "kind": "class",
+        "signature": "class PluginContext<S extends SettingsSchema = SettingsSchema>",
+        "doc": "Everything a plugin registers goes through its context, which undoes all of it on stop. That's what makes disabling and hot-reloading a plugin safe without a Discord reload."
+    },
+    {
+        "name": "PluginSettings",
+        "kind": "class",
+        "signature": "class PluginSettings<S extends SettingsSchema>",
+        "doc": ""
+    },
+    {
+        "name": "ProfileBadge",
+        "kind": "interface",
+        "signature": "interface ProfileBadge {\n    id: string;\n    description: string;\n    iconSrc: string;\n    link?: string;\n    name?: string;\n}",
+        "doc": ""
+    },
+    {
+        "name": "ProfileBadgeProvider",
+        "kind": "type",
+        "signature": "type ProfileBadgeProvider = (userId: string) => ProfileBadge[] | null | undefined;",
+        "doc": ""
+    },
+    {
+        "name": "definePlugin",
+        "kind": "function",
+        "signature": "definePlugin<S extends SettingsSchema = {}>(definition: PluginDefinition<S>): PluginDefinition<S>",
+        "doc": "",
+        "example": "export default definePlugin({\n    settings: { greeting: { type: \"string\", label: \"Greeting\", default: \"Hi\" } },\n    start(ctx) {\n        ctx.toast(ctx.settings.get(\"greeting\"));\n    },\n});"
+    },
+    {
+        "name": "BooleanSetting",
+        "kind": "interface",
+        "signature": "interface BooleanSetting extends BaseSetting {\n    type: \"boolean\";\n    default: boolean;\n}",
+        "doc": ""
+    },
+    {
+        "name": "StringSetting",
+        "kind": "interface",
+        "signature": "interface StringSetting extends BaseSetting {\n    type: \"string\";\n    default: string;\n    placeholder?: string;\n    multiline?: boolean;\n}",
+        "doc": ""
+    },
+    {
+        "name": "NumberSetting",
+        "kind": "interface",
+        "signature": "interface NumberSetting extends BaseSetting {\n    type: \"number\";\n    default: number;\n    min?: number;\n    max?: number;\n    step?: number;\n}",
+        "doc": ""
+    },
+    {
+        "name": "SelectSetting",
+        "kind": "interface",
+        "signature": "interface SelectSetting<V extends string = string> extends BaseSetting {\n    type: \"select\";\n    default: V;\n    options: readonly { label: string; value: V; }[];\n}",
+        "doc": ""
+    },
+    {
+        "name": "KeybindSetting",
+        "kind": "interface",
+        "signature": "interface KeybindSetting extends BaseSetting {\n    type: \"keybind\";\n    default: string;\n}",
+        "doc": "A keyboard shortcut the user records, stored like \"Ctrl+Shift+KeyG\" (\"\" for none). Declaring it only shows the field: `ctx.keybind(key, handler)` is what runs something when it's pressed."
+    },
+    {
+        "name": "SettingDefinition",
+        "kind": "type",
+        "signature": "type SettingDefinition = BooleanSetting | StringSetting | NumberSetting | SelectSetting | KeybindSetting;",
+        "doc": ""
+    },
+    {
+        "name": "SettingsSchema",
+        "kind": "type",
+        "signature": "type SettingsSchema = Record<string, SettingDefinition>;",
+        "doc": ""
+    },
+    {
+        "name": "SettingValue",
+        "kind": "type",
+        "signature": "type SettingValue<D extends SettingDefinition> = D extends BooleanSetting ? boolean : D extends NumberSetting ? number : D extends SelectSetting<infer V> ? V : string;",
+        "doc": ""
+    },
+    {
+        "name": "SettingsValues",
+        "kind": "type",
+        "signature": "type SettingsValues<S extends SettingsSchema> = { [K in keyof S]: SettingValue<S[K]> };",
+        "doc": ""
+    },
+    {
+        "name": "PluginDefinition",
+        "kind": "interface",
+        "signature": "interface PluginDefinition<S extends SettingsSchema = SettingsSchema> {\n    settings?: S;\n    patches?: SourcePatch[];\n    css?: string;\n    flux?: Record<string, (action: FluxAction) => void>;\n    start?(ctx: PluginContext<S>): void | Promise<void>;\n    stop?(ctx: PluginContext<S>): void;\n    settingsPanel?(ctx: PluginContext<S>): ReactNode;\n    [key: string]: unknown;\n}",
+        "doc": ""
+    },
+    {
+        "name": "CommandOptionType",
+        "kind": "const",
+        "signature": "const CommandOptionType",
+        "doc": "Discord's application command option types (public API values)"
+    },
+    {
+        "name": "registerCommand",
+        "kind": "function",
+        "signature": "registerCommand(def: CommandDefinition, owner = \"unknown\"): () => void",
+        "doc": "Registers a slash command. Returns a function that removes it."
+    },
+    {
+        "name": "CommandContext",
+        "kind": "interface",
+        "signature": "interface CommandContext {\n    channel: any;\n    guild?: any;\n    rawOptions: { name: string; type: number; value: any; }[];\n    reply(content: string): void;\n}",
+        "doc": ""
+    },
+    {
+        "name": "CommandDefinition",
+        "kind": "interface",
+        "signature": "interface CommandDefinition {\n    name: string;\n    description: string;\n    options?: CommandOption[];\n    predicate?(context: { channel: any; guild?: any; }): boolean;\n    execute(args: Record<string, any>, context: CommandContext): void | CommandResult | Promise<void | CommandResult>;\n}",
+        "doc": ""
+    },
+    {
+        "name": "CommandOption",
+        "kind": "interface",
+        "signature": "interface CommandOption {\n    name: string;\n    description: string;\n    type?: CommandOptionTypeName | number;\n    required?: boolean;\n    choices?: { name: string; value: string | number; }[];\n}",
+        "doc": ""
+    },
+    {
+        "name": "CommandResult",
+        "kind": "type",
+        "signature": "type CommandResult = { ephemeral: string; } | { content: string; tts?: boolean; };",
+        "doc": "What execute may return:\n  { ephemeral: \"...\" }  an \"Only you can see this\" reply (same as context.reply)\n  { content: \"...\" }    sent as a real message from you, visible to everyone in the channel"
+    },
+    {
+        "name": "addContextMenuPatch",
+        "kind": "function",
+        "signature": "addContextMenuPatch(navId: string | string[], callback: ContextMenuCallback): () => void",
+        "doc": "Calls `callback` whenever the menu with this navId renders (\"message\", \"user-context\", \"guild-context\", \"channel-context\"..., or \"*\" for every menu). Returns a function that removes it."
+    },
+    {
+        "name": "findMenuGroup",
+        "kind": "function",
+        "signature": "findMenuGroup(children: ReactNode, id: string): ReactNode[] | undefined",
+        "doc": "The children array of the group that contains the item with this id, to insert next to it:\n  findMenuGroup(children, \"devmode-copy-id\")?.push(<Menu.Item ... />)"
+    },
+    {
+        "name": "Menu",
+        "kind": "const",
+        "signature": "const Menu",
+        "doc": "Discord's menu item components, for items added with ctx.contextMenu. Resolved on first use; reading one before Discord's Menu module has loaded throws."
+    },
+    {
+        "name": "ContextMenuCallback",
+        "kind": "type",
+        "signature": "type ContextMenuCallback = (children: ReactNode[], props: Record<string, any>, menuProps: Record<string, any>) => void;",
+        "doc": ""
+    },
+    {
+        "name": "MenuComponents",
+        "kind": "interface",
+        "signature": "interface MenuComponents {\n    Item: ComponentType<MenuItemProps>;\n    Group: ComponentType<{ label?: ReactNode; children?: ReactNode; }>;\n    Separator: ComponentType<{}>;\n    CheckboxItem: ComponentType<MenuCheckboxItemProps>;\n    RadioItem: ComponentType<MenuRadioItemProps>;\n    SwitchItem: ComponentType<MenuCheckboxItemProps>;\n    ControlItem: ComponentType<MenuControlItemProps>;\n    TextInput: ComponentType<any>;\n}",
+        "doc": ""
+    },
+    {
+        "name": "MenuItemProps",
+        "kind": "interface",
+        "signature": "interface MenuItemProps {\n    id: string;\n    label?: ReactNode;\n    action?(event: MouseEvent): void;\n    disabled?: boolean;\n    color?: \"default\" | \"danger\" | \"brand\" | \"premium\" | \"positive\";\n    icon?: ComponentType<any>;\n    subtext?: ReactNode;\n    children?: ReactNode;\n    render?(props: any): ReactNode;\n}",
+        "doc": ""
+    },
+    {
+        "name": "exitDone",
+        "kind": "function",
+        "signature": "exitDone(el: Element | null | undefined, maxMs = 500): Promise<void>",
+        "doc": "Resolves when the finite animations running inside `el` have finished: call it right after setting whatever starts the exit. Infinite ones (spinners) don't count; nothing running (reduced motion) resolves at once. Capped, so a stuck animation can't keep a layer around."
+    },
+    {
+        "name": "openLayer",
+        "kind": "function",
+        "signature": "openLayer(render: (close: CloseLayer) => ReactNode, options: LayerOptions = {}): CloseLayer",
+        "doc": "Renders `render(close)` into a new root on <body>. Returns `close`, which plays the exit animation and then unmounts. Calling it again while it's closing does nothing, unless `instant` asks to finish now."
+    },
+    {
+        "name": "CloseLayer",
+        "kind": "type",
+        "signature": "type CloseLayer = (options?: { instant?: boolean; }) => void;",
+        "doc": "Closes the layer. `{ instant: true }` skips the exit, for when its plugin is stopping."
+    },
+    {
+        "name": "LayerOptions",
+        "kind": "interface",
+        "signature": "interface LayerOptions {\n    className?: string;\n    onClosed?(): void;\n}",
+        "doc": ""
+    },
+    {
+        "name": "showToast",
+        "kind": "function",
+        "signature": "showToast(message: ReactNode, options: ToastOptions = {}): boolean",
+        "doc": "Shows a toast. Returns false if Discord's toast module isn't available.",
+        "example": "showToast(\"Copied\", { type: \"success\" });"
+    },
+    {
+        "name": "ToastOptions",
+        "kind": "interface",
+        "signature": "interface ToastOptions {\n    type?: ToastType;\n    duration?: number;\n    position?: \"top\" | \"bottom\";\n}",
+        "doc": ""
+    },
+    {
+        "name": "ToastType",
+        "kind": "type",
+        "signature": "type ToastType = \"info\" | \"success\" | \"failure\" | \"message\" | \"link\" | \"clock\" | \"bookmark\" | \"favorite\";",
+        "doc": "Discord's toast types. \"info\" is Evi's name for Discord's plain \"message\" toast."
+    },
+    {
+        "name": "lazy",
+        "kind": "function",
+        "signature": "lazy<T>(getter: () => T, knownKeys: readonly string[] = [], overrides?: Partial<Record<PropertyKey, unknown>>): T",
+        "doc": "A stand-in for a value that doesn't exist yet. The getter runs on first use and its result is cached once it succeeds. `knownKeys` lets code that copies properties early (like CommonJS interop helpers) see the keys before the value has resolved. `overrides` answer for those keys instead of the value (a plugin's own Dispatcher.subscribe, guard.ts); unlazy still gives the real one."
+    },
+    {
+        "name": "unlazy",
+        "kind": "function",
+        "signature": "unlazy<T>(value: T): T",
+        "doc": "Forces a lazy value to resolve, returning the real object"
+    },
+    {
+        "name": "findInTree",
+        "kind": "function",
+        "signature": "findInTree<T = any>(tree: unknown, predicate: (node: any) => boolean, { walk = [\"props\", \"children\"], maxNodes = 5000 }: { walk?: string[]; maxNodes?: number; } = {}): T | undefined",
+        "doc": "Breadth-first search through a React element tree (or any nested object), following only the given keys. Handy in `after` hooks on components to find the element you want to change."
+    },
+    {
+        "name": "createRoot",
+        "kind": "const",
+        "signature": "const createRoot: typeof import(\"react-dom/client\").createRoot",
+        "doc": ""
+    },
+    {
+        "name": "Dispatcher",
+        "kind": "const",
+        "signature": "const Dispatcher: FluxDispatcher",
+        "doc": ""
+    },
+    {
+        "name": "getStore",
+        "kind": "function",
+        "signature": "getStore<T = any>(name: string): T",
+        "doc": "A Flux store by name, e.g. getStore(\"UserStore\")"
+    },
+    {
+        "name": "React",
+        "kind": "const",
+        "signature": "const React: typeof ReactTypes",
+        "doc": ""
+    },
+    {
+        "name": "ReactDOM",
+        "kind": "const",
+        "signature": "const ReactDOM: typeof import(\"react-dom\")",
+        "doc": ""
+    },
+    {
+        "name": "FluxAction",
+        "kind": "interface",
+        "signature": "interface FluxAction {\n    type: string;\n    [key: string]: any;\n}",
+        "doc": ""
+    },
+    {
+        "name": "FluxDispatcher",
+        "kind": "interface",
+        "signature": "interface FluxDispatcher {\n    dispatch(action: FluxAction): Promise<void>;\n    subscribe(type: string, handler: (action: FluxAction) => void): void;\n    unsubscribe(type: string, handler: (action: FluxAction) => void): void;\n}",
+        "doc": ""
+    },
+    {
+        "name": "filters",
+        "kind": "const",
+        "signature": "const filters: { byProps(), byCode(), componentByCode(), byStoreName() }",
+        "doc": ""
+    },
+    {
+        "name": "find",
+        "kind": "function",
+        "signature": "find<T = any>(filter: Filter)",
+        "doc": ""
+    },
+    {
+        "name": "findAll",
+        "kind": "function",
+        "signature": "findAll<T = any>(filter: Filter)",
+        "doc": ""
+    },
+    {
+        "name": "findAllExports",
+        "kind": "function",
+        "signature": "findAllExports<T = any>(filter: Filter): FoundExport<T>[]",
+        "doc": ""
+    },
+    {
+        "name": "findByCode",
+        "kind": "function",
+        "signature": "findByCode<T = any>(...code: CodeMatcher[])",
+        "doc": ""
+    },
+    {
+        "name": "findByCodeLazy",
+        "kind": "function",
+        "signature": "findByCodeLazy<T = any>(...code: CodeMatcher[])",
+        "doc": ""
+    },
+    {
+        "name": "findByProps",
+        "kind": "function",
+        "signature": "findByProps<T = any>(...props: string[])",
+        "doc": "",
+        "example": "const { getCurrentUser } = findByProps(\"getCurrentUser\", \"getUser\");"
+    },
+    {
+        "name": "findByPropsLazy",
+        "kind": "function",
+        "signature": "findByPropsLazy<T = any>(...props: string[])",
+        "doc": ""
+    },
+    {
+        "name": "findComponent",
+        "kind": "function",
+        "signature": "findComponent<T = any>(...code: CodeMatcher[])",
+        "doc": ""
+    },
+    {
+        "name": "findComponentLazy",
+        "kind": "function",
+        "signature": "findComponentLazy<T = any>(...code: CodeMatcher[])",
+        "doc": ""
+    },
+    {
+        "name": "findExport",
+        "kind": "function",
+        "signature": "findExport<T = any>(filter: Filter): FoundExport<T> | undefined",
+        "doc": "First loaded export matching the filter, with where it lives"
+    },
+    {
+        "name": "findLazy",
+        "kind": "function",
+        "signature": "findLazy<T = any>(filter: Filter, description = \"export\"): T",
+        "doc": "A proxy that resolves the export on first use. Safe to create before webpack is ready."
+    },
+    {
+        "name": "findModuleIds",
+        "kind": "function",
+        "signature": "findModuleIds(...code: CodeMatcher[])",
+        "doc": "Ids of module factories whose source contains every snippet, loaded or not"
+    },
+    {
+        "name": "findStore",
+        "kind": "function",
+        "signature": "findStore<T = any>(name: string): T | undefined",
+        "doc": ""
+    },
+    {
+        "name": "findStoreLazy",
+        "kind": "function",
+        "signature": "findStoreLazy<T = any>(name: string)",
+        "doc": ""
+    },
+    {
+        "name": "functionSource",
+        "kind": "function",
+        "signature": "functionSource(fn: Function)",
+        "doc": ""
+    },
+    {
+        "name": "requireModule",
+        "kind": "function",
+        "signature": "requireModule<T = any>(id: PropertyKey): T",
+        "doc": "Runs (if needed) and returns a module's exports by id"
+    },
+    {
+        "name": "waitFor",
+        "kind": "function",
+        "signature": "waitFor<T = any>(filter: Filter, callback: (value: T, found: FoundExport<T>) => void): () => void",
+        "doc": "Calls back once a matching export exists, immediately if it's already loaded. Returns an unsubscribe function."
+    },
+    {
+        "name": "waitForExport",
+        "kind": "function",
+        "signature": "waitForExport<T = any>(filter: Filter): Promise<FoundExport<T>>",
+        "doc": ""
+    },
+    {
+        "name": "CodeMatcher",
+        "kind": "type",
+        "signature": "type CodeMatcher = string | RegExp;",
+        "doc": ""
+    },
+    {
+        "name": "Filter",
+        "kind": "type",
+        "signature": "type Filter = ((value: any) => boolean) & { $code?: CodeMatcher[]; $label?: string; };",
+        "doc": ""
+    },
+    {
+        "name": "FoundExport",
+        "kind": "interface",
+        "signature": "interface FoundExport<T = any> {\n    id: string;\n    exports: any;\n    key: string | undefined;\n    value: T;\n}",
+        "doc": ""
+    },
+    {
+        "name": "Module",
+        "kind": "interface",
+        "signature": "interface Module {\n    id: PropertyKey;\n    loaded: boolean;\n    exports: any;\n}",
+        "doc": ""
+    },
+    {
+        "name": "ModuleFactory",
+        "kind": "type",
+        "signature": "type ModuleFactory = (this: unknown, module: Module, exports: any, require: WebpackRequire) => void;",
+        "doc": ""
+    },
+    {
+        "name": "WebpackRequire",
+        "kind": "interface",
+        "signature": "interface WebpackRequire {\n    (id: PropertyKey): any;\n    m: Record<PropertyKey, ModuleFactory>;\n    c: Record<PropertyKey, Module>;\n    d(exports: object, definition: Record<string, () => unknown>): void;\n    e(chunkId: PropertyKey): Promise<unknown>;\n    o(object: object, key: PropertyKey): boolean;\n    p: string;\n}",
+        "doc": ""
+    },
+    {
+        "name": "Components",
+        "kind": "const",
+        "signature": "const Components: { Switch, TextField, TextArea, Select, Slider, Button, Tooltip }",
+        "doc": "Discord's own form controls for plugin settings panels (Switch, TextField, TextArea, Select, Slider, Button). Each is undefined if Discord renamed it, so check before rendering."
+    },
+    {
+        "name": "getWreq",
+        "kind": "function",
+        "signature": "getWreq()",
+        "doc": "Discord's __webpack_require__, undefined until the runtime has loaded"
+    },
+    {
+        "name": "ctx.manifest",
+        "kind": "property",
+        "signature": "ctx.manifest: PluginManifest",
+        "doc": ""
+    },
+    {
+        "name": "ctx.logger",
+        "kind": "property",
+        "signature": "ctx.logger: Logger",
+        "doc": ""
+    },
+    {
+        "name": "ctx.settings",
+        "kind": "property",
+        "signature": "ctx.settings: PluginSettings<S>",
+        "doc": ""
+    },
+    {
+        "name": "ctx.id",
+        "kind": "property",
+        "signature": "ctx.id",
+        "doc": ""
+    },
+    {
+        "name": "ctx.onDispose",
+        "kind": "method",
+        "signature": "ctx.onDispose(fn: () => void)",
+        "doc": "Register cleanup to run when the plugin stops"
+    },
+    {
+        "name": "ctx.hook",
+        "kind": "property",
+        "signature": "ctx.hook: { before(), after(), instead() }",
+        "doc": "Hook a function on an object. Returns an unhook function (also called on stop)."
+    },
+    {
+        "name": "ctx.hook.before",
+        "kind": "method",
+        "signature": "ctx.hook.before<T extends object>(target: T, key: keyof T, cb: HookCallback)",
+        "doc": "Hook a function on an object. Returns an unhook function (also called on stop)."
+    },
+    {
+        "name": "ctx.hook.after",
+        "kind": "method",
+        "signature": "ctx.hook.after<T extends object>(target: T, key: keyof T, cb: HookCallback)",
+        "doc": "Hook a function on an object. Returns an unhook function (also called on stop)."
+    },
+    {
+        "name": "ctx.hook.instead",
+        "kind": "method",
+        "signature": "ctx.hook.instead<T extends object>(target: T, key: keyof T, cb: HookCallback)",
+        "doc": "Hook a function on an object. Returns an unhook function (also called on stop)."
+    },
+    {
+        "name": "ctx.hookExport",
+        "kind": "method",
+        "signature": "ctx.hookExport(kind: HookKind, filter: Filter, callback: HookCallback): void\nctx.hookExport(kind: HookKind, filter: Filter, method: string, callback: HookCallback): void",
+        "doc": "Hook a webpack export as soon as it exists, whether its module is already loaded or lazy.\n  hookExport(\"after\", filters.componentByCode(\"...\"), cb)          hooks the matched export itself\n  hookExport(\"before\", filters.byProps(\"sendMessage\"), \"sendMessage\", cb)   hooks a method on it",
+        "example": "// After the export itself\nctx.hookExport(\"after\", filters.componentByCode(\"userProfile\"), ({ result }) => result);\n// Before a method on the export\nctx.hookExport(\"before\", filters.byProps(\"sendMessage\"), \"sendMessage\", ({ args }) => {\n    args[1].content = args[1].content.trim();\n});"
+    },
+    {
+        "name": "ctx.waitFor",
+        "kind": "method",
+        "signature": "ctx.waitFor<T = any>(filter: Filter, callback: (value: T, found: FoundExport<T>) => void)",
+        "doc": "Like webpack waitFor, cancelled on stop. A target that never shows up is reported (see lookups.ts)."
+    },
+    {
+        "name": "ctx.flux",
+        "kind": "property",
+        "signature": "ctx.flux: { subscribe(), dispatch() }",
+        "doc": ""
+    },
+    {
+        "name": "ctx.flux.subscribe",
+        "kind": "method",
+        "signature": "ctx.flux.subscribe(type: string, handler: (action: FluxAction) => void)",
+        "doc": ""
+    },
+    {
+        "name": "ctx.flux.dispatch",
+        "kind": "method",
+        "signature": "ctx.flux.dispatch(action: FluxAction)",
+        "doc": ""
+    },
+    {
+        "name": "ctx.native",
+        "kind": "property",
+        "signature": "ctx.native: { call() }",
+        "doc": ""
+    },
+    {
+        "name": "ctx.native.call",
+        "kind": "method",
+        "signature": "ctx.native.call<T = unknown>(method: string, ...args: unknown[]): Promise<T>",
+        "doc": ""
+    },
+    {
+        "name": "ctx.addStyle",
+        "kind": "method",
+        "signature": "ctx.addStyle(css: string): ManagedStyle",
+        "doc": ""
+    },
+    {
+        "name": "ctx.toast",
+        "kind": "method",
+        "signature": "ctx.toast(message: ReactNode, options?: ToastOptions)",
+        "doc": "Shows one of Discord's toasts"
+    },
+    {
+        "name": "ctx.contextMenu",
+        "kind": "method",
+        "signature": "ctx.contextMenu(navId: string | string[], callback: ContextMenuCallback)",
+        "doc": "Adds items to Discord's menus: `callback(children, props)` runs each time the menu with this navId renders (\"message\", \"user-context\", \"guild-context\", \"channel-context\"... or \"*\"). Push Menu.Item / Menu.Group elements (from @evi/api) into `children`. Removed on stop.",
+        "example": "ctx.contextMenu(\"message\", (children, { message }) => {\n    children.push(<Menu.Item id=\"evi-copy-id\" label=\"Copy ID\" action={() => copy(message.id)} />);\n});"
+    },
+    {
+        "name": "ctx.command",
+        "kind": "method",
+        "signature": "ctx.command(definition: CommandDefinition)",
+        "doc": "Registers a slash command that runs locally, listed with Discord's built-ins. Removed on stop.",
+        "example": "ctx.command({\n    name: \"shrug\",\n    description: \"Sends a shrug\",\n    execute: () => ({ content: \"¯\\\\_(ツ)_/¯\" }),\n});"
+    },
+    {
+        "name": "ctx.profileBadges",
+        "kind": "method",
+        "signature": "ctx.profileBadges(provider: ProfileBadgeProvider)",
+        "doc": "Badges this plugin adds to profiles: `provider(userId)` returns them, asked on every render. They show after Evi's own on the profile and in Discord's badge directory (\"Your badges\"). Removed on stop."
+    },
+    {
+        "name": "ctx.keybind",
+        "kind": "method",
+        "signature": "ctx.keybind(key: keyof S & string, handler: () => void)",
+        "doc": "Runs `handler` when the shortcut in the `keybind` setting `key` is pressed, anywhere in Discord. Reads the setting on every press, so a new shortcut applies at once. Removed on stop.",
+        "example": "// settings: { toggle: { type: \"keybind\", label: \"Toggle\", default: \"Ctrl+Shift+KeyG\" } }\nctx.keybind(\"toggle\", () => ctx.toast(\"Toggled\"));"
+    },
+    {
+        "name": "ctx.setInterval",
+        "kind": "method",
+        "signature": "ctx.setInterval(fn: () => void, ms: number)",
+        "doc": ""
+    },
+    {
+        "name": "ctx.setTimeout",
+        "kind": "method",
+        "signature": "ctx.setTimeout(fn: () => void, ms: number)",
+        "doc": ""
+    },
+    {
+        "name": "ctx.settings.schema",
+        "kind": "property",
+        "signature": "ctx.settings.schema: S",
+        "doc": ""
+    },
+    {
+        "name": "ctx.settings.get",
+        "kind": "method",
+        "signature": "ctx.settings.get<K extends keyof S & string>(key: K): SettingsValues<S>[K]",
+        "doc": ""
+    },
+    {
+        "name": "ctx.settings.set",
+        "kind": "method",
+        "signature": "ctx.settings.set<K extends keyof S & string>(key: K, value: SettingsValues<S>[K])",
+        "doc": ""
+    },
+    {
+        "name": "ctx.settings.all",
+        "kind": "property",
+        "signature": "ctx.settings.all: SettingsValues<S>",
+        "doc": "Current values with defaults filled in"
+    },
+    {
+        "name": "ctx.settings.snapshot",
+        "kind": "method",
+        "signature": "ctx.settings.snapshot(): SettingsValues<S>",
+        "doc": "Current values, the same object until one of this plugin's settings changes. Every Evi settings write (another plugin saving its data, a toggle) notifies every subscriber, so this is what keeps those writes from re-rendering and re-running every plugin's settings consumers."
+    },
+    {
+        "name": "ctx.settings.onChange",
+        "kind": "method",
+        "signature": "ctx.settings.onChange(callback: (values: SettingsValues<S>) => void)",
+        "doc": "Calls back with the new values whenever this plugin's settings change. Removed on stop."
+    },
+    {
+        "name": "ctx.settings.use",
+        "kind": "method",
+        "signature": "ctx.settings.use(): SettingsValues<S>",
+        "doc": "React hook: current values, re-renders only when one of them changes"
+    },
+    {
+        "name": "$self",
+        "kind": "keyword",
+        "signature": "$self",
+        "doc": "In a source patch's replacement: your plugin's definition at runtime, so patched code can call your functions. Each call is measured, and counted in DevTools' Patch hits.",
+        "example": "patches: [{\n    find: \"renderAvatar\",\n    replace: { match: /(?<=avatar:)\\i/, with: \"$self.wrapAvatar($&)\" },\n}]"
+    }
+]

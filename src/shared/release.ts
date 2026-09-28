@@ -139,7 +139,8 @@ export type UpdateStatus =
     | { state: "none"; current: string; checkedAt: number; }
     | { state: "current"; current: string; latest: string; checkedAt: number; }
     /** installable is false for a dev build, which updates with git instead, or where Discord's folder isn't ours to write; blocked says which */
-    | { state: "available"; current: string; release: ReleaseInfo; installable: boolean; blocked?: string; checkedAt: number; }
+    /** ready: with silent updates on, it's downloaded and installs when Discord quits */
+    | { state: "available"; current: string; release: ReleaseInfo; installable: boolean; blocked?: string; ready?: boolean; checkedAt: number; }
     | { state: "error"; current: string; error: string; checkedAt: number; };
 
 export interface UpdateProgress {

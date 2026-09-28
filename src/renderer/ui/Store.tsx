@@ -20,7 +20,10 @@ import { Badge, Button, Collapse, Dialog, Dropdown, EmptyState, FilterChips, Ico
 import { takeStoreTarget } from "./nav";
 import { PluginChangelogSetting } from "./PluginChangelog";
 import { DeclaredPermissionsList, PermissionGrowthList, StorePluginPermissions } from "./PluginPermissions";
+import type { PluginPage } from "@shared/reviews";
+
 import { ReportRow } from "./Trust";
+import { AuthorBanner, AuthorNote, BetaSwitch, FollowButton, isSupporter, KnownIssues, PreviewPlayer, RatingMini, RelatedPlugins, ReviewsSection, StoreHome, WishButton } from "./StoreCommunity";
 
 const storeName = (kind: StoreKind) => t(`store.name.${kind}`);
 
@@ -53,6 +56,14 @@ interface Item {
     declares: boolean;
     /** An update that asks for more than the installed version: asked before it's installed */
     growth?: PermissionGrowth;
+    /** The stable entry as the registry lists it, for plugins: `entry` is its beta when you opted in */
+    listed?: RegistryEntry;
+    /** Showing its beta, because you opted into this plugin's betas */
+    beta: boolean;
+    /** Only for people supporting Evi */
+    supportersOnly: boolean;
+    /** Supporters only, and you aren't one (yet): it can't be installed from here */
+    locked: boolean;
     install(options?: { allowNative?: boolean; allowMore?: boolean; }): Promise<unknown>;
     uninstall(): Promise<unknown>;
 }
@@ -60,11 +71,16 @@ interface Item {
 function itemsOf(kind: StoreKind): Item[] {
     const state = Store.getSnapshot();
     if (kind === "plugin") {
-        return state.plugins.map((entry: RegistryEntry) => {
+        return state.plugins.map((listed: RegistryEntry) => {
+            const entry = Store.entryFor(listed);
             const installed = Store.installedPlugin(entry.id);
             const health = Store.healthOf(entry.id);
+            const supportersOnly = !!listed.supporters;
             return {
-                kind, entry, native: entry.native,
+                kind, entry, listed, native: entry.native,
+                beta: entry !== listed,
+                supportersOnly,
+                locked: supportersOnly && !installed && !isSupporter(),
                 action: Store.pluginAction(entry.id),
                 installedVersion: installed?.version,
                 fromStore: !!installed?.fromStore,
@@ -82,8 +98,12 @@ function itemsOf(kind: StoreKind): Item[] {
     }
     return state.themes.map((entry: ThemeEntry) => {
         const installed = state.installedThemes[entry.id];
+        const supportersOnly = !!entry.supporters;
         return {
             kind, entry, native: false,
+            beta: false,
+            supportersOnly,
+            locked: supportersOnly && !installed && !isSupporter(),
             action: Store.themeAction(entry.id),
             installedVersion: installed?.version,
             fromStore: !!installed,
@@ -271,7 +291,8 @@ function useItemActions(item: Item) {
             {item.fromStore && <Button disabled={busy} onClick={() => item.uninstall()}>{t("common.uninstall")}</Button>}
             {/* Plugins Evi shipped with, or put in the folder by hand: removable here too */}
             {!item.fromStore && item.kind === "plugin" && item.action === "local" && <Button disabled={busy} onClick={() => item.uninstall()}>{t("common.remove")}</Button>}
-            {item.action === "install" && <Button variant="accent" icon="download" disabled={busy || !!confirming} onClick={install}>{t("common.install")}</Button>}
+            {item.action === "install" && item.locked && <Button disabled aria-describedby={`dl-store-locked-${item.entry.id}`}>{t("community.forSupporters")}</Button>}
+            {item.action === "install" && !item.locked && <Button variant="accent" icon="download" disabled={busy || !!confirming} onClick={install}>{t("common.install")}</Button>}
             {item.action === "update" && <Button variant="accent" icon="download" disabled={busy || !!confirming} onClick={install}>{t("common.update")}</Button>}
         </>
     );
@@ -400,7 +421,7 @@ export function Glyph({ name, size }: { name: string; size?: "lg"; }) {
 
 // ---- listing ----------------------------------------------------------------------------------
 
-function StoreCard({ item, onOpen, onAuthor }: { item: Item; onOpen(): void; onAuthor(slug: string): void; }) {
+function StoreCard({ item, onOpen, onAuthor, pinned }: { item: Item; onOpen(): void; onAuthor(slug: string): void; pinned?: boolean; }) {
     const { entry } = item;
     const { buttons, confirm } = useItemActions(item);
     const titleId = `dl-store-${item.kind}-${entry.id}`;
@@ -416,14 +437,21 @@ function StoreCard({ item, onOpen, onAuthor }: { item: Item; onOpen(): void; onA
                         <button type="button" className="dl-link-button dl-store-card-link" onClick={onOpen}>{entry.name}</button>
                     </Text>
                     <Text variant="text-xs/normal" color="text-muted" tabular>v{entry.version} · {tNodes("store.byAuthors", { authors: <Authors entry={entry} onAuthor={onAuthor} /> })}</Text>
+                    <RatingMini rating={Store.rating(item.kind, entry.id)} />
                 </div>
-                <StarButton item={item} />
+                <div className="dl-store-card-marks">
+                    <WishButton kind={item.kind} id={entry.id} name={entry.name} />
+                    <StarButton item={item} />
+                </div>
             </div>
             {entry.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-store-card-desc">{entry.description}</Text>}
             {/* Categories are in the filter and on the item's page, the card keeps to what to watch out for */}
-            {(item.native || item.health || !item.official || !item.declares) && (
+            {(item.native || item.health || !item.official || !item.declares || item.beta || item.supportersOnly || pinned) && (
                 <div className="dl-store-card-tags">
                     {item.health && <HealthPill health={item.health} />}
+                    {pinned && <Badge>{t("community.pinned")}</Badge>}
+                    {item.beta && <Badge>{t("community.beta")}</Badge>}
+                    {item.supportersOnly && <Badge>{t("community.supportersOnly")}</Badge>}
                     {!item.official && <CommunityLabel />}
                     {item.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
                     {!item.declares && <Badge>{t("declared.undeclared")}</Badge>}
@@ -548,7 +576,7 @@ function UpdateAll({ kind, items }: { kind: StoreKind; items: Item[]; }) {
     );
 }
 
-type Filter = "all" | "updates" | "installed" | "official" | "community";
+type Filter = "all" | "updates" | "installed" | "uninstalled" | "official" | "community";
 
 /** Cards per page: four rows of three, or six of two */
 const PAGE_SIZE = 12;
@@ -556,6 +584,8 @@ const PAGE_SIZE = 12;
 const sortOptions = () => [
     { value: "name", label: t("store.sort.name") },
     { value: "stars", label: t("store.sort.stars") },
+    { value: "rating", label: t("community.sortRating") },
+    { value: "trending", label: t("community.sortTrending") },
     { value: "updated", label: t("store.sort.updated") },
 ] as const satisfies readonly { value: ListingSort; label: string; }[];
 
@@ -607,7 +637,7 @@ export function StoreView({ kind }: { kind: StoreKind; }) {
         );
     }
     if (current) {
-        return <div ref={topRef}><StoreDetail item={current} onBack={() => setSelected(undefined)} onAuthor={setAuthor} /></div>;
+        return <div ref={topRef}><StoreDetail key={current.entry.id} item={current} onBack={() => setSelected(undefined)} onAuthor={setAuthor} onOpen={setSelected} /></div>;
     }
 
     return (
@@ -655,6 +685,8 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
         all: () => true,
         updates: i => i.action === "update",
         installed: i => i.action === "installed" || i.action === "update" || i.action === "local",
+        // What you could still add: not installed from the store or by hand
+        uninstalled: i => i.action === "install" || i.action === "incompatible" || (i.action === "pulled" && !i.installedVersion),
         official: i => i.official,
         community: i => !i.official,
     };
@@ -663,7 +695,10 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
 
     const q = query.trim().toLowerCase();
     const matches = (i: Item) => !q || [i.entry.id, i.entry.name, i.entry.description, ...i.entry.authors, ...i.entry.tags].join(" ").toLowerCase().includes(q);
-    const order = new Map(sortListings(items.map(i => i.entry), sort, e => Store.stars(kind, e.id)).map((e, n) => [e.id, n]));
+    const score = (id: string) => sort === "rating" ? Store.ratingScore(kind, id) : sort === "trending" ? Store.trendingScore(kind, id) : Store.stars(kind, id);
+    const order = new Map(sortListings(items.map(i => i.entry), sort, e => score(e.id)).map((e, n) => [e.id, n]));
+    // The front page is for browsing: it steps aside once you search, filter or pick a category
+    const showHome = !q && filter === "all" && category === "all" && !!state.home;
     const visible = items.filter(i => tests[filter](i) && inCategory(i) && matches(i)).sort((a, b) => order.get(a.entry.id)! - order.get(b.entry.id)!);
     const paged = usePages(visible, PAGE_SIZE, [filter, category, q, sort].join("\n"));
     const categories = [{ value: "all", label: t("store.allCategories") }, ...tags.map(tag => ({ value: tag, label: capitalize(tag) }))];
@@ -693,6 +728,7 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
                         { id: "all", label: t("plugins.filter.all"), count: count("all") },
                         { id: "updates", label: t("tabs.updates"), count: count("updates") },
                         { id: "installed", label: t("store.installed"), count: count("installed") },
+                        { id: "uninstalled", label: t("store.notInstalled"), count: count("uninstalled") },
                         { id: "official", label: t("store.official"), count: count("official") },
                         { id: "community", label: t("store.community"), count: count("community") },
                     ]}
@@ -701,7 +737,10 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
 
             <UpdateAll kind={kind} items={items} />
 
+            {showHome && <StoreHome kind={kind} onOpen={onOpen} />}
+
             <div className="dl-stack" ref={listRef}>
+                {showHome && <Text tag="h3" variant="heading-md/semibold" color="text-strong">{t(`community.browseAll.${kind}`)}</Text>}
                 <div role="status" className="dl-store-registry">
                     {state.status === "loading" && <Status tone="muted">{t("store.loading")}</Status>}
                     {state.status === "error" && <Status tone="danger">{t("store.loadFailed", { error: state.error ?? "" })}</Status>}
@@ -791,6 +830,19 @@ function StoreSettings({ kind, registryUrl }: { kind: StoreKind; registryUrl?: s
                             </li>
                         )}
                         {kind === "plugin" && <PluginChangelogSetting />}
+                        {kind === "plugin" && (
+                            <li className="dl-row">
+                                <SwitchRow
+                                    id="dl-store-share-usage"
+                                    label={t("community.shareUsage")}
+                                    description={t("community.shareUsageHint")}
+                                    checked={settings.shareUsage !== false}
+                                    onChange={on => Settings.update(d => {
+                                        d.shareUsage = on;
+                                    })}
+                                />
+                            </li>
+                        )}
                     </List>
                     {registryUrl && (
                         <p className="dl-hint">
@@ -834,10 +886,17 @@ function Fact({ label, children }: { label: string; children: React.ReactNode; }
     );
 }
 
-function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; onAuthor(slug: string): void; }) {
+function StoreDetail({ item, onBack, onAuthor, onOpen }: { item: Item; onBack(): void; onAuthor(slug: string): void; onOpen(id: string): void; }) {
     const { entry, kind } = item;
     const { buttons, confirm } = useItemActions(item);
     const headingId = `dl-store-detail-${entry.id}`;
+    const state = useStore(Store.subscribe, Store.getSnapshot);
+    React.useEffect(() => {
+        if (kind === "plugin") void Store.loadPage(entry.id);
+    }, [entry.id]);
+    const page = kind === "plugin" && state.pages[entry.id]?.status === "ready" ? (state.pages[entry.id] as { page: PluginPage; }).page : undefined;
+    // Health and a pull have their own callouts; the rest of what evi.rest knows goes under Known issues
+    const issues = page?.issues.filter(i => (i.kind === "status" || i.kind === "hotfix") && !item.health) ?? [];
 
     return (
         <article className="dl-tab dl-store-detail" aria-labelledby={headingId} data-store-detail={entry.id}>
@@ -857,8 +916,9 @@ function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; o
                     <Text variant="text-sm/normal" color="text-subtle">{tNodes("store.byAuthors", { authors: <Authors entry={entry} onAuthor={onAuthor} /> })}</Text>
                     <span className="dl-store-status" role="status"><ItemStatus item={item} /></span>
                 </div>
-                <div className="dl-row-controls"><StarButton item={item} large />{buttons}</div>
+                <div className="dl-row-controls"><WishButton kind={kind} id={entry.id} name={entry.name} large /><StarButton item={item} large />{buttons}</div>
             </header>
+            {item.locked && <p className="dl-store-trust" id={`dl-store-locked-${entry.id}`}><Icon name="heart" size={16} /><span>{t("community.supportersOnlyHint")}</span></p>}
             {!item.official && (
                 <p className="dl-store-trust"><Icon name="info" size={16} /><span>{trustNote(entry)}</span></p>
             )}
@@ -868,7 +928,9 @@ function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; o
 
             {item.pulled && <PulledCallout pull={item.pulled} version={entry.version} />}
             {item.health && <HealthCallout health={item.health} />}
+            {page?.note && <AuthorNote note={page.note} />}
 
+            {entry.preview && <PreviewPlayer url={entry.preview} name={entry.name} />}
             {entry.screenshots.length > 0 && (
                 <div className="dl-store-shots">
                     {entry.screenshots.map((url, i) => <Screenshot key={url} url={url} name={entry.name} index={i} />)}
@@ -879,6 +941,7 @@ function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; o
                 <Fact label={t("store.fact.version")}>v{entry.version}{item.installedVersion && item.installedVersion !== entry.version && ` ${t("store.youHave", { version: item.installedVersion })}`}</Fact>
                 {entry.updatedAt && <Fact label={t("store.fact.updated")}>{formatDate(entry.updatedAt)}</Fact>}
                 {entry.minEviVersion && <Fact label={t("store.fact.needs")}>Evi {entry.minEviVersion}+</Fact>}
+                {page?.installs != null && <Fact label={t("community.fact.installs")}>{page.installs.toLocaleString(I18n.discordLocale)}</Fact>}
                 {item.health && <Fact label={t("store.fact.status")}><HealthPill health={item.health} /></Fact>}
                 {entry.tags.length > 0 && <Fact label={t("store.fact.categories")}>{entry.tags.join(", ")}</Fact>}
             </dl>
@@ -894,7 +957,9 @@ function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; o
                     </Text>
                 </div>
             </section>
+            {kind === "plugin" && item.listed && <BetaSwitch entry={item.listed} />}
             {kind === "plugin" && <StorePluginPermissions id={entry.id} version={entry.version} native={item.native} permissions={item.permissions} headingId={`${headingId}-permissions`} />}
+            <KnownIssues issues={issues} />
 
             {entry.source && (
                 <div>
@@ -922,6 +987,9 @@ function StoreDetail({ item, onBack, onAuthor }: { item: Item; onBack(): void; o
                     <Text tag="p" variant="text-sm/normal" color="text-muted">{t(`store.noChangelog.${kind}`)}</Text>
                 )}
             </section>
+
+            {kind === "plugin" && <ReviewsSection id={entry.id} headingId={`${headingId}-reviews`} />}
+            {page && page.related.length > 0 && <RelatedPlugins ids={page.related} onOpen={onOpen} />}
 
             <ReportRow kind={kind} id={entry.id} name={entry.name} version={item.installedVersion ?? entry.version} />
         </article>
@@ -953,6 +1021,15 @@ function AuthorView({ kind, profile, items, backLabel, onBack, onOpen, onAuthor 
         <a className="dl-store-source" href={href} target="_blank" rel="noreferrer noopener"><Icon name={icon} size={16} />{label}</a>
     );
     const Many = t(`tabs.${kind}s`);
+    // Pinned ones first, in the author's order
+    const pinned = profile.pinned ?? [];
+    const ordered = [...items].sort((a, b) => (pinned.indexOf(a.entry.id) + 1 || Infinity) - (pinned.indexOf(b.entry.id) + 1 || Infinity));
+    const facts = [
+        t(profile.verified ? "store.verifiedAuthor" : "store.author"),
+        t(`store.inStore.${kind}`, { count: items.length }),
+        profile.followers ? t("community.followers", { count: profile.followers }) : undefined,
+        profile.installs ? t("community.authorInstalls", { count: profile.installs }) : undefined,
+    ].filter(Boolean).join(" · ");
 
     return (
         <article className="dl-tab dl-store-detail" aria-labelledby={headingId} data-store-author={profile.slug}>
@@ -960,6 +1037,7 @@ function AuthorView({ kind, profile, items, backLabel, onBack, onOpen, onAuthor 
                 <Button icon="chevronLeft" onClick={onBack}>{backLabel}</Button>
             </div>
 
+            {profile.banner && <AuthorBanner url={profile.banner} />}
             <header className="dl-store-detail-head">
                 <img className="dl-author-avatar" src={avatarUrl(profile)} alt="" width={64} height={64} />
                 <div className="dl-store-detail-title">
@@ -967,10 +1045,9 @@ function AuthorView({ kind, profile, items, backLabel, onBack, onOpen, onAuthor 
                         <Text tag="h2" variant="heading-xl/bold" color="text-strong" id={headingId}>{profile.name}</Text>
                         {profile.verified && <VerifiedCheck size={18} />}
                     </div>
-                    <Text variant="text-sm/normal" color="text-subtle">
-                        {`${t(profile.verified ? "store.verifiedAuthor" : "store.author")} · ${t(`store.inStore.${kind}`, { count: items.length })}`}
-                    </Text>
+                    <Text variant="text-sm/normal" color="text-subtle" tabular>{facts}</Text>
                 </div>
+                <div className="dl-row-controls"><FollowButton profile={profile} /></div>
             </header>
 
             {profile.bio && <Text tag="p" variant="text-md/normal" color="text-default" className="dl-store-detail-desc">{profile.bio}</Text>}
@@ -985,7 +1062,7 @@ function AuthorView({ kind, profile, items, backLabel, onBack, onOpen, onAuthor 
                 <Text tag="h3" variant="heading-md/semibold" color="text-strong" id={`${headingId}-items`}>{Many}</Text>
                 {items.length ? (
                     <ul className="dl-store-grid" aria-label={t(`store.byAuthor.${kind}`, { name: profile.name })}>
-                        {items.map(i => <StoreCard key={i.entry.id} item={i} onOpen={() => onOpen(i.entry.id)} onAuthor={onAuthor} />)}
+                        {ordered.map(i => <StoreCard key={i.entry.id} item={i} pinned={pinned.includes(i.entry.id)} onOpen={() => onOpen(i.entry.id)} onAuthor={onAuthor} />)}
                     </ul>
                 ) : (
                     <Text tag="p" variant="text-sm/normal" color="text-muted">{t(`store.noneFromAuthor.${kind}`, { name: profile.name })}</Text>

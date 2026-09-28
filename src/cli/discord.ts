@@ -184,6 +184,19 @@ export function isDiscordRunning(install: DiscordInstall) {
     return discordProcesses(install).length > 0;
 }
 
+/**
+ * Waits up to `timeout` ms for this install's processes to be gone, without touching them. For the
+ * in-app updater, which starts the installer as Discord quits. False if Discord is still (or again) running.
+ */
+export async function waitForExit(install: DiscordInstall, timeout = 60_000) {
+    const until = Date.now() + timeout;
+    while (isDiscordRunning(install)) {
+        if (Date.now() > until) return false;
+        await Bun.sleep(500);
+    }
+    return true;
+}
+
 export async function killDiscord(install: DiscordInstall) {
     if (process.platform === "win32") {
         for (const pid of discordProcesses(install)) Bun.spawnSync(["taskkill", "/F", "/PID", String(pid)]);

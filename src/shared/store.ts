@@ -15,7 +15,9 @@
  *       "updatedAt": "2026-09-26", "source": "https://github.com/…",
  *       "screenshots": ["https://…/shot.png"],
  *       "changelog": [{ "version": "1.0.0", "notes": ["First release"] }],
- *       "permissions": { "network": [], "readMessages": false, "sendMessages": false, "changeSettings": false }
+ *       "permissions": { "network": [], "readMessages": false, "sendMessages": false, "changeSettings": false },
+ *       "preview": "https://…/demo.mp4", "supporters": false,
+ *       "beta": { "version": "1.1.0-beta.1", "native": false, "files": { … }, "changelog": [ … ] }
  *     }],
  *     "themes": [{
  *       "id": "midnight", "name": "Midnight", "description": "…", "authors": ["Evi"], "version": "1.0.0",
@@ -50,10 +52,11 @@ export const STORE_MARKER = ".evi-store.json";
 export const REMOVED_PLUGINS_FILE = "removed-plugins.json";
 
 /**
- * Official plugins that are gone: part of Evi itself now (badges), or never meant for people (Toolkit
- * Demo, a toolkit example the tests still use). Old copies on disk are deleted, never loaded.
+ * Official plugins that are gone: part of Evi itself now (badges), never meant for people (Toolkit
+ * Demo, a toolkit example the tests still use), or dropped (Quick Actions, in 1.0.0). Old copies on
+ * disk are deleted, never loaded.
  */
-export const RETIRED_PLUGINS: readonly string[] = ["badges", "toolkit-demo"];
+export const RETIRED_PLUGINS: readonly string[] = ["badges", "toolkit-demo", "quick-actions"];
 
 export function parseRemovedPlugins(text: string): Set<string> {
     try {
@@ -93,6 +96,10 @@ export interface ListingInfo {
     source?: string;
     /** https image URLs, shown on the detail page */
     screenshots: string[];
+    /** https link to a short video or GIF of it in use (mp4, webm, gif or webp), played on its page */
+    preview?: string;
+    /** Only for people supporting Evi: the store shows it to everyone, and supporters can install it */
+    supporters?: boolean;
     /** Newest first */
     changelog: ChangelogEntry[];
 }
@@ -107,6 +114,59 @@ export interface RegistryEntry extends ListingInfo {
      * before anything is downloaded. Missing: it doesn't declare, and isn't held to anything.
      */
     permissions?: DeclaredPermissions;
+    /**
+     * A newer version the author is trying out: only installs that opted into this plugin's betas get
+     * it (betaOf). Gone once a stable version catches up with it.
+     */
+    beta?: BetaRelease;
+}
+
+/** A plugin's beta: everything that differs between versions, the rest is the entry's */
+export interface BetaRelease {
+    version: string;
+    native: boolean;
+    minEviVersion?: string;
+    files: RegistryEntry["files"];
+    permissions?: DeclaredPermissions;
+    /** YYYY-MM-DD */
+    updatedAt?: string;
+    /** This version's notes, newest first */
+    changelog: ChangelogEntry[];
+}
+
+/**
+ * The entry as its beta, when there is one newer than the stable version: what an install that opted
+ * into betas installs and is held to
+ */
+export function betaOf(entry: RegistryEntry): RegistryEntry | undefined {
+    const beta = entry.beta;
+    if (!beta || compareVersions(beta.version, entry.version) <= 0) return;
+    const { beta: _, ...stable } = entry;
+    return {
+        ...stable,
+        version: beta.version,
+        native: beta.native,
+        minEviVersion: beta.minEviVersion,
+        files: beta.files,
+        permissions: beta.permissions,
+        ...(beta.updatedAt && { updatedAt: beta.updatedAt }),
+        changelog: [...beta.changelog, ...stable.changelog.filter(c => !beta.changelog.some(b => b.version === c.version))],
+    };
+}
+
+/** Kinds of file a store preview can be, by extension */
+export const PREVIEW_TYPES = { mp4: "video/mp4", webm: "video/webm", gif: "image/gif", webp: "image/webp" } as const;
+export type PreviewType = typeof PREVIEW_TYPES[keyof typeof PREVIEW_TYPES];
+export const MAX_PREVIEW_BYTES = 12 * 1024 * 1024;
+
+/** A preview URL's kind of file, or undefined when it isn't one the store plays */
+export function previewType(url: string): PreviewType | undefined {
+    try {
+        const ext = new URL(url).pathname.split(".").pop()?.toLowerCase();
+        return ext && ext in PREVIEW_TYPES ? PREVIEW_TYPES[ext as keyof typeof PREVIEW_TYPES] : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 export interface ThemeEntry extends ListingInfo {
@@ -264,16 +324,14 @@ function validateInfo(e: Record<string, unknown>): { info: ListingInfo; } | { er
             if (bad) return fail(`screenshots: ${bad}`);
         }
     }
-    const changelog: ChangelogEntry[] = [];
-    if (e.changelog !== undefined) {
-        if (!Array.isArray(e.changelog) || e.changelog.length > 50) return fail("changelog must list at most 50 versions");
-        for (const item of e.changelog) {
-            const { version, notes } = (item ?? {}) as Record<string, unknown>;
-            if (!isVersion(version)) return fail("changelog versions must look like 1.2.3");
-            if (!strings(notes, 30, 300)) return fail(`changelog ${version}: notes must be at most 30 lines of 300 characters`);
-            changelog.push({ version, notes: [...notes] });
-        }
+    if (e.preview !== undefined) {
+        const bad = whyNotStoreUrl(e.preview);
+        if (bad) return fail(`preview: ${bad}`);
+        if (!previewType(e.preview as string)) return fail("preview must be an .mp4, .webm, .gif or .webp link");
     }
+    if (e.supporters !== undefined && typeof e.supporters !== "boolean") return fail("supporters must be true or false");
+    const changelog = validateChangelog(e.changelog);
+    if (typeof changelog === "string") return fail(changelog);
 
     return {
         info: {
@@ -287,8 +345,65 @@ function validateInfo(e: Record<string, unknown>): { info: ListingInfo; } | { er
             ...(e.updatedAt !== undefined && { updatedAt: e.updatedAt as string }),
             ...(e.source !== undefined && { source: e.source as string }),
             screenshots: e.screenshots ? [...(e.screenshots as string[])] : [],
+            ...(e.preview !== undefined && { preview: e.preview as string }),
+            ...(e.supporters === true && { supporters: true }),
             changelog,
         },
+    };
+}
+
+function validateChangelog(raw: unknown): ChangelogEntry[] | string {
+    const changelog: ChangelogEntry[] = [];
+    if (raw === undefined) return changelog;
+    if (!Array.isArray(raw) || raw.length > 50) return "changelog must list at most 50 versions";
+    for (const item of raw) {
+        const { version, notes } = (item ?? {}) as Record<string, unknown>;
+        if (!isVersion(version)) return "changelog versions must look like 1.2.3";
+        if (!strings(notes, 30, 300)) return `changelog ${version}: notes must be at most 30 lines of 300 characters`;
+        changelog.push({ version, notes: [...notes] });
+    }
+    return changelog;
+}
+
+/** A plugin's files: manifest.json and index.js, and native.js only when it's native, each https with its sha256 */
+function validateFiles(files: unknown, native: boolean): RegistryEntry["files"] | string {
+    if (!files || typeof files !== "object" || Array.isArray(files)) return "files is missing";
+    const clean: Partial<Record<StoreFileName, StoreFile>> = {};
+    for (const [name, file] of Object.entries(files)) {
+        if (!(STORE_FILES as readonly string[]).includes(name)) return `unexpected file ${name}`;
+        if (!file || typeof file !== "object") return `${name} is not an object`;
+        const { url, sha256 } = file as Record<string, unknown>;
+        const bad = whyNotStoreUrl(url);
+        if (bad) return `${name}: ${bad}`;
+        if (typeof sha256 !== "string" || !SHA256_RE.test(sha256)) return `${name}: sha256 must be 64 lowercase hex digits`;
+        clean[name as StoreFileName] = { url: url as string, sha256 };
+    }
+    if (!clean["manifest.json"] || !clean["index.js"]) return "files must include manifest.json and index.js";
+    if (clean["native.js"] && !native) return "has native.js but isn't marked native";
+    return clean as RegistryEntry["files"];
+}
+
+function validateBeta(raw: unknown): BetaRelease | string {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return "beta must be an object";
+    const b = raw as Record<string, unknown>;
+    if (!isVersion(b.version)) return "beta version must look like 1.2.3";
+    if (typeof b.native !== "boolean") return "beta native must be true or false";
+    if (b.minEviVersion !== undefined && !isVersion(b.minEviVersion)) return "beta minEviVersion must look like 1.2.3";
+    if (b.updatedAt !== undefined && (typeof b.updatedAt !== "string" || !DATE_RE.test(b.updatedAt))) return "beta updatedAt must be a date like 2026-09-26";
+    const files = validateFiles(b.files, b.native);
+    if (typeof files === "string") return `beta ${files}`;
+    const badPermissions = b.permissions !== undefined && whyNotPermissions(b.permissions);
+    if (badPermissions) return `beta ${badPermissions}`;
+    const changelog = validateChangelog(b.changelog);
+    if (typeof changelog === "string") return `beta ${changelog}`;
+    return {
+        version: b.version,
+        native: b.native,
+        ...(b.minEviVersion !== undefined && { minEviVersion: b.minEviVersion as string }),
+        files,
+        ...(b.permissions !== undefined && { permissions: readPermissions(b.permissions) }),
+        ...(b.updatedAt !== undefined && { updatedAt: b.updatedAt as string }),
+        changelog,
     };
 }
 
@@ -304,30 +419,21 @@ export function validateEntry(raw: unknown): { entry: RegistryEntry; } | { error
     if (typeof e.native !== "boolean") return fail("native must be true or false");
     if (e.minEviVersion !== undefined && !isVersion(e.minEviVersion)) return fail("minEviVersion must look like 1.2.3");
 
-    const files = e.files;
-    if (!files || typeof files !== "object" || Array.isArray(files)) return fail("files is missing");
-    const cleanFiles: Partial<Record<StoreFileName, StoreFile>> = {};
-    for (const [name, file] of Object.entries(files)) {
-        if (!(STORE_FILES as readonly string[]).includes(name)) return fail(`unexpected file ${name}`);
-        if (!file || typeof file !== "object") return fail(`${name} is not an object`);
-        const { url, sha256 } = file as Record<string, unknown>;
-        const bad = whyNotStoreUrl(url);
-        if (bad) return fail(`${name}: ${bad}`);
-        if (typeof sha256 !== "string" || !SHA256_RE.test(sha256)) return fail(`${name}: sha256 must be 64 lowercase hex digits`);
-        cleanFiles[name as StoreFileName] = { url: url as string, sha256 };
-    }
-    if (!cleanFiles["manifest.json"] || !cleanFiles["index.js"]) return fail("files must include manifest.json and index.js");
-    if (cleanFiles["native.js"] && !e.native) return fail("has native.js but isn't marked native");
+    const cleanFiles = validateFiles(e.files, e.native);
+    if (typeof cleanFiles === "string") return fail(cleanFiles);
     const badPermissions = e.permissions !== undefined && whyNotPermissions(e.permissions);
     if (badPermissions) return fail(badPermissions);
+    // A broken beta only loses the beta: the stable version stays installable
+    const beta = e.beta === undefined ? undefined : validateBeta(e.beta);
 
     return {
         entry: {
             ...info,
             native: e.native,
             ...(e.minEviVersion !== undefined && { minEviVersion: e.minEviVersion as string }),
-            files: cleanFiles as RegistryEntry["files"],
+            files: cleanFiles,
             ...(e.permissions !== undefined && { permissions: readPermissions(e.permissions) }),
+            ...(beta && typeof beta !== "string" && { beta }),
         },
     };
 }
@@ -451,12 +557,15 @@ export function storeAction(entry: { version: string; minEviVersion?: string; },
 /** Where the store keeps a theme inside the themes folder */
 export const storeThemeFile = (id: string) => `${id}.css`;
 
-export type ListingSort = "name" | "updated" | "stars";
+export type ListingSort = "name" | "updated" | "stars" | "rating" | "trending";
 
-/** By name, newest first (undated last), or most starred; ties go by name */
-export function sortListings<T extends ListingInfo>(items: T[], by: ListingSort, stars: (item: T) => number = () => 0) {
+/**
+ * By name, newest first (undated last), or highest `score` first: stars, rating or how much it's
+ * trending, whichever the sort is. Ties go by name.
+ */
+export function sortListings<T extends ListingInfo>(items: T[], by: ListingSort, score: (item: T) => number = () => 0) {
     const byName = (a: T, b: T) => a.name.localeCompare(b.name);
     if (by === "name") return [...items].sort(byName);
-    if (by === "stars") return [...items].sort((a, b) => stars(b) - stars(a) || byName(a, b));
+    if (by === "stars" || by === "rating" || by === "trending") return [...items].sort((a, b) => score(b) - score(a) || byName(a, b));
     return [...items].sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "") || byName(a, b));
 }

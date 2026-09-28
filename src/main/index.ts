@@ -15,10 +15,12 @@ import { saveSettings, settings } from "./settings";
 import { initBadges } from "./badges";
 import { currentHotfixes, currentPulls, initReports } from "./reports";
 import { initStars } from "./stars";
+import { initCommunity } from "./community";
 import { initStore } from "./store";
 import { initThemeSubmit } from "./themeSubmit";
 import { getThemePayloads, initThemes } from "./themes";
 import { initUpdater } from "./updater";
+import { initWallpaper } from "./wallpaper";
 
 // Loaders installed before the rename to Evi still pass the old name
 globalThis.__eviCoreDir ??= globalThis.__delightCoreDir!;
@@ -92,6 +94,9 @@ function registerIpc() {
 
     ipcMain.on(IPC.BOOT_OK, () => SafeMode.bootOk());
     ipcMain.handle(IPC.SAFE_MODE_EXIT, () => SafeMode.exit());
+    ipcMain.on(IPC.CRASH_BREADCRUMB, (e, breadcrumb: unknown) => SafeMode.breadcrumb(e.sender, breadcrumb));
+    ipcMain.handle(IPC.CRASH_RECORD_GET, () => SafeMode.unseenCrash);
+    ipcMain.on(IPC.CRASH_RECORD_SEEN, () => SafeMode.markCrashSeen());
 }
 
 /** Remembers what the save turned on or changed, so safe mode can name a suspect */
@@ -199,12 +204,14 @@ function setup() {
     // Themes need nothing from Electron to load, have them ready for the first window's boot
     initThemes();
     initStore();
+    initCommunity();
     initStars();
     initReports();
     initAccount();
     initThemeSubmit();
     initBadges();
     initUpdater();
+    initWallpaper();
     watchQuickCss();
     persistAcrossUpdates(shimAsar);
 }

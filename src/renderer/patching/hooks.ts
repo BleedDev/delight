@@ -99,7 +99,7 @@ function runInstead(record: HookedFunction, self: any, args: any[], newTarget: F
     if (index < 0) return invoke(record, self, args, newTarget);
 
     const entry = insteads[index];
-    const start = Perf.begin();
+    const start = Perf.begin(entry.site);
     try {
         return entry.callback(new Call(record, self, args, newTarget, insteads, index - 1));
     } catch (err) {
@@ -122,7 +122,7 @@ function createWrapper(record: HookedFunction) {
         const ctx = new Call(record, this, args, newTarget, instead, instead.length - 1);
 
         for (let i = 0; i < before.length; i++) {
-            const start = Perf.begin();
+            const start = Perf.begin(before[i].site);
             try {
                 before[i].callback(ctx);
             } catch (err) {
@@ -137,7 +137,7 @@ function createWrapper(record: HookedFunction) {
             : invoke(record, this, ctx.args, newTarget);
 
         for (let i = 0; i < after.length; i++) {
-            const start = Perf.begin();
+            const start = Perf.begin(after[i].site);
             try {
                 const value = after[i].callback(ctx);
                 if (value !== undefined) ctx.result = value;

@@ -5,11 +5,14 @@
 import type { ComponentType } from "react";
 
 import { t, useLocale } from "../i18n";
+import { Inbox } from "../inbox";
 import { Store } from "../store";
 import { AccountTab } from "./AccountTab";
 import { BackupTab } from "./BackupTab";
+import { DevToolsTab } from "./DevToolsTab";
 import { ErrorBoundary, IconName, TabBar, useStore } from "./components";
 import { selectedTab, showTab, subscribeTabs } from "./nav";
+import { InboxTab } from "./InboxTab";
 import { PatchesTab } from "./PatchesTab";
 import { PatchHelperTab } from "./PatchHelperTab";
 import { PerformanceTab } from "./PerformanceTab";
@@ -19,6 +22,7 @@ import { StoreView } from "./Store";
 import { ThemeEditorTab } from "./ThemeEditor";
 import { InstalledThemes } from "./ThemesTab";
 import { UpdatesTab } from "./UpdatesTab";
+import { WallpaperTab } from "./WallpaperTab";
 
 export interface PageTab {
     id: string;
@@ -51,6 +55,7 @@ export const pages: readonly Page[] = [
         tabs: [
             { id: "installed", label: () => t("tabs.installed"), icon: "circleCheck", Component: InstalledPlugins },
             { id: "store", label: () => t("common.store"), icon: "store", Component: PluginStore, count: pluginUpdates },
+            { id: "inbox", label: () => t("inbox.tab"), icon: "bell", Component: InboxTab, count: () => Inbox.unread() },
         ],
     },
     {
@@ -61,6 +66,7 @@ export const pages: readonly Page[] = [
             { id: "installed", label: () => t("tabs.installed"), icon: "circleCheck", Component: InstalledThemes },
             { id: "store", label: () => t("common.store"), icon: "store", Component: ThemeStore, count: themeUpdates },
             { id: "editor", label: () => t("themeEditor.tab"), icon: "pencil", Component: ThemeEditorTab },
+            { id: "wallpaper", label: () => t("wallpaper.tab"), icon: "image", Component: WallpaperTab },
             { id: "quickcss", label: () => "Quick CSS", icon: "code", Component: QuickCssTab },
         ],
     },
@@ -83,6 +89,7 @@ export const pages: readonly Page[] = [
             { id: "patches", label: () => t("tabs.patches"), icon: "wrench", Component: PatchesTab },
             { id: "performance", label: () => t("tabs.performance"), icon: "clock", Component: PerformanceTab },
             { id: "patchhelper", label: () => "Patch Helper", icon: "beaker", Component: PatchHelperTab },
+            { id: "devtools", label: () => t("devtools.tab"), icon: "terminal", Component: DevToolsTab },
         ],
     },
 ];
@@ -91,8 +98,9 @@ export const pages: readonly Page[] = [
 export function PageView({ page }: { page: Page; }) {
     useLocale();
     const selected = useStore(subscribeTabs, () => selectedTab(page.id));
-    // Update counts follow the store
+    // Update counts follow the store, the inbox's its notifications
     useStore(Store.subscribe, Store.getSnapshot);
+    useStore(Inbox.subscribe, Inbox.getSnapshot);
     const current = page.tabs.find(tab => tab.id === selected) ?? page.tabs[0];
     const barId = `dl-subtab-${page.id}`;
 

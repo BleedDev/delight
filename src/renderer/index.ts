@@ -6,6 +6,7 @@ import { isPluginEnabled } from "@shared/ipc";
 import { pullFor } from "@shared/pulls";
 
 import { Backup } from "./backup";
+import { CrashDetective } from "./crashDetective";
 import { startHealthReports } from "./health";
 import { Logger } from "./logger";
 import { Native } from "./native";
@@ -18,6 +19,7 @@ import { SafeMode } from "./safeMode";
 import { Settings } from "./settings";
 import { Store } from "./store";
 import { Updates } from "./updates";
+import { Wallpaper } from "./wallpaper";
 import { QuickCss } from "./styles";
 import { Themes } from "./themes";
 import { registerToolkitPatches, Toolkit } from "./toolkit";
@@ -26,7 +28,9 @@ import { installHotkey, SettingsUI } from "./ui";
 import { whenAppReady } from "./ui/appReady";
 import { startBadges } from "./ui/badges";
 import { startUpdateChecks } from "./ui/UpdatesTab";
+import { Inbox } from "./inbox";
 import { startPluginChangelogs } from "./ui/PluginChangelog";
+import { showCrashDetective } from "./ui/CrashDetective";
 import { showSafeModeNotice } from "./ui/SafeModeNotice";
 import { installSettingsEntry } from "./ui/settingsEntry";
 import { showWhatsNewIfUpdated } from "./ui/WhatsNew";
@@ -85,6 +89,8 @@ function boot() {
     // Themes first: Quick CSS goes after them in <head>, so it wins
     Themes.init(data.themes);
     QuickCss.init(data.quickCss);
+    // Its see-through panels go before Quick CSS too, so Quick CSS can still restyle them
+    Wallpaper.init();
     // Plugins Evi pulled never run (shared/pulls.ts), so their code doesn't count either
     const runs = (p: typeof data.plugins[number]) => isPluginEnabled(data.settings, p.manifest) && (p.source === "dev" || !pullFor(data.pulled, p.manifest.id, p.manifest.version));
     if (!SafeMode.active) registerToolkitPatches(data.plugins.filter(runs).map(p => p.code));
@@ -106,11 +112,17 @@ function boot() {
             showWhatsNewIfUpdated();
             // Plugins that updated since the last start: their changelogs, after Evi's own
             startPluginChangelogs();
+            // Tells main what plugins are busy with, so a crash can name a suspect; and offers to turn
+            // off the one a crash before this start named
+            CrashDetective.start();
+            void showCrashDetective();
             Store.scheduleAutoUpdate();
             // Store plugins that can't find parts of Discord, told to evi.rest (off in Store settings)
             whenAppReady(startHealthReports);
             // Plugins Evi turned off: a toast each, once
             whenAppReady(startPullNotices);
+            // The store's inbox: the account's notifications, and news about hearted and broken plugins
+            whenAppReady(() => Inbox.start());
         }
     });
 

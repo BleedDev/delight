@@ -1,7 +1,7 @@
 {
     "name": "evi",
     "private": true,
-    "version": "0.7.0",
+    "version": "1.0.0",
     "description": "A Discord client mod with hot-reloadable runtime plugins",
     "type": "module",
     "scripts": {
@@ -11,6 +11,8 @@
         "inject": "bun src/cli/index.ts install --dev",
         "uninject": "bun src/cli/index.ts uninstall",
         "status": "bun src/cli/index.ts status",
+        "new-plugin": "bun scripts/new-plugin.ts",
+        "preview-plugin": "bun scripts/preview-plugin.ts",
         "typecheck": "tsc --noEmit",
         "test:web": "node scripts/test-web.ts",
         "test:electron": "bun scripts/test-electron.ts",

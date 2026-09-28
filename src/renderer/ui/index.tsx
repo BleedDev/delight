@@ -1,6 +1,7 @@
 import type { KeyboardEvent } from "react";
 
 import { t, useLocale } from "../i18n";
+import { isRecording } from "../keybinds";
 import { Native } from "../native";
 import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
@@ -192,6 +193,8 @@ export const SettingsUI = {
 export function installHotkey() {
     // Capture phase, so Discord's own key handlers never see our shortcut
     window.addEventListener("keydown", e => {
+        // Being recorded as a plugin's shortcut
+        if (isRecording(e.target)) return;
         const toggle = e.ctrlKey && e.shiftKey && !e.altKey && e.code === "KeyD";
         // An open dialog closes first, with its own Escape handler
         const escape = e.key === "Escape" && view === "open" && !openDialogs;

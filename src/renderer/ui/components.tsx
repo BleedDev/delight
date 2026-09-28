@@ -6,7 +6,10 @@
  */
 import type { ButtonHTMLAttributes, ComponentType, KeyboardEvent as ReactKeyboardEvent, ReactElement, ReactNode } from "react";
 
+import { comboFromEvent, comboKeys, comboProblem, ComboProblem, formatCombo } from "@shared/keybinds";
+
 import { t } from "../i18n";
+import { isRecording, RECORDING_ATTR } from "../keybinds";
 import type { SettingDefinition } from "../plugins/types";
 import { exitDone } from "../toolkit/layer";
 import { React, ReactDOM } from "../webpack/common";
@@ -552,13 +555,115 @@ export function Dropdown<V extends string>({ id, label, labelledBy, options, val
     );
 }
 
-export function SettingField({ id, definition, value, onChange }: {
+const IS_MAC = typeof navigator !== "undefined" && /Mac/.test(navigator.userAgent);
+
+/** A shortcut as keycaps */
+export function Keys({ value }: { value: string; }) {
+    return (
+        <span className="dl-keys">
+            {comboKeys(value, IS_MAC).map((key, i) => <kbd key={i} className="dl-kbd">{key}</kbd>)}
+        </span>
+    );
+}
+
+/**
+ * Records a keyboard shortcut: click, press the keys. Esc cancels, leaving the field too. The keys
+ * pressed while recording go nowhere else: not to Discord, not to Evi's or plugins' own shortcuts.
+ */
+export function KeybindField({ id, label, description, value, onChange, usedBy }: {
+    id: string;
+    label: string;
+    description?: string;
+    value: string;
+    onChange(value: string): void;
+    /** Who else has this shortcut, if anyone */
+    usedBy?(value: string): string | undefined;
+}) {
+    const [recording, setRecording] = React.useState(false);
+    const [problem, setProblem] = React.useState<ComboProblem>();
+    const ref = React.useRef<HTMLButtonElement>(null);
+    const hintId = `${id}-hint`;
+    const statusId = `${id}-status`;
+
+    React.useEffect(() => {
+        if (!recording) return;
+        // Capture phase on window, ahead of Discord's shortcuts; Evi's own step aside (isRecording)
+        const onKey = (e: KeyboardEvent) => {
+            if (e.target !== ref.current) return;
+            if (e.key === "Tab") return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (e.key === "Escape" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+                setRecording(false);
+                setProblem(undefined);
+                return;
+            }
+            const combo = comboFromEvent(e);
+            if (!combo) return;
+            const wrong = comboProblem(combo);
+            setProblem(wrong);
+            if (wrong) return;
+            setRecording(false);
+            onChange(formatCombo(combo));
+        };
+        window.addEventListener("keydown", onKey, true);
+        return () => window.removeEventListener("keydown", onKey, true);
+    }, [recording]);
+
+    const other = !recording && value ? usedBy?.(value) : undefined;
+    const buttonLabel = recording ? t("keybind.recording") : value ? t("keybind.change", { label }) : t("keybind.record", { label });
+
+    return (
+        <div className="dl-field">
+            <Text variant="text-md/medium" color="text-strong" id={`${id}-label`}>{label}</Text>
+            {description && <p className="dl-hint" id={hintId}>{description}</p>}
+            <div className="dl-keybind-row">
+                <button
+                    ref={ref}
+                    id={id}
+                    type="button"
+                    className="dl-keybind"
+                    aria-label={buttonLabel}
+                    aria-describedby={cx(description && hintId, (problem || other) && statusId) || undefined}
+                    aria-invalid={problem ? true : undefined}
+                    {...{ [RECORDING_ATTR]: recording ? "" : undefined }}
+                    onClick={() => setRecording(r => !r)}
+                    onBlur={() => {
+                        setRecording(false);
+                        setProblem(undefined);
+                    }}
+                >
+                    {recording
+                        ? <span className="dl-keybind-prompt">{t("keybind.pressKeys")}</span>
+                        : value
+                            ? <Keys value={value} />
+                            : <span className="dl-keybind-prompt">{t("keybind.none")}</span>}
+                    <span className="dl-keybind-action" aria-hidden="true">
+                        {recording ? t("keybind.escToCancel") : value ? t("keybind.changeShort") : t("keybind.recordShort")}
+                    </span>
+                </button>
+                {value && !recording && <IconButton icon="close" label={t("keybind.clear", { label })} onClick={() => onChange("")} />}
+            </div>
+            <span id={statusId} role="status">
+                {problem && <Status tone="danger">{t(problem === "reserved" ? "keybind.reserved" : "keybind.needsModifier")}</Status>}
+                {other && <Status tone="warning">{t("keybind.usedBy", { name: other })}</Status>}
+            </span>
+        </div>
+    );
+}
+
+export function SettingField({ id, definition, value, onChange, keybindUsedBy }: {
     id: string;
     definition: SettingDefinition;
     value: unknown;
     onChange(value: unknown): void;
+    keybindUsedBy?(value: string): string | undefined;
 }) {
     const labelId = `${id}-label`;
+
+    if (definition.type === "keybind") {
+        return <KeybindField id={id} label={definition.label} description={definition.description} value={String(value ?? "")} onChange={onChange} usedBy={keybindUsedBy} />;
+    }
 
     if (definition.type === "boolean") {
         return <SwitchRow id={id} label={definition.label} description={definition.description} checked={!!value} onChange={onChange} />;
@@ -699,7 +804,7 @@ export function useModal(onClose: () => void) {
         dialogStack.push(self);
         // Capture phase on window, so Discord's own Escape handling (closing settings) never sees it
         const onKey = (e: KeyboardEvent) => {
-            if (e.key !== "Escape" || dialogStack.at(-1) !== self) return;
+            if (e.key !== "Escape" || dialogStack.at(-1) !== self || isRecording(e.target)) return;
             e.preventDefault();
             e.stopImmediatePropagation();
             closeRef.current();

@@ -14,7 +14,7 @@ import { definePlugin, findStore } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
 import {
-    ALL_CLASSES, autoActive, bodyClasses, buildCss, matchesHotkey, parseHotkey, shouldActivate, toggledOverride,
+    ALL_CLASSES, autoActive, bodyClasses, buildCss, migrateHotkey, shouldActivate, toggledOverride,
     transitionMessage,
 } from "./state";
 import type { ActivationMode, BlurOptions, LiveState, Override } from "./state";
@@ -32,7 +32,7 @@ const settings = {
             { label: "Always", value: "always" },
         ],
     },
-    hotkey: { type: "string", label: "Hotkey", description: "Toggles blurring. Leave empty for none.", default: "Ctrl+Shift+S", placeholder: "Ctrl+Shift+S" },
+    hotkey: { type: "keybind", label: "Shortcut", description: "Turns blurring on or off, anywhere in Discord.", default: "Ctrl+Shift+KeyS" },
     hoverReveal: { type: "boolean", label: "Reveal on hover", description: "Unblur something while the mouse is over it.", default: true },
     blur: { type: "number", label: "Blur strength", description: "In pixels.", default: 8, min: 2, max: 30, step: 1 },
     toasts: { type: "boolean", label: "Toasts", description: "A short notice when blurring turns on or off by itself.", default: true },
@@ -157,14 +157,11 @@ export default definePlugin({
             ctx.flux.subscribe(type, () => queueMicrotask(onChange));
         }
 
-        const onKey = (e: KeyboardEvent) => {
-            if (e.repeat || !matchesHotkey(parseHotkey(ctx.settings.get("hotkey")), e)) return;
-            e.preventDefault();
-            e.stopPropagation();
-            toggle();
-        };
-        window.addEventListener("keydown", onKey, true);
-        ctx.onDispose(() => window.removeEventListener("keydown", onKey, true));
+        // A shortcut typed into the old text field becomes a recorded one
+        const hotkey = ctx.settings.get("hotkey");
+        const migrated = migrateHotkey(hotkey);
+        if (migrated !== hotkey) ctx.settings.set("hotkey", migrated);
+        ctx.keybind("hotkey", () => void toggle());
 
         ctx.command({
             name: "streamerplus",

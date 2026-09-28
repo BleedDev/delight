@@ -2,6 +2,7 @@
  * Explains safe mode, names the most likely culprit and offers the two ways out. Shown floating over
  * Discord when safe mode starts, and on top of the Plugins tab for as long as it lasts.
  */
+import { activeSuspect } from "@shared/crashDetective";
 import type { RecentChange, SafeModeInfo } from "@shared/ipc";
 import { isStillActive, pickSuspect } from "@shared/safeMode";
 
@@ -14,6 +15,7 @@ import { createRoot, React } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
 import { whenAppReady } from "./appReady";
 import { Button, Icon, IconButton, useExit, useStore } from "./components";
+import { SuspectLine } from "./CrashDetective";
 import { ensureStyles } from "./index";
 import { DiscordContext } from "./discordContext";
 
@@ -48,8 +50,14 @@ export function SafeModeNotice({ onDismiss }: { onDismiss?(): void; }) {
     if (!info) return null;
 
     const manifests = plugins.map(p => p.manifest);
-    const suspect = pickSuspect(info.changes, settings, manifests);
-    const others = info.changes.filter(c => c !== suspect && isStillActive(c, settings, manifests)).slice(0, 3);
+    // Crash Detective saw which plugin was busy when Discord crashed: a better lead than the newest change
+    const crashSuspect = activeSuspect(info.crash, settings, manifests);
+    const crashChange: RecentChange | undefined = crashSuspect && (
+        info.changes.find(c => c.kind === "plugin" && c.id === crashSuspect.plugin)
+        ?? { kind: "plugin", id: crashSuspect.plugin, action: "enabled", at: info.crash!.at }
+    );
+    const suspect = crashChange ?? pickSuspect(info.changes, settings, manifests);
+    const others = info.changes.filter(c => c !== suspect && !(crashSuspect && c.kind === "plugin" && c.id === crashSuspect.plugin) && isStillActive(c, settings, manifests)).slice(0, 3);
 
     const run = (action: () => Promise<unknown>) => async () => {
         setBusy(true);
@@ -69,7 +77,9 @@ export function SafeModeNotice({ onDismiss }: { onDismiss?(): void; }) {
                 {onDismiss && <IconButton icon="close" label={t("safeMode.hide")} onClick={onDismiss} />}
             </div>
             <p className="dl-safe-text">{reasons[info.reason](info)} {t("safeMode.discordWorks")}</p>
-            {suspect ? (
+            {crashSuspect ? (
+                <p className="dl-safe-text"><SuspectLine suspect={crashSuspect} inSafeMode /></p>
+            ) : suspect ? (
                 <p className="dl-safe-text">
                     {t("safeMode.mostRecent")} <strong className="dl-safe-suspect">{nameOf(suspect)}</strong>
                     <span className="dl-safe-meta"> ({describe(suspect)})</span>

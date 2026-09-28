@@ -44,6 +44,43 @@ const sinceFormat = new Intl.DateTimeFormat(undefined, { month: "short", day: "n
 
 export const badgeKey = (id: string) => isSupporterBadge(id) ? "supporter" : id;
 
+/** Supporter badges in their supporter's own colour, by colour and icon, drawn once each */
+const tinted = new Map<string, string>();
+const tinting = new Set<string>();
+
+/**
+ * The icon recoloured, keeping its shading: the colour blend takes the hue and saturation of `color`
+ * and the lightness of the icon, then the icon's own shape cuts it back out. Undefined until it's drawn
+ * (a moment, once); the list is rebuilt when it is.
+ */
+function tintedIcon(icon: string, color: string): string | undefined {
+    const key = `${color}|${icon}`;
+    const done = tinted.get(key);
+    if (done || tinting.has(key)) return done;
+    tinting.add(key);
+    void (async () => {
+        try {
+            const img = new Image();
+            img.src = icon;
+            await img.decode();
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext("2d")!;
+            ctx.drawImage(img, 0, 0);
+            ctx.globalCompositeOperation = "color";
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = "destination-in";
+            ctx.drawImage(img, 0, 0);
+            tinted.set(key, canvas.toDataURL("image/png"));
+            set(doc);
+        } catch (err) {
+            logger.warn("Couldn't colour a supporter badge", err);
+        }
+    })();
+}
+
 function set(next: BadgesDocument) {
     doc = next;
     // Built once per load, so every lookup while rendering is a single Map.get
@@ -58,7 +95,9 @@ function set(next: BadgesDocument) {
             const key = badgeKey(id);
             // A supporter's level says since when, like Discord's Nitro badge
             const description = since && key === "supporter" ? `Supporting Evi since ${sinceFormat.format(since)}` : next.badges[id].description;
-            return { id, ...next.badges[id], description, key, hidden: hidden.has(key) };
+            // Their own colour, once it's drawn; their level's until then
+            const icon = key === "supporter" && prefs.color ? tintedIcon(next.badges[id].icon, prefs.color) ?? next.badges[id].icon : next.badges[id].icon;
+            return { id, ...next.badges[id], icon, description, key, hidden: hidden.has(key) };
         });
         // Their order where they set one; the rest stay in the order they were given, in front
         const at = (b: Badge) => position.get(b.key) ?? -1;
@@ -123,10 +162,15 @@ export const Badges = {
      * Saves how you arranged your badges. Shown straight away, here and (through evi.rest) for
      * everyone; put back if evi.rest refuses, like when this Evi isn't linked to that account.
      */
-    async setPrefs(userId: string, prefs: Partial<BadgePrefs>): Promise<BadgePrefsResult> {
+    async setPrefs(userId: string, prefs: Omit<Partial<BadgePrefs>, "color"> & { color?: string | null; }): Promise<BadgePrefsResult> {
         if (!Native.setBadgePrefs) return { ok: false, error: "This Evi can't save badge settings" };
         const before = doc;
-        set({ ...doc, prefs: { ...doc.prefs, [userId]: { ...Badges.prefsFor(userId), ...prefs } } });
+        // A null colour goes back to the level's
+        const { color, ...rest } = prefs;
+        const next: BadgePrefs = { ...Badges.prefsFor(userId), ...rest };
+        if (color) next.color = color;
+        else if (color === null) delete next.color;
+        set({ ...doc, prefs: { ...doc.prefs, [userId]: next } });
         const optimistic = doc;
         const result = await Native.setBadgePrefs(userId, prefs).catch(err => ({ ok: false as const, error: String(err) }));
         // Undone only if nothing newer arrived in the meantime

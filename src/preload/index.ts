@@ -1,12 +1,16 @@
 import type { ImportMode } from "@shared/backup";
-import { AddThemeResult, AuthorsResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, CrashReportResult, EviSettings, HealthReportResult, HealthResult, IPC, OpenPathTarget, PluginChange, PluginReportResult, SettingsSaveResult, ThemeChange, ThemeSaveInput, ThemeSaveResult, ThemeSubmitResult } from "@shared/ipc";
+import { AddThemeResult, AuthorsResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, CommunityResult, CrashReportResult, EviSettings, HealthReportResult, HealthResult, IPC, OpenPathTarget, PluginChange, PluginReportResult, PreviewMediaResult, SettingsSaveResult, ThemeChange, ThemeSaveInput, ThemeSaveResult, ThemeSubmitResult, WallpaperPickResult, WallpaperReadResult } from "@shared/ipc";
 import type { AccountLinkResult, AccountStatus } from "@shared/account";
+import type { Breadcrumb, CrashRecord } from "@shared/crashDetective";
 import type { CrashReportInput } from "@shared/crashReports";
 import type { HealthReportInput } from "@shared/health";
 import type { Hotfix } from "@shared/hotfixes";
 import type { PluginReportInput } from "@shared/pluginReports";
 import type { PulledPlugins } from "@shared/pulls";
-import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesResult } from "@shared/badges";
+import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesResult, CreditsDocument } from "@shared/badges";
+import type { EviNotification } from "@shared/notifications";
+import type { PluginPage, RatingSummary } from "@shared/reviews";
+import type { StoreHome } from "@shared/storeHome";
 import type { UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/release";
 import type { StarKind, StarResult, StarsResult } from "@shared/stars";
 import type { StorePreviewResult } from "@shared/pluginPermissions";
@@ -63,11 +67,14 @@ const EviNative = {
     openDashboard: (): Promise<void> => ipcRenderer.invoke(IPC.ACCOUNT_DASHBOARD),
     badgeAdminAvailable: (): Promise<boolean> => ipcRenderer.invoke(IPC.BADGES_ADMIN_AVAILABLE),
     badgeAdmin: (input: BadgeAdminAction): Promise<BadgeAdminResult> => ipcRenderer.invoke(IPC.BADGES_ADMIN, input),
-    setBadgePrefs: (userId: string, prefs: Partial<BadgePrefs>): Promise<BadgePrefsResult> => ipcRenderer.invoke(IPC.BADGES_SET_PREFS, userId, prefs),
+    setBadgePrefs: (userId: string, prefs: Omit<Partial<BadgePrefs>, "color"> & { color?: string | null; }): Promise<BadgePrefsResult> => ipcRenderer.invoke(IPC.BADGES_SET_PREFS, userId, prefs),
     checkForUpdate: (force = false): Promise<UpdateStatus> => ipcRenderer.invoke(IPC.UPDATE_CHECK, force),
     installUpdate: (): Promise<UpdateInstallResult> => ipcRenderer.invoke(IPC.UPDATE_INSTALL),
     onUpdateProgress(cb: (progress: UpdateProgress) => void) {
         ipcRenderer.on(IPC.UPDATE_PROGRESS, (_, progress) => cb(progress));
+    },
+    onUpdateReady(cb: (version: string) => void) {
+        ipcRenderer.on(IPC.UPDATE_READY, (_, version) => cb(version));
     },
     onStoreProgress(cb: (progress: StoreProgress) => void) {
         ipcRenderer.on(IPC.STORE_PROGRESS, (_, progress) => cb(progress));
@@ -81,6 +88,34 @@ const EviNative = {
     relaunch: () => ipcRenderer.invoke(IPC.RELAUNCH),
     reportBootOk: () => ipcRenderer.send(IPC.BOOT_OK),
     exitSafeMode: () => ipcRenderer.invoke(IPC.SAFE_MODE_EXIT),
+    // One-way and fire-and-forget: sent every few seconds, nothing waits on an answer
+    sendCrashBreadcrumb: (breadcrumb: Breadcrumb) => ipcRenderer.send(IPC.CRASH_BREADCRUMB, breadcrumb),
+    getCrashRecord: (): Promise<CrashRecord | undefined> => ipcRenderer.invoke(IPC.CRASH_RECORD_GET),
+    markCrashSeen: () => ipcRenderer.send(IPC.CRASH_RECORD_SEEN),
+    pickWallpaper: (): Promise<WallpaperPickResult> => ipcRenderer.invoke(IPC.WALLPAPER_PICK),
+    readWallpaper: (): Promise<WallpaperReadResult> => ipcRenderer.invoke(IPC.WALLPAPER_READ),
+    removeWallpaper: (): Promise<void> => ipcRenderer.invoke(IPC.WALLPAPER_REMOVE),
+    onBattery: (): Promise<boolean> => ipcRenderer.invoke(IPC.POWER_ON_BATTERY),
+    onPowerChange(cb: (onBattery: boolean) => void) {
+        ipcRenderer.on(IPC.POWER_CHANGED, (_, onBattery) => cb(onBattery));
+    },
+    storeHome: (): Promise<CommunityResult<StoreHome>> => ipcRenderer.invoke(IPC.COMMUNITY_HOME),
+    storeRatings: (): Promise<CommunityResult<Record<string, RatingSummary>>> => ipcRenderer.invoke(IPC.COMMUNITY_RATINGS),
+    pluginPage: (id: string): Promise<CommunityResult<PluginPage>> => ipcRenderer.invoke(IPC.COMMUNITY_PAGE, id),
+    /** null takes your review back */
+    setReview: (id: string, review: { rating: number; body: string; version: string; } | null): Promise<CommunityResult<unknown>> => ipcRenderer.invoke(IPC.COMMUNITY_REVIEW, id, review),
+    reportReview: (reviewId: number): Promise<CommunityResult<unknown>> => ipcRenderer.invoke(IPC.COMMUNITY_REVIEW_REPORT, reviewId),
+    follow: (slug: string, on: boolean): Promise<CommunityResult<{ following: boolean; followers: number; }>> => ipcRenderer.invoke(IPC.COMMUNITY_FOLLOW, slug, on),
+    following: (): Promise<CommunityResult<string[]>> => ipcRenderer.invoke(IPC.COMMUNITY_FOLLOWING),
+    inbox: (): Promise<CommunityResult<EviNotification[]>> => ipcRenderer.invoke(IPC.COMMUNITY_INBOX),
+    markInboxRead: (ids?: string[]): Promise<CommunityResult<EviNotification[]>> => ipcRenderer.invoke(IPC.COMMUNITY_INBOX_READ, ids),
+    onInboxChange(cb: () => void) {
+        ipcRenderer.on(IPC.COMMUNITY_INBOX_CHANGED, () => cb());
+    },
+    credits: (): Promise<CommunityResult<CreditsDocument>> => ipcRenderer.invoke(IPC.COMMUNITY_CREDITS),
+    credited: (): Promise<CommunityResult<boolean | null>> => ipcRenderer.invoke(IPC.COMMUNITY_CREDITED),
+    setCredited: (on: boolean): Promise<CommunityResult<boolean>> => ipcRenderer.invoke(IPC.COMMUNITY_SET_CREDITED, on),
+    storePreviewMedia: (url: string): Promise<PreviewMediaResult> => ipcRenderer.invoke(IPC.STORE_PREVIEW_MEDIA, url),
 };
 
 export type EviNativeApi = typeof EviNative;

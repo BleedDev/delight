@@ -10,6 +10,7 @@ import { evaluatePatch, Excerpt, parsePatchValue, PatchDraft, PatchHelperResult 
 import { getPatchRecords } from "../patching/source";
 import { PluginManager } from "../plugins/manager";
 import { React } from "../webpack/common";
+import { ApiText } from "./ApiText";
 import { Button, Dropdown, EmptyState, Section, Status, Text, TextField } from "./components";
 
 /** Scanning every module isn't free, wait for a typing pause */
@@ -25,9 +26,9 @@ function Code({ label, excerpt, kind }: { label: string; excerpt: Excerpt; kind?
             <figcaption className="dl-code-label">{label}</figcaption>
             <pre className="dl-code">
                 {excerpt.clippedStart && "…"}
-                {excerpt.lead}
-                <mark data-kind={kind} data-empty={excerpt.mark ? undefined : ""}>{excerpt.mark}</mark>
-                {excerpt.tail}
+                <ApiText text={excerpt.lead} />
+                <mark data-kind={kind} data-empty={excerpt.mark ? undefined : ""}><ApiText text={excerpt.mark} /></mark>
+                <ApiText text={excerpt.tail} />
                 {excerpt.clippedEnd && "…"}
             </pre>
         </figure>
@@ -158,7 +159,7 @@ function SnippetCard({ snippet }: { snippet: string; }) {
             status={<Button icon={copied ? "check" : "copy"} className={className} onClick={copy}>{copied ? "Copied" : "Copy patch"}</Button>}
         >
             <p className="dl-hint">Add this to your plugin’s <code className="dl-mono">patches</code> array.</p>
-            <pre className="dl-code">{snippet}</pre>
+            <pre className="dl-code"><ApiText text={snippet} /></pre>
             <span className="dl-sr-only" role="status">{copied ? "Patch copied to clipboard" : ""}</span>
         </ResultCard>
     );

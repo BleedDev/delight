@@ -1,5 +1,5 @@
 /**
- * evi install    [--flavor stable|ptb|canary|development|all] [--dev] [--restart]
+ * evi install    [--flavor stable|ptb|canary|development|all] [--dev] [--restart | --wait]
  * evi uninstall  [--flavor ...] [--restart]
  * evi status
  * evi update     [--check] [--beta] [--flavor ...] [--restart]
@@ -12,7 +12,7 @@ import pkg from "../../package.json";
 import { readAsarFile } from "../shared/asar";
 import { createShimAsar, ORIGINAL_ASAR } from "../shared/shim";
 import { parseRemovedPlugins, REMOVED_PLUGINS_FILE, RETIRED_PLUGINS, STORE_MARKER } from "../shared/store";
-import { DiscordInstall, findInstalls, FLAVORS, injectionState, isDiscordRunning, killDiscord, searchedLocations, startDiscord } from "./discord";
+import { DiscordInstall, findInstalls, FLAVORS, injectionState, isDiscordRunning, killDiscord, searchedLocations, startDiscord, waitForExit } from "./discord";
 import { APP_DATA, giveBackToUser, isSudo } from "./paths";
 import { cleanupPreviousUpdate, COMPILED, downloadVerified, fetchLatestRelease, isNewer, replaceExecutable, UpdateError } from "./update";
 
@@ -39,6 +39,7 @@ const { values: flags, positionals } = parseArgs({
         flavor: { type: "string", default: "stable" },
         dev: { type: "boolean", default: false },
         restart: { type: "boolean", default: false },
+        wait: { type: "boolean", default: false },
         check: { type: "boolean", default: false },
         beta: { type: "boolean", default: false },
         help: { type: "boolean", short: "h", default: false },
@@ -154,6 +155,13 @@ async function withDiscordClosed(install: DiscordInstall, action: () => void) {
 
 async function install() {
     const installs = selectedInstalls();
+    // Started by the in-app updater as Discord quits: give it time to exit, and never close it. Checked
+    // before anything is written, so a Discord that stays open (or was opened again) keeps its version
+    if (flags.wait && !flags.restart) {
+        for (const discord of installs) {
+            if (!(await waitForExit(discord))) fail(`Discord ${discord.flavor} is still running, so nothing was changed. Quit it fully and run this again.`);
+        }
+    }
     const core = await prepareCore();
 
     for (const discord of installs) {
@@ -271,6 +279,7 @@ function help() {
 Options
   --flavor <stable|ptb|canary|development|all>   Which Discord (default: stable)
   --restart                                      Quit and reopen Discord for you
+  --wait                                         With install: wait up to a minute for Discord to quit, never close it
   --dev                                          Point Discord at this repo's dist/ (hot reload)
   --check                                        With update: only report whether a newer release exists
   --beta                                         With update: include beta versions (prereleases)

@@ -72,6 +72,10 @@ check("Discord's archive still intact after reinstall", readFileSync(original).e
 r = cli("status");
 check("status reports installed", r.out.includes("installed") && !r.out.includes("not installed"), r.out);
 
+// What the in-app updater runs as Discord quits: with Discord already gone it installs straight away
+r = cli("install", "--wait");
+check("install --wait with Discord closed updates at once", r.code === 0 && r.out.includes("Updated"), r.out);
+
 r = cli("uninstall");
 check("uninstall succeeds", r.code === 0 && r.out.includes("Removed"), r.out);
 check("original app.asar restored byte for byte", readFileSync(asar).equals(discordAsar) && !existsSync(original));

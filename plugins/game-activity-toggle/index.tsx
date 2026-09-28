@@ -24,6 +24,7 @@ interface DiscordSetting<T> {
 type Settings = typeof settings;
 const settings = {
     showButton: { type: "boolean", label: "User panel button", description: "A gamepad button next to mute and deafen. /gameactivity works either way.", default: true },
+    shortcut: { type: "keybind", label: "Shortcut", description: "Shows or hides your game activity from anywhere in Discord.", default: "" },
 } as const;
 
 let context: PluginContext<Settings> | undefined;
@@ -157,6 +158,8 @@ export default definePlugin({
     start(ctx) {
         context = ctx;
         ctx.onDispose(() => void (context = undefined));
+
+        ctx.keybind("shortcut", () => void toggle());
 
         ctx.command({
             name: "gameactivity",

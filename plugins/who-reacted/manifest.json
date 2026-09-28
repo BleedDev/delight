@@ -1,0 +1,12 @@
+{
+    "id": "who-reacted",
+    "name": "Who Reacted",
+    "description": "Small avatars of who reacted, right on each reaction next to its count, and how many more when there are lots.",
+    "version": "1.0.0",
+    "authors": ["Evi"],
+    "tags": ["messages", "social"],
+    "permissions": { "network": ["discord.com"], "readMessages": true },
+    "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
+    "minEviVersion": "1.0.0",
+    "enabledByDefault": false
+}

@@ -33,6 +33,36 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.0.0",
+        date: "2026-09-28",
+        cover: "1.0.0",
+        sections: {
+            added: [
+                "**A store front page.** What's trending, what's new this week, staff picks and collections put together by Evi's team, before the full list.",
+                "**Ratings and reviews.** Rate plugins you use and say why, in a few lines. Reviews anyone can report go to Evi's team.",
+                "**Plugin pages show more.** A video or GIF of it in use, what people who run it also install, known issues, and a note from its author about the version.",
+                "**A wishlist and an inbox.** Heart anything in the store to hear when it updates, gets a beta or works again. Reviews of your plugins, your uploads and news from authors you follow land in the new Inbox too.",
+                "**Follow authors.** Author pages have a banner, pinned plugins, how many run their plugins, and a Follow button.",
+                "**Plugin betas.** Authors can publish a beta next to the stable version, and you can opt into any plugin's betas from its page.",
+                "**Dynamic Wallpaper.** An image or video behind Discord, dimmed so text stays readable, and paused on battery.",
+                "**Crash Detective.** When Discord crashes or freezes, Evi says which plugin was busiest right before and offers to turn it off.",
+                "**Updates in the background.** Turn it on in Updates, and new versions download on their own and install when you close Discord.",
+                "**Keyboard shortcuts for plugins.** Set one in a plugin's settings by pressing the keys, like Discord's keybinds. Streamer Mode+ and Game Activity Toggle have one, and the field says when two plugins want the same keys.",
+                "**Supporter perks.** Your supporter badge in a colour of your own, your name in the credits if you like, and Aurora, a theme for supporters.",
+                "**Who Reacted.** Small avatars of who reacted, right on each reaction next to its count.",
+                "**Typing Tweaks.** See who's typing at a glance: avatars and role colours in the \"is typing\" line, and three dots on channels and DMs while someone types there.",
+                "**For plugin authors:** Evi DevTools (live Flux events, stores, patch hits and timings), API docs on hover in the Patch Helper, a public plugin API changelog, anonymous install and crash numbers on your dashboard, and `bun run new-plugin` / `bun run preview-plugin` to start and check a plugin.",
+            ],
+            improved: [
+                "**Search finds settings, not just plugins.** Searching the Plugins tab looks through every plugin's settings too, and opening one from the results takes you to the setting.",
+                "**Show only what you don't have yet** with the store's new Not installed filter, and sort by rating or what's trending.",
+                "Streamer Mode+ keeps the shortcut you typed in, now as a recorded one.",
+                "Plugin authors see how many use their plugins: once a day Evi tells evi.rest which store plugins it has, anonymously. Turn it off in the store's settings.",
+                "Quick Actions is no longer part of Evi, and is removed when Evi updates.",
+            ],
+        },
+    },
+    {
         version: "0.7.0",
         date: "2026-09-28",
         sections: {

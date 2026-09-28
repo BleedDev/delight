@@ -31,6 +31,11 @@ function set(next: Partial<UpdatesState>) {
 }
 
 Native?.onUpdateProgress?.(progress => set({ installing: progress }));
+// A silent update finished downloading in the background: it installs when Discord quits
+Native?.onUpdateReady?.(version => {
+    const { status } = state;
+    if (status?.state === "available" && status.release.version === version) set({ status: { ...status, ready: true } });
+});
 
 export const Updates = {
     getSnapshot: () => state,
@@ -51,7 +56,9 @@ export const Updates = {
         set({ checking: true, error: undefined });
         const status = await Native.checkForUpdate(force).catch(err => ({ state: "error" as const, current: EVI_VERSION, error: String(err), checkedAt: Date.now() }));
         set({ status, checking: false });
-        if (status.state === "available" && Settings.data.dismissedUpdate !== status.release.version) {
+        // With silent updates on, an installable version downloads by itself: nothing to interrupt Discord with
+        const silent = Updates.silent && status.state === "available" && status.installable;
+        if (status.state === "available" && !silent && Settings.data.dismissedUpdate !== status.release.version) {
             for (const listener of availableListeners) listener(status);
         }
         return status;
@@ -93,11 +100,23 @@ export const Updates = {
         return Updates.check(true);
     },
 
-    /** Checks after startup settles, then every few hours, unless turned off */
+    get silent() {
+        return Settings.data.silentUpdates === true;
+    },
+
+    /** Main reads the setting, so it's saved before checking again (which starts the download) */
+    async setSilent(on: boolean) {
+        Settings.update(d => void (d.silentUpdates = on));
+        await Settings.save().catch(() => { });
+        Updates.schedule();
+        return Updates.check(true);
+    },
+
+    /** Checks after startup settles, then every few hours, unless turned off. Background updates need the checks too */
     schedule(delay = 15_000) {
         clearInterval(timer);
         timer = undefined;
-        if (!Updates.autoCheck) return;
+        if (!Updates.autoCheck && !Updates.silent) return;
         setTimeout(() => void Updates.check(), delay);
         timer = setInterval(() => void Updates.check(), CHECK_EVERY);
     },

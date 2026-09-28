@@ -88,7 +88,7 @@ const boot: BootData = {
     version: "test",
     dataDir: "C:/fake",
     // Last saw an older Evi: What's new shows once at startup
-    settings: { quickCss: true, plugins: { experiments: { enabled: true } }, enabledThemes: [], lastSeenVersion: "0.0.1", pluginVersionsSeen: { "clear-urls": "0.9.0", "quick-actions": "0.9.0" } },
+    settings: { quickCss: true, plugins: { experiments: { enabled: true } }, enabledThemes: [], lastSeenVersion: "0.0.1", pluginVersionsSeen: { "clear-urls": "0.9.0", "no-track": "0.9.0" } },
     plugins,
     pulled,
     quickCss: "",
@@ -273,6 +273,32 @@ function fakeNative(bootData: BootData) {
         storeImage: async (url: string) => url.startsWith("https://example.com/")
             ? { ok: true, dataUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" }
             : { ok: false, error: "That image isn't in the store" },
+        // evi.rest's community side: a front page, ratings, Message Clock's page, and an inbox
+        storeHome: async () => ({ ok: true, value: { trending: ["plugin:store-clock", "plugin:store-quiet"], fresh: ["plugin:store-rpc"], collections: [{ id: "staff-picks", title: "Staff picks", description: "Hand-picked by Evi's team", items: ["plugin:store-quiet", "plugin:store-clock"] }], at: 1 } }),
+        storeRatings: async () => ({ ok: true, value: { "plugin:store-clock": { average: 4.5, count: 2, counts: [0, 0, 0, 1, 1] } } }),
+        pluginPage: async (id: string) => ({
+            ok: true,
+            value: {
+                rating: id === "store-clock" ? { average: 4.5, count: 2, counts: [0, 0, 0, 1, 1] } : { average: 0, count: 0, counts: [0, 0, 0, 0, 0] },
+                reviews: id === "store-clock" ? [{ id: 7, plugin: id, rating: 5, body: "Exactly what I wanted.", version: "1.0.0", user: { id: "222222222222222222", name: "Bob", avatar: null }, createdAt: Date.now() - 3600_000, updatedAt: Date.now() - 3600_000 }] : [],
+                mine: null,
+                related: id === "store-clock" ? ["store-quiet"] : [],
+                issues: [],
+                note: id === "store-clock" ? { version: "1.0.0", text: "Times follow your clock settings." } : null,
+                installs: 1234,
+            },
+        }),
+        setReview: async (id: string, review: unknown) => ((window as any).__test.reviews ??= []).push({ id, review }) && { ok: true, value: {} },
+        reportReview: async (reviewId: number) => ((window as any).__test.reviewReports ??= []).push(reviewId) && { ok: true, value: {} },
+        following: async () => ({ ok: true, value: [] }),
+        follow: async (slug: string, on: boolean) => ({ ok: true, value: { following: on, followers: on ? 1 : 0 } }),
+        inbox: async () => ({ ok: true, value: [{ id: "1", kind: "review", title: "New review of Message Clock", body: "★★★★★ Exactly what I wanted.", link: { kind: "plugin", id: "store-clock" }, at: Date.now() - 60_000, read: false }] }),
+        markInboxRead: async () => ((window as any).__test.inboxRead = true, { ok: true, value: [{ id: "1", kind: "review", title: "New review of Message Clock", body: "★★★★★ Exactly what I wanted.", link: { kind: "plugin", id: "store-clock" }, at: Date.now() - 60_000, read: true }] }),
+        onInboxChange: () => { },
+        credits: async () => ({ ok: true, value: { supporters: [{ name: "Mira", avatar: null, userId: "333333333333333333", since: 1, level: "supporter-gold" }] } }),
+        credited: async () => ({ ok: true, value: false }),
+        setCredited: async (on: boolean) => ({ ok: true, value: on }),
+        storePreviewMedia: async () => ({ ok: false, error: "not in this test" }),
         // A store plugin's code, which main downloads and checks against the registry for its page
         storePreview: async (id: string) => id === "store-clock"
             ? { ok: true, code: "module.exports = { default: { start(ctx) { fetch(\"https://time.example.net/now\"); ctx.contextMenu(\"message\", () => {}); } } };", manifest: { native: false } }
@@ -425,13 +451,15 @@ const whatsNewExit = await closesWithExit(".dl-whats-new", () => page.locator(".
 check("What's new closes with Discord's modal exit (shrinks and fades), then leaves the page", whatsNewExit.closing && whatsNewExit.running.includes("evi-modal-out") && whatsNewExit.gone, whatsNewExit);
 
 // Plugins that updated since they were last seen follow, in one popup
+const versionOf = (id: string): string => JSON.parse(readFileSync(join(ROOT, "plugins", id, "manifest.json"), "utf8")).version;
 const pluginNews = await page.waitForSelector(".dl-plugin-whats-new[role=dialog]", { timeout: 5000 }).then(() => page.evaluate(() => ({
     text: document.querySelector(".dl-plugin-whats-new")?.textContent ?? "",
     seen: (window as any).Evi.settings.data.pluginVersionsSeen,
 })), () => null);
 check("Plugin updates show their changelogs once, batched, and remember the versions",
-    !!pluginNews && pluginNews.text.includes("What’s New in 2 Plugins") && pluginNews.text.includes("Clear URLs 1.0.0") && pluginNews.text.includes("Quick Actions 1.0.0")
-    && pluginNews.seen?.["clear-urls"] === "1.0.0" && pluginNews.seen?.["message-logger"] !== undefined, pluginNews);
+    !!pluginNews && pluginNews.text.includes("What’s New in 2 Plugins") && pluginNews.text.includes(`Clear URLs ${versionOf("clear-urls")}`)
+    && pluginNews.text.includes(`No Track ${versionOf("no-track")}`)
+    && pluginNews.seen?.["clear-urls"] === versionOf("clear-urls") && pluginNews.seen?.["message-logger"] !== undefined, pluginNews);
 await page.screenshot({ path: join(OUT, "ui-plugin-whats-new.png") });
 const pluginNewsExit = await closesWithExit(".dl-plugin-whats-new", () => page.locator(".dl-plugin-whats-new").getByRole("button", { name: "Close", exact: true }).click());
 check("Plugin changelogs close with an exit animation", pluginNewsExit.closing && pluginNewsExit.gone, pluginNewsExit);
@@ -1036,111 +1064,6 @@ check("lookups: an unfound target counts as waiting while Discord starts", looku
 check("lookups: after that, code no module has is broken and unknown props are missing", lookups.afterGrace[codeTarget] === "broken" && lookups.afterGrace[propsTarget] === "missing", lookups.afterGrace);
 check("lookups: stopping the plugin drops its lookups", lookups.afterStop === 0, lookups.afterStop);
 
-// ---- quick-actions ------------------------------------------------------------------------------
-
-const IMAGE_URL = "https://cdn.discordapp.com/attachments/1/2/cat.png?ex=1&is=2&hm=3";
-
-/** Renders Discord's message menu with the props the navId patch gives it, returns the item labels */
-async function renderMessageMenu(args: unknown, nativeIds: string[]) {
-    return page.evaluate(async ({ args, nativeIds }) => {
-        const { api, toolkit } = (window as any).Evi;
-        const { sleep } = (window as any).__qa;
-        const menu = api.findExport(toolkit.filters.menu);
-        const Item = toolkit.resolveMenuComponents().Item;
-        const Group = toolkit.resolveMenuComponents().Group;
-        (window as any).__qaRoot?.unmount();
-        document.getElementById("qa-root")?.remove();
-        const root = document.createElement("div");
-        root.id = "qa-root";
-        document.body.appendChild(root);
-        const reactRoot = (window as any).__qaRoot = api.createRoot(root);
-        const h = api.React.createElement;
-        // Discord's own items, in one group like the real message menu's Copy Text group
-        reactRoot.render(h(menu.exports[menu.key], { navId: "message", onClose: () => { }, "aria-label": "test", eviMenuArgs: args },
-            h(Group, null, nativeIds.map(id => h(Item, { key: id, id, label: `Native ${id}`, action: () => { } })))));
-        await sleep(300);
-        return [...root.querySelectorAll('[role="menuitem"]')].map(e => ({ id: e.id, text: e.textContent ?? "" }));
-    }, { args, nativeIds });
-}
-
-/** Clicks a rendered menu item by label, returns the clipboard and the toast it showed */
-async function clickMenuItem(label: string, toast?: string) {
-    return page.evaluate(async ({ label, toast }) => {
-        const { toastText } = (window as any).__qa;
-        const item = [...document.querySelectorAll('#qa-root [role="menuitem"], [role="menu"] [role="menuitem"]')]
-            .find(e => e.textContent === label) as HTMLElement | undefined;
-        if (!item) return { clicked: false, clipboard: null, toast: null };
-        item.click();
-        const shown = toast ? await toastText(toast) : null;
-        return { clicked: true, clipboard: await navigator.clipboard.readText().catch(e => `clipboard: ${e}`), toast: shown };
-    }, { label, toast });
-}
-
-await page.evaluate(async () => {
-    const w = window as any;
-    w.__opened = [];
-    w.__realOpen = window.open;
-    window.open = ((url: string) => void w.__opened.push(url)) as any;
-    await w.Evi.plugins.setEnabled("quick-actions", true);
-});
-
-const fullMessage = {
-    message: {
-        id: "987", channel_id: "555", content: "**hola** amigo `code`",
-        attachments: [{ url: IMAGE_URL, filename: "cat.png", content_type: "image/png" }], embeds: [],
-    },
-    channel: { id: "555", guild_id: "444" },
-};
-const qaItems = await renderMessageMenu(fullMessage, ["copy-text"]);
-const qaLabels = qaItems.map(i => i.text);
-check("quick-actions: message menu gets all items next to Copy Text",
-    ["Native copy-text", "Copy Message Link", "Copy Raw Text", "Copy Message ID", "Search Image", "Translate with Google"].every(l => qaLabels.includes(l)),
-    qaLabels);
-
-const copiedLink = await clickMenuItem("Copy Message Link", "Message link copied");
-check("quick-actions: Copy Message Link copies Discord's link format", copiedLink.clipboard === "https://discord.com/channels/444/555/987" && copiedLink.toast?.type === "success", copiedLink);
-const copiedRaw = await clickMenuItem("Copy Raw Text", "Raw text copied");
-check("quick-actions: Copy Raw Text copies the markdown source", copiedRaw.clipboard === "**hola** amigo `code`" && copiedRaw.toast?.type === "success", copiedRaw);
-const copiedId = await clickMenuItem("Copy Message ID", "Message ID copied");
-check("quick-actions: Copy Message ID copies the id", copiedId.clipboard === "987" && copiedId.toast?.type === "success", copiedId);
-
-// Search Image is a submenu: hover it to open, then pick an engine
-const searchItem = qaItems.find(i => i.text === "Search Image");
-await page.hover(`[id="${searchItem?.id}"]`).catch(() => { });
-await page.waitForTimeout(400);
-const engines = await page.evaluate(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map(e => e.textContent));
-await page.screenshot({ path: join(OUT, "quick-actions-menu.png") });
-// Menu re-rendered on every hover and click: items added to Discord's group must not pile up
-const rawCount = await page.evaluate(() => [...document.querySelectorAll('#qa-root [role="menuitem"]')].filter(e => e.textContent === "Copy Raw Text").length);
-check("quick-actions: re-renders don't duplicate items in Discord's group", rawCount === 1, rawCount);
-const lens = await clickMenuItem("Google Lens");
-await renderMessageMenu(fullMessage, ["copy-text"]);
-await clickMenuItem("Translate with Google");
-const opened: string[] = await page.evaluate(() => (window as any).__opened);
-check("quick-actions: Search Image lists Google Lens, Yandex and TinEye", ["Google Lens", "Yandex", "TinEye"].every(e => engines.includes(e)), engines);
-check("quick-actions: Google Lens opens the image in the browser", lens.clicked && opened[0] === `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(IMAGE_URL)}`, opened[0]);
-check("quick-actions: Translate opens Google Translate with the text", !!opened[1] && new URL(opened[1]).searchParams.get("text") === "**hola** amigo `code`" && new URL(opened[1]).searchParams.get("sl") === "auto", opened[1]);
-
-// Only what applies: no text means no raw text or translate, no image means no search, and
-// Discord's own Copy Message Link / developer mode Copy Message ID aren't duplicated
-const bare = (await renderMessageMenu({ message: { id: "988", channel_id: "555", content: "", attachments: [], embeds: [] }, channel: { id: "555" } }, ["copy-link", "devmode-copy-id-988"])).map(i => i.text);
-check("quick-actions: items only appear when they apply", !["Copy Raw Text", "Translate with Google", "Search Image", "Copy Message Link", "Copy Message ID"].some(l => bare.includes(l)), bare);
-const dm = await renderMessageMenu({ message: { id: "989", channel_id: "556", content: "", attachments: [], embeds: [] }, channel: { id: "556" } }, []);
-const dmLink = await clickMenuItem("Copy Message Link", "Message link copied");
-check("quick-actions: a DM message gets an @me link, in a group of its own", dm.map(i => i.text).includes("Copy Message ID") && dmLink.clipboard === "https://discord.com/channels/@me/556/989", { items: dm.map(i => i.text), link: dmLink.clipboard });
-
-const qaStopped = await page.evaluate(async () => {
-    const w = window as any;
-    await w.Evi.plugins.setEnabled("quick-actions", false);
-    window.open = w.__realOpen;
-    return true;
-});
-const afterStop = (await renderMessageMenu(fullMessage, ["copy-text"])).map(i => i.text);
-check("quick-actions: disabling removes its items", qaStopped && JSON.stringify(afterStop) === '["Native copy-text"]', afterStop);
-await page.evaluate(() => {
-    (window as any).__qaRoot?.unmount();
-    document.getElementById("qa-root")?.remove();
-});
 // ---- message logger -----------------------------------------------------------------------------
 
 // Logged out, MessageStore still works for a channel we "load" ourselves: dispatch Discord's own
@@ -1862,13 +1785,14 @@ check("Escape closes the settings dialog, not the Evi panel", !afterEscape.dialo
 }
 
 // A plugin's details: what it can touch, and its whole changelog
-await findPlugin("quick-actions");
-await page.locator('li[aria-labelledby="dl-plugin-quick-actions"]').getByRole("button", { name: "Quick Actions details" }).click();
-await page.waitForSelector("#dl-plugin-quick-actions-info", { timeout: 2000 });
+await findPlugin("view-icons");
+await page.locator('li[aria-labelledby="dl-plugin-view-icons"]').getByRole("button", { name: "View Icons details" }).click();
+await page.waitForSelector("#dl-plugin-view-icons-info", { timeout: 2000 });
 await page.waitForTimeout(300);
-const pluginDetails = await page.evaluate(() => document.querySelector("#dl-plugin-quick-actions-info")?.textContent ?? "");
+const pluginDetails = await page.evaluate(() => document.querySelector("#dl-plugin-view-icons-info")?.textContent ?? "");
 await page.screenshot({ path: join(OUT, "ui-plugin-details.png") });
-check("Plugin details list its permissions with risk levels and its changelog", ["Permissions", "Low risk", "Adds menu items", "Copies to your clipboard", "What’s new", "First release."].every(t => pluginDetails.includes(t)), pluginDetails.slice(0, 300));
+const detailsWanted = ["Permissions", "Medium risk", "Adds menu items", "Copies to your clipboard", "What’s new", "First release."];
+check("Plugin details list its permissions with risk levels and its changelog", detailsWanted.every(t => pluginDetails.includes(t)), { missing: detailsWanted.filter(t => !pluginDetails.includes(t)), text: pluginDetails.slice(0, 200) });
 await page.keyboard.press("Escape");
 await page.waitForTimeout(200);
 
@@ -2125,6 +2049,55 @@ check("Stars: cards show counts, and starring counts once and is sent to main",
     && starsAfter.clock === "Unstar Message Clock, 42 stars" && JSON.stringify(starsAfter.calls) === '[{"kind":"plugin","id":"store-clock","starred":true}]', { starsBefore, starsAfter });
 await page.screenshot({ path: join(OUT, "ui-store-grid.png") });
 check("native plugins carry a badge", storeList.rpc.includes("Native") && !storeList.clock.includes("Native"));
+
+// ---- the store's community side: front page, ratings, hearts, Not installed, a plugin's page ----
+{
+    const home = await page.evaluate(() => {
+        const h = document.querySelector(".dl-home");
+        return { text: h?.textContent ?? "", hero: h?.querySelector(".dl-home-row[data-hero] h3")?.textContent ?? "", tiles: h?.querySelectorAll(".dl-home-tile").length ?? 0 };
+    });
+    check("Store front page: staff picks first, then trending and new this week", home.hero === "Staff picks" && home.text.includes("Trending") && home.text.includes("New this week") && home.tiles >= 4, home);
+    await page.locator(".dl-home").screenshot({ path: join(OUT, "ui-store-home.png") }).catch(() => { });
+    const clock = await storeCard("store-clock");
+    check("Store cards show a plugin's rating", clock.includes("4.5") && clock.includes("(2)"), clock);
+
+    await page.locator('[data-store-id="store-clock"] .dl-wish').click();
+    await page.waitForTimeout(100);
+    const wished = await page.evaluate(() => ({ list: (window as any).Evi.settings.data.wishlist, pressed: document.querySelector('[data-store-id="store-clock"] .dl-wish')?.getAttribute("aria-pressed") }));
+    check("Hearting a plugin puts it on the wishlist", JSON.stringify(wished.list) === '["plugin:store-clock"]' && wished.pressed === "true", wished);
+    await page.locator('[data-store-id="store-clock"] .dl-wish').click();
+
+    await page.locator(".dl-store-controls").getByText("Not installed", { exact: false }).first().click();
+    await page.waitForTimeout(200);
+    const notInstalled = await page.evaluate(() => ({
+        cards: [...document.querySelectorAll("[data-store-id]")].map(el => el.getAttribute("data-store-id")),
+        home: !!document.querySelector(".dl-home"),
+    }));
+    check("Not installed shows only what you don't have, and the front page steps aside", notInstalled.cards.includes("store-clock") && !notInstalled.cards.includes("store-quiet") && !notInstalled.home, notInstalled);
+    // Back to everything: the store's filter lives with the tab, so leaving and coming back resets it
+    await openTab("plugins", "installed");
+    await openTab("plugins", "store");
+    await page.waitForSelector('[data-store-id="store-lookup"]', { timeout: 5000 });
+
+    await page.locator('[data-store-id="store-clock"] .dl-store-card-link').click();
+    await page.waitForSelector(".dl-reviews", { timeout: 3000 }).catch(() => { });
+    const detail = await page.evaluate(() => ({
+        reviews: document.querySelector(".dl-reviews")?.textContent ?? "",
+        note: document.querySelector(".dl-store-note")?.textContent ?? "",
+        related: [...document.querySelectorAll(".dl-home-row")].map(r => r.textContent ?? "").join(" | "),
+        facts: document.querySelector(".dl-store-facts")?.textContent ?? "",
+    }));
+    check("A plugin's page: rating, reviews, the author's note, installs and what people also install",
+        detail.reviews.includes("4.5") && detail.reviews.includes("Bob") && detail.reviews.includes("Exactly what I wanted.") && detail.reviews.includes("Install it to rate it")
+        && detail.note.includes("Times follow your clock settings.") && detail.facts.includes("1,234") && detail.related.includes("People also install") && detail.related.includes("Quiet Mode"), detail);
+    await page.screenshot({ path: join(OUT, "ui-store-detail-reviews.png"), fullPage: true });
+    await page.getByRole("button", { name: "Report review" }).click();
+    await page.waitForTimeout(100);
+    check("Reporting a review sends it and says thanks", JSON.stringify(await page.evaluate(() => (window as any).__test.reviewReports)) === "[7]" && (await page.evaluate(() => document.querySelector(".dl-reviews")?.textContent ?? "")).includes("Reported"));
+    // Back to the list: the page's first button
+    await page.locator(".dl-store-detail > div > button").first().click();
+    await page.waitForSelector('[data-store-id="store-lookup"]', { timeout: 3000 });
+}
 check("Store cards say when evi.rest knows a plugin is broken", storeList.quiet.includes("Broken since Discord’s update") && (await storeCard("store-lookup")).includes("Being looked into") && !storeList.clock.includes("Broken"), storeList.quiet);
 
 // A verified author: a check next to their name, which opens their page
@@ -2376,6 +2349,74 @@ await page.click("#dl-subtab-themes-installed");
 await page.waitForTimeout(200);
 const themeRow = await page.evaluate(() => document.querySelector('li[aria-labelledby="dl-theme-midnight_css"]')?.textContent ?? "");
 check("store themes show a Store badge in the Themes tab", themeRow.includes("Midnight") && themeRow.includes("Store"), themeRow);
+
+// ---- Evi 1.0: the inbox, DevTools, recording a shortcut, and blob: media under Discord's CSP ------
+{
+    await openTab("plugins", "inbox");
+    await page.waitForSelector(".dl-inbox-row", { timeout: 5000 }).catch(() => { });
+    const inbox = await page.evaluate(() => ({
+        rows: [...document.querySelectorAll(".dl-inbox-row")].map(r => r.textContent ?? ""),
+        count: document.querySelector("#dl-subtab-plugins-inbox .dl-tabbar-count")?.textContent ?? "",
+    }));
+    // With the one Evi adds itself: the test's fake update check finds Evi 9.9.0
+    check("Inbox lists the account's notifications and Evi's own, with an unread count on its tab", inbox.rows.some(r => r.includes("New review of Message Clock")) && inbox.rows.some(r => r.includes("Evi 9.9.0 is out")) && inbox.count === "2", inbox);
+    await page.screenshot({ path: join(OUT, "ui-inbox.png") });
+    await page.getByRole("button", { name: "Mark all as read" }).click();
+    await page.waitForTimeout(200);
+    const read = await page.evaluate(() => ({ sent: (window as any).__test.inboxRead, count: document.querySelector("#dl-subtab-plugins-inbox .dl-tabbar-count")?.textContent ?? "" }));
+    check("Mark all as read tells evi.rest and clears the count", read.sent === true && !read.count, read);
+
+    await openTab("advanced", "devtools");
+    await page.waitForSelector("#dl-dt-flux", { timeout: 5000 }).catch(() => { });
+    await page.waitForTimeout(200);
+    await page.evaluate(() => (window as any).Evi.api.Dispatcher.dispatch({ type: "EVI_DEVTOOLS_TEST", value: 1 }));
+    await page.waitForTimeout(500);
+    const flux = await page.evaluate(() => [...document.querySelectorAll(".dl-dt-log-type")].map(el => el.textContent));
+    check("DevTools: the Flux log shows actions as Discord dispatches them", flux.includes("EVI_DEVTOOLS_TEST"), flux.slice(0, 5));
+    await page.screenshot({ path: join(OUT, "ui-devtools.png") });
+
+    await openTab("plugins", "installed");
+    await findPlugin("streamer-mode-plus");
+    await page.locator('li[aria-labelledby="dl-plugin-streamer-mode-plus"]').getByRole("button", { name: "Streamer Mode+ settings" }).click();
+    await page.waitForSelector("#dl-setting-streamer-mode-plus-hotkey", { timeout: 3000 });
+    await page.click("#dl-setting-streamer-mode-plus-hotkey");
+    await page.keyboard.press("Shift+KeyG");
+    const refused = await page.evaluate(() => document.querySelector("#dl-setting-streamer-mode-plus-hotkey-status")?.textContent ?? "");
+    await page.keyboard.press("Control+Alt+KeyK");
+    await page.waitForTimeout(150);
+    const recorded = await page.evaluate(() => ({
+        saved: (window as any).Evi.settings.data.plugins["streamer-mode-plus"]?.settings?.hotkey,
+        keys: [...document.querySelectorAll("#dl-setting-streamer-mode-plus-hotkey .dl-kbd")].map(k => k.textContent),
+        panelOpen: !!document.querySelector(".dl-panel"),
+    }));
+    check("Shortcuts are recorded by pressing them: a bare key is refused, Ctrl+Alt+K is saved and shown as keycaps",
+        refused.includes("Ctrl or Alt") && recorded.saved === "Ctrl+Alt+KeyK" && recorded.keys.join("+") === "Ctrl+Alt+K" && recorded.panelOpen, { refused, recorded });
+    await page.screenshot({ path: join(OUT, "ui-keybind.png") });
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+
+    // Wallpapers and store previews reach the page as blob: URLs: Discord's CSP must let them load
+    const blobs = await page.evaluate(async () => {
+        const violations: string[] = [];
+        const onViolation = (e: SecurityPolicyViolationEvent) => violations.push(`${e.violatedDirective} ${e.blockedURI}`);
+        document.addEventListener("securitypolicyviolation", onViolation);
+        const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="), c => c.charCodeAt(0));
+        const img = new Image();
+        const imgResult = await new Promise<string>(resolve => {
+            img.onload = () => resolve("load");
+            img.onerror = () => resolve("error");
+            img.src = URL.createObjectURL(new Blob([png], { type: "image/png" }));
+        });
+        const video = document.createElement("video");
+        video.muted = true;
+        video.src = URL.createObjectURL(new Blob([new Uint8Array(64)], { type: "video/webm" }));
+        video.load();
+        await new Promise(r => setTimeout(r, 500));
+        document.removeEventListener("securitypolicyviolation", onViolation);
+        return { img: imgResult, violations };
+    });
+    check("Discord's CSP lets blob: images and media load (wallpaper, store previews)", blobs.img === "load" && !blobs.violations.some(v => /blob/.test(v)), blobs);
+}
 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(300);
