@@ -1,8 +1,8 @@
 {
     "id": "message-logger",
     "name": "Message Logger",
-    "description": "Deleted messages stay in the chat, marked as deleted, and edited messages show what they said before. Kept in memory only: nothing is saved, and it's all gone when Discord restarts.",
-    "version": "1.1.2",
+    "description": "Deleted messages stay in the chat, marked as deleted, with their pictures, videos and files, and edited messages show what they said before. Kept in memory only: nothing is saved, and it's all gone when Discord restarts.",
+    "version": "1.2.0",
     "authors": [
         "Evi"
     ],
@@ -10,9 +10,20 @@
         "messages"
     ],
     "permissions": {
+        "network": [
+            "discordapp.com",
+            "discordapp.net"
+        ],
         "readMessages": true
     },
     "changelog": [
+        {
+            "version": "1.2.0",
+            "notes": [
+                "Deleted pictures, videos and files stay too. Discord deletes them from its servers with the message, so the ones in the channel you're looking at are saved as they load, in memory, up to 25 MB each.",
+                "An edit that removes an attachment keeps it with the old version."
+            ]
+        },
         {
             "version": "1.1.2",
             "notes": [

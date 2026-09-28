@@ -45,6 +45,79 @@ module.exports = __toCommonJS(exports_message_logger);
 var import_api = require("@evi/api");
 
 // plugins/message-logger/log.ts
+var MAX_SAVED_BYTES = 25 * 1024 * 1024;
+var attachmentKey = (a) => a.id ?? a.url ?? a.proxy_url ?? "";
+function mediaKind(a) {
+  const type = a.content_type ?? "";
+  const name = (a.filename ?? a.url ?? "").toLowerCase().split("?")[0];
+  if (type.startsWith("image/") || /\.(png|jpe?g|gif|webp|avif)$/.test(name))
+    return "image";
+  if (type.startsWith("video/") || /\.(mp4|webm|mov)$/.test(name))
+    return "video";
+  if (type.startsWith("audio/") || /\.(mp3|ogg|wav|m4a|flac|opus)$/.test(name))
+    return "audio";
+  return "file";
+}
+function attachmentsToSave(attachments, maxBytes = MAX_SAVED_BYTES) {
+  return (attachments ?? []).filter((a) => !!(a.url || a.proxy_url) && (a.size ?? 0) <= maxBytes);
+}
+function removedAttachments(before, after) {
+  if (!after)
+    return [];
+  const kept = new Set(after.map(attachmentKey));
+  return (before ?? []).filter((a) => !kept.has(attachmentKey(a)));
+}
+
+class MediaCache {
+  maxBytes;
+  onEvict;
+  items = new Map;
+  bytes = 0;
+  constructor(maxBytes, onEvict = () => {}) {
+    this.maxBytes = maxBytes;
+    this.onEvict = onEvict;
+  }
+  get size() {
+    return this.bytes;
+  }
+  has(key) {
+    return this.items.has(key);
+  }
+  set(key, item) {
+    if (item.size > this.maxBytes)
+      return this.onEvict(item);
+    const old = this.items.get(key);
+    if (old) {
+      this.items.delete(key);
+      this.bytes -= old.size;
+      if (old !== item)
+        this.onEvict(old);
+    }
+    this.items.set(key, item);
+    this.bytes += item.size;
+    for (const [k, v] of this.items) {
+      if (this.bytes <= this.maxBytes)
+        break;
+      this.items.delete(k);
+      this.bytes -= v.size;
+      this.onEvict(v);
+    }
+  }
+  take(key) {
+    const item = this.items.get(key);
+    if (!item)
+      return;
+    this.items.delete(key);
+    this.bytes -= item.size;
+    return item;
+  }
+  clear() {
+    for (const item of this.items.values())
+      this.onEvict(item);
+    this.items.clear();
+    this.bytes = 0;
+  }
+}
 var DEFAULT_LIMITS = { perChannel: 50, channels: 100, edits: 10 };
 var EPHEMERAL = 1 << 6;
 function shouldLog(message, filters) {
@@ -60,11 +133,13 @@ function shouldLog(message, filters) {
 }
 
 class MessageLog {
+  onForget;
   channels = new Map;
   listeners = new Set;
   limits;
   version = 0;
-  constructor(limits = {}) {
+  constructor(limits = {}, onForget = () => {}) {
+    this.onForget = onForget;
     this.limits = { ...DEFAULT_LIMITS, ...limits };
   }
   get(channelId, id) {
@@ -77,19 +152,48 @@ class MessageLog {
     const previous = this.get(channelId, id);
     if (previous?.deletedAt !== undefined)
       return [];
-    return this.put({ channelId, id, edits: previous?.edits ?? [], deletedAt: at });
+    return this.put({ ...previous, channelId, id, edits: previous?.edits ?? [], deletedAt: at });
+  }
+  addMedia(channelId, id, media) {
+    const entry = this.get(channelId, id);
+    if (!entry || !media.length)
+      return false;
+    const have = new Set(entry.media?.map((m) => m.key));
+    const added = media.filter((m) => !have.has(m.key) && !!have.add(m.key));
+    if (!added.length)
+      return true;
+    this.channels.get(channelId).set(id, { ...entry, media: [...entry.media ?? [], ...added] });
+    this.changed();
+    return true;
+  }
+  addEditMedia(channelId, id, timestamp, media) {
+    const entry = this.get(channelId, id);
+    const at = entry?.edits.findIndex((e) => e.timestamp === timestamp) ?? -1;
+    if (!entry || at < 0 || !media.length)
+      return false;
+    const edits = entry.edits.map((e, i) => i === at ? { ...e, media: [...e.media ?? [], ...media] } : e);
+    this.channels.get(channelId).set(id, { ...entry, edits });
+    this.changed();
+    return true;
+  }
+  mediaOf(channelId, id) {
+    const entry = this.get(channelId, id);
+    return entry ? [...entry.media ?? [], ...entry.edits.flatMap((e) => e.media ?? [])] : [];
   }
   addEdit(channelId, id, version) {
     const previous = this.get(channelId, id);
     const edits = [...previous?.edits ?? [], version];
     while (edits.length > Math.max(1, this.limits.edits))
       edits.splice(1, 1);
-    return this.put({ channelId, id, deletedAt: previous?.deletedAt, edits });
+    return this.put({ ...previous, channelId, id, deletedAt: previous?.deletedAt, edits });
   }
   remove(channelId, id) {
     const channel = this.channels.get(channelId);
-    if (!channel?.delete(id))
+    const entry = channel?.get(id);
+    if (!channel || !entry)
       return;
+    channel.delete(id);
+    this.onForget(entry);
     if (!channel.size)
       this.channels.delete(channelId);
     this.changed();
@@ -124,6 +228,9 @@ class MessageLog {
   clear() {
     const deleted = [...this.deleted()].flatMap(([channelId, ids]) => ids.map((id) => ({ channelId, id })));
     const had = this.channels.size > 0;
+    for (const channel of this.channels.values())
+      for (const entry of channel.values())
+        this.onForget(entry);
     this.channels.clear();
     if (had)
       this.changed();
@@ -138,9 +245,11 @@ class MessageLog {
         continue;
       had = true;
       this.channels.delete(channelId);
-      for (const entry of channel.values())
+      for (const entry of channel.values()) {
+        this.onForget(entry);
         if (entry.deletedAt !== undefined)
           deleted.push({ channelId, id: entry.id });
+      }
     }
     if (had)
       this.changed();
@@ -187,6 +296,7 @@ class MessageLog {
       if (channel.size <= Math.max(1, this.limits.perChannel))
         break;
       channel.delete(id);
+      this.onForget(entry);
       if (entry.deletedAt !== undefined)
         evicted.push({ channelId, id });
     }
@@ -198,9 +308,11 @@ class MessageLog {
       if (this.channels.size <= Math.max(1, this.limits.channels))
         break;
       this.channels.delete(channelId);
-      for (const entry of channel.values())
+      for (const entry of channel.values()) {
+        this.onForget(entry);
         if (entry.deletedAt !== undefined)
           evicted.push({ channelId, id: entry.id });
+      }
     }
     return evicted;
   }
@@ -218,6 +330,8 @@ class MessageLog {
 var jsx_runtime = require("react/jsx-runtime");
 var PURGE_ACTION = "EVI_MESSAGE_LOGGER_PURGE";
 var SELF_DELETE_WINDOW = 60000;
+var CACHE_BYTES = 150 * 1024 * 1024;
+var SAVE_FROM_LOADED = 50;
 var accessoriesFilter = import_api.filters.byCode("channelMessageProps:{message:", "isAutomodBlockedMessage:");
 var renderedContentFilter = import_api.filters.byCode('"useMessageRenderedContent"', "hideSimpleEmbedContent");
 var markupFilter = Object.assign((v) => !!v && typeof v === "object" && !Array.isArray(v) && Object.values(v).some((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) && Object.values(v).some((c) => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)), { $code: ['"markup_', '"codeContainer_'] });
@@ -277,6 +391,62 @@ var css = `
     color: var(--text-feedback-critical, var(--status-danger, #f23f43));
     font-weight: 500;
 }
+/* Discord's own attachments of a deleted message are gone from its CDN: our saved copies stand in */
+[data-list-item-id^="chat-messages___"]:has(.dl-ml-saved) :is([class*="visualMediaItemContainer_"], [class*="nonVisualMediaItemContainer_"]) {
+    display: none;
+}
+.dl-ml-media {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.25rem 0;
+}
+.dl-ml-media img, .dl-ml-media video {
+    display: block;
+    max-width: min(400px, 100%);
+    max-height: 300px;
+    border-radius: 8px;
+    outline: 1px solid rgb(255 255 255 / 0.08);
+    outline-offset: -1px;
+    background: var(--background-secondary, #2b2d31);
+}
+.dl-ml-history .dl-ml-media img, .dl-ml-history .dl-ml-media video {
+    max-width: 200px;
+    max-height: 150px;
+}
+.dl-ml-spoiler {
+    all: unset;
+    position: relative;
+    display: block;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.dl-ml-spoiler > img { filter: blur(44px); }
+.dl-ml-spoiler > span {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    translate: -50% -50%;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 0.6);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.dl-ml-spoiler:focus-visible { outline: 2px solid var(--focus-primary, #00a8fc); }
+.dl-ml-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle, rgba(151, 151, 159, 0.12));
+    background: var(--background-secondary, #2b2d31);
+    color: var(--text-link, #00a8fc);
+    font-size: 0.875rem;
+}
+.dl-ml-file small { color: var(--text-muted, #949ba4); }
 `;
 function formatTime(ms) {
   const date = new Date(ms);
@@ -303,6 +473,71 @@ function RichContent({ message, content, render }) {
     children: rendered?.content ?? content
   });
 }
+var formatSize = (bytes) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+function Spoiler({ children }) {
+  const [shown, setShown] = import_api.React.useState(false);
+  if (shown)
+    return children;
+  return /* @__PURE__ */ jsx_runtime.jsxs("button", {
+    type: "button",
+    className: "dl-ml-spoiler",
+    "aria-label": "Show spoiler",
+    onClick: () => setShown(true),
+    children: [
+      children,
+      /* @__PURE__ */ jsx_runtime.jsx("span", {
+        children: "Spoiler"
+      })
+    ]
+  });
+}
+function SavedMediaList({ media }) {
+  return /* @__PURE__ */ jsx_runtime.jsx("div", {
+    className: "dl-ml-media",
+    children: media.map((m) => {
+      if (m.kind === "image") {
+        const img = /* @__PURE__ */ jsx_runtime.jsx("img", {
+          src: m.url,
+          alt: m.name,
+          width: m.width,
+          height: m.height,
+          loading: "lazy"
+        });
+        return /* @__PURE__ */ jsx_runtime.jsx(import_api.React.Fragment, {
+          children: m.spoiler ? /* @__PURE__ */ jsx_runtime.jsx(Spoiler, {
+            children: img
+          }) : img
+        }, m.key);
+      }
+      if (m.kind === "video")
+        return /* @__PURE__ */ jsx_runtime.jsx("video", {
+          src: m.url,
+          controls: true,
+          preload: "metadata",
+          "aria-label": m.name
+        }, m.key);
+      if (m.kind === "audio")
+        return /* @__PURE__ */ jsx_runtime.jsx("audio", {
+          src: m.url,
+          controls: true,
+          preload: "metadata",
+          "aria-label": m.name
+        }, m.key);
+      return /* @__PURE__ */ jsx_runtime.jsxs("a", {
+        className: "dl-ml-file",
+        href: m.url,
+        download: m.name,
+        children: [
+          m.name,
+          " ",
+          /* @__PURE__ */ jsx_runtime.jsx("small", {
+            children: formatSize(m.size)
+          })
+        ]
+      }, m.key);
+    })
+  });
+}
 function Version({ message, version }) {
   const render = useRenderedContent;
   return /* @__PURE__ */ jsx_runtime.jsxs("div", {
@@ -318,6 +553,9 @@ function Version({ message, version }) {
           content: version.content,
           render
         }) : version.content
+      }),
+      !!version.media?.length && /* @__PURE__ */ jsx_runtime.jsx(SavedMediaList, {
+        media: version.media
       })
     ]
   });
@@ -326,9 +564,13 @@ function Logged({ log, message }) {
   const entry = import_api.React.useSyncExternalStore(log.subscribe, () => log.get(message.channel_id, message.id));
   if (!entry)
     return null;
+  const saved = entry.deletedAt !== undefined && !!entry.media?.length;
   return /* @__PURE__ */ jsx_runtime.jsxs("div", {
-    className: "dl-ml",
+    className: saved ? "dl-ml dl-ml-saved" : "dl-ml",
     children: [
+      saved && /* @__PURE__ */ jsx_runtime.jsx(SavedMediaList, {
+        media: entry.media
+      }),
       entry.edits.length > 0 && /* @__PURE__ */ jsx_runtime.jsxs("div", {
         className: "dl-ml-history",
         role: "group",
@@ -409,6 +651,12 @@ var settings = {
   ignoreOwnDeletes: { type: "boolean", label: "Ignore my own deletes", description: "Messages you delete yourself disappear as usual.", default: true },
   ignoreSelf: { type: "boolean", label: "Ignore my own messages", description: "Never log your messages, whoever deletes or edits them.", default: false },
   ignoreBots: { type: "boolean", label: "Ignore bots", description: "Don't log messages from bots and apps.", default: false },
+  saveMedia: {
+    type: "boolean",
+    label: "Keep deleted pictures, videos and files",
+    description: "Saves the attachments in the channel you're looking at as they load (up to 25 MB each, in memory), so a deleted message still shows them.",
+    default: true
+  },
   limit: {
     type: "number",
     label: "Messages logged per channel",
@@ -419,7 +667,92 @@ var settings = {
     step: 10
   }
 };
-function install(ctx, log, store) {
+function mediaSaver(ctx, cache) {
+  const pending = new Map;
+  const queue = [];
+  let running = 0;
+  const pump = () => {
+    while (running < 2 && queue.length) {
+      running++;
+      queue.shift()().finally(() => {
+        running--;
+        pump();
+      });
+    }
+  };
+  async function download(a) {
+    const name = a.filename ?? "attachment";
+    for (const url of [a.url, a.proxy_url]) {
+      if (!url)
+        continue;
+      try {
+        const res = await fetch(url, { cache: "force-cache" });
+        if (!res.ok)
+          continue;
+        const blob = await res.blob();
+        if (blob.size > MAX_SAVED_BYTES)
+          return;
+        return {
+          key: attachmentKey(a),
+          name,
+          kind: mediaKind(a),
+          url: URL.createObjectURL(blob),
+          size: blob.size,
+          ...a.width && { width: a.width },
+          ...a.height && { height: a.height },
+          spoiler: name.startsWith("SPOILER_")
+        };
+      } catch {}
+    }
+  }
+  const fetchOnce = (a) => {
+    const key = attachmentKey(a);
+    let job = pending.get(key);
+    if (!job) {
+      job = new Promise((resolve) => {
+        queue.push(() => download(a).then(resolve, () => resolve(undefined)));
+        pump();
+      });
+      pending.set(key, job);
+      job.finally(() => pending.delete(key));
+    }
+    return job;
+  };
+  return {
+    prefetch(attachments) {
+      if (!ctx.settings.get("saveMedia"))
+        return;
+      for (const a of attachmentsToSave(attachments)) {
+        const key = attachmentKey(a);
+        if (cache.has(key) || pending.has(key))
+          continue;
+        fetchOnce(a).then((m) => m && cache.set(key, m));
+      }
+    },
+    keep(attachments, later) {
+      if (!ctx.settings.get("saveMedia"))
+        return [];
+      const now = [];
+      const missing = [];
+      for (const a of attachmentsToSave(attachments)) {
+        const saved = cache.take(attachmentKey(a));
+        if (saved)
+          now.push(saved);
+        else
+          missing.push(a);
+      }
+      if (missing.length) {
+        Promise.all(missing.map((a) => fetchOnce(a).then((m) => m && (cache.take(m.key) ?? m)))).then((list) => {
+          const got = list.filter((m) => !!m);
+          if (got.length)
+            later(got);
+        });
+      }
+      return now;
+    }
+  };
+}
+function install(ctx, log, store, saver) {
   const registry = import_api.Dispatcher._actionHandlers;
   const handlers = registry?._dependencyGraph?.getNodeData?.(store.getDispatchToken?.())?.actionHandler;
   if (!handlers || !["MESSAGE_DELETE", "MESSAGE_DELETE_BULK", "MESSAGE_UPDATE"].every((t) => typeof handlers[t] === "function")) {
@@ -463,11 +796,25 @@ function install(ctx, log, store) {
     const message = store.getMessage(channelId, id);
     return !!message && shouldLog(message, logFilters());
   };
+  const keepMedia = (channelId, id) => {
+    const attachments = store.getMessage(channelId, id)?.attachments;
+    if (!attachments?.length || log.get(channelId, id)?.media?.length)
+      return;
+    const now = saver.keep(attachments, (later) => {
+      if (!log.addMedia(channelId, id, later))
+        for (const m of later)
+          URL.revokeObjectURL(m.url);
+    });
+    if (!log.addMedia(channelId, id, now))
+      for (const m of now)
+        URL.revokeObjectURL(m.url);
+  };
   ctx.hook.instead(handlers, "MESSAGE_DELETE", (call) => {
     const action = call.args[0];
     if (action.eviPurge || !shouldKeep(action, action.channelId, action.id))
       return call.callOriginal(...call.args);
     purge(log.markDeleted(action.channelId, action.id));
+    keepMedia(action.channelId, action.id);
     return false;
   });
   ctx.hook.instead(handlers, "MESSAGE_DELETE_BULK", (call) => {
@@ -480,18 +827,29 @@ function install(ctx, log, store) {
       (shouldKeep(action, action.channelId, id) ? keep : drop).push(id);
     const evicted = keep.flatMap((id) => log.markDeleted(action.channelId, id));
     purge(evicted);
+    for (const id of keep)
+      keepMedia(action.channelId, id);
     return drop.length ? call.callOriginal({ ...action, ids: drop }) : false;
   });
   ctx.hook.before(handlers, "MESSAGE_UPDATE", ({ args }) => {
     const next = args[0]?.message;
-    if (!ctx.settings.get("logEdits") || !next?.id || typeof next.content !== "string")
+    if (!ctx.settings.get("logEdits") || !next?.id)
       return;
     const channelId = next.channel_id;
     const old = store.getMessage(channelId, next.id);
-    if (!old || typeof old.content !== "string" || old.content === next.content || !shouldLog(old, logFilters()))
+    if (!old || typeof old.content !== "string" || !shouldLog(old, logFilters()))
+      return;
+    const changedText = typeof next.content === "string" && old.content !== next.content;
+    const removed = removedAttachments(old.attachments, next.attachments);
+    if (!changedText && !removed.length)
       return;
     const timestamp = Number(old.editedTimestamp ?? old.timestamp) || Date.now();
-    purge(log.addEdit(channelId, next.id, { content: old.content, timestamp }));
+    const media = saver.keep(removed, (later) => {
+      if (!log.addEditMedia(channelId, next.id, timestamp, later))
+        for (const m of later)
+          URL.revokeObjectURL(m.url);
+    });
+    purge(log.addEdit(channelId, next.id, { content: old.content, timestamp, ...media.length && { media } }));
   });
   invalidate();
   const runtime = {
@@ -550,9 +908,33 @@ function guildChannelIds(guildId) {
 var message_logger_default = import_api.definePlugin({
   settings,
   start(ctx) {
-    const log = new MessageLog({ perChannel: ctx.settings.get("limit") });
+    const revoke = (m) => URL.revokeObjectURL(m.url);
+    const log = new MessageLog({ perChannel: ctx.settings.get("limit") }, (entry) => {
+      for (const m of entry.media ?? [])
+        revoke(m);
+      for (const e of entry.edits)
+        for (const m of e.media ?? [])
+          revoke(m);
+    });
+    const cache = new MediaCache(CACHE_BYTES, revoke);
+    const saver = mediaSaver(ctx, cache);
+    ctx.onDispose(() => cache.clear());
     ctx.addStyle(css);
-    withStore(ctx, "MessageStore", (store) => install(ctx, log, store));
+    withStore(ctx, "MessageStore", (store) => install(ctx, log, store, saver));
+    let selected;
+    withStore(ctx, "SelectedChannelStore", (s) => void (selected = s));
+    const inView = (channelId) => !!channelId && channelId === selected?.getChannelId?.();
+    ctx.flux.subscribe("MESSAGE_CREATE", (action) => {
+      if (inView(action.channelId) && !action.optimistic)
+        saver.prefetch(action.message?.attachments);
+    });
+    ctx.flux.subscribe("LOAD_MESSAGES_SUCCESS", (action) => {
+      if (!inView(action.channelId) || !Array.isArray(action.messages))
+        return;
+      for (const m of action.messages.slice(0, SAVE_FROM_LOADED))
+        saver.prefetch(m?.attachments);
+    });
+    ctx.settings.onChange((values) => void (!values.saveMedia && cache.clear()));
     if (!useRenderedContent)
       ctx.waitFor(renderedContentFilter, (fn) => void (useRenderedContent = fn));
     if (!markupClass)

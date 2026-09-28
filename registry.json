@@ -983,33 +983,40 @@
         {
             "id": "message-logger",
             "name": "Message Logger",
-            "description": "Deleted messages stay in the chat, marked as deleted, and edited messages show what they said before. Kept in memory only: nothing is saved, and it's all gone when Discord restarts.",
+            "description": "Deleted messages stay in the chat, marked as deleted, with their pictures, videos and files, and edited messages show what they said before. Kept in memory only: nothing is saved, and it's all gone when Discord restarts.",
             "authors": [
                 "Evi"
             ],
             "authorIds": [
                 "evi"
             ],
-            "version": "1.1.2",
+            "version": "1.2.0",
             "tags": [
                 "messages"
             ],
             "native": false,
-            "minEviVersion": "0.7.0",
+            "minEviVersion": "1.0.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/message-logger/manifest.json?v=d9565b1a7253",
-                    "sha256": "d9565b1a7253db148fb5730c13c8dbdb97323168d4fc1170c2a02a688f028188"
+                    "url": "https://evi.rest/store/plugins/message-logger/manifest.json?v=f02af33a74a7",
+                    "sha256": "f02af33a74a7497696d658ac77ac932213f580798ec899a2461cab7cadd4acc4"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/message-logger/index.js?v=3b8747b94f87",
-                    "sha256": "3b8747b94f878e4f2f2a4581f5b563577385496a80b7c58668a630aa9a81c204"
+                    "url": "https://evi.rest/store/plugins/message-logger/index.js?v=01709d770d70",
+                    "sha256": "01709d770d705f51cbff066adc0be9bb21d7448973d99132e62a82737c7a1536"
                 }
             },
-            "updatedAt": "2026-09-27",
+            "updatedAt": "2026-09-28",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/message-logger",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.2.0",
+                    "notes": [
+                        "Deleted pictures, videos and files stay too. Discord deletes them from its servers with the message, so the ones in the channel you're looking at are saved as they load, in memory, up to 25 MB each.",
+                        "An edit that removes an attachment keeps it with the old version."
+                    ]
+                },
                 {
                     "version": "1.1.2",
                     "notes": [
@@ -1036,7 +1043,10 @@
                 }
             ],
             "permissions": {
-                "network": [],
+                "network": [
+                    "discordapp.com",
+                    "discordapp.net"
+                ],
                 "readMessages": true,
                 "sendMessages": false,
                 "changeSettings": false
