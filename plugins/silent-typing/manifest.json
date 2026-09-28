@@ -2,16 +2,49 @@
     "id": "silent-typing",
     "name": "Silent Typing",
     "description": "Others don't see \"is typing…\" while you type. Toggle it with /silenttyping or the keyboard button in the chat bar.",
-    "version": "1.0.2",
-    "authors": ["Evi"],
-    "tags": ["privacy", "messages"],
+    "version": "1.1.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "privacy",
+        "messages"
+    ],
     "permissions": {},
-    "changelog": [{ "version": "1.0.2", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] }, { "version": "1.0.1", "notes": ["Typing stays smooth even if Discord changes its chat bar buttons: the button no longer searches Discord's code on every keystroke."] }, { "version": "1.0.0", "notes": ["First release."] }],
+    "changelog": [
+        {
+            "version": "1.1.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Typing stays smooth even if Discord changes its chat bar buttons: the button no longer searches Discord's code on every keystroke."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
     "locales": {
         "de": {
             "name": "Leises Tippen",
             "description": "Andere sehen kein „schreibt…“, während du tippst. Schalte es mit /silenttyping oder dem Tastatur-Button in der Chatleiste um.",
             "changelog": {
+                "1.1.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
                 "1.0.2": [
                     "Sagt jetzt, was es braucht: nichts, was Discord ihm nicht ohnehin zeigt. Evi hält es dazu an."
                 ],
@@ -27,6 +60,9 @@
             "name": "Escritura silenciosa",
             "description": "Los demás no ven «está escribiendo…» mientras escribes. Actívalo o desactívalo con /silenttyping o con el botón de teclado de la barra de chat.",
             "changelog": {
+                "1.1.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
                 "1.0.2": [
                     "Ahora dice qué necesita, que es nada más allá de lo que Discord ya le muestra, y Evi se lo exige."
                 ],
@@ -42,6 +78,9 @@
             "name": "Saisie silencieuse",
             "description": "Les autres ne voient pas « est en train d'écrire… » pendant que vous écrivez. Activez-le avec /silenttyping ou le bouton clavier de la barre de discussion.",
             "changelog": {
+                "1.1.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
                 "1.0.2": [
                     "Indique désormais ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi le lui fait respecter."
                 ],
@@ -57,6 +96,9 @@
             "name": "サイレント入力",
             "description": "入力中でも、他の人に「入力中…」と表示されません。/silenttyping またはチャットバーのキーボードボタンで切り替えられます。",
             "changelog": {
+                "1.1.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
                 "1.0.2": [
                     "必要とするものを明示するようになりました。Discordがすでに表示している範囲を超えるものは不要で、Eviがそれを守らせます。"
                 ],
@@ -72,6 +114,9 @@
             "name": "Ciche pisanie",
             "description": "Inni nie widzą „pisze…”, gdy piszesz. Przełączaj to poleceniem /silenttyping lub przyciskiem klawiatury na pasku czatu.",
             "changelog": {
+                "1.1.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
                 "1.0.2": [
                     "Podaje teraz, czego potrzebuje, czyli niczego ponad to, co Discord już mu pokazuje, a Evi tego pilnuje."
                 ],
@@ -87,6 +132,9 @@
             "name": "Digitação silenciosa",
             "description": "Os outros não veem \"digitando…\" enquanto você digita. Ligue ou desligue com /silenttyping ou com o botão de teclado na barra de chat.",
             "changelog": {
+                "1.1.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
                 "1.0.2": [
                     "Agora diz do que precisa, que é nada além do que o Discord já mostra a ele, e o Evi garante isso."
                 ],
@@ -102,6 +150,9 @@
             "name": "Тихий набор",
             "description": "Другие не видят «печатает…», пока вы набираете текст. Переключайте командой /silenttyping или кнопкой с клавиатурой в строке чата.",
             "changelog": {
+                "1.1.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
                 "1.0.2": [
                     "Теперь указывает, что ему нужно, а нужно ему лишь то, что Discord и так показывает, и Evi следит за этим."
                 ],
@@ -117,6 +168,9 @@
             "name": "Sessiz Yazma",
             "description": "Sen yazarken başkaları \"yazıyor…\" göstergesini görmez. /silenttyping ile veya sohbet çubuğundaki klavye düğmesiyle aç ya da kapat.",
             "changelog": {
+                "1.1.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
                 "1.0.2": [
                     "Neye ihtiyaç duyduğunu artık belirtiyor: Discord'un zaten gösterdiği şeyin ötesinde hiçbir şey. Evi de buna uymasını sağlıyor."
                 ],

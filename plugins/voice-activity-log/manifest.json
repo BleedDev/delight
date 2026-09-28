@@ -2,18 +2,60 @@
     "id": "voice-activity-log",
     "name": "Voice Activity Log",
     "description": "Logs who joins and leaves the voice channel you're in, with times and how long they stayed. Open it from the Voice Connected panel or with /vclog. Memory only.",
-    "version": "1.1.4",
-    "authors": ["Evi"],
-    "tags": ["voice"],
+    "version": "1.2.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "voice"
+    ],
     "minEviVersion": "0.3.2",
     "permissions": {},
     "changelog": [
-        { "version": "1.1.4", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] },
-        { "version": "1.1.3", "notes": ["Faster: voice updates from channels you're not in are skipped right away."] },
-        { "version": "1.1.2", "notes": ["The log scrolls with Discord's slim scrollbar instead of the grey one with arrows."] },
-        { "version": "1.1.1", "notes": ["Faster: a little less work on every voice update."] },
-        { "version": "1.1.0", "notes": ["A cleaner log: sessions are listed by channel with a dot on the one you're in, plus a proper search field and bigger avatars.", "Opens and closes with Discord's own dialog animation.", "People already in the channel when you join now read \"was already here\"."] },
-        { "version": "1.0.0", "notes": ["First release."] }
+        {
+            "version": "1.2.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
+        {
+            "version": "1.1.4",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
+        {
+            "version": "1.1.3",
+            "notes": [
+                "Faster: voice updates from channels you're not in are skipped right away."
+            ]
+        },
+        {
+            "version": "1.1.2",
+            "notes": [
+                "The log scrolls with Discord's slim scrollbar instead of the grey one with arrows."
+            ]
+        },
+        {
+            "version": "1.1.1",
+            "notes": [
+                "Faster: a little less work on every voice update."
+            ]
+        },
+        {
+            "version": "1.1.0",
+            "notes": [
+                "A cleaner log: sessions are listed by channel with a dot on the one you're in, plus a proper search field and bigger avatars.",
+                "Opens and closes with Discord's own dialog animation.",
+                "People already in the channel when you join now read \"was already here\"."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
     ],
     "enabledByDefault": false,
     "locales": {
@@ -21,96 +63,232 @@
             "name": "Sprachaktivitätsprotokoll",
             "description": "Protokolliert, wer den Sprachkanal betritt und verlässt, in dem du bist, mit Uhrzeiten und Verweildauer. Öffne es über das Panel „Sprache verbunden“ oder mit /vclog. Nur im Arbeitsspeicher.",
             "changelog": {
-                "1.1.4": ["Gibt an, was es braucht, nämlich nichts über das hinaus, was Discord ihm ohnehin zeigt, und Evi achtet darauf."],
-                "1.1.3": ["Schneller: Sprachupdates aus Kanälen, in denen du nicht bist, werden sofort übersprungen."],
-                "1.1.2": ["Das Protokoll scrollt mit Discords schlanker Bildlaufleiste statt der grauen mit Pfeilen."],
-                "1.1.1": ["Schneller: bei jedem Sprachupdate ist etwas weniger zu tun."],
-                "1.1.0": ["Ein übersichtlicheres Protokoll: Sitzungen werden nach Kanal aufgelistet, mit einem Punkt beim aktuellen Kanal, dazu ein richtiges Suchfeld und größere Avatare.","Öffnet und schließt sich mit Discords eigener Dialoganimation.","Wer schon im Kanal war, als du beigetreten bist, wird jetzt mit „war schon da“ angezeigt."],
-                "1.0.0": ["Erste Version."]
+                "1.2.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
+                "1.1.4": [
+                    "Gibt an, was es braucht, nämlich nichts über das hinaus, was Discord ihm ohnehin zeigt, und Evi achtet darauf."
+                ],
+                "1.1.3": [
+                    "Schneller: Sprachupdates aus Kanälen, in denen du nicht bist, werden sofort übersprungen."
+                ],
+                "1.1.2": [
+                    "Das Protokoll scrollt mit Discords schlanker Bildlaufleiste statt der grauen mit Pfeilen."
+                ],
+                "1.1.1": [
+                    "Schneller: bei jedem Sprachupdate ist etwas weniger zu tun."
+                ],
+                "1.1.0": [
+                    "Ein übersichtlicheres Protokoll: Sitzungen werden nach Kanal aufgelistet, mit einem Punkt beim aktuellen Kanal, dazu ein richtiges Suchfeld und größere Avatare.",
+                    "Öffnet und schließt sich mit Discords eigener Dialoganimation.",
+                    "Wer schon im Kanal war, als du beigetreten bist, wird jetzt mit „war schon da“ angezeigt."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
             }
         },
         "es": {
             "name": "Registro de actividad de voz",
             "description": "Registra quién entra y sale del canal de voz en el que estás, con las horas y cuánto tiempo estuvieron. Ábrelo desde el panel de Voz conectada o con /vclog. Solo en memoria.",
             "changelog": {
-                "1.1.4": ["Indica lo que necesita, que es nada más allá de lo que Discord ya le muestra, y Evi lo hace cumplir."],
-                "1.1.3": ["Más rápido: las actualizaciones de voz de canales en los que no estás se omiten al instante."],
-                "1.1.2": ["El registro se desplaza con la barra delgada de Discord en lugar de la gris con flechas."],
-                "1.1.1": ["Más rápido: un poco menos de trabajo en cada actualización de voz."],
-                "1.1.0": ["Un registro más limpio: las sesiones se listan por canal con un punto en el que estás, además de un campo de búsqueda como es debido y avatares más grandes.","Se abre y se cierra con la animación de diálogo de Discord.","Quienes ya estaban en el canal cuando te uniste ahora aparecen como «ya estaba aquí»."],
-                "1.0.0": ["Primera versión."]
+                "1.2.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
+                "1.1.4": [
+                    "Indica lo que necesita, que es nada más allá de lo que Discord ya le muestra, y Evi lo hace cumplir."
+                ],
+                "1.1.3": [
+                    "Más rápido: las actualizaciones de voz de canales en los que no estás se omiten al instante."
+                ],
+                "1.1.2": [
+                    "El registro se desplaza con la barra delgada de Discord en lugar de la gris con flechas."
+                ],
+                "1.1.1": [
+                    "Más rápido: un poco menos de trabajo en cada actualización de voz."
+                ],
+                "1.1.0": [
+                    "Un registro más limpio: las sesiones se listan por canal con un punto en el que estás, además de un campo de búsqueda como es debido y avatares más grandes.",
+                    "Se abre y se cierra con la animación de diálogo de Discord.",
+                    "Quienes ya estaban en el canal cuando te uniste ahora aparecen como «ya estaba aquí»."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
             }
         },
         "fr": {
             "name": "Journal d'activité vocale",
             "description": "Enregistre qui rejoint et quitte le salon vocal où tu te trouves, avec les heures et la durée de présence. Ouvre-le depuis le panneau « Vocal connecté » ou avec /vclog. En mémoire uniquement.",
             "changelog": {
-                "1.1.4": ["Indique ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi le lui fait respecter."],
-                "1.1.3": ["Plus rapide : les mises à jour vocales des salons où tu n'es pas sont ignorées tout de suite."],
-                "1.1.2": ["Le journal défile avec la barre de défilement fine de Discord au lieu de la grise avec flèches."],
-                "1.1.1": ["Plus rapide : un peu moins de travail à chaque mise à jour vocale."],
-                "1.1.0": ["Un journal plus clair : les sessions sont listées par salon avec un point sur celui où tu es, plus un vrai champ de recherche et de plus grands avatars.","S'ouvre et se ferme avec l'animation de boîte de dialogue de Discord.","Les personnes déjà présentes dans le salon quand tu l'as rejoint apparaissent maintenant comme « était déjà là »."],
-                "1.0.0": ["Première version."]
+                "1.2.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
+                "1.1.4": [
+                    "Indique ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi le lui fait respecter."
+                ],
+                "1.1.3": [
+                    "Plus rapide : les mises à jour vocales des salons où tu n'es pas sont ignorées tout de suite."
+                ],
+                "1.1.2": [
+                    "Le journal défile avec la barre de défilement fine de Discord au lieu de la grise avec flèches."
+                ],
+                "1.1.1": [
+                    "Plus rapide : un peu moins de travail à chaque mise à jour vocale."
+                ],
+                "1.1.0": [
+                    "Un journal plus clair : les sessions sont listées par salon avec un point sur celui où tu es, plus un vrai champ de recherche et de plus grands avatars.",
+                    "S'ouvre et se ferme avec l'animation de boîte de dialogue de Discord.",
+                    "Les personnes déjà présentes dans le salon quand tu l'as rejoint apparaissent maintenant comme « était déjà là »."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
             }
         },
         "ja": {
             "name": "ボイスアクティビティログ",
             "description": "今いるボイスチャンネルに誰が参加・退出したかを、時刻と滞在時間つきで記録します。「ボイス接続」パネルまたは /vclog から開けます。メモリ内のみ。",
             "changelog": {
-                "1.1.4": ["必要な権限を明示するようになりました。Discord がすでに表示している以上のものは必要なく、Evi がそれを守らせます。"],
-                "1.1.3": ["高速化：参加していないチャンネルのボイス更新をすぐにスキップします。"],
-                "1.1.2": ["ログのスクロールが、矢印付きのグレーのバーではなく Discord のスリムなスクロールバーになりました。"],
-                "1.1.1": ["高速化：ボイス更新ごとの処理を少し減らしました。"],
-                "1.1.0": ["ログをすっきりさせました。セッションはチャンネルごとに一覧表示され、今いるチャンネルにはドットが付きます。あわせて本格的な検索欄と大きめのアバターも追加しました。","Discord 標準のダイアログアニメーションで開閉するようになりました。","あなたが参加した時点でチャンネルにいた人は「最初からいました」と表示されます。"],
-                "1.0.0": ["初回リリース。"]
+                "1.2.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
+                "1.1.4": [
+                    "必要な権限を明示するようになりました。Discord がすでに表示している以上のものは必要なく、Evi がそれを守らせます。"
+                ],
+                "1.1.3": [
+                    "高速化：参加していないチャンネルのボイス更新をすぐにスキップします。"
+                ],
+                "1.1.2": [
+                    "ログのスクロールが、矢印付きのグレーのバーではなく Discord のスリムなスクロールバーになりました。"
+                ],
+                "1.1.1": [
+                    "高速化：ボイス更新ごとの処理を少し減らしました。"
+                ],
+                "1.1.0": [
+                    "ログをすっきりさせました。セッションはチャンネルごとに一覧表示され、今いるチャンネルにはドットが付きます。あわせて本格的な検索欄と大きめのアバターも追加しました。",
+                    "Discord 標準のダイアログアニメーションで開閉するようになりました。",
+                    "あなたが参加した時点でチャンネルにいた人は「最初からいました」と表示されます。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
             }
         },
         "pl": {
             "name": "Dziennik aktywności głosowej",
             "description": "Zapisuje, kto dołącza do kanału głosowego, w którym jesteś, i z niego wychodzi, wraz z godzinami i czasem pobytu. Otwórz go z panelu „Połączono z kanałem głosowym” albo poleceniem /vclog. Tylko w pamięci.",
             "changelog": {
-                "1.1.4": ["Mówi, czego potrzebuje, czyli niczego ponad to, co Discord już mu pokazuje, a Evi tego przestrzega."],
-                "1.1.3": ["Szybciej: aktualizacje głosowe z kanałów, w których nie jesteś, są pomijane od razu."],
-                "1.1.2": ["Dziennik przewija się smukłym paskiem Discorda zamiast szarego ze strzałkami."],
-                "1.1.1": ["Szybciej: przy każdej aktualizacji głosowej jest trochę mniej pracy."],
-                "1.1.0": ["Czytelniejszy dziennik: sesje są wypisane według kanałów z kropką przy tym, w którym jesteś, do tego porządne pole wyszukiwania i większe awatary.","Otwiera się i zamyka z animacją okien dialogowych Discorda.","Osoby, które były już na kanale, gdy dołączyłeś(-aś), są teraz oznaczone jako „był(a) tu już wcześniej”."],
-                "1.0.0": ["Pierwsze wydanie."]
+                "1.2.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
+                "1.1.4": [
+                    "Mówi, czego potrzebuje, czyli niczego ponad to, co Discord już mu pokazuje, a Evi tego przestrzega."
+                ],
+                "1.1.3": [
+                    "Szybciej: aktualizacje głosowe z kanałów, w których nie jesteś, są pomijane od razu."
+                ],
+                "1.1.2": [
+                    "Dziennik przewija się smukłym paskiem Discorda zamiast szarego ze strzałkami."
+                ],
+                "1.1.1": [
+                    "Szybciej: przy każdej aktualizacji głosowej jest trochę mniej pracy."
+                ],
+                "1.1.0": [
+                    "Czytelniejszy dziennik: sesje są wypisane według kanałów z kropką przy tym, w którym jesteś, do tego porządne pole wyszukiwania i większe awatary.",
+                    "Otwiera się i zamyka z animacją okien dialogowych Discorda.",
+                    "Osoby, które były już na kanale, gdy dołączyłeś(-aś), są teraz oznaczone jako „był(a) tu już wcześniej”."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
             }
         },
         "pt-BR": {
             "name": "Registro de atividade de voz",
             "description": "Registra quem entra e sai do canal de voz em que você está, com horários e quanto tempo ficaram. Abra pelo painel de Voz conectada ou com /vclog. Só na memória.",
             "changelog": {
-                "1.1.4": ["Informa o que precisa, que é nada além do que o Discord já mostra, e o Evi faz cumprir isso."],
-                "1.1.3": ["Mais rápido: atualizações de voz de canais em que você não está são ignoradas na hora."],
-                "1.1.2": ["O registro rola com a barra de rolagem fina do Discord em vez da cinza com setas."],
-                "1.1.1": ["Mais rápido: um pouco menos de trabalho a cada atualização de voz."],
-                "1.1.0": ["Um registro mais limpo: as sessões são listadas por canal com um ponto no que você está, além de um campo de busca de verdade e avatares maiores.","Abre e fecha com a animação de diálogo do próprio Discord.","Quem já estava no canal quando você entrou agora aparece como “já estava aqui”."],
-                "1.0.0": ["Primeira versão."]
+                "1.2.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
+                "1.1.4": [
+                    "Informa o que precisa, que é nada além do que o Discord já mostra, e o Evi faz cumprir isso."
+                ],
+                "1.1.3": [
+                    "Mais rápido: atualizações de voz de canais em que você não está são ignoradas na hora."
+                ],
+                "1.1.2": [
+                    "O registro rola com a barra de rolagem fina do Discord em vez da cinza com setas."
+                ],
+                "1.1.1": [
+                    "Mais rápido: um pouco menos de trabalho a cada atualização de voz."
+                ],
+                "1.1.0": [
+                    "Um registro mais limpo: as sessões são listadas por canal com um ponto no que você está, além de um campo de busca de verdade e avatares maiores.",
+                    "Abre e fecha com a animação de diálogo do próprio Discord.",
+                    "Quem já estava no canal quando você entrou agora aparece como “já estava aqui”."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
             }
         },
         "ru": {
             "name": "Журнал голосовой активности",
             "description": "Записывает, кто заходит в голосовой канал, в котором вы находитесь, и выходит из него, со временем и длительностью пребывания. Открывается с панели «Голосовая связь подключена» или командой /vclog. Только в памяти.",
             "changelog": {
-                "1.1.4": ["Сообщает, что ему нужно, а именно ничего сверх того, что Discord и так ему показывает, и Evi следит за этим."],
-                "1.1.3": ["Быстрее: голосовые обновления из каналов, в которых вас нет, пропускаются сразу."],
-                "1.1.2": ["Журнал прокручивается тонкой полосой прокрутки Discord вместо серой со стрелками."],
-                "1.1.1": ["Быстрее: при каждом голосовом обновлении делается чуть меньше работы."],
-                "1.1.0": ["Журнал стал аккуратнее: сеансы перечислены по каналам, а канал, где вы сейчас, отмечен точкой. Ещё появились нормальное поле поиска и аватарки покрупнее.","Открывается и закрывается со штатной анимацией диалогов Discord.","Тех, кто уже был в канале, когда вы зашли, теперь видно как «уже был(а) здесь»."],
-                "1.0.0": ["Первый выпуск."]
+                "1.2.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
+                "1.1.4": [
+                    "Сообщает, что ему нужно, а именно ничего сверх того, что Discord и так ему показывает, и Evi следит за этим."
+                ],
+                "1.1.3": [
+                    "Быстрее: голосовые обновления из каналов, в которых вас нет, пропускаются сразу."
+                ],
+                "1.1.2": [
+                    "Журнал прокручивается тонкой полосой прокрутки Discord вместо серой со стрелками."
+                ],
+                "1.1.1": [
+                    "Быстрее: при каждом голосовом обновлении делается чуть меньше работы."
+                ],
+                "1.1.0": [
+                    "Журнал стал аккуратнее: сеансы перечислены по каналам, а канал, где вы сейчас, отмечен точкой. Ещё появились нормальное поле поиска и аватарки покрупнее.",
+                    "Открывается и закрывается со штатной анимацией диалогов Discord.",
+                    "Тех, кто уже был в канале, когда вы зашли, теперь видно как «уже был(а) здесь»."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
             }
         },
         "tr": {
             "name": "Ses Etkinliği Kaydı",
             "description": "Bulunduğun ses kanalına kimlerin girip çıktığını, saatleri ve ne kadar kaldıklarıyla birlikte kaydeder. Ses Bağlı panelinden veya /vclog ile aç. Yalnızca bellekte.",
             "changelog": {
-                "1.1.4": ["Neye ihtiyacı olduğunu söylüyor: Discord'un zaten gösterdiğinin ötesinde hiçbir şeye. Evi de buna uymasını sağlıyor."],
-                "1.1.3": ["Daha hızlı: bulunmadığın kanallardaki ses güncellemeleri hemen atlanıyor."],
-                "1.1.2": ["Kayıt, oklu gri çubuk yerine Discord'un ince kaydırma çubuğuyla kayıyor."],
-                "1.1.1": ["Daha hızlı: her ses güncellemesinde biraz daha az iş yapılıyor."],
-                "1.1.0": ["Daha temiz bir kayıt: oturumlar kanala göre listeleniyor, içinde olduğun kanalda bir nokta var; ayrıca düzgün bir arama alanı ve daha büyük avatarlar eklendi.","Discord'un kendi diyalog animasyonuyla açılıp kapanıyor.","Sen katıldığında kanalda zaten olanlar artık “zaten buradaydı” olarak görünüyor."],
-                "1.0.0": ["İlk sürüm."]
+                "1.2.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
+                "1.1.4": [
+                    "Neye ihtiyacı olduğunu söylüyor: Discord'un zaten gösterdiğinin ötesinde hiçbir şeye. Evi de buna uymasını sağlıyor."
+                ],
+                "1.1.3": [
+                    "Daha hızlı: bulunmadığın kanallardaki ses güncellemeleri hemen atlanıyor."
+                ],
+                "1.1.2": [
+                    "Kayıt, oklu gri çubuk yerine Discord'un ince kaydırma çubuğuyla kayıyor."
+                ],
+                "1.1.1": [
+                    "Daha hızlı: her ses güncellemesinde biraz daha az iş yapılıyor."
+                ],
+                "1.1.0": [
+                    "Daha temiz bir kayıt: oturumlar kanala göre listeleniyor, içinde olduğun kanalda bir nokta var; ayrıca düzgün bir arama alanı ve daha büyük avatarlar eklendi.",
+                    "Discord'un kendi diyalog animasyonuyla açılıp kapanıyor.",
+                    "Sen katıldığında kanalda zaten olanlar artık “zaten buradaydı” olarak görünüyor."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
             }
         }
     }

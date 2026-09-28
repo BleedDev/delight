@@ -85,7 +85,7 @@ describe("searching the API", () => {
 describe("API changelog", () => {
     test("newest first, dated, and every change says something", () => {
         const versions = API_CHANGELOG.map(r => r.version);
-        expect(versions[0]).toBe("1.0.0");
+        expect(versions[0]).toBe("1.1.0");
         for (let i = 1; i < versions.length; i++) {
             expect(Bun.semver.order(versions[i - 1], versions[i])).toBe(1);
         }
@@ -99,8 +99,12 @@ describe("API changelog", () => {
         }
     });
 
+    test("1.1.0 lists translations for plugins", () => {
+        expect(API_CHANGELOG[0].changes.map(c => c.symbol)).toEqual(expect.arrayContaining(["locales", "settings"]));
+    });
+
     test("1.0.0 lists what plugins gained", () => {
-        const symbols = API_CHANGELOG[0].changes.map(c => c.symbol);
+        const symbols = API_CHANGELOG.find(r => r.version === "1.0.0")!.changes.map(c => c.symbol);
         expect(symbols).toEqual(expect.arrayContaining(["ctx.keybind", "ctx.settings.schema", "new-plugin", "preview-plugin"]));
         // What it names exists
         expect(apiDoc("ctx.keybind")).toBeDefined();

@@ -11,6 +11,20 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.1.0": {
+            added: [
+                "**Evi spricht deine Sprache.** Evi, alle Plugins und der Store folgen der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch.",
+                "**Platziere deinen Hintergrund.** Füllen, Einpassen, Strecken, Zentriert oder Kacheln, dann in einer Live-Vorschau von Discord verschieben und zoomen.",
+                "**Wähle, was durchsichtig ist.** Stell ein, wie deckend Serverliste, Kanäle, Chat und Nachrichtenfeld über dem Hintergrund bleiben, und färbe sie in den Farben deines Designs.",
+            ],
+            improved: [
+                "**Einstellungen und Pop-ups bleiben deckend.** Der Hintergrund zeigt sich nur hinter dem Hauptfenster von Discord, außer du schaltest ihn auch für Einstellungen oder Pop-ups ein.",
+                "**„Quellcode ansehen“ zeigt den echten Code.** Auf der Seite eines Community-Plugins öffnet es genau den Code, den Evi installiert, mit dem Link des Autors daneben.",
+            ],
+            fixed: [
+                "Der Design-Editor behält die Übersetzungen eines Designs, wenn du es speicherst.",
+            ],
+        },
         "1.0.0": {
             added: [
                 "**Eine Startseite für den Store.** Was gerade angesagt ist, was diese Woche neu ist, Empfehlungen und Sammlungen von Evis Team, noch vor der vollständigen Liste.",
@@ -179,6 +193,20 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.1.0": {
+            added: [
+                "**Evi habla tu idioma.** Evi, todos los plugins y la tienda siguen el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés.",
+                "**Coloca tu fondo.** Rellenar, Ajustar, Estirar, Centrar o Mosaico, y luego arrástralo y haz zoom en una vista previa de Discord en vivo.",
+                "**Elige qué es transparente.** Ajusta qué tan opacos quedan la lista de servidores, los canales, el chat y el cuadro de mensaje sobre el fondo, y tíñelos con los colores de tu tema.",
+            ],
+            improved: [
+                "**Los ajustes y las ventanas emergentes siguen opacos.** El fondo solo se ve detrás de la ventana principal de Discord, salvo que lo actives también para ajustes o ventanas emergentes.",
+                "**Ver código fuente muestra el código real.** En la página de un plugin de la comunidad abre exactamente el código que Evi instala, con el enlace del autor al lado.",
+            ],
+            fixed: [
+                "El editor de temas conserva las traducciones de un tema al guardarlo.",
+            ],
+        },
         "1.0.0": {
             added: [
                 "**Una portada para la tienda.** Lo que es tendencia, lo nuevo de esta semana, selecciones del equipo y colecciones preparadas por el equipo de Evi, antes de la lista completa.",
@@ -347,6 +375,20 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.1.0": {
+            added: [
+                "**Evi parle ta langue.** Evi, tous les plugins et la boutique suivent la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais.",
+                "**Place ton fond d'écran.** Remplir, Ajuster, Étirer, Centrer ou Mosaïque, puis fais-le glisser et zoome dans un aperçu de Discord en direct.",
+                "**Choisis ce qui est transparent.** Règle l'opacité de la liste des serveurs, des salons, de la discussion et de la zone de message au-dessus du fond d'écran, et teinte-les aux couleurs de ton thème.",
+            ],
+            improved: [
+                "**Les paramètres et les fenêtres contextuelles restent opaques.** Le fond d'écran n'apparaît que derrière la fenêtre principale de Discord, sauf si tu l'actives aussi pour les paramètres ou les fenêtres contextuelles.",
+                "**Voir le code source montre le vrai code.** Sur la page d'un plugin de la communauté, il ouvre exactement le code qu'Evi installe, avec le lien de l'auteur à côté.",
+            ],
+            fixed: [
+                "L'éditeur de thèmes garde les traductions d'un thème quand tu l'enregistres.",
+            ],
+        },
         "1.0.0": {
             added: [
                 "**Une page d’accueil pour la boutique.** Les tendances, les nouveautés de la semaine, les sélections et les collections de l’équipe Evi, avant la liste complète.",
@@ -515,6 +557,20 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.1.0": {
+            added: [
+                "**Eviがあなたの言語に対応。** Evi、すべてのプラグイン、ストアがDiscordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。",
+                "**壁紙の配置を自由に。** 拡大・全体・引き伸ばし・中央・並べるから選び、Discordのライブプレビューでドラッグやズームができます。",
+                "**透ける部分を選べます。** サーバーリスト、チャンネル、チャット、入力欄が壁紙の上でどれだけ不透明に残るかを設定し、テーマの色で染められます。",
+            ],
+            improved: [
+                "**設定やポップアウトは不透明のまま。** 壁紙はDiscordのメイン画面の後ろにだけ表示されます。設定やポップアウトでも表示したい場合はオンにできます。",
+                "**「ソースを見る」で実際のコードを表示。** コミュニティプラグインのページでは、Eviがインストールするコードそのものが開き、作者のリンクはその隣に表示されます。",
+            ],
+            fixed: [
+                "テーマエディターで保存しても、テーマの翻訳が消えなくなりました。",
+            ],
+        },
         "1.0.0": {
             added: [
                 "**ストアのトップページ。** 全体のリストの前に、トレンド、今週の新着、Evi チームが選んだおすすめやコレクションが並びます。",
@@ -683,6 +739,20 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.1.0": {
+            added: [
+                "**Evi mówi w twoim języku.** Evi, wszystkie pluginy i sklep używają języka Discorda: niemieckiego, hiszpańskiego, francuskiego, japońskiego, polskiego, portugalskiego, rosyjskiego i tureckiego, oprócz angielskiego.",
+                "**Ustaw tapetę po swojemu.** Wypełnij, Dopasuj, Rozciągnij, Wyśrodkuj albo Sąsiadująco, a potem przeciągaj i przybliżaj ją w podglądzie Discorda na żywo.",
+                "**Wybierz, co ma być przezroczyste.** Ustaw, jak bardzo lista serwerów, kanały, czat i pole wiadomości zakrywają tapetę, i zabarw je kolorami swojego motywu.",
+            ],
+            improved: [
+                "**Ustawienia i wyskakujące okna zostają nieprzezroczyste.** Tapetę widać tylko za głównym oknem Discorda, chyba że włączysz ją też dla ustawień albo wyskakujących okien.",
+                "**Kod źródłowy pokazuje prawdziwy kod.** Na stronie pluginu społeczności otwiera dokładnie ten kod, który instaluje Evi, a link autora jest obok.",
+            ],
+            fixed: [
+                "Edytor motywów zachowuje tłumaczenia motywu przy zapisywaniu.",
+            ],
+        },
         "1.0.0": {
             added: [
                 "**Strona główna sklepu.** To, co jest na topie, nowości tego tygodnia, wybory redakcji i kolekcje przygotowane przez zespół Evi, jeszcze przed pełną listą.",
@@ -851,6 +921,20 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.1.0": {
+            added: [
+                "**O Evi fala o seu idioma.** O Evi, todos os plugins e a loja seguem o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês.",
+                "**Posicione seu papel de parede.** Preencher, Ajustar, Esticar, Centralizar ou Lado a lado, e depois arraste e dê zoom numa prévia do Discord ao vivo.",
+                "**Escolha o que fica transparente.** Defina o quanto a lista de servidores, os canais, o chat e a caixa de mensagem ficam sólidos sobre o papel de parede, e tinja-os com as cores do seu tema.",
+            ],
+            improved: [
+                "**Configurações e pop-ups continuam sólidos.** O papel de parede só aparece atrás da janela principal do Discord, a menos que você o ative também nas configurações ou nos pop-ups.",
+                "**Ver código-fonte mostra o código de verdade.** Na página de um plugin da comunidade, ele abre exatamente o código que o Evi instala, com o link do autor ao lado.",
+            ],
+            fixed: [
+                "O editor de temas mantém as traduções de um tema quando você o salva.",
+            ],
+        },
         "1.0.0": {
             added: [
                 "**Uma página inicial para a loja.** O que está em alta, as novidades da semana, seleções e coleções montadas pela equipe do Evi, antes da lista completa.",
@@ -1019,6 +1103,20 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.1.0": {
+            added: [
+                "**Evi говорит на вашем языке.** Evi, все плагины и магазин следуют языку Discord: немецкому, испанскому, французскому, японскому, польскому, португальскому, русскому и турецкому, а также английскому.",
+                "**Разместите обои как хотите.** Заполнение, по размеру, растянуть, по центру или замостить, а потом перетаскивайте и масштабируйте в живом превью Discord.",
+                "**Выберите, что будет прозрачным.** Задайте, насколько плотными остаются список серверов, каналы, чат и поле ввода поверх обоев, и окрасьте их в цвета своей темы.",
+            ],
+            improved: [
+                "**Настройки и всплывающие окна остаются непрозрачными.** Обои видны только за главным окном Discord, если не включить их и для настроек или всплывающих окон.",
+                "**«Исходный код» показывает настоящий код.** На странице плагина от сообщества открывается именно тот код, который устанавливает Evi, а ссылка автора стоит рядом.",
+            ],
+            fixed: [
+                "Редактор тем сохраняет переводы темы при сохранении.",
+            ],
+        },
         "1.0.0": {
             added: [
                 "**Главная страница магазина.** Что сейчас в тренде, новинки недели, подборки и коллекции от команды Evi, ещё до полного списка.",
@@ -1187,6 +1285,20 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.1.0": {
+            added: [
+                "**Evi senin dilini konuşuyor.** Evi, tüm eklentiler ve mağaza Discord'un dilini kullanıyor: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe.",
+                "**Duvar kâğıdını istediğin gibi yerleştir.** Doldur, Sığdır, Uzat, Ortala ya da Döşe; sonra Discord'un canlı önizlemesinde sürükleyip yakınlaştır.",
+                "**Neyin saydam olacağını sen seç.** Sunucu listesinin, kanalların, sohbetin ve mesaj kutusunun duvar kâğıdının üstünde ne kadar opak kalacağını ayarla, temanın renkleriyle boya.",
+            ],
+            improved: [
+                "**Ayarlar ve açılır pencereler opak kalıyor.** Duvar kâğıdı yalnızca Discord'un ana penceresinin arkasında görünür; istersen ayarlar ve açılır pencereler için de açabilirsin.",
+                "**Kaynağı görüntüle artık gerçek kodu gösteriyor.** Topluluk eklentisinin sayfasında Evi'nin kurduğu kodun ta kendisini açar, yazarın bağlantısı hemen yanında durur.",
+            ],
+            fixed: [
+                "Tema düzenleyici, kaydettiğinde temanın çevirilerini koruyor.",
+            ],
+        },
         "1.0.0": {
             added: [
                 "**Mağaza için bir ana sayfa.** Tam listeden önce, gündemdeki şeyler, bu haftanın yenilikleri, Evi ekibinin seçtikleri ve derlediği koleksiyonlar.",

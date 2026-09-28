@@ -2,14 +2,41 @@
     "id": "relationship-notifier",
     "name": "Relationship Notifier",
     "description": "Tells you when someone removes you as a friend, declines your friend request, or removes you from a group DM or server. Kept in memory only: nothing is saved, and the log is gone when Discord restarts.",
-    "version": "1.0.2",
-    "authors": ["Evi"],
-    "tags": ["social"],
-    "permissions": { "readMessages": true },
+    "version": "1.1.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "social"
+    ],
+    "permissions": {
+        "readMessages": true
+    },
     "changelog": [
-        { "version": "1.0.2", "notes": ["Says what it needs (reading messages), and Evi holds it to that."] },
-        { "version": "1.0.1", "notes": ["Faster: when a channel or server goes away, only what's needed to tell whether it concerns you is looked up."] },
-        { "version": "1.0.0", "notes": ["First release."] }
+        {
+            "version": "1.1.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Says what it needs (reading messages), and Evi holds it to that."
+            ]
+        },
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Faster: when a channel or server goes away, only what's needed to tell whether it concerns you is looked up."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
     ],
     "enabledByDefault": false,
     "locales": {
@@ -17,6 +44,9 @@
             "name": "Beziehungs-Benachrichtigungen",
             "description": "Sagt dir Bescheid, wenn dich jemand als Freund entfernt, deine Freundschaftsanfrage ablehnt oder dich aus einer Gruppen-DM oder von einem Server entfernt. Nur im Arbeitsspeicher: nichts wird gespeichert, und das Protokoll ist beim Neustart von Discord weg.",
             "changelog": {
+                "1.1.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
                 "1.0.2": [
                     "Sagt, was es braucht (Nachrichten lesen), und Evi hält es daran."
                 ],
@@ -32,6 +62,9 @@
             "name": "Avisos de relaciones",
             "description": "Te avisa cuando alguien te elimina como amigo, rechaza tu solicitud de amistad o te saca de un MD grupal o de un servidor. Solo en memoria: no se guarda nada y el registro desaparece al reiniciar Discord.",
             "changelog": {
+                "1.1.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
                 "1.0.2": [
                     "Indica lo que necesita (leer mensajes) y Evi se encarga de que lo cumpla."
                 ],
@@ -47,6 +80,9 @@
             "name": "Notifications de relations",
             "description": "Te prévient quand quelqu'un te retire de ses amis, refuse ta demande d'ami ou te retire d'un groupe de MP ou d'un serveur. Gardé en mémoire uniquement : rien n'est enregistré et le journal disparaît au redémarrage de Discord.",
             "changelog": {
+                "1.1.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
                 "1.0.2": [
                     "Indique ce dont il a besoin (lire les messages) et Evi le lui fait respecter."
                 ],
@@ -62,6 +98,9 @@
             "name": "リレーション通知",
             "description": "誰かにフレンドから削除されたとき、フレンド申請を拒否されたとき、グループDMやサーバーから削除されたときにお知らせします。メモリ上にのみ保持され、何も保存されません。ログはDiscordを再起動すると消えます。",
             "changelog": {
+                "1.1.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
                 "1.0.2": [
                     "必要な権限(メッセージの読み取り)を明示するようになり、Eviがそれを守らせます。"
                 ],
@@ -77,6 +116,9 @@
             "name": "Powiadomienia o relacjach",
             "description": "Powiadamia, gdy ktoś usuwa cię ze znajomych, odrzuca twoje zaproszenie do znajomych albo usuwa cię z grupowego DM-a lub serwera. Tylko w pamięci: nic nie jest zapisywane, a dziennik znika po ponownym uruchomieniu Discorda.",
             "changelog": {
+                "1.1.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
                 "1.0.2": [
                     "Deklaruje, czego potrzebuje (czytanie wiadomości), a Evi pilnuje, żeby tak było."
                 ],
@@ -92,6 +134,9 @@
             "name": "Avisos de relacionamento",
             "description": "Avisa quando alguém te remove dos amigos, recusa seu pedido de amizade ou te remove de uma DM em grupo ou de um servidor. Fica só na memória: nada é salvo e o registro some quando o Discord reinicia.",
             "changelog": {
+                "1.1.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
                 "1.0.2": [
                     "Informa o que precisa (ler mensagens) e o Evi garante que seja assim."
                 ],
@@ -107,6 +152,9 @@
             "name": "Уведомления об удалении",
             "description": "Сообщает, когда кто-то удаляет вас из друзей, отклоняет вашу заявку в друзья или удаляет вас из группового чата или с сервера. Всё хранится только в памяти: ничего не сохраняется, а журнал пропадает при перезапуске Discord.",
             "changelog": {
+                "1.1.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
                 "1.0.2": [
                     "Теперь плагин указывает, что ему нужно (чтение сообщений), и Evi следит за этим."
                 ],
@@ -122,6 +170,9 @@
             "name": "İlişki Bildirici",
             "description": "Biri seni arkadaşlıktan çıkardığında, arkadaşlık isteğini reddettiğinde veya seni bir grup DM'sinden ya da sunucudan çıkardığında haber verir. Yalnızca bellekte tutulur: hiçbir şey kaydedilmez ve günlük Discord yeniden başlatıldığında silinir.",
             "changelog": {
+                "1.1.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
                 "1.0.2": [
                     "Neye ihtiyaç duyduğunu (mesajları okuma) belirtir ve Evi bunu denetler."
                 ],

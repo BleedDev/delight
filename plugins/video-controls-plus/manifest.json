@@ -2,21 +2,49 @@
     "id": "video-controls-plus",
     "name": "Video Controls+",
     "description": "Playback speed from 0.25x to 3x, loop, frame stepping and picture-in-picture for videos in chat, plus YouTube-style keyboard shortcuts while you hover a video.",
-    "version": "1.0.2",
-    "authors": ["Evi"],
-    "tags": ["media"],
+    "version": "1.1.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "media"
+    ],
     "minEviVersion": "0.3.2",
     "permissions": {},
     "changelog": [
-        { "version": "1.0.2", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] },
-        { "version": "1.0.1", "notes": ["The speed menu slides in like Discord's menus, and fades out instead of vanishing."] },
-        { "version": "1.0.0", "notes": ["First release."] }
+        {
+            "version": "1.1.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
+        {
+            "version": "1.0.1",
+            "notes": [
+                "The speed menu slides in like Discord's menus, and fades out instead of vanishing."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
     ],
     "locales": {
         "de": {
             "name": "Video-Steuerung+",
             "description": "Wiedergabegeschwindigkeit von 0,25x bis 3x, Wiederholen, Einzelbildschaltung und Bild-in-Bild für Videos im Chat, dazu YouTube-artige Tastenkürzel, solange du mit der Maus über einem Video bist.",
             "changelog": {
+                "1.1.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
                 "1.0.2": [
                     "Sagt jetzt, was es braucht: nichts, was Discord ihm nicht ohnehin zeigt. Evi hält es dazu an."
                 ],
@@ -32,6 +60,9 @@
             "name": "Controles de vídeo+",
             "description": "Velocidad de reproducción de 0,25x a 3x, repetición, avance fotograma a fotograma e imagen en imagen para los vídeos del chat, además de atajos de teclado al estilo de YouTube mientras pasas el ratón por un vídeo.",
             "changelog": {
+                "1.1.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
                 "1.0.2": [
                     "Ahora dice qué necesita, que es nada más allá de lo que Discord ya le muestra, y Evi se lo exige."
                 ],
@@ -47,6 +78,9 @@
             "name": "Contrôles vidéo+",
             "description": "Vitesse de lecture de 0,25x à 3x, lecture en boucle, avance image par image et image dans l'image pour les vidéos du chat, avec des raccourcis clavier à la YouTube quand vous survolez une vidéo.",
             "changelog": {
+                "1.1.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
                 "1.0.2": [
                     "Indique désormais ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi le lui fait respecter."
                 ],
@@ -62,6 +96,9 @@
             "name": "動画コントロール+",
             "description": "チャット内の動画に、0.25xから3xまでの再生速度、ループ、コマ送り、ピクチャーインピクチャーを追加します。動画にカーソルを合わせている間は、YouTubeのようなキーボードショートカットも使えます。",
             "changelog": {
+                "1.1.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
                 "1.0.2": [
                     "必要とするものを明示するようになりました。Discordがすでに表示している範囲を超えるものは不要で、Eviがそれを守らせます。"
                 ],
@@ -77,6 +114,9 @@
             "name": "Sterowanie wideo+",
             "description": "Prędkość odtwarzania od 0,25x do 3x, zapętlanie, przechodzenie klatka po klatce i obraz w obrazie dla filmów na czacie, a do tego skróty klawiszowe w stylu YouTube, gdy kursor jest nad filmem.",
             "changelog": {
+                "1.1.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
                 "1.0.2": [
                     "Podaje teraz, czego potrzebuje, czyli niczego ponad to, co Discord już mu pokazuje, a Evi tego pilnuje."
                 ],
@@ -92,6 +132,9 @@
             "name": "Controles de vídeo+",
             "description": "Velocidade de reprodução de 0,25x a 3x, repetição, avanço quadro a quadro e picture-in-picture para os vídeos do chat, além de atalhos de teclado no estilo do YouTube enquanto você passa o mouse sobre um vídeo.",
             "changelog": {
+                "1.1.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
                 "1.0.2": [
                     "Agora diz do que precisa, que é nada além do que o Discord já mostra a ele, e o Evi garante isso."
                 ],
@@ -107,6 +150,9 @@
             "name": "Управление видео+",
             "description": "Скорость воспроизведения от 0,25x до 3x, повтор, покадровый просмотр и «картинка в картинке» для видео в чате, а также горячие клавиши как на YouTube, пока курсор наведён на видео.",
             "changelog": {
+                "1.1.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
                 "1.0.2": [
                     "Теперь указывает, что ему нужно, а нужно ему лишь то, что Discord и так показывает, и Evi следит за этим."
                 ],
@@ -122,6 +168,9 @@
             "name": "Video Denetimleri+",
             "description": "Sohbetteki videolar için 0,25x ile 3x arası oynatma hızı, döngü, kare kare ilerleme ve pencere içinde pencere; bir videonun üzerindeyken YouTube tarzı klavye kısayolları da var.",
             "changelog": {
+                "1.1.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
                 "1.0.2": [
                     "Neye ihtiyaç duyduğunu artık belirtiyor: Discord'un zaten gösterdiği şeyin ötesinde hiçbir şey. Evi de buna uymasını sağlıyor."
                 ],

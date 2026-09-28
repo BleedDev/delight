@@ -2,16 +2,48 @@
     "id": "voice-message-download",
     "name": "Voice Message Download",
     "description": "Adds Download Voice Message to the message menu of voice messages, saving the recording as an .ogg file.",
-    "version": "1.0.1",
-    "authors": ["Evi"],
-    "tags": ["messages", "utility"],
-    "permissions": { "network": ["cdn.discordapp.com", "media.discordapp.net"] },
-    "changelog": [{ "version": "1.0.1", "notes": ["Says what it needs (contacting cdn.discordapp.com and media.discordapp.net), and Evi holds it to that."] }, { "version": "1.0.0", "notes": ["First release."] }],
+    "version": "1.1.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "messages",
+        "utility"
+    ],
+    "permissions": {
+        "network": [
+            "cdn.discordapp.com",
+            "media.discordapp.net"
+        ]
+    },
+    "changelog": [
+        {
+            "version": "1.1.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Says what it needs (contacting cdn.discordapp.com and media.discordapp.net), and Evi holds it to that."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
     "locales": {
         "de": {
             "name": "Sprachnachrichten-Download",
             "description": "Fügt dem Nachrichtenmenü von Sprachnachrichten „Sprachnachricht herunterladen“ hinzu und speichert die Aufnahme als .ogg-Datei.",
             "changelog": {
+                "1.1.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
                 "1.0.1": [
                     "Sagt jetzt, was es braucht (Verbindungen zu cdn.discordapp.com und media.discordapp.net), und Evi hält es dazu an."
                 ],
@@ -24,6 +56,9 @@
             "name": "Descarga de mensajes de voz",
             "description": "Añade Descargar mensaje de voz al menú de los mensajes de voz y guarda la grabación como archivo .ogg.",
             "changelog": {
+                "1.1.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
                 "1.0.1": [
                     "Ahora dice qué necesita (conectarse a cdn.discordapp.com y media.discordapp.net), y Evi se lo exige."
                 ],
@@ -36,6 +71,9 @@
             "name": "Téléchargement de messages vocaux",
             "description": "Ajoute Télécharger le message vocal au menu des messages vocaux et enregistre l'enregistrement dans un fichier .ogg.",
             "changelog": {
+                "1.1.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
                 "1.0.1": [
                     "Indique désormais ce dont il a besoin (contacter cdn.discordapp.com et media.discordapp.net), et Evi le lui fait respecter."
                 ],
@@ -48,6 +86,9 @@
             "name": "ボイスメッセージのダウンロード",
             "description": "ボイスメッセージのメニューに「ボイスメッセージをダウンロード」を追加し、録音を .ogg ファイルとして保存します。",
             "changelog": {
+                "1.1.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
                 "1.0.1": [
                     "必要とするもの(cdn.discordapp.com と media.discordapp.net への接続)を明示するようになりました。Eviがそれを守らせます。"
                 ],
@@ -60,6 +101,9 @@
             "name": "Pobieranie wiadomości głosowych",
             "description": "Dodaje Pobierz wiadomość głosową do menu wiadomości głosowych i zapisuje nagranie jako plik .ogg.",
             "changelog": {
+                "1.1.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
                 "1.0.1": [
                     "Podaje teraz, czego potrzebuje (łączenia z cdn.discordapp.com i media.discordapp.net), a Evi tego pilnuje."
                 ],
@@ -72,6 +116,9 @@
             "name": "Download de mensagem de voz",
             "description": "Adiciona Baixar mensagem de voz ao menu das mensagens de voz e salva a gravação como arquivo .ogg.",
             "changelog": {
+                "1.1.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
                 "1.0.1": [
                     "Agora diz do que precisa (se conectar a cdn.discordapp.com e media.discordapp.net), e o Evi garante isso."
                 ],
@@ -84,6 +131,9 @@
             "name": "Скачивание голосовых сообщений",
             "description": "Добавляет пункт «Скачать голосовое сообщение» в меню голосовых сообщений и сохраняет запись в файл .ogg.",
             "changelog": {
+                "1.1.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
                 "1.0.1": [
                     "Теперь указывает, что ему нужно (обращение к cdn.discordapp.com и media.discordapp.net), и Evi следит за этим."
                 ],
@@ -96,6 +146,9 @@
             "name": "Sesli Mesaj İndirme",
             "description": "Sesli mesajların mesaj menüsüne Sesli mesajı indir seçeneğini ekler ve kaydı .ogg dosyası olarak kaydeder.",
             "changelog": {
+                "1.1.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
                 "1.0.1": [
                     "Neye ihtiyaç duyduğunu artık belirtiyor (cdn.discordapp.com ve media.discordapp.net ile bağlantı kurmak) ve Evi buna uymasını sağlıyor."
                 ],

@@ -35,6 +35,24 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.1.0",
+        date: "2026-09-28",
+        sections: {
+            added: [
+                "**Evi speaks your language.** Evi, every plugin and the store follow Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English.",
+                "**Place your wallpaper.** Fill, Fit, Stretch, Center or Tile it, then drag and zoom it in a live preview of Discord.",
+                "**Choose what's see-through.** Set how solid the server list, channels, chat and message box stay over the wallpaper, and tint them with your theme's colors.",
+            ],
+            improved: [
+                "**Settings and popouts stay solid.** The wallpaper only shows behind Discord's main window, unless you turn it on for settings or popouts too.",
+                "**View source shows the real code.** On a community plugin's page it opens the exact code Evi installs, with the author's own link next to it.",
+            ],
+            fixed: [
+                "The theme editor keeps a theme's translations when you save it.",
+            ],
+        },
+    },
+    {
         version: "1.0.0",
         date: "2026-09-28",
         cover: "1.0.0",

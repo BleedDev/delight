@@ -21,6 +21,27 @@ export interface ApiRelease {
 /** Newest first */
 export const API_CHANGELOG: ApiRelease[] = [
     {
+        version: "1.1.0",
+        date: "2026-09-28",
+        changes: [
+            {
+                kind: "added",
+                symbol: "locales",
+                description: "A manifest field with the plugin's name, description and changelog notes in other languages: { \"de\": { \"name\": \"…\", \"description\": \"…\", \"changelog\": { \"1.0.0\": [\"…\"] } } }. The Plugins tab and the store show whichever matches Discord's language, English for anything left out. Themes take the same as @name:de and @description:de header lines.",
+            },
+            {
+                kind: "changed",
+                symbol: "settings",
+                description: "A setting's label, description and option labels are read each time the settings draw, so they can be getters that call your defineStrings t() and follow Discord's language.",
+            },
+            {
+                kind: "changed",
+                symbol: "new-plugin",
+                description: "New plugins come with a strings.ts using defineStrings, settings that follow the language, and a locales example in the manifest.",
+            },
+        ],
+    },
+    {
         version: "1.0.0",
         date: "2026-09-28",
         changes: [

@@ -2,7 +2,7 @@
     "id": "gif-folders",
     "name": "GIF Folders",
     "description": "Sort your favourite GIFs into folders. All shows every favourite, Unsorted the ones not in a folder yet, and each folder its own. Right-click a GIF to add it to one, and drag the GIF picker's corner to resize it.",
-    "version": "1.2.3",
+    "version": "1.3.0",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.3.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
         {
             "version": "1.2.3",
             "notes": [
@@ -60,6 +66,9 @@
             "name": "GIF-Ordner",
             "description": "Sortiere deine Lieblings-GIFs in Ordner. „Alle“ zeigt jeden Favoriten, „Unsortiert“ die, die noch in keinem Ordner sind, und jeder Ordner seine eigenen. Rechtsklicke ein GIF, um es zu einem Ordner hinzuzufügen, und zieh an der Ecke der GIF-Auswahl, um sie zu vergrößern oder zu verkleinern.",
             "changelog": {
+                "1.3.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
                 "1.2.3": [
                     "Sagt jetzt, was es braucht: nichts, was Discord ihm nicht ohnehin zeigt. Evi hält es dazu an."
                 ],
@@ -91,6 +100,9 @@
             "name": "Carpetas de GIF",
             "description": "Ordena tus GIF favoritos en carpetas. Todos muestra todos los favoritos, Sin clasificar los que aún no están en una carpeta y cada carpeta los suyos. Haz clic derecho en un GIF para añadirlo a una y arrastra la esquina del selector de GIF para cambiar su tamaño.",
             "changelog": {
+                "1.3.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
                 "1.2.3": [
                     "Ahora dice qué necesita, que es nada más allá de lo que Discord ya le muestra, y Evi se lo exige."
                 ],
@@ -122,6 +134,9 @@
             "name": "Dossiers de GIF",
             "description": "Rangez vos GIF favoris dans des dossiers. Tous affiche chaque favori, Non classés ceux qui ne sont pas encore dans un dossier, et chaque dossier les siens. Faites un clic droit sur un GIF pour l'ajouter à un dossier, et faites glisser le coin du sélecteur de GIF pour le redimensionner.",
             "changelog": {
+                "1.3.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
                 "1.2.3": [
                     "Indique désormais ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi le lui fait respecter."
                 ],
@@ -153,6 +168,9 @@
             "name": "GIFフォルダ",
             "description": "お気に入りのGIFをフォルダに整理できます。「すべて」はすべてのお気に入り、「未分類」はまだフォルダに入っていないもの、各フォルダはそのフォルダのGIFを表示します。GIFを右クリックしてフォルダに追加でき、GIFピッカーの角をドラッグしてサイズを変更できます。",
             "changelog": {
+                "1.3.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
                 "1.2.3": [
                     "必要とするものを明示するようになりました。Discordがすでに表示している範囲を超えるものは不要で、Eviがそれを守らせます。"
                 ],
@@ -184,6 +202,9 @@
             "name": "Foldery GIF-ów",
             "description": "Sortuj ulubione GIF-y w foldery. Wszystkie pokazuje każdy ulubiony, Nieposortowane te, których nie ma jeszcze w żadnym folderze, a każdy folder swoje. Kliknij GIF prawym przyciskiem, aby dodać go do folderu, i przeciągnij róg selektora GIF-ów, aby zmienić jego rozmiar.",
             "changelog": {
+                "1.3.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
                 "1.2.3": [
                     "Podaje teraz, czego potrzebuje, czyli niczego ponad to, co Discord już mu pokazuje, a Evi tego pilnuje."
                 ],
@@ -215,6 +236,9 @@
             "name": "Pastas de GIFs",
             "description": "Organize seus GIFs favoritos em pastas. Todos mostra cada favorito, Sem pasta os que ainda não estão em uma pasta e cada pasta os seus. Clique com o botão direito em um GIF para adicioná-lo a uma pasta e arraste o canto do seletor de GIFs para redimensioná-lo.",
             "changelog": {
+                "1.3.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
                 "1.2.3": [
                     "Agora diz do que precisa, que é nada além do que o Discord já mostra a ele, e o Evi garante isso."
                 ],
@@ -246,6 +270,9 @@
             "name": "Папки с GIF",
             "description": "Раскладывайте любимые GIF по папкам. «Все» показывает всё избранное, «Без папки» — то, что ещё не лежит ни в одной папке, а каждая папка — свои GIF. Нажмите правой кнопкой на GIF, чтобы добавить его в папку, и потяните за угол выбора GIF, чтобы изменить его размер.",
             "changelog": {
+                "1.3.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
                 "1.2.3": [
                     "Теперь указывает, что ему нужно, а нужно ему лишь то, что Discord и так показывает, и Evi следит за этим."
                 ],
@@ -277,6 +304,9 @@
             "name": "GIF Klasörleri",
             "description": "Favori GIF'lerini klasörlere ayır. Tümü her favoriyi, Sınıflandırılmamış henüz bir klasörde olmayanları, her klasör de kendi GIF'lerini gösterir. Bir klasöre eklemek için GIF'e sağ tıkla, boyutunu değiştirmek için GIF seçicinin köşesini sürükle.",
             "changelog": {
+                "1.3.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
                 "1.2.3": [
                     "Neye ihtiyaç duyduğunu artık belirtiyor: Discord'un zaten gösterdiği şeyin ötesinde hiçbir şey. Evi de buna uymasını sağlıyor."
                 ],

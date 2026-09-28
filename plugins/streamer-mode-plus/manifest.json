@@ -2,11 +2,46 @@
     "id": "streamer-mode-plus",
     "name": "Streamer Mode+",
     "description": "Blurs your DMs, servers, chat images and more while you stream, with hover to reveal. Turns on when you go live, with Discord's Streamer Mode, or by shortcut and /streamerplus.",
-    "version": "1.1.0",
-    "authors": ["Evi"],
-    "tags": ["privacy"],
+    "version": "1.2.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "privacy"
+    ],
     "permissions": {},
-    "changelog": [{ "version": "1.1.0", "notes": ["You set the shortcut by pressing it, like Discord's keybinds, and it says when another plugin has the same keys. Yours carries over."] }, { "version": "1.0.2", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] }, { "version": "1.0.1", "notes": ["Smoother channel switching: the page's styles are only touched when blurring actually changes."] }, { "version": "1.0.0", "notes": ["First release."] }],
+    "changelog": [
+        {
+            "version": "1.2.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
+        {
+            "version": "1.1.0",
+            "notes": [
+                "You set the shortcut by pressing it, like Discord's keybinds, and it says when another plugin has the same keys. Yours carries over."
+            ]
+        },
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
+            ]
+        },
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Smoother channel switching: the page's styles are only touched when blurring actually changes."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
     "minEviVersion": "1.0.0",
     "enabledByDefault": false,
     "locales": {
@@ -14,6 +49,9 @@
             "name": "Streamer Mode+",
             "description": "Verwischt deine DMs, Server, Chat-Bilder und mehr, während du streamst, zum Aufdecken einfach darüberfahren. Schaltet sich ein, wenn du live gehst, mit dem Streamer-Modus von Discord oder per Tastenkürzel und /streamerplus.",
             "changelog": {
+                "1.2.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
                 "1.1.0": [
                     "Du legst das Tastenkürzel fest, indem du es drückst, wie bei Discords Tastenbelegungen, und es sagt dir, wenn ein anderes Plugin dieselben Tasten nutzt. Deins bleibt erhalten."
                 ],
@@ -32,6 +70,9 @@
             "name": "Streamer Mode+",
             "description": "Difumina tus MD, servidores, imágenes del chat y más mientras transmites, y se muestra al pasar el ratón. Se activa cuando empiezas un directo, con el modo streamer de Discord, o con un atajo y /streamerplus.",
             "changelog": {
+                "1.2.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
                 "1.1.0": [
                     "Defines el atajo pulsándolo, como en los atajos de Discord, y te avisa cuando otro plugin usa las mismas teclas. El tuyo se conserva."
                 ],
@@ -50,6 +91,9 @@
             "name": "Streamer Mode+",
             "description": "Floute tes MP, tes serveurs, les images du chat et plus encore pendant que tu streames, avec affichage au survol. S'active quand tu passes en direct, avec le mode streamer de Discord, ou par raccourci et /streamerplus.",
             "changelog": {
+                "1.2.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
                 "1.1.0": [
                     "Tu définis le raccourci en l'appuyant, comme les raccourcis de Discord, et il te prévient quand un autre plugin utilise les mêmes touches. Le tien est conservé."
                 ],
@@ -68,6 +112,9 @@
             "name": "Streamer Mode+",
             "description": "配信中に、DM、サーバー、チャットの画像などをぼかします。カーソルを合わせると表示されます。ライブ開始時、Discord の配信者モード、ショートカットや /streamerplus でオンになります。",
             "changelog": {
+                "1.2.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
                 "1.1.0": [
                     "ショートカットは Discord のキーバインドと同じように、実際にキーを押して設定できます。ほかのプラグインと同じキーだとお知らせします。これまでの設定は引き継がれます。"
                 ],
@@ -86,6 +133,9 @@
             "name": "Streamer Mode+",
             "description": "Rozmywa Twoje wiadomości prywatne, serwery, obrazy na czacie i więcej podczas streamowania, a po najechaniu kursorem je odsłania. Włącza się, gdy zaczynasz transmisję na żywo, z trybem streamera Discorda albo skrótem i poleceniem /streamerplus.",
             "changelog": {
+                "1.2.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
                 "1.1.0": [
                     "Skrót ustawiasz, naciskając go, tak jak skróty w Discordzie, a wtyczka informuje, gdy inna używa tych samych klawiszy. Twój dotychczasowy skrót zostaje."
                 ],
@@ -104,6 +154,9 @@
             "name": "Streamer Mode+",
             "description": "Desfoca suas DMs, servidores, imagens do chat e mais enquanto você transmite, e revela ao passar o mouse. Ativa quando você entra ao vivo, com o modo streamer do Discord, ou por atalho e /streamerplus.",
             "changelog": {
+                "1.2.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
                 "1.1.0": [
                     "Você define o atalho pressionando as teclas, como nos atalhos do Discord, e ele avisa quando outro plugin usa as mesmas teclas. O seu é mantido."
                 ],
@@ -122,6 +175,9 @@
             "name": "Streamer Mode+",
             "description": "Размывает ваши личные сообщения, серверы, изображения в чате и не только, пока вы стримите, а при наведении курсора показывает их. Включается, когда вы начинаете трансляцию, вместе с режимом стримера Discord или по сочетанию клавиш и команде /streamerplus.",
             "changelog": {
+                "1.2.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
                 "1.1.0": [
                     "Сочетание клавиш теперь задаётся нажатием, как в горячих клавишах Discord, и плагин предупреждает, если другой плагин использует те же клавиши. Ваше прежнее сочетание сохраняется."
                 ],
@@ -140,6 +196,9 @@
             "name": "Streamer Mode+",
             "description": "Yayın yaparken DM'lerini, sunucularını, sohbet görsellerini ve daha fazlasını bulanıklaştırır; üzerine gelince gösterir. Canlı yayına geçtiğinde, Discord'un Yayıncı Modu ile ya da kısayol ve /streamerplus ile açılır.",
             "changelog": {
+                "1.2.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
                 "1.1.0": [
                     "Kısayolu, Discord'un tuş atamaları gibi tuşlara basarak belirliyorsun ve başka bir eklenti aynı tuşları kullanıyorsa sana söylüyor. Seninki olduğu gibi kalıyor."
                 ],
