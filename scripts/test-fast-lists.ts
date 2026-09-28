@@ -81,7 +81,7 @@ const results = await page.evaluate(async (pluginCode) => {
     };
     const module = { exports: {} as any };
     new Function("module", "exports", "require", pluginCode)(module, module.exports, (n: string) => {
-        if (n === "@evi/api") return { definePlugin: (d: any) => d };
+        if (n === "@evi/api") return { definePlugin: (d: any) => d, defineStrings: (s: any) => (k: string) => s.en[k] ?? k };
         throw new Error(n);
     });
     const plugin = module.exports.default;
@@ -192,6 +192,8 @@ const results = await page.evaluate(async (pluginCode) => {
         await new Promise(r => requestAnimationFrame(r));
     }
     out.resyncMsPerFrame = +((performance.now() - t0) / 20).toFixed(2);
+    // Rows are worked out in idle time
+    await new Promise(r => requestIdleCallback(() => requestIdleCallback(r)));
     out.newMessagesMarked = [...chat.children].slice(-20).every(el => el.classList.contains("dl-fl-row"));
     out.chatWorstJump = +worstJump.toFixed(1);
 

@@ -228,7 +228,8 @@ export default definePlugin({
             seed();
         });
 
-        ctx.setInterval(() => void save(), SAVE_EVERY);
+        // Packing everyone takes a few frames' worth of time: do it when Discord has nothing else to do
+        ctx.setInterval(() => void (state.dirty && whenIdle(() => void save())), SAVE_EVERY);
         ctx.setInterval(tick, 60_000);
         const onUnload = () => void save();
         window.addEventListener("beforeunload", onUnload);

@@ -1,4 +1,5 @@
 import { definePlugin } from "@evi/api";
+import { t } from "./strings";
 
 /**
  * Makes Discord's long lists cheap to render, with no patches to Discord's code: it works on the
@@ -48,12 +49,23 @@ function isScrollable(el: Element) {
     return /(auto|scroll)/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight;
 }
 
+/** How deep inside the list its scroller can be. Discord's sits a level or two in; deeper ones are code blocks and embeds. */
+const SCROLLER_DEPTH = 4;
+
+/**
+ * The list's scroller: an ancestor, or failing that an element near the top of the list. Never
+ * walks the whole list, which read the layout of thousands of elements and froze Discord for 100ms+.
+ */
 function findScroller(list: Element): HTMLElement | null {
     for (let el: Element | null = list; el; el = el.parentElement) {
         if (el instanceof HTMLElement && isScrollable(el)) return el;
     }
-    for (const el of list.querySelectorAll<HTMLElement>("*")) {
-        if (isScrollable(el)) return el;
+    let level: Element[] = [...list.children];
+    for (let depth = 1; depth <= SCROLLER_DEPTH && level.length; depth++) {
+        for (const el of level) {
+            if (el instanceof HTMLElement && isScrollable(el)) return el;
+        }
+        level = level.flatMap(el => [...el.children]);
     }
     return null;
 }
@@ -212,7 +224,8 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
         return el;
     };
 
-    const margin = () => (scroller?.clientHeight ?? 800) * marginScreens;
+    // Read once: a layout read on every scroll event could force a reflow mid-scroll
+    const margin = Math.round((scroller?.clientHeight ?? 800) * marginScreens);
 
     // Without a scroller (short list) there is nothing far away to skip.
     // We never write scrollTop: doing so to keep the view pinned fought fast scrolling and Discord
@@ -225,27 +238,56 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
                 const row = entry.target as HTMLElement;
                 if (rows.has(row)) row.classList.toggle(FAR, !entry.isIntersecting);
             }
-        }, { root: scroller, rootMargin: `${Math.round(margin())}px 0px` })
+        }, { root: scroller, rootMargin: `${margin}px 0px` })
         : undefined;
 
+    /**
+     * Brings the tracked rows in line with the list, in idle slices: working out hundreds of rows at
+     * once (a channel switch, a re-rendered server list) was a long freeze. Nothing waits on it, rows
+     * are fully rendered until we get to them.
+     */
+    let cancelSync: (() => void) | undefined;
+    /** Rows changed while a sync was running: run once more after it, never restart it (a busy chat would starve it) */
+    let again = false;
+    let grew = false;
     const sync = () => {
         if (disposed) return;
+        if (cancelSync) {
+            again = true;
+            return;
+        }
+        const items = [...list.querySelectorAll(itemSelector)];
         const current = new Set<HTMLElement>();
-        for (const item of list.querySelectorAll(itemSelector)) current.add(rowOf(item));
-
-        for (const row of rows) {
-            if (current.has(row)) continue;
-            visibility?.unobserve(row);
-            row.classList.remove(ROW, FAR);
-            rows.delete(row);
-        }
-        for (const row of current) {
-            if (rows.has(row)) continue;
-            rows.add(row);
-            row.classList.add(ROW);
-            // Starts rendered; the observer's first callback hides it only if it really is far away
-            visibility?.observe(row);
-        }
+        let next = 0;
+        cancelSync = inIdleSlices(deadline => {
+            // A few dozen rows between clock reads
+            while (next < items.length && performance.now() < deadline) {
+                const end = Math.min(next + 50, items.length);
+                for (; next < end; next++) if (items[next].isConnected) current.add(rowOf(items[next]));
+            }
+            return next >= items.length;
+        }, () => {
+            cancelSync = undefined;
+            if (disposed) return;
+            for (const row of rows) {
+                if (current.has(row)) continue;
+                visibility?.unobserve(row);
+                row.classList.remove(ROW, FAR);
+                rows.delete(row);
+            }
+            for (const row of current) {
+                if (rows.has(row)) continue;
+                rows.add(row);
+                row.classList.add(ROW);
+                // Starts rendered; the observer's first callback hides it only if it really is far away
+                visibility?.observe(row);
+            }
+            grew = true;
+            if (again) {
+                again = false;
+                sync();
+            }
+        });
     };
 
     // Lists mutate constantly (badges, typing, reactions), only resync when rows come or go
@@ -270,7 +312,7 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
     let lastTop = scroller?.scrollTop ?? 0;
     const onScroll = () => {
         const top = scroller!.scrollTop;
-        if (Math.abs(top - lastTop) > margin() / 2) {
+        if (Math.abs(top - lastTop) > margin / 2) {
             for (const row of rows) row.classList.remove(FAR);
             // The observer only reports changes: rows still far away wouldn't be re-hidden.
             // Re-observing gives every row a fresh initial report.
@@ -301,10 +343,18 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
 
     return {
         list,
-        /** Attached before the list could scroll (still loading): needs a fresh session now that it can */
-        stale: () => !scroller && !!findScroller(list),
+        /**
+         * Attached before the list could scroll (still loading): needs a fresh session now that it can.
+         * Only looked for again once rows came in since the last look, not every second.
+         */
+        stale() {
+            if (scroller || !grew) return false;
+            grew = false;
+            return !!findScroller(list);
+        },
         dispose() {
             disposed = true;
+            cancelSync?.();
             stopFlattening?.();
             visibility?.disconnect();
             mutations.disconnect();
@@ -318,13 +368,28 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
 
 export default definePlugin({
     settings: {
-        servers: { type: "boolean", label: "Server list", description: "Skip servers far out of view and remove the pills' GPU-layer hack.", default: true },
-        chat: { type: "boolean", label: "Chat (experimental)", description: "Skip messages far above or below what you're reading. Not measured yet.", default: false },
-        members: { type: "boolean", label: "Member list (experimental)", description: "Skip members far out of view. Not measured yet.", default: false },
+        servers: {
+            type: "boolean",
+            get label() { return t("settings.servers"); },
+            get description() { return t("settings.servers.description"); },
+            default: true,
+        },
+        chat: {
+            type: "boolean",
+            get label() { return t("settings.chat"); },
+            get description() { return t("settings.chat.description"); },
+            default: false,
+        },
+        members: {
+            type: "boolean",
+            get label() { return t("settings.members"); },
+            get description() { return t("settings.members.description"); },
+            default: false,
+        },
         margin: {
             type: "number",
-            label: "Render distance (screens)",
-            description: "How many screen heights above and below stay fully rendered. Higher never shows an unrendered row even on very fast scrolls, lower saves more work.",
+            get label() { return t("settings.margin"); },
+            get description() { return t("settings.margin.description"); },
             default: 2,
             min: 1,
             max: 10,

@@ -6,6 +6,7 @@ import {
     createFolder, deleteFolder, EMPTY, Folder, FolderState, filterFavourites, foldersContaining, getFolder, MAX_NAME_LENGTH, nameError,
     parseState, PICKER_PATCH, pruneFolders, removeFromFolder, renameFolder, toggleInFolder, UNSORTED, unsortedCount,
 } from "./folders";
+import { t } from "./strings";
 
 /**
  * Folders for favourite GIFs. Discord keeps favourites in its synced FrecencyUserSettings
@@ -30,20 +31,20 @@ type Settings = typeof settings;
 const settings = {
     unsortedTab: {
         type: "boolean",
-        label: "Unsorted tab",
-        description: "A tab with only the favourites that aren't in a folder. All always shows everything.",
+        get label() { return t("settings.unsortedTab"); },
+        get description() { return t("settings.unsortedTab.description"); },
         default: true,
     },
     oneFolderPerGif: {
         type: "boolean",
-        label: "One folder per GIF",
-        description: "Adding a GIF to a folder takes it out of its other folders, so it moves instead of being in several.",
+        get label() { return t("settings.oneFolderPerGif"); },
+        get description() { return t("settings.oneFolderPerGif.description"); },
         default: false,
     },
     showCounts: {
         type: "boolean",
-        label: "Show counts",
-        description: "How many GIFs each tab holds, next to its name.",
+        get label() { return t("settings.showCounts"); },
+        get description() { return t("settings.showCounts.description"); },
         default: true,
     },
 } as const;
@@ -109,13 +110,13 @@ function openFolderMenu(event: ReactMouseEvent, folder: Folder, rename: () => vo
         return rename();
     }
     open(event, () => (
-        <Root navId="evi-gif-folder" onClose={closeContextMenu} aria-label={`${folder.name} folder`} onSelect={undefined}>
-            <Menu.Item id="evi-gif-folder-rename" label="Rename Folder" action={rename} />
+        <Root navId="evi-gif-folder" onClose={closeContextMenu} aria-label={t("folder.menu", { name: folder.name })} onSelect={undefined}>
+            <Menu.Item id="evi-gif-folder-rename" label={t("folder.rename")} action={rename} />
             <Menu.Item
                 id="evi-gif-folder-delete"
-                label="Delete Folder"
+                label={t("folder.delete")}
                 color="danger"
-                subtext={folder.urls.length ? "The GIFs stay in your favourites" : undefined}
+                subtext={folder.urls.length ? t("folder.delete.subtext") : undefined}
                 action={() => commit(deleteFolder(state, folder.id))}
             />
         </Root>
@@ -126,7 +127,7 @@ function openFolderMenu(event: ReactMouseEvent, folder: Folder, rename: () => vo
 
 function NameInput({ initial, placeholder, onDone, exceptId }: { initial: string; placeholder: string; onDone(name: string | null): void; exceptId?: string; }) {
     const [value, setValue] = React.useState(initial);
-    const error = value.trim() && value.trim() !== initial ? nameError(state, value, exceptId) : null;
+    const error = value.trim() && value.trim() !== initial && nameError(state, value, exceptId) ? t("error.taken") : null;
     const finish = (name: string | null) => onDone(name && !nameError(state, name, exceptId) ? name : null);
     return (
         <input
@@ -153,6 +154,8 @@ function NameInput({ initial, placeholder, onDone, exceptId }: { initial: string
     );
 }
 
+const HOST = "evi-gif-folders-host";
+
 function FolderBar({ owner }: { owner: { forceUpdate?(): void; }; }) {
     const [, rerender] = React.useReducer((n: number) => n + 1, 0);
     const { unsortedTab, showCounts } = ctx!.settings.use();
@@ -171,17 +174,27 @@ function FolderBar({ owner }: { owner: { forceUpdate?(): void; }; }) {
         };
     }, [owner]);
 
+    // Discord's header row has to stack the bar under it. A class on the parent, not a
+    // `*:has(> .evi-gif-folders)` rule: that one matched every element on the page, so any change
+    // anywhere (a speaking ring in a call) restyled all of Discord, ~100ms a few times a second.
+    const bar = React.useRef<HTMLDivElement>(null);
+    React.useLayoutEffect(() => {
+        const host = bar.current?.parentElement;
+        host?.classList.add(HOST);
+        return () => host?.classList.remove(HOST);
+    }, []);
+
     return (
-        <div className="evi-gif-folders" role="tablist" aria-label="GIF folders" onClick={e => e.stopPropagation()}>
+        <div ref={bar} className="evi-gif-folders" role="tablist" aria-label={t("tabs.label")} onClick={e => e.stopPropagation()}>
             <button
                 type="button"
                 role="tab"
                 className="evi-gif-folders-tab"
                 aria-selected={active === null}
-                title="All your favourites"
+                title={t("tab.all.title")}
                 onClick={() => select(null)}
             >
-                All
+                {t("tab.all")}
             </button>
             {unsortedTab && (
                 <button
@@ -189,10 +202,10 @@ function FolderBar({ owner }: { owner: { forceUpdate?(): void; }; }) {
                     role="tab"
                     className="evi-gif-folders-tab"
                     aria-selected={active === UNSORTED}
-                    title="Favourites that aren't in any folder"
+                    title={t("tab.unsorted.title")}
                     onClick={() => select(UNSORTED)}
                 >
-                    Unsorted
+                    {t("tab.unsorted")}
                     {showCounts && <span className="evi-gif-folders-count">{unsortedCount(state, Object.keys(favouriteGifs()))}</span>}
                 </button>
             )}
@@ -201,7 +214,7 @@ function FolderBar({ owner }: { owner: { forceUpdate?(): void; }; }) {
                     <NameInput
                         key={folder.id}
                         initial={folder.name}
-                        placeholder="Folder name"
+                        placeholder={t("input.rename")}
                         exceptId={folder.id}
                         onDone={name => {
                             setRenaming(null);
@@ -216,7 +229,7 @@ function FolderBar({ owner }: { owner: { forceUpdate?(): void; }; }) {
                         role="tab"
                         className="evi-gif-folders-tab"
                         aria-selected={active === folder.id}
-                        title="Right-click to rename or delete"
+                        title={t("tab.folder.title")}
                         onClick={() => select(folder.id)}
                         onDoubleClick={() => setRenaming(folder.id)}
                         onContextMenu={e => openFolderMenu(e, folder, () => setRenaming(folder.id))}
@@ -229,7 +242,7 @@ function FolderBar({ owner }: { owner: { forceUpdate?(): void; }; }) {
                 ? (
                     <NameInput
                         initial=""
-                        placeholder="New folder"
+                        placeholder={t("input.new")}
                         onDone={name => {
                             setCreating(false);
                             if (!name) return;
@@ -240,8 +253,8 @@ function FolderBar({ owner }: { owner: { forceUpdate?(): void; }; }) {
                     />
                 )
                 : (
-                    <button type="button" className="evi-gif-folders-tab evi-gif-folders-new" onClick={() => setCreating(true)} aria-label="New folder">
-                        + New Folder
+                    <button type="button" className="evi-gif-folders-tab evi-gif-folders-new" onClick={() => setCreating(true)} aria-label={t("tab.new.label")}>
+                        {t("tab.new")}
                     </button>
                 )}
         </div>
@@ -252,7 +265,7 @@ function FolderBar({ owner }: { owner: { forceUpdate?(): void; }; }) {
 
 function nextFolderName() {
     for (let n = state.folders.length + 1; ; n++) {
-        const name = `Folder ${n}`;
+        const name = t("folder.default", { n });
         if (!nameError(state, name)) return name;
     }
 }
@@ -268,7 +281,7 @@ function gifMenuItems(url: string): ReactNode[] {
             <Menu.Item
                 key="evi-gif-folders-remove"
                 id="evi-gif-folders-remove"
-                label={`Remove from ${current.name}`}
+                label={t("gif.removeFrom", { name: current.name })}
                 color="danger"
                 action={() => commit(removeFromFolder(state, current.id, url))}
             />,
@@ -289,15 +302,15 @@ function gifMenuItems(url: string): ReactNode[] {
         <Menu.Item
             key="evi-gif-folders-create"
             id="evi-gif-folders-create"
-            label="New Folder"
+            label={t("gif.newFolder")}
             action={() => {
                 const result = createFolder(state, nextFolderName());
                 if (result.folder) commit(toggleInFolder(result.state, result.folder.id, url, exclusive));
-                ctx?.toast(`Added to ${result.folder?.name ?? "a new folder"}. Right-click its tab to rename it.`, { type: "success" });
+                ctx?.toast(result.folder ? t("toast.added", { name: result.folder.name }) : t("toast.addedNew"), { type: "success" });
             }}
         />,
     );
-    const label = exclusive && inFolders.length ? "Move to Folder" : "Add to Folder";
+    const label = t(exclusive && inFolders.length ? "gif.move" : "gif.add");
     items.push(<Menu.Item key="evi-gif-folders-add" id="evi-gif-folders-add" label={label}>{choices}</Menu.Item>);
     return items;
 }
@@ -374,7 +387,7 @@ function PickerResizer() {
         const handle = document.createElement("div");
         handle.className = "evi-gif-resize";
         handle.dataset.corner = `${anchors.bottom ? "top" : "bottom"}-${anchors.right ? "left" : "right"}`;
-        handle.title = "Drag to resize, double-click to reset";
+        handle.title = t("resize.title");
         if (getComputedStyle(drawer).position === "static") drawer.style.position = "relative";
         drawer.appendChild(handle);
 
@@ -446,7 +459,7 @@ export default definePlugin({
     width: 100%;
 }
 .evi-gif-folders::-webkit-scrollbar { display: none; }
-*:has(> .evi-gif-folders) {
+.evi-gif-folders-host {
     flex-direction: column;
     align-items: stretch;
     height: auto;

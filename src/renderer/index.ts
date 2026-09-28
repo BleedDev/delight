@@ -7,6 +7,7 @@ import { pullFor } from "@shared/pulls";
 
 import { Backup } from "./backup";
 import { CrashDetective } from "./crashDetective";
+import { installCssFixes, warmUiFonts } from "./cssFixes";
 import { I18n } from "./i18n";
 import { startHealthReports } from "./health";
 import { Logger } from "./logger";
@@ -87,6 +88,8 @@ function boot() {
     I18n.subscribe(() => Native.setLocale?.(I18n.locale));
     // Before anything that applies plugins or CSS, they all check it
     SafeMode.init(data.safeMode);
+    // Before Discord adds its first stylesheet: some of its rules must never match anything
+    if (!SafeMode.active) installCssFixes();
     Settings.init(data.settings);
     // Dialog and menu motion, before themes so they can restyle it
     installLayerStyles();
@@ -127,6 +130,8 @@ function boot() {
             whenAppReady(startPullNotices);
             // The store's inbox: the account's notifications, and news about hearted and broken plugins
             whenAppReady(() => Inbox.start());
+            // So a font's first use (opening settings, an italic in chat) doesn't relayout all text
+            whenAppReady(warmUiFonts);
         }
     });
 
