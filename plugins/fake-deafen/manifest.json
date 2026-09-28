@@ -2,7 +2,7 @@
     "id": "fake-deafen",
     "name": "Fake Deafen",
     "description": "Appear deafened and muted to everyone in voice while you still hear them. A ghost button next to deafen, a keyboard shortcut, or /fakedeafen.",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "authors": [
         "Evi"
     ],
@@ -11,8 +11,13 @@
         "privacy"
     ],
     "permissions": {},
-    "supporters": true,
     "changelog": [
+        {
+            "version": "1.1.1",
+            "notes": [
+                "Free for everyone: it's no longer supporters only."
+            ]
+        },
         {
             "version": "1.1.0",
             "notes": [
@@ -26,13 +31,16 @@
             ]
         }
     ],
-    "minEviVersion": "1.1.1",
+    "minEviVersion": "1.0.0",
     "enabledByDefault": false,
     "locales": {
         "de": {
             "name": "Fake Deafen",
             "description": "Wirke im Sprachkanal taub und stummgeschaltet, während du alle weiter hörst. Ein Geist-Button neben Ton aus, ein Tastenkürzel oder /fakedeafen.",
             "changelog": {
+                "1.1.1": [
+                    "Für alle kostenlos: nicht mehr nur für Unterstützer."
+                ],
                 "1.1.0": [
                     "Sieht jetzt aus wie Discords eigene Buttons, gleiche Größe und Hover, mit einem Geist-Symbol, damit man ihn nicht mit Ton aus verwechselt."
                 ],
@@ -45,6 +53,9 @@
             "name": "Ensordecido falso",
             "description": "Aparece ensordecido y silenciado ante todos en voz mientras los sigues oyendo. Un botón de fantasma junto a ensordecer, un atajo de teclado o /fakedeafen.",
             "changelog": {
+                "1.1.1": [
+                    "Gratis para todos: ya no es solo para quienes apoyan."
+                ],
                 "1.1.0": [
                     "Ahora se ve como los botones de Discord, mismo tamaño y efecto al pasar el ratón, con un icono de fantasma para no confundirlo con ensordecer."
                 ],
@@ -57,6 +68,9 @@
             "name": "Fausse sourdine",
             "description": "Apparais en sourdine et muet pour tout le monde en vocal tout en les entendant. Un bouton fantôme à côté de sourdine, un raccourci clavier ou /fakedeafen.",
             "changelog": {
+                "1.1.1": [
+                    "Gratuit pour tout le monde : plus réservé aux soutiens."
+                ],
                 "1.1.0": [
                     "Ressemble maintenant aux boutons de Discord, même taille et même survol, avec une icône de fantôme pour ne pas le confondre avec sourdine."
                 ],
@@ -69,6 +83,9 @@
             "name": "フェイクスピーカーミュート",
             "description": "全員の声を聞きながら、ボイスチャンネルではスピーカーミュートとマイクミュート中に見せます。スピーカーミュートの横のおばけボタン、キーボードショートカット、または /fakedeafen で操作できます。",
             "changelog": {
+                "1.1.1": [
+                    "誰でも使えるようになりました。サポーター限定ではなくなりました。"
+                ],
                 "1.1.0": [
                     "Discord 本来のボタンと同じ見た目・サイズ・ホバーになり、スピーカーミュートと間違えないようおばけのアイコンになりました。"
                 ],
@@ -81,6 +98,9 @@
             "name": "Udawane wyciszenie",
             "description": "Wyglądaj na kanale głosowym, jakbyś miał wyciszony dźwięk i mikrofon, nadal wszystkich słysząc. Przycisk ducha obok wyciszenia dźwięku, skrót klawiszowy albo /fakedeafen.",
             "changelog": {
+                "1.1.1": [
+                    "Dla wszystkich za darmo: już nie tylko dla wspierających."
+                ],
                 "1.1.0": [
                     "Wygląda teraz jak przyciski Discorda, ten sam rozmiar i najechanie, z ikoną ducha, żeby nie mylić go z wyciszeniem dźwięku."
                 ],
@@ -93,6 +113,9 @@
             "name": "Ensurdecer falso",
             "description": "Apareça ensurdecido e silenciado para todos na voz enquanto continua ouvindo. Um botão de fantasma ao lado de ensurdecer, um atalho de teclado ou /fakedeafen.",
             "changelog": {
+                "1.1.1": [
+                    "Grátis para todos: não é mais só para apoiadores."
+                ],
                 "1.1.0": [
                     "Agora parece com os botões do Discord, mesmo tamanho e efeito ao passar o mouse, com um ícone de fantasma para não confundir com ensurdecer."
                 ],
@@ -105,6 +128,9 @@
             "name": "Фальшивое отключение звука",
             "description": "Для всех в голосовом канале у вас выключены звук и микрофон, а вы продолжаете их слышать. Кнопка с призраком рядом с выключением звука, сочетание клавиш или /fakedeafen.",
             "changelog": {
+                "1.1.1": [
+                    "Бесплатно для всех: больше не только для спонсоров."
+                ],
                 "1.1.0": [
                     "Теперь выглядит как кнопки Discord, тот же размер и наведение, а значок-призрак не спутать с отключением звука."
                 ],
@@ -117,6 +143,9 @@
             "name": "Sahte Ses Kapatma",
             "description": "Herkesi duymaya devam ederken seste sesin ve mikrofonun kapalı görünsün. Sesi kapatma düğmesinin yanında bir hayalet düğmesi, klavye kısayolu ya da /fakedeafen.",
             "changelog": {
+                "1.1.1": [
+                    "Herkese ücretsiz: artık yalnızca destekçilere özel değil."
+                ],
                 "1.1.0": [
                     "Artık Discord'un kendi düğmeleri gibi görünüyor, aynı boyut ve üzerine gelme efekti; ses kapatmayla karışmasın diye hayalet simgesiyle."
                 ],
