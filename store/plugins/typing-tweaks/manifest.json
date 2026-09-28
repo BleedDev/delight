@@ -1,0 +1,25 @@
+{
+    "id": "typing-tweaks",
+    "name": "Typing Tweaks",
+    "description": "See who's typing at a glance: their avatars and role colours in the \"is typing\" line, and three dots on channels and DMs in your lists while someone types there.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "social",
+        "messages"
+    ],
+    "permissions": {},
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "minEviVersion": "1.0.0",
+    "enabledByDefault": false,
+    "main": "index.js"
+}

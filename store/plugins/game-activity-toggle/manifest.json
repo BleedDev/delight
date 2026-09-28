@@ -1,8 +1,8 @@
 {
     "id": "game-activity-toggle",
     "name": "Game Activity Toggle",
-    "description": "Show or hide the game you're playing with one click: a gamepad button next to mute and deafen, or /gameactivity.",
-    "version": "1.0.1",
+    "description": "Show or hide the game you're playing with one click: a gamepad button next to mute and deafen, a keyboard shortcut, or /gameactivity.",
+    "version": "1.1.0",
     "authors": [
         "Evi"
     ],
@@ -13,6 +13,12 @@
         "changeSettings": true
     },
     "changelog": [
+        {
+            "version": "1.1.0",
+            "notes": [
+                "A keyboard shortcut, set in the plugin's settings."
+            ]
+        },
         {
             "version": "1.0.1",
             "notes": [
@@ -26,6 +32,7 @@
             ]
         }
     ],
+    "minEviVersion": "1.0.0",
     "enabledByDefault": false,
     "main": "index.js"
 }

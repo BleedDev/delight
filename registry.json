@@ -484,33 +484,39 @@
         {
             "id": "game-activity-toggle",
             "name": "Game Activity Toggle",
-            "description": "Show or hide the game you're playing with one click: a gamepad button next to mute and deafen, or /gameactivity.",
+            "description": "Show or hide the game you're playing with one click: a gamepad button next to mute and deafen, a keyboard shortcut, or /gameactivity.",
             "authors": [
                 "Evi"
             ],
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.1",
+            "version": "1.1.0",
             "tags": [
                 "privacy"
             ],
             "native": false,
-            "minEviVersion": "0.7.0",
+            "minEviVersion": "1.0.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/game-activity-toggle/manifest.json?v=e82e3751e403",
-                    "sha256": "e82e3751e403d0c149073cc40b2bc30fd24355552edb6cc91a0bfdf201d3a1f8"
+                    "url": "https://evi.rest/store/plugins/game-activity-toggle/manifest.json?v=7dcb8e2eb423",
+                    "sha256": "7dcb8e2eb423cb0bfbb91b8630a8ede05f5a3b97ffafd1132a26108227581bc0"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/game-activity-toggle/index.js?v=680ed2593dbf",
-                    "sha256": "680ed2593dbf5b57cb0c75b5b49f673f0ce167c43cb32a1b790fd4cf4b65a348"
+                    "url": "https://evi.rest/store/plugins/game-activity-toggle/index.js?v=832da29f59ec",
+                    "sha256": "832da29f59ec9c14d7f51190c11997191ccafdf05ca7e42ba467dfe1c7a313c2"
                 }
             },
-            "updatedAt": "2026-09-27",
+            "updatedAt": "2026-09-28",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/game-activity-toggle",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.0",
+                    "notes": [
+                        "A keyboard shortcut, set in the plugin's settings."
+                    ]
+                },
                 {
                     "version": "1.0.1",
                     "notes": [
@@ -1229,57 +1235,6 @@
             }
         },
         {
-            "id": "quick-actions",
-            "name": "Quick Actions",
-            "description": "Adds Copy Message Link, Copy Raw Text, Copy Message ID, Search Image (Google Lens, Yandex, TinEye) and Translate with Google to the message menu.",
-            "authors": [
-                "Evi"
-            ],
-            "authorIds": [
-                "evi"
-            ],
-            "version": "1.0.1",
-            "tags": [
-                "messages",
-                "utility"
-            ],
-            "native": false,
-            "minEviVersion": "0.7.0",
-            "files": {
-                "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/quick-actions/manifest.json?v=cf61d3354bd3",
-                    "sha256": "cf61d3354bd358a91307b4d61313dcaec978530948174a739f8863ddc9622ccd"
-                },
-                "index.js": {
-                    "url": "https://evi.rest/store/plugins/quick-actions/index.js?v=59077c0a018f",
-                    "sha256": "59077c0a018f34aec1499fa699a135ee1f03eb7b434cd220999aaba3aaaaf8ef"
-                }
-            },
-            "updatedAt": "2026-09-27",
-            "source": "https://github.com/BleedDev/evi/tree/main/plugins/quick-actions",
-            "screenshots": [],
-            "changelog": [
-                {
-                    "version": "1.0.1",
-                    "notes": [
-                        "Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."
-                    ]
-                },
-                {
-                    "version": "1.0.0",
-                    "notes": [
-                        "First release."
-                    ]
-                }
-            ],
-            "permissions": {
-                "network": [],
-                "readMessages": false,
-                "sendMessages": false,
-                "changeSettings": false
-            }
-        },
-        {
             "id": "read-all",
             "name": "Read All",
             "description": "Mark every server as read in one click, with a button above the server list, /readall, or the server right-click menu. DMs too if you want.",
@@ -1727,33 +1682,39 @@
         {
             "id": "streamer-mode-plus",
             "name": "Streamer Mode+",
-            "description": "Blurs your DMs, servers, chat images and more while you stream, with hover to reveal. Turns on when you go live, with Discord's Streamer Mode, or by hotkey and /streamerplus.",
+            "description": "Blurs your DMs, servers, chat images and more while you stream, with hover to reveal. Turns on when you go live, with Discord's Streamer Mode, or by shortcut and /streamerplus.",
             "authors": [
                 "Evi"
             ],
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.2",
+            "version": "1.1.0",
             "tags": [
                 "privacy"
             ],
             "native": false,
-            "minEviVersion": "0.7.0",
+            "minEviVersion": "1.0.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/streamer-mode-plus/manifest.json?v=5aa92ee24f97",
-                    "sha256": "5aa92ee24f97c19944ab9646f31c1a5dc89f3fd3dfcb4ab20be21a9b188f494e"
+                    "url": "https://evi.rest/store/plugins/streamer-mode-plus/manifest.json?v=47bb33deffdd",
+                    "sha256": "47bb33deffdd047fddb2e3e00e25be77b205ba2ba55d04c54c0d0c3608194db9"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/streamer-mode-plus/index.js?v=330c61bca1c7",
-                    "sha256": "330c61bca1c77c9205a0db7f5be3d212b130453914272895f8229054fb887410"
+                    "url": "https://evi.rest/store/plugins/streamer-mode-plus/index.js?v=ce18e08c9862",
+                    "sha256": "ce18e08c9862c4cf556d05b80f67819bb623bff13de1183eb8358cd082ac9c4d"
                 }
             },
-            "updatedAt": "2026-09-27",
+            "updatedAt": "2026-09-28",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/streamer-mode-plus",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "1.1.0",
+                    "notes": [
+                        "You set the shortcut by pressing it, like Discord's keybinds, and it says when another plugin has the same keys. Yours carries over."
+                    ]
+                },
                 {
                     "version": "1.0.2",
                     "notes": [
@@ -1884,6 +1845,51 @@
                         "The timezone picker opens and closes with Discord's own animation."
                     ]
                 },
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ],
+            "permissions": {
+                "network": [],
+                "readMessages": false,
+                "sendMessages": false,
+                "changeSettings": false
+            }
+        },
+        {
+            "id": "typing-tweaks",
+            "name": "Typing Tweaks",
+            "description": "See who's typing at a glance: their avatars and role colours in the \"is typing\" line, and three dots on channels and DMs in your lists while someone types there.",
+            "authors": [
+                "Evi"
+            ],
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "social",
+                "messages"
+            ],
+            "native": false,
+            "minEviVersion": "1.0.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/typing-tweaks/manifest.json?v=b7b0b19970ef",
+                    "sha256": "b7b0b19970ef73807bc341b1a7a5bb94dbd9375cab17bbf32cc6aca01b9a6138"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/typing-tweaks/index.js?v=f47db8edcdd4",
+                    "sha256": "f47db8edcdd44f4036f36df72a6a8c0900bfee77dff40834f324633bb61a524a"
+                }
+            },
+            "updatedAt": "2026-09-28",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/typing-tweaks",
+            "screenshots": [],
+            "changelog": [
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -2220,9 +2226,80 @@
                 "sendMessages": false,
                 "changeSettings": false
             }
+        },
+        {
+            "id": "who-reacted",
+            "name": "Who Reacted",
+            "description": "Small avatars of who reacted, right on each reaction next to its count, and how many more when there are lots.",
+            "authors": [
+                "Evi"
+            ],
+            "authorIds": [
+                "evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "messages",
+                "social"
+            ],
+            "native": false,
+            "minEviVersion": "1.0.0",
+            "files": {
+                "manifest.json": {
+                    "url": "https://evi.rest/store/plugins/who-reacted/manifest.json?v=d3b3c3d2abde",
+                    "sha256": "d3b3c3d2abdea452494b5a2531eeff5f73c1138a46764b9cc7e53f430fd80230"
+                },
+                "index.js": {
+                    "url": "https://evi.rest/store/plugins/who-reacted/index.js?v=6597b497e96d",
+                    "sha256": "6597b497e96da71b3ebb068ea4ed1e544b817d200541bfb7217b92759ae7e3f3"
+                }
+            },
+            "updatedAt": "2026-09-28",
+            "source": "https://github.com/BleedDev/evi/tree/main/plugins/who-reacted",
+            "screenshots": [],
+            "changelog": [
+                {
+                    "version": "1.0.0",
+                    "notes": [
+                        "First release."
+                    ]
+                }
+            ],
+            "permissions": {
+                "network": [
+                    "discord.com"
+                ],
+                "readMessages": true,
+                "sendMessages": false,
+                "changeSettings": false
+            }
         }
     ],
     "themes": [
+        {
+            "id": "aurora",
+            "name": "Aurora",
+            "description": "A thank-you for supporting Evi: deep violet surfaces, a soft aurora glow and pink accents.",
+            "authors": [
+                "Evi"
+            ],
+            "version": "1.0.0",
+            "tags": [
+                "dark",
+                "colourful",
+                "supporters"
+            ],
+            "updatedAt": "2026-09-28",
+            "source": "https://github.com/BleedDev/evi/tree/main/themes/aurora.css",
+            "screenshots": [],
+            "changelog": [],
+            "supporters": true,
+            "minEviVersion": "1.0.0",
+            "file": {
+                "url": "https://evi.rest/store/themes/aurora.css?v=463d2eeb7b45",
+                "sha256": "463d2eeb7b4594813e7871c8ec9bf741944821ba7851455b9aa6a038e76b0811"
+            }
+        },
         {
             "id": "midnight",
             "name": "Midnight",

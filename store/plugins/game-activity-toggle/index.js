@@ -71,7 +71,8 @@ var PATCHES = {
 // plugins/game-activity-toggle/index.tsx
 var jsx_runtime = require("react/jsx-runtime");
 var settings = {
-  showButton: { type: "boolean", label: "User panel button", description: "A gamepad button next to mute and deafen. /gameactivity works either way.", default: true }
+  showButton: { type: "boolean", label: "User panel button", description: "A gamepad button next to mute and deafen. /gameactivity works either way.", default: true },
+  shortcut: { type: "keybind", label: "Shortcut", description: "Shows or hides your game activity from anywhere in Discord.", default: "" }
 };
 var context;
 var showCurrentGame;
@@ -212,6 +213,7 @@ var game_activity_toggle_default = import_api.definePlugin({
   start(ctx) {
     context = ctx;
     ctx.onDispose(() => void (context = undefined));
+    ctx.keybind("shortcut", () => void toggle());
     ctx.command({
       name: "gameactivity",
       description: "Show or hide the game you're playing",

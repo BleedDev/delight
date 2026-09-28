@@ -178,10 +178,29 @@ function parseHotkey(input) {
   }
   return hotkey.key ? hotkey : undefined;
 }
-function matchesHotkey(hotkey, event) {
-  if (!hotkey)
-    return false;
-  return event.key.toLowerCase() === hotkey.key && event.ctrlKey === hotkey.ctrl && event.shiftKey === hotkey.shift && event.altKey === hotkey.alt && event.metaKey === hotkey.meta;
+function migrateHotkey(value) {
+  if (typeof value !== "string" || !value.trim())
+    return "";
+  const parts = value.split("+");
+  const code = parts.at(-1);
+  const modifiers = ["Ctrl", "Alt", "Shift", "Meta"];
+  if (code.length > 1 && /^[A-Z]/.test(code) && !modifiers.includes(code) && parts.slice(0, -1).every((m) => modifiers.includes(m)))
+    return value;
+  const old = parseHotkey(value);
+  if (!old)
+    return "";
+  let key;
+  if (/^[a-z]$/.test(old.key))
+    key = `Key${old.key.toUpperCase()}`;
+  else if (/^[0-9]$/.test(old.key))
+    key = `Digit${old.key}`;
+  else if (/^f([1-9]|1[0-9]|2[0-4])$/.test(old.key))
+    key = old.key.toUpperCase();
+  else if (old.key === " ")
+    key = "Space";
+  if (!key)
+    return "";
+  return [old.ctrl && "Ctrl", old.alt && "Alt", old.shift && "Shift", old.meta && "Meta", key].filter(Boolean).join("+");
 }
 function transitionMessage(active, reason) {
   if (reason === "manual")
@@ -205,7 +224,7 @@ var settings = {
       { label: "Always", value: "always" }
     ]
   },
-  hotkey: { type: "string", label: "Hotkey", description: "Toggles blurring. Leave empty for none.", default: "Ctrl+Shift+S", placeholder: "Ctrl+Shift+S" },
+  hotkey: { type: "keybind", label: "Shortcut", description: "Turns blurring on or off, anywhere in Discord.", default: "Ctrl+Shift+KeyS" },
   hoverReveal: { type: "boolean", label: "Reveal on hover", description: "Unblur something while the mouse is over it.", default: true },
   blur: { type: "number", label: "Blur strength", description: "In pixels.", default: 8, min: 2, max: 30, step: 1 },
   toasts: { type: "boolean", label: "Toasts", description: "A short notice when blurring turns on or off by itself.", default: true },
@@ -318,15 +337,11 @@ var streamer_mode_plus_default = import_api.definePlugin({
     for (const type of ["STREAM_START", "STREAM_STOP", "STREAM_DELETE", "STREAMER_MODE_UPDATE", "CHANNEL_SELECT"]) {
       ctx.flux.subscribe(type, () => queueMicrotask(onChange));
     }
-    const onKey = (e) => {
-      if (e.repeat || !matchesHotkey(parseHotkey(ctx.settings.get("hotkey")), e))
-        return;
-      e.preventDefault();
-      e.stopPropagation();
-      toggle();
-    };
-    window.addEventListener("keydown", onKey, true);
-    ctx.onDispose(() => window.removeEventListener("keydown", onKey, true));
+    const hotkey = ctx.settings.get("hotkey");
+    const migrated = migrateHotkey(hotkey);
+    if (migrated !== hotkey)
+      ctx.settings.set("hotkey", migrated);
+    ctx.keybind("hotkey", () => void toggle());
     ctx.command({
       name: "streamerplus",
       description: "Turn Streamer Mode+ blurring on or off",
