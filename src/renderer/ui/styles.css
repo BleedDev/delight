@@ -3747,10 +3747,12 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 }
 
 /* The credits in Updates: faces, names and levels */
+.dl-credits .dl-card-body + .dl-card-body { border-block-start: 1px solid var(--dl-border-divider); }
+
 .dl-credits-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-    gap: 12px 16px;
+    grid-template-columns: repeat(auto-fill, minmax(208px, 1fr));
+    gap: 16px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -3759,32 +3761,38 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 .dl-credits-person {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     min-inline-size: 0;
 }
 
-.dl-credits-person > img {
+.dl-credits-avatar {
     flex: none;
-    inline-size: 32px;
-    block-size: 32px;
+    inline-size: 40px;
+    block-size: 40px;
     border-radius: 50%;
     outline: 1px solid rgb(255 255 255 / 0.08);
     outline-offset: -1px;
 }
 
-.theme-light .dl-credits-person > img { outline-color: rgb(0 0 0 / 0.08); }
+.theme-light .dl-credits-avatar { outline-color: rgb(0 0 0 / 0.08); }
 
-.dl-credits-person .dl-row-text { min-inline-size: 0; }
-.dl-credits-person .dl-row-text > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-credits-person .dl-row-text { min-inline-size: 0; gap: 2px; }
+.dl-credits-person .dl-row-text > :first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dl-credits-level {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-inline-size: 0;
+}
+
+.dl-credits-badge { flex: none; object-fit: contain; }
 
 .dl-credits-foot {
-    display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    margin-block-start: 16px;
-    padding-block-start: 16px;
-    border-block-start: 1px solid var(--dl-border-divider);
 }
 
 .dl-credits-foot > .dl-store-source { margin-inline-start: auto; }

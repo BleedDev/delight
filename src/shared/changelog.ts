@@ -50,6 +50,7 @@ export const RELEASES: Release[] = [
             ],
             fixed: [
                 "**The wallpaper shows again.** Discord's own backdrop and the member list were covering it.",
+                "**Reordering your badges saves again.** Discord refused the whole save because of Evi's badges; now your order reaches everyone.",
             ],
         },
     },

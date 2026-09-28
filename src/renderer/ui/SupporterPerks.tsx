@@ -100,6 +100,7 @@ interface Supporter {
     name: string;
     avatar: string | null;
     userId: string;
+    since: number;
     level: string;
 }
 
@@ -107,15 +108,37 @@ const avatarOf = (s: Supporter) => s.avatar
     ? `https://cdn.discordapp.com/avatars/${s.userId}/${s.avatar}.webp?size=64`
     : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(s.userId) >> 22n) % 6n)}.png`;
 
-/** How many faces the Updates tab shows before "and N more" */
+/** How many people the Updates tab shows before "+N more" */
 const SHOWN = 24;
 
-/** The credits, under Updates: supporters who chose to be named, with their faces and levels */
+/** A level's badge, as everyone sees it next to a supporter's name */
+function LevelBadge({ level, size = 20 }: { level: string; size?: number; }) {
+    const icon = Badges.info(level)?.icon;
+    return icon ? <img className="dl-credits-badge" src={icon} alt="" width={size} height={size} /> : null;
+}
+
+/** "3 months": how long, in the largest unit that fits */
+function howLong(since: number) {
+    const days = supportedDays(since);
+    const format = (value: number, unit: Intl.RelativeTimeFormatUnit) =>
+        new Intl.NumberFormat(I18n.discordLocale, { style: "unit", unit, unitDisplay: "long" }).format(value);
+    if (days >= 365) return format(Math.floor(days / 365), "year");
+    if (days >= 30) return format(Math.floor(days / 30), "month");
+    return format(Math.max(1, days), "day");
+}
+
+/**
+ * The credits, under Updates: supporters who chose to be named, each with their level's badge and
+ * how long they've supported.
+ */
 export function Credits() {
     const [supporters, setSupporters] = React.useState<Supporter[]>();
     useStore(I18n.subscribe, () => I18n.locale);
+    useStore(Badges.subscribe, Badges.getVersion);
     React.useEffect(() => {
+        const stop = Badges.use();
         Native.credits?.().then(r => r.ok && setSupporters(r.value.supporters), () => { });
+        return stop;
     }, []);
     if (!supporters?.length) return null;
     const shown = supporters.slice(0, SHOWN);
@@ -127,23 +150,30 @@ export function Credits() {
                     <ul className="dl-credits-list">
                         {shown.map(s => (
                             <li key={s.userId} className="dl-credits-person">
-                                <img src={avatarOf(s)} alt="" width={32} height={32} loading="lazy" />
+                                <img className="dl-credits-avatar" src={avatarOf(s)} alt="" width={40} height={40} loading="lazy" />
                                 <span className="dl-row-text">
-                                    <Text variant="text-sm/semibold" color="text-strong">{s.name}</Text>
-                                    {isSupporterBadge(s.level) && <Text variant="text-xs/normal" color="text-muted">{levelName(s.level)}</Text>}
+                                    <Text variant="text-md/semibold" color="text-strong">{s.name}</Text>
+                                    {isSupporterBadge(s.level) && (
+                                        <span className="dl-credits-level">
+                                            <LevelBadge level={s.level} size={16} />
+                                            <Text variant="text-xs/medium" color="text-subtle">
+                                                {t("perks.creditsLevel", { level: levelName(s.level), time: howLong(s.since) })}
+                                            </Text>
+                                        </span>
+                                    )}
                                 </span>
                             </li>
                         ))}
                     </ul>
-                    <div className="dl-credits-foot">
-                        <span className="dl-credits-heart" aria-hidden="true"><Icon name="heart" size={16} /></span>
-                        <Text variant="text-sm/normal" color="text-subtle">
-                            {more > 0 ? t("perks.creditsMore", { count: more }) : t("perks.creditsThanks")}
-                        </Text>
-                        <a className="dl-store-source" href={CREDITS_URL} target="_blank" rel="noreferrer noopener">
-                            <Icon name="link" size={16} />{t("perks.creditsAll")}
-                        </a>
-                    </div>
+                </div>
+                <div className="dl-card-body dl-credits-foot">
+                    <span className="dl-credits-heart" aria-hidden="true"><Icon name="heart" size={16} /></span>
+                    <Text variant="text-sm/normal" color="text-subtle">
+                        {more > 0 ? t("perks.creditsMore", { count: more }) : t("perks.creditsThanks")}
+                    </Text>
+                    <a className="dl-store-source" href={CREDITS_URL} target="_blank" rel="noreferrer noopener">
+                        <Icon name="link" size={16} />{t("perks.creditsAll")}
+                    </a>
                 </div>
             </article>
         </Section>

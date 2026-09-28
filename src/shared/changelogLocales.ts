@@ -24,6 +24,7 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
             ],
             fixed: [
                 "**Der Hintergrund ist wieder zu sehen.** Der eigene Hintergrund von Discord und die Mitgliederliste haben ihn verdeckt.",
+                "**Abzeichen neu anordnen speichert wieder.** Discord hat wegen der Evi-Abzeichen das ganze Speichern abgelehnt; jetzt sehen alle deine Reihenfolge.",
             ],
         },
         "1.1.0": {
@@ -223,6 +224,7 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
             ],
             fixed: [
                 "**El fondo vuelve a verse.** El fondo propio de Discord y la lista de miembros lo tapaban.",
+                "**Reordenar tus insignias vuelve a guardarse.** Discord rechazaba todo el guardado por las insignias de Evi; ahora tu orden le llega a todos.",
             ],
         },
         "1.1.0": {
@@ -422,6 +424,7 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
             ],
             fixed: [
                 "**Le fond d'écran s'affiche de nouveau.** Le fond propre à Discord et la liste des membres le cachaient.",
+                "**Réorganiser tes badges s'enregistre de nouveau.** Discord refusait tout l'enregistrement à cause des badges d'Evi ; maintenant ton ordre arrive chez tout le monde.",
             ],
         },
         "1.1.0": {
@@ -621,6 +624,7 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
             ],
             fixed: [
                 "**壁紙がまた表示されるようになりました。** Discord自体の背景とメンバーリストが壁紙を覆っていました。",
+                "**バッジの並べ替えがまた保存されるように。** Eviのバッジが原因でDiscordが保存全体を拒否していました。今は並び順がみんなに届きます。",
             ],
         },
         "1.1.0": {
@@ -820,6 +824,7 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
             ],
             fixed: [
                 "**Tapeta znowu jest widoczna.** Zasłaniało ją własne tło Discorda i lista członków.",
+                "**Zmiana kolejności odznak znowu się zapisuje.** Discord odrzucał cały zapis przez odznaki Evi; teraz twoja kolejność dociera do wszystkich.",
             ],
         },
         "1.1.0": {
@@ -1019,6 +1024,7 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
             ],
             fixed: [
                 "**O papel de parede aparece de novo.** O fundo do próprio Discord e a lista de membros estavam cobrindo ele.",
+                "**Reordenar seus emblemas volta a salvar.** O Discord recusava o salvamento inteiro por causa dos emblemas do Evi; agora sua ordem chega a todo mundo.",
             ],
         },
         "1.1.0": {
@@ -1218,6 +1224,7 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
             ],
             fixed: [
                 "**Обои снова видны.** Их закрывали собственный фон Discord и список участников.",
+                "**Порядок значков снова сохраняется.** Discord отклонял всё сохранение из-за значков Evi; теперь ваш порядок видят все.",
             ],
         },
         "1.1.0": {
@@ -1417,6 +1424,7 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
             ],
             fixed: [
                 "**Duvar kâğıdı yeniden görünüyor.** Discord'un kendi arka planı ve üye listesi onu örtüyordu.",
+                "**Rozetleri yeniden sıralamak tekrar kaydediliyor.** Discord, Evi rozetleri yüzünden kaydın tamamını reddediyordu; artık sıralaman herkese ulaşıyor.",
             ],
         },
         "1.1.0": {

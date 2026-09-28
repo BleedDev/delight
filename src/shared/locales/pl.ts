@@ -667,6 +667,7 @@ export const pl = {
     "perks.creditsMore": "+{count} więcej",
     "perks.creditsThanks": "Dzięki, że utrzymujecie Evi przy życiu.",
     "perks.creditsAll": "Zobacz wszystkich",
+    "perks.creditsLevel": "{level} · {time}",
     "perks.creditsDescription": "Każda z tych osób zgodziła się na podanie nazwy. Dziękujemy.",
     "perks.creditsHint": "Twoja nazwa z Discorda na evi.rest/credits i w zakładce Aktualizacje w Evi.",
     "perks.creditsTitle": "Evi powstaje dzięki",

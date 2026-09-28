@@ -665,6 +665,7 @@ export const fr = {
     "perks.creditsMore": "+{count} autres",
     "perks.creditsThanks": "Merci de faire vivre Evi.",
     "perks.creditsAll": "Voir tout le monde",
+    "perks.creditsLevel": "{level} · {time}",
     "perks.creditsDescription": "Chaque personne ici a choisi d’être nommée. Merci.",
     "perks.creditsHint": "Ton nom Discord sur evi.rest/credits et dans l’onglet Mises à jour d’Evi.",
     "perks.creditsTitle": "Evi existe grâce à",

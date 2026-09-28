@@ -665,6 +665,7 @@ export const ptBR = {
     "perks.creditsMore": "+{count} pessoas",
     "perks.creditsThanks": "Obrigado por manter o Evi funcionando.",
     "perks.creditsAll": "Ver todo mundo",
+    "perks.creditsLevel": "{level} · {time}",
     "perks.creditsDescription": "Todo mundo aqui escolheu aparecer. Obrigado.",
     "perks.creditsHint": "Seu nome do Discord em evi.rest/credits e na aba Atualizações do Evi.",
     "perks.creditsTitle": "O Evi existe graças a",

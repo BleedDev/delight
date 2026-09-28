@@ -665,6 +665,7 @@ export const tr = {
     "perks.creditsMore": "+{count} kişi daha",
     "perks.creditsThanks": "Evi'yi ayakta tuttuğunuz için teşekkürler.",
     "perks.creditsAll": "Herkesi gör",
+    "perks.creditsLevel": "{level} · {time}",
     "perks.creditsDescription": "Buradaki herkes adının yer almasını kendisi seçti. Teşekkürler.",
     "perks.creditsHint": "Discord adın evi.rest/credits sayfasında ve Evi’nin Güncellemeler sekmesinde görünür.",
     "perks.creditsTitle": "Evi’yi mümkün kılanlar",

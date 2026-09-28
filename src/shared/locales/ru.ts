@@ -722,6 +722,7 @@ export const ru = {
     "perks.creditsMore": "и ещё {count}",
     "perks.creditsThanks": "Спасибо, что поддерживаете Evi.",
     "perks.creditsAll": "Смотреть всех",
+    "perks.creditsLevel": "{level} · {time}",
     "perks.creditsDescription": "Все здесь сами решили указать своё имя. Спасибо.",
     "perks.creditsHint": "Ваше имя в Discord на evi.rest/credits и во вкладке «Обновления» в Evi.",
     "perks.creditsTitle": "Evi существует благодаря",

@@ -183,23 +183,61 @@ export function installBadgeSettings(ctx: PluginContext) {
         ctx.onDispose(Badges.subscribe(() => store.emitChange?.()));
     });
 
-    // The profile save: ours come out of Discord's request and go to evi.rest
-    ctx.waitFor(filters.byProps("get", "post", "put", "patch", "del"), (http: any) => {
-        ctx.hook.before(http, "patch", ({ args }) => {
-            const request = args[0];
-            if (!request || typeof request !== "object" || typeof request.url !== "string" || !request.url.endsWith(SETTINGS_URL)) return;
-            if (!request.body || typeof request.body !== "object") return;
-            const userId = me();
-            const { body, prefs } = splitSettings(request.body);
-            args[0] = { ...request, body };
-            // Only when something of ours is in play: a Discord-only change leaves evi.rest alone
-            const touchesOurs = Badges.allForUser(userId).length > 0 || (prefs.hidden?.length ?? 0) > 0;
-            if (!userId || !touchesOurs) return;
-            // Hidden holds ours only; supporter levels all go by "supporter"
-            if (prefs.hidden) prefs.hidden = [...new Set(prefs.hidden.map(badgeKey))];
-            void Badges.setPrefs(userId, prefs).then(result => {
-                if (!result.ok) showToast(t("badge.saveFailed", { error: result.error }), { type: "failure" });
-            });
+    /** Ours go to evi.rest, which shows them to everyone */
+    const saveOurs = (prefs: Partial<BadgePrefs>) => {
+        const userId = me();
+        // Only when something of ours is in play: a Discord-only change leaves evi.rest alone
+        const touchesOurs = Badges.allForUser(userId).length > 0 || (prefs.hidden?.length ?? 0) > 0;
+        if (!userId || !touchesOurs) return;
+        // Hidden holds ours only; supporter levels all go by "supporter"
+        if (prefs.hidden) prefs.hidden = [...new Set(prefs.hidden.map(badgeKey))];
+        void Badges.setPrefs(userId, prefs).then(result => {
+            if (!result.ok) showToast(t("badge.saveFailed", { error: result.error }), { type: "failure" });
         });
+    };
+
+    /**
+     * The profile save, as it leaves the page: Discord's request helpers change, the request itself
+     * doesn't. Ours come out of the JSON body (Discord refuses ids that aren't its numbers, and the
+     * whole save with them) and go to evi.rest instead.
+     */
+    const outgoing = (method: string | undefined, url: string, body: unknown): string | undefined => {
+        if (method?.toUpperCase() !== "PATCH" || typeof body !== "string" || !url.split("?")[0].endsWith(SETTINGS_URL)) return;
+        let json: unknown;
+        try {
+            json = JSON.parse(body);
+        } catch {
+            return;
+        }
+        if (!json || typeof json !== "object" || Array.isArray(json)) return;
+        const split = splitSettings(json as Record<string, unknown>);
+        saveOurs(split.prefs);
+        return JSON.stringify(split.body);
+    };
+
+    const xhr = XMLHttpRequest.prototype;
+    const open = xhr.open;
+    const send = xhr.send;
+    const requests = new WeakMap<XMLHttpRequest, { method: string; url: string; }>();
+    xhr.open = function (this: XMLHttpRequest, method: string, url: string | URL, ...rest: any[]) {
+        requests.set(this, { method, url: String(url) });
+        return (open as any).call(this, method, url, ...rest);
+    };
+    xhr.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
+        const request = requests.get(this);
+        const rewritten = request && outgoing(request.method, request.url, body);
+        return send.call(this, rewritten ?? body);
+    };
+    const nativeFetch = window.fetch;
+    window.fetch = function (this: unknown, input: RequestInfo | URL, init?: RequestInit) {
+        const url = typeof input === "string" || input instanceof URL ? String(input) : input.url;
+        const rewritten = outgoing(init?.method, url, init?.body);
+        return nativeFetch.call(this, input, rewritten === undefined ? init : { ...init, body: rewritten });
+    } as typeof fetch;
+    ctx.onDispose(() => {
+        if (xhr.open !== open) xhr.open = open;
+        if (xhr.send !== send) xhr.send = send;
+        window.fetch = nativeFetch;
     });
 }
+

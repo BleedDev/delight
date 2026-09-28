@@ -662,6 +662,7 @@ export const ja = {
     "perks.creditsMore": "ほか{count}人",
     "perks.creditsThanks": "Eviを支えてくれてありがとう。",
     "perks.creditsAll": "全員を見る",
+    "perks.creditsLevel": "{level}・{time}",
     "perks.creditsDescription": "ここにいる全員が、名前の掲載を選んでくれました。ありがとうございます。",
     "perks.creditsHint": "evi.rest/creditsとEviの「アップデート」タブに、あなたのDiscordの名前が表示されます。",
     "perks.creditsTitle": "Eviを支えてくれている方々",
