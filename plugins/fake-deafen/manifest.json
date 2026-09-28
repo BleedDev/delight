@@ -20,7 +20,7 @@
             ]
         }
     ],
-    "minEviVersion": "1.0.0",
+    "minEviVersion": "1.1.1",
     "enabledByDefault": false,
     "locales": {
         "de": {
