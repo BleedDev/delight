@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { MessageLog, shouldLog } from "../plugins/message-logger/log";
+import { attachmentsToSave, MAX_SAVED_BYTES, MediaCache, mediaKind, MessageLog, removedAttachments, shouldLog } from "../plugins/message-logger/log";
 
 const v = (content: string, timestamp = 1) => ({ content, timestamp });
 
@@ -131,5 +131,58 @@ describe("message logger filters", () => {
         expect(shouldLog({ author: { id: "me" } }, { ...base, ignoreSelf: true, currentUserId: undefined })).toBe(true);
         expect(shouldLog({ author: { id: "b", bot: true } }, base)).toBe(true);
         expect(shouldLog({ author: { id: "b", bot: true } }, { ...base, ignoreBots: true })).toBe(false);
+    });
+});
+
+describe("message logger media", () => {
+    const att = (id: string, extra: Record<string, unknown> = {}) => ({ id, filename: `${id}.png`, url: `https://cdn.discordapp.com/attachments/1/${id}/${id}.png`, size: 100, ...extra });
+    const saved = (key: string, size = 10) => ({ key, name: key, kind: "image" as const, url: `blob:${key}`, size, spoiler: false });
+
+    test("what's worth saving, and what kind it is", () => {
+        expect(attachmentsToSave([att("a"), att("big", { size: MAX_SAVED_BYTES + 1 }), { id: "nourl" }]).map(a => a.id)).toEqual(["a"]);
+        expect(mediaKind({ content_type: "video/mp4" })).toBe("video");
+        expect(mediaKind({ filename: "clip.MOV" })).toBe("video");
+        expect(mediaKind({ filename: "voice.ogg" })).toBe("audio");
+        expect(mediaKind({ filename: "cat.webp" })).toBe("image");
+        expect(mediaKind({ filename: "notes.txt" })).toBe("file");
+    });
+
+    test("an edit's removed attachments, only when the edit says what's left", () => {
+        expect(removedAttachments([att("a"), att("b")], [att("b")]).map(a => a.id)).toEqual(["a"]);
+        expect(removedAttachments([att("a")], undefined)).toEqual([]);
+    });
+
+    test("the cache keeps the newest within its size, and hands copies over without evicting them", () => {
+        const evicted: string[] = [];
+        const cache = new MediaCache<ReturnType<typeof saved>>(25, m => evicted.push(m.key));
+        cache.set("a", saved("a"));
+        cache.set("b", saved("b"));
+        cache.set("c", saved("c"));
+        expect(evicted).toEqual(["a"]);
+        expect(cache.take("b")?.key).toBe("b");
+        expect(cache.size).toBe(10);
+        cache.set("huge", saved("huge", 100));
+        expect(evicted).toEqual(["a", "huge"]);
+        cache.clear();
+        expect(evicted).toEqual(["a", "huge", "c"]);
+    });
+
+    test("a deleted message keeps its saved copies, and they're let go when it's forgotten", () => {
+        const forgotten: string[] = [];
+        const log = new MessageLog({ perChannel: 1 }, e => forgotten.push(...(e.media ?? []).map(m => m.key)));
+        expect(log.addMedia("c", "1", [saved("x")])).toBe(false);
+        log.markDeleted("c", "1", 5);
+        expect(log.addMedia("c", "1", [saved("x"), saved("x")])).toBe(true);
+        expect(log.get("c", "1")?.media?.map(m => m.key)).toEqual(["x"]);
+        log.markDeleted("c", "2", 6);
+        expect(forgotten).toEqual(["x"]);
+    });
+
+    test("an edit's removed attachments arrive with that version", () => {
+        const log = new MessageLog();
+        log.addEdit("c", "1", v("with a picture", 7));
+        expect(log.addEditMedia("c", "1", 7, [saved("p")])).toBe(true);
+        expect(log.addEditMedia("c", "1", 8, [saved("q")])).toBe(false);
+        expect(log.mediaOf("c", "1").map(m => m.key)).toEqual(["p"]);
     });
 });

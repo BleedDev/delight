@@ -1,7 +1,10 @@
 import { Components, definePlugin, Dispatcher, filters, findStore, Menu, React } from "@evi/api";
 import type { Filter, FluxAction, HookContext, PluginContext } from "@evi/api";
 
-import { LoggedMessage, MessageLog, MessageRef, PreviousVersion, shouldLog } from "./log";
+import {
+    AttachmentLike, attachmentKey, attachmentsToSave, LoggedMessage, MAX_SAVED_BYTES, MediaCache, mediaKind, MessageLog, MessageRef, PreviousVersion,
+    removedAttachments, SavedMedia, shouldLog,
+} from "./log";
 
 /**
  * Deleted messages stay in the chat and edited ones keep their previous versions. No source patches:
@@ -12,8 +15,12 @@ import { LoggedMessage, MessageLog, MessageRef, PreviousVersion, shouldLog } fro
  * - What we know lives in our own MessageLog. A message's accessories (embeds, attachments...) are
  *   rendered by an exported function, hooked to add our "Deleted" tag and edit history under it.
  *   The red tint is CSS on the list item that contains our tag.
+ * - Deleting a message deletes its attachments from Discord's CDN too, so the kept message would show
+ *   broken images. Attachments in the channel you're looking at are downloaded as they load (into
+ *   blob: URLs, in memory, capped), and a deleted message keeps its copies; Discord's broken ones are
+ *   hidden and ours are shown. An edit that removes an attachment keeps it with the old version.
  * - On stop, kept messages are really deleted from MessageStore (a private action only it handles),
- *   the log is cleared, so every tag and history unmounts, and the stylesheet goes.
+ *   the log is cleared, so every tag and history unmounts, saved copies are let go, and the stylesheet goes.
  * - Right-clicking a channel, thread, DM or server with anything logged offers to clear just that,
  *   the same purge as the settings button, scoped to its channels.
  */
@@ -21,6 +28,10 @@ import { LoggedMessage, MessageLog, MessageRef, PreviousVersion, shouldLog } fro
 const PURGE_ACTION = "EVI_MESSAGE_LOGGER_PURGE";
 /** How long a delete you started waits for Discord's MESSAGE_DELETE */
 const SELF_DELETE_WINDOW = 60_000;
+/** Saved copies of attachments not (yet) deleted, all together */
+const CACHE_BYTES = 150 * 1024 * 1024;
+/** Messages a loaded page of history has its attachments saved from, newest first */
+const SAVE_FROM_LOADED = 50;
 
 const accessoriesFilter = filters.byCode("channelMessageProps:{message:", "isAutomodBlockedMessage:");
 const renderedContentFilter = filters.byCode('"useMessageRenderedContent"', "hideSimpleEmbedContent");
@@ -99,6 +110,62 @@ const css = `
     color: var(--text-feedback-critical, var(--status-danger, #f23f43));
     font-weight: 500;
 }
+/* Discord's own attachments of a deleted message are gone from its CDN: our saved copies stand in */
+[data-list-item-id^="chat-messages___"]:has(.dl-ml-saved) :is([class*="visualMediaItemContainer_"], [class*="nonVisualMediaItemContainer_"]) {
+    display: none;
+}
+.dl-ml-media {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.25rem 0;
+}
+.dl-ml-media img, .dl-ml-media video {
+    display: block;
+    max-width: min(400px, 100%);
+    max-height: 300px;
+    border-radius: 8px;
+    outline: 1px solid rgb(255 255 255 / 0.08);
+    outline-offset: -1px;
+    background: var(--background-secondary, #2b2d31);
+}
+.dl-ml-history .dl-ml-media img, .dl-ml-history .dl-ml-media video {
+    max-width: 200px;
+    max-height: 150px;
+}
+.dl-ml-spoiler {
+    all: unset;
+    position: relative;
+    display: block;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.dl-ml-spoiler > img { filter: blur(44px); }
+.dl-ml-spoiler > span {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    translate: -50% -50%;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 0.6);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.dl-ml-spoiler:focus-visible { outline: 2px solid var(--focus-primary, #00a8fc); }
+.dl-ml-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle, rgba(151, 151, 159, 0.12));
+    background: var(--background-secondary, #2b2d31);
+    color: var(--text-link, #00a8fc);
+    font-size: 0.875rem;
+}
+.dl-ml-file small { color: var(--text-muted, #949ba4); }
 `;
 
 function formatTime(ms: number) {
@@ -126,6 +193,32 @@ function RichContent({ message, content, render }: { message: any; content: stri
     return <>{rendered?.content ?? content}</>;
 }
 
+const formatSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+/** A spoilered image stays blurred until clicked, like Discord's */
+function Spoiler({ children }: { children: React.ReactElement; }) {
+    const [shown, setShown] = React.useState(false);
+    if (shown) return children;
+    return <button type="button" className="dl-ml-spoiler" aria-label="Show spoiler" onClick={() => setShown(true)}>{children}<span>Spoiler</span></button>;
+}
+
+/** Saved copies: pictures and videos as themselves, sounds with a player, anything else as a download */
+function SavedMediaList({ media }: { media: readonly SavedMedia[]; }) {
+    return (
+        <div className="dl-ml-media">
+            {media.map(m => {
+                if (m.kind === "image") {
+                    const img = <img src={m.url} alt={m.name} width={m.width} height={m.height} loading="lazy" />;
+                    return <React.Fragment key={m.key}>{m.spoiler ? <Spoiler>{img}</Spoiler> : img}</React.Fragment>;
+                }
+                if (m.kind === "video") return <video key={m.key} src={m.url} controls preload="metadata" aria-label={m.name} />;
+                if (m.kind === "audio") return <audio key={m.key} src={m.url} controls preload="metadata" aria-label={m.name} />;
+                return <a key={m.key} className="dl-ml-file" href={m.url} download={m.name}>{m.name} <small>{formatSize(m.size)}</small></a>;
+            })}
+        </div>
+    );
+}
+
 function Version({ message, version }: { message: any; version: PreviousVersion; }) {
     const render = useRenderedContent;
     return (
@@ -134,6 +227,7 @@ function Version({ message, version }: { message: any; version: PreviousVersion;
             <div className={`dl-ml-content ${markupClass}`}>
                 {render ? <RichContent message={message} content={version.content} render={render} /> : version.content}
             </div>
+            {!!version.media?.length && <SavedMediaList media={version.media} />}
         </div>
     );
 }
@@ -141,8 +235,10 @@ function Version({ message, version }: { message: any; version: PreviousVersion;
 function Logged({ log, message }: { log: MessageLog; message: any; }) {
     const entry: LoggedMessage | undefined = React.useSyncExternalStore(log.subscribe, () => log.get(message.channel_id, message.id));
     if (!entry) return null;
+    const saved = entry.deletedAt !== undefined && !!entry.media?.length;
     return (
-        <div className="dl-ml">
+        <div className={saved ? "dl-ml dl-ml-saved" : "dl-ml"}>
+            {saved && <SavedMediaList media={entry.media!} />}
             {entry.edits.length > 0 && (
                 <div className="dl-ml-history" role="group" aria-label="Previous versions">
                     <div className="dl-ml-caption">Edited from</div>
@@ -196,6 +292,12 @@ const settings = {
     ignoreOwnDeletes: { type: "boolean", label: "Ignore my own deletes", description: "Messages you delete yourself disappear as usual.", default: true },
     ignoreSelf: { type: "boolean", label: "Ignore my own messages", description: "Never log your messages, whoever deletes or edits them.", default: false },
     ignoreBots: { type: "boolean", label: "Ignore bots", description: "Don't log messages from bots and apps.", default: false },
+    saveMedia: {
+        type: "boolean",
+        label: "Keep deleted pictures, videos and files",
+        description: "Saves the attachments in the channel you're looking at as they load (up to 25 MB each, in memory), so a deleted message still shows them.",
+        default: true,
+    },
     limit: {
         type: "number",
         label: "Messages logged per channel",
@@ -209,7 +311,92 @@ const settings = {
 
 type Ctx = PluginContext<typeof settings>;
 
-function install(ctx: Ctx, log: MessageLog, store: any) {
+/**
+ * Saving attachments: from the channel you're looking at as they load, into a capped cache; a deleted
+ * message takes its copies out of it (or downloads them then, if they're still there).
+ */
+function mediaSaver(ctx: Ctx, cache: MediaCache<SavedMedia>) {
+    const pending = new Map<string, Promise<SavedMedia | undefined>>();
+    const queue: (() => Promise<unknown>)[] = [];
+    let running = 0;
+    const pump = () => {
+        while (running < 2 && queue.length) {
+            running++;
+            void queue.shift()!().finally(() => {
+                running--;
+                pump();
+            });
+        }
+    };
+
+    /** Downloads one attachment. Discord's page may keep it cached, which is what's left once it's deleted. */
+    async function download(a: AttachmentLike): Promise<SavedMedia | undefined> {
+        const name = a.filename ?? "attachment";
+        for (const url of [a.url, a.proxy_url]) {
+            if (!url) continue;
+            try {
+                const res = await fetch(url, { cache: "force-cache" });
+                if (!res.ok) continue;
+                const blob = await res.blob();
+                if (blob.size > MAX_SAVED_BYTES) return;
+                return {
+                    key: attachmentKey(a), name, kind: mediaKind(a), url: URL.createObjectURL(blob), size: blob.size,
+                    ...(a.width && { width: a.width }), ...(a.height && { height: a.height }), spoiler: name.startsWith("SPOILER_"),
+                };
+            } catch { }
+        }
+    }
+
+    /** One download per attachment at a time, two at once */
+    const fetchOnce = (a: AttachmentLike) => {
+        const key = attachmentKey(a);
+        let job = pending.get(key);
+        if (!job) {
+            job = new Promise(resolve => {
+                queue.push(() => download(a).then(resolve, () => resolve(undefined)));
+                pump();
+            });
+            pending.set(key, job);
+            void job.finally(() => pending.delete(key));
+        }
+        return job;
+    };
+
+    return {
+        /** Saves a message's attachments ahead of time, into the cache */
+        prefetch(attachments: readonly AttachmentLike[] | undefined) {
+            if (!ctx.settings.get("saveMedia")) return;
+            for (const a of attachmentsToSave(attachments)) {
+                const key = attachmentKey(a);
+                if (cache.has(key) || pending.has(key)) continue;
+                void fetchOnce(a).then(m => m && cache.set(key, m));
+            }
+        },
+        /**
+         * A message's attachments for keeping: the saved copies right away, the rest when (if) they
+         * download. `later` gets those.
+         */
+        keep(attachments: readonly AttachmentLike[] | undefined, later: (media: SavedMedia[]) => void): SavedMedia[] {
+            if (!ctx.settings.get("saveMedia")) return [];
+            const now: SavedMedia[] = [];
+            const missing: AttachmentLike[] = [];
+            for (const a of attachmentsToSave(attachments)) {
+                const saved = cache.take(attachmentKey(a));
+                if (saved) now.push(saved);
+                else missing.push(a);
+            }
+            if (missing.length) {
+                void Promise.all(missing.map(a => fetchOnce(a).then(m => m && (cache.take(m.key) ?? m)))).then(list => {
+                    const got = list.filter((m): m is SavedMedia => !!m);
+                    if (got.length) later(got);
+                });
+            }
+            return now;
+        },
+    };
+}
+
+function install(ctx: Ctx, log: MessageLog, store: any, saver: ReturnType<typeof mediaSaver>) {
     const registry = (Dispatcher as any)._actionHandlers;
     const handlers = registry?._dependencyGraph?.getNodeData?.(store.getDispatchToken?.())?.actionHandler;
     if (!handlers || !["MESSAGE_DELETE", "MESSAGE_DELETE_BULK", "MESSAGE_UPDATE"].every(t => typeof handlers[t] === "function")) {
@@ -257,10 +444,21 @@ function install(ctx: Ctx, log: MessageLog, store: any) {
         return !!message && shouldLog(message, logFilters());
     };
 
+    /** A kept message's attachments stay with it: saved copies now, the rest as they download */
+    const keepMedia = (channelId: string, id: string) => {
+        const attachments = store.getMessage(channelId, id)?.attachments;
+        if (!attachments?.length || log.get(channelId, id)?.media?.length) return;
+        const now = saver.keep(attachments, later => {
+            if (!log.addMedia(channelId, id, later)) for (const m of later) URL.revokeObjectURL(m.url);
+        });
+        if (!log.addMedia(channelId, id, now)) for (const m of now) URL.revokeObjectURL(m.url);
+    };
+
     ctx.hook.instead(handlers, "MESSAGE_DELETE", (call: HookContext) => {
         const action = call.args[0] as FluxAction;
         if (action.eviPurge || !shouldKeep(action, action.channelId, action.id)) return call.callOriginal(...call.args);
         void purge(log.markDeleted(action.channelId, action.id));
+        keepMedia(action.channelId, action.id);
         // Nothing changed in the store; our tag re-renders from the log
         return false;
     });
@@ -273,18 +471,26 @@ function install(ctx: Ctx, log: MessageLog, store: any) {
         for (const id of action.ids ?? []) (shouldKeep(action, action.channelId, id) ? keep : drop).push(id);
         const evicted = keep.flatMap(id => log.markDeleted(action.channelId, id));
         void purge(evicted);
+        for (const id of keep) keepMedia(action.channelId, id);
         return drop.length ? call.callOriginal({ ...action, ids: drop }) : false;
     });
 
     // Before MessageStore applies an edit: the old content is still there to record
     ctx.hook.before(handlers, "MESSAGE_UPDATE", ({ args }) => {
         const next = args[0]?.message;
-        if (!ctx.settings.get("logEdits") || !next?.id || typeof next.content !== "string") return;
+        if (!ctx.settings.get("logEdits") || !next?.id) return;
         const channelId = next.channel_id;
         const old = store.getMessage(channelId, next.id);
-        if (!old || typeof old.content !== "string" || old.content === next.content || !shouldLog(old, logFilters())) return;
+        if (!old || typeof old.content !== "string" || !shouldLog(old, logFilters())) return;
+        // An edit can change the text, take attachments away, or both
+        const changedText = typeof next.content === "string" && old.content !== next.content;
+        const removed = removedAttachments(old.attachments, next.attachments);
+        if (!changedText && !removed.length) return;
         const timestamp = Number(old.editedTimestamp ?? old.timestamp) || Date.now();
-        void purge(log.addEdit(channelId, next.id, { content: old.content, timestamp }));
+        const media = saver.keep(removed, later => {
+            if (!log.addEditMedia(channelId, next.id, timestamp, later)) for (const m of later) URL.revokeObjectURL(m.url);
+        });
+        void purge(log.addEdit(channelId, next.id, { content: old.content, timestamp, ...(media.length && { media }) }));
     });
 
     invalidate();
@@ -355,10 +561,31 @@ export default definePlugin({
     settings,
 
     start(ctx) {
-        const log = new MessageLog({ perChannel: ctx.settings.get("limit") });
+        const revoke = (m: SavedMedia) => URL.revokeObjectURL(m.url);
+        // Saved copies are let go with the message they belong to
+        const log = new MessageLog({ perChannel: ctx.settings.get("limit") }, entry => {
+            for (const m of entry.media ?? []) revoke(m);
+            for (const e of entry.edits) for (const m of e.media ?? []) revoke(m);
+        });
+        const cache = new MediaCache<SavedMedia>(CACHE_BYTES, revoke);
+        const saver = mediaSaver(ctx, cache);
+        ctx.onDispose(() => cache.clear());
         ctx.addStyle(css);
 
-        withStore(ctx, "MessageStore", store => install(ctx, log, store));
+        withStore(ctx, "MessageStore", store => install(ctx, log, store, saver));
+
+        // Attachments in the channel you're looking at, saved as they load: after a delete they're gone from Discord
+        let selected: any;
+        withStore(ctx, "SelectedChannelStore", s => void (selected = s));
+        const inView = (channelId: string) => !!channelId && channelId === selected?.getChannelId?.();
+        ctx.flux.subscribe("MESSAGE_CREATE", action => {
+            if (inView(action.channelId) && !action.optimistic) saver.prefetch(action.message?.attachments);
+        });
+        ctx.flux.subscribe("LOAD_MESSAGES_SUCCESS", action => {
+            if (!inView(action.channelId) || !Array.isArray(action.messages)) return;
+            for (const m of action.messages.slice(0, SAVE_FROM_LOADED)) saver.prefetch(m?.attachments);
+        });
+        ctx.settings.onChange(values => void (!values.saveMedia && cache.clear()));
         // Kept from an earlier start: no need to search every module again
         if (!useRenderedContent) ctx.waitFor(renderedContentFilter, fn => void (useRenderedContent = fn));
         if (!markupClass) ctx.waitFor(markupFilter, classes => {

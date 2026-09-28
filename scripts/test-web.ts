@@ -1171,6 +1171,21 @@ const logger = await page.evaluate(async () => {
     const selfD = { inStore: !!store.getMessage(channelId, d), logged: !!log.get(channelId, d) };
     Dispatcher.unsubscribe("MESSAGE_DELETE", onDelete);
 
+    // Pictures: a deleted message keeps a saved copy (Discord's CDN deletes the original), and an edit
+    // that removes one keeps it with the old version. Discord's default avatar stands in: it's public.
+    const picture = (id: string) => ({ id, filename: `${id}.png`, url: "https://cdn.discordapp.com/embed/avatars/0.png", proxy_url: "https://cdn.discordapp.com/embed/avatars/0.png", size: 4096, content_type: "image/png", width: 128, height: 128 });
+    const withPicture = "888000000000000040", editedPicture = "888000000000000041";
+    await Dispatcher.dispatch({ type: "MESSAGE_CREATE", channelId, message: { ...raw(withPicture, "look"), attachments: [picture("990001")] } });
+    await Dispatcher.dispatch({ type: "MESSAGE_CREATE", channelId, message: { ...raw(editedPicture, "two pictures"), attachments: [picture("990002"), picture("990003")] } });
+    await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: withPicture, channelId });
+    await Dispatcher.dispatch({ type: "MESSAGE_UPDATE", message: { id: editedPicture, channel_id: channelId, content: "two pictures", attachments: [picture("990003")], edited_timestamp: new Date().toISOString() } });
+    for (let i = 0; i < 30 && !(log.get(channelId, withPicture)?.media?.length && log.get(channelId, editedPicture)?.edits[0]?.media?.length); i++) await new Promise(r => setTimeout(r, 100));
+    const media = {
+        inStore: !!store.getMessage(channelId, withPicture),
+        deleted: (log.get(channelId, withPicture)?.media ?? []).map((m: any) => ({ kind: m.kind, name: m.name, blob: m.url.startsWith("blob:"), size: m.size })),
+        edited: (log.get(channelId, editedPicture)?.edits[0]?.media ?? []).map((m: any) => m.name),
+    };
+
     // Render what the accessories hook adds, inside a chat row like Discord's
     const host = document.createElement("ul");
     host.innerHTML = `<li data-list-item-id="chat-messages___chat-messages-${channelId}-${a}" id="chat-messages-${channelId}-${a}"></li>`;
@@ -1244,7 +1259,7 @@ const logger = await page.evaluate(async () => {
 
     return {
         chunks: { total: chunkIds.length, loaded: chunksLoaded, loadMs, channelModule, moduleIds, requireErrors },
-        running, hooked, loaded, first: a, edits, storeContent, keptA, localB, keptC, seenBySubscribers, selfD, render, caps, beforeStop, stopped, stockDelete,
+        running, hooked, loaded, first: a, edits, storeContent, keptA, localB, keptC, seenBySubscribers, selfD, media, render, caps, beforeStop, stopped, stockDelete,
         patches: diagnosePatches().filter((p: any) => p.plugin === "message-logger").length,
     };
 });
@@ -1258,6 +1273,9 @@ check("other stores and subscribers still get MESSAGE_DELETE", logger.seenBySubs
 check("local deletes pass through", !logger.localB);
 check("bulk deletes are kept per message", logger.keptC);
 check("a delete you started yourself isn't kept (Ignore my own deletes)", !logger.selfD.inStore && !logger.selfD.logged, logger.selfD);
+check("message-logger: a deleted message keeps a saved copy of its picture, and an edit keeps the picture it removed",
+    logger.media.inStore && logger.media.deleted.length === 1 && logger.media.deleted[0].kind === "image" && logger.media.deleted[0].blob && logger.media.deleted[0].size > 0
+    && JSON.stringify(logger.media.edited) === '["990002.png"]', logger.media);
 check("accessories hook appends the log view, leaves forwarded snapshots alone", !!logger.render.appended && !!logger.render.snapshotUntouched && !logger.render.error, logger.render.error ?? undefined);
 check("deleted message renders its tag, row tint and edit history", /Edited from/.test(logger.render.text ?? "") && /Deleted/.test(logger.render.text ?? "")
     && logger.render.rowBackground !== "rgba(0, 0, 0, 0)" && logger.render.rowShadow !== "none", logger.render);
