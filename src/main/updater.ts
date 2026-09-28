@@ -1,8 +1,9 @@
 /**
  * Updating Evi from inside Discord. Checks GitHub, through evi.rest's mirror, for the latest published
- * release (prereleases too, with betas on); installing one downloads its installer for this system (evi.exe on Windows), checks it
- * against the published SHA-256, keeps it in the data folder, and has it run `install --restart` for this
- * Discord: that writes the new core and official plugins, closes Discord and starts it again.
+ * release (prereleases too, with betas on). Installing one downloads its evi-core.json (a few MB: Evi's
+ * files, what Evi Setup downloads), checks it against the published SHA-256, writes it into the data
+ * folder (coreUpdate.ts) and restarts Discord. Releases without one fall back to the installer for this
+ * system (evi.exe on Windows, over 100 MB), run as `install --restart`.
  *
  * Downloading and installing are separate steps. download() stages the verified installer as
  * evi.exe.pending (with update-staged.json saying which version it is); apply() swaps it in and runs it.
@@ -24,6 +25,7 @@ import { app, ipcMain, net, webContents, WebContents } from "electron";
 import { accessSync, constants, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 
+import { applyCorePayload, parseCorePayload } from "./coreUpdate";
 import { DATA_DIR } from "./paths";
 import { settings } from "./settings";
 import { mt } from "./locale";
@@ -39,6 +41,9 @@ const EXE = join(DATA_DIR, EXE_ASSET);
 const PENDING = `${EXE}.pending`;
 /** Which version PENDING is, and its SHA-256 */
 const STAGED = join(DATA_DIR, "update-staged.json");
+/** A downloaded, verified evi-core.json waiting to be written in */
+const CORE_PENDING = join(DATA_DIR, "update-core.json.pending");
+const MAX_CORE_BYTES = 64 * 1024 * 1024;
 const LOG = join(DATA_DIR, "logs", "update.log");
 
 let last: UpdateStatus | undefined;
@@ -79,11 +84,11 @@ function readStaged(): StagedUpdate | undefined {
 /** The staged update, if its installer is still on disk (not checked against its hash: that's for apply) */
 function readyStaged() {
     const staged = readStaged();
-    return staged && (existsSync(PENDING) || existsSync(EXE)) ? staged : undefined;
+    return staged && (existsSync(CORE_PENDING) || existsSync(PENDING) || existsSync(EXE)) ? staged : undefined;
 }
 
 function forgetStaged() {
-    for (const file of [STAGED, PENDING, `${PENDING}.part`]) {
+    for (const file of [STAGED, PENDING, `${PENDING}.part`, CORE_PENDING, `${CORE_PENDING}.part`]) {
         try {
             rmSync(file, { force: true });
         } catch { }
@@ -98,9 +103,9 @@ function sha256Of(file: string) {
     }
 }
 
-/** The installer with this hash: still waiting as .pending, or already evi.exe (an apply whose install didn't get to run) */
+/** The staged file with this hash: the core, the installer still waiting as .pending, or already evi.exe (an apply whose install didn't get to run) */
 function stagedFile(sha256: string) {
-    return [PENDING, EXE].find(file => existsSync(file) && sha256Of(file) === sha256);
+    return [CORE_PENDING, PENDING, EXE].find(file => existsSync(file) && sha256Of(file) === sha256);
 }
 
 // ---- checking -----------------------------------------------------------------------------------
@@ -186,23 +191,29 @@ function download(release: ReleaseInfo, report?: (progress: UpdateProgress) => v
     if (staging?.version === release.version) return staging.promise;
     const promise = (async () => {
         report?.({ phase: "downloading", done: 0 });
-        const checksum = (await fetchBytes(release.checksumUrl, 4096)).toString("utf8").match(/\b[a-f0-9]{64}\b/i)?.[0].toLowerCase();
+        // Evi's files alone when the release has them, else the whole installer
+        const core = !!(release.coreUrl && release.coreChecksumUrl);
+        const [url, checksumUrl, target, max] = core
+            ? [release.coreUrl!, release.coreChecksumUrl!, CORE_PENDING, MAX_CORE_BYTES]
+            : [release.exeUrl, release.checksumUrl, PENDING, MAX_EXE_BYTES];
+        const checksum = (await fetchBytes(checksumUrl, 4096)).toString("utf8").match(/\b[a-f0-9]{64}\b/i)?.[0].toLowerCase();
         if (!checksum) throw new Error(mt("main.update.noChecksum"));
         const staged = { version: release.version, sha256: checksum };
 
         if (!stagedFile(checksum)) {
-            rmSync(PENDING, { force: true });
-            const exe = await fetchBytes(release.exeUrl, MAX_EXE_BYTES, (done, total) => report?.({ phase: "downloading", done, total }));
+            rmSync(target, { force: true });
+            const bytes = await fetchBytes(url, max, (done, total) => report?.({ phase: "downloading", done, total }));
             report?.({ phase: "verifying" });
-            const actual = createHash("sha256").update(exe).digest("hex");
+            const actual = createHash("sha256").update(bytes).digest("hex");
             if (actual !== checksum) throw new Error(mt("main.update.mismatch"));
+            if (core) parseCorePayload(bytes.toString("utf8"));
             mkdirSync(DATA_DIR, { recursive: true });
-            // Written beside, then renamed: a half-written file is never taken for the installer
+            // Written beside, then renamed: a half-written file is never taken for the update
             try {
-                writeFileSync(`${PENDING}.part`, exe, { mode: 0o755 });
-                renameSync(`${PENDING}.part`, PENDING);
+                writeFileSync(`${target}.part`, bytes, { mode: 0o755 });
+                renameSync(`${target}.part`, target);
             } catch (err) {
-                rmSync(`${PENDING}.part`, { force: true });
+                rmSync(`${target}.part`, { force: true });
                 throw err;
             }
         }
@@ -295,14 +306,31 @@ function swapIn(staged: StagedUpdate) {
 
 const commandLineFor = (flavor: Flavor, mode: "restart" | "on-exit") => installerCommandLine(EXE, installerArgs(flavor, mode), LOG, process.platform);
 
-/** Swaps the staged installer in and runs `install --restart`: it closes Discord and opens it again */
+/** Writes a staged evi-core.json in, if that's what's staged. Synchronous, for will-quit too */
+function applyStagedCore(staged: StagedUpdate) {
+    if (stagedFile(staged.sha256) !== CORE_PENDING) return false;
+    applyCorePayload(parseCorePayload(readFileSync(CORE_PENDING, "utf8")));
+    forgetStaged();
+    return true;
+}
+
+/** Installs the staged update and restarts Discord: the core in place and a relaunch, or the installer's `install --restart` */
 async function applyWithRestart(staged: StagedUpdate, flavor: Flavor) {
+    if (applyStagedCore(staged)) {
+        // After the answer reaches the page, which says Discord is restarting
+        setTimeout(() => {
+            app.relaunch();
+            app.exit(0);
+        }, 800);
+        return;
+    }
     swapIn(staged);
     await launchDetached(commandLineFor(flavor, "restart"));
 }
 
-/** Swaps the staged installer in and runs `install --wait`, which installs once Discord has quit. Synchronous, for will-quit */
+/** Installs the staged update as Discord quits: the core right away, or the installer's `install --wait`. Synchronous, for will-quit */
 function applyOnExit(staged: StagedUpdate, flavor: Flavor) {
+    if (applyStagedCore(staged)) return;
     swapIn(staged);
     launchDetachedNow(commandLineFor(flavor, "on-exit"));
 }
@@ -359,6 +387,7 @@ export function initUpdater() {
         // A background download cut off by quitting
         try {
             rmSync(`${PENDING}.part`, { force: true });
+            rmSync(`${CORE_PENDING}.part`, { force: true });
         } catch { }
     }
 

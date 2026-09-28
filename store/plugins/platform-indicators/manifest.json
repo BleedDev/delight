@@ -2,7 +2,7 @@
     "id": "platform-indicators",
     "name": "Platform Indicators",
     "description": "Shows whether someone is on desktop, mobile, web or a console: on their profile, next to their name in chat and in the member list.",
-    "version": "1.2.3",
+    "version": "1.3.0",
     "authors": [
         "Evi"
     ],
@@ -12,6 +12,12 @@
     "minEviVersion": "0.4.0",
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.3.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
         {
             "version": "1.2.3",
             "notes": [
@@ -51,5 +57,239 @@
             ]
         }
     ],
+    "locales": {
+        "de": {
+            "name": "Plattform-Anzeigen",
+            "description": "Zeigt, ob jemand am Desktop, auf dem Handy, im Web oder an einer Konsole ist: im Profil, neben dem Namen im Chat und in der Mitgliederliste.",
+            "changelog": {
+                "1.3.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
+                "1.2.3": [
+                    "Das Symbol wird an Stellen, die Evis Stile nicht erreichen, etwa in Pop-out-Chats, nicht mehr so groß, dass es die ganze Nachricht ausfüllt."
+                ],
+                "1.2.2": [
+                    "Schneller: In stark besuchten Servern werden Präsenz-Updates ein paar Mal pro Sekunde gesammelt geprüft statt einzeln."
+                ],
+                "1.2.1": [
+                    "Schneller: Ein Symbol wird nur neu gezeichnet, wenn die Person das Gerät wechselt, und Orte, die du ausgeschaltet hast, bekommen gar keine Symbole."
+                ],
+                "1.2.0": [
+                    "Ein Symbol pro Person, für das Gerät, auf dem sie wirklich ist. Eine im Hintergrund offen gelassene Web-Sitzung erscheint nicht mehr neben ihrer Desktop-App.",
+                    "Das Gerät wird auch im Abzeichen-Verzeichnis von Discord („Deine Abzeichen“) angezeigt."
+                ],
+                "1.1.0": [
+                    "Neue Symbole: ein klarer Umriss pro Gerät mit Statuspunkt, wie der am Avatar.",
+                    "Wird jetzt auch in der Mitgliederliste angezeigt, mit eigener Einstellung."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Indicadores de plataforma",
+            "description": "Muestra si alguien está en el escritorio, el móvil, la web o una consola: en su perfil, junto a su nombre en el chat y en la lista de miembros.",
+            "changelog": {
+                "1.3.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
+                "1.2.3": [
+                    "El icono ya no crece hasta ocupar todo el mensaje en lugares a los que no llegan los estilos de Evi, como los chats en ventana aparte."
+                ],
+                "1.2.2": [
+                    "Más rápido: en servidores muy concurridos, las actualizaciones de presencia se comprueban en conjunto unas cuantas veces por segundo en vez de una por una."
+                ],
+                "1.2.1": [
+                    "Más rápido: un icono solo se redibuja cuando la persona cambia de dispositivo, y los lugares que desactivaste no reciben ningún icono."
+                ],
+                "1.2.0": [
+                    "Un icono por persona, para el dispositivo en el que realmente está. Una sesión web olvidada abierta en segundo plano ya no aparece junto a su app de escritorio.",
+                    "El dispositivo también aparece en el directorio de insignias de Discord (Tus insignias)."
+                ],
+                "1.1.0": [
+                    "Iconos nuevos: un contorno limpio por dispositivo con un punto de estado, como el de los avatares.",
+                    "Ahora también aparece en la lista de miembros, con su propio ajuste."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Indicateurs de plateforme",
+            "description": "Montre si quelqu'un est sur ordinateur, mobile, web ou console : sur son profil, à côté de son nom dans le chat et dans la liste des membres.",
+            "changelog": {
+                "1.3.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
+                "1.2.3": [
+                    "L'icône ne s'agrandit plus pour remplir tout le message aux endroits que les styles d'Evi n'atteignent pas, comme les chats détachés."
+                ],
+                "1.2.2": [
+                    "Plus rapide : sur les serveurs très actifs, les mises à jour de présence sont vérifiées ensemble quelques fois par seconde au lieu d'une par une."
+                ],
+                "1.2.1": [
+                    "Plus rapide : une icône n'est redessinée que lorsque la personne change d'appareil, et les endroits que tu as désactivés n'affichent plus aucune icône."
+                ],
+                "1.2.0": [
+                    "Une seule icône par personne, pour l'appareil qu'elle utilise vraiment. Une session web restée ouverte en arrière-plan ne s'affiche plus à côté de son application de bureau.",
+                    "L'appareil apparaît aussi dans le répertoire des badges de Discord (Tes badges)."
+                ],
+                "1.1.0": [
+                    "Nouvelles icônes : un contour épuré par appareil avec une pastille de statut, comme celle des avatars.",
+                    "S'affiche aussi dans la liste des membres, avec son propre paramètre."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "プラットフォーム表示",
+            "description": "相手がデスクトップ、モバイル、ウェブ、ゲーム機のどれを使っているかを、プロフィール、チャットの名前の横、メンバーリストに表示します。",
+            "changelog": {
+                "1.3.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
+                "1.2.3": [
+                    "Eviのスタイルが届かない場所(ポップアウトしたチャットなど)で、アイコンがメッセージ全体に広がってしまう問題を修正しました。"
+                ],
+                "1.2.2": [
+                    "高速化しました。混雑したサーバーでは、プレゼンスの更新を1件ずつではなく、1秒間に数回まとめて確認します。"
+                ],
+                "1.2.1": [
+                    "高速化しました。アイコンは相手がデバイスを切り替えたときだけ再描画され、オフにした場所にはアイコン自体が表示されません。"
+                ],
+                "1.2.0": [
+                    "1人につきアイコンは1つで、実際に使っているデバイスを表示します。バックグラウンドで開きっぱなしのウェブセッションが、デスクトップアプリの隣に表示されることはなくなりました。",
+                    "デバイスはDiscordのバッジ一覧(自分のバッジ)にも表示されます。"
+                ],
+                "1.1.0": [
+                    "新しいアイコン: アバターのものと同じように、デバイスごとのすっきりした線画にステータスのドットが付きます。",
+                    "メンバーリストにも表示されるようになりました。専用の設定もあります。"
+                ],
+                "1.0.0": [
+                    "最初のリリースです。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Wskaźniki platformy",
+            "description": "Pokazuje, czy ktoś jest na komputerze, telefonie, w przeglądarce czy na konsoli: na profilu, obok nazwy na czacie i na liście członków.",
+            "changelog": {
+                "1.3.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
+                "1.2.3": [
+                    "Ikona nie rozrasta się już na całą wiadomość w miejscach, do których nie docierają style Evi, np. w oknach czatu otwartych osobno."
+                ],
+                "1.2.2": [
+                    "Szybciej: na ruchliwych serwerach zmiany statusu są sprawdzane zbiorczo kilka razy na sekundę, a nie pojedynczo."
+                ],
+                "1.2.1": [
+                    "Szybciej: ikona jest rysowana ponownie tylko wtedy, gdy ta osoba zmieni urządzenie, a miejsca, które wyłączysz, w ogóle nie dostają ikon."
+                ],
+                "1.2.0": [
+                    "Jedna ikona na osobę, dla urządzenia, z którego faktycznie korzysta. Sesja w przeglądarce zostawiona w tle nie pokazuje się już obok aplikacji na komputer.",
+                    "Urządzenie widać też w katalogu odznak Discorda (Twoje odznaki)."
+                ],
+                "1.1.0": [
+                    "Nowe ikony: czysty kontur dla każdego urządzenia z kropką statusu, taką jak przy awatarach.",
+                    "Pojawia się teraz także na liście członków, z osobnym ustawieniem."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Indicadores de plataforma",
+            "description": "Mostra se alguém está no computador, no celular, na web ou em um console: no perfil, ao lado do nome no chat e na lista de membros.",
+            "changelog": {
+                "1.3.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
+                "1.2.3": [
+                    "O ícone não cresce mais até ocupar a mensagem inteira em lugares que os estilos do Evi não alcançam, como chats em janela separada."
+                ],
+                "1.2.2": [
+                    "Mais rápido: em servidores movimentados, as atualizações de presença são verificadas em conjunto algumas vezes por segundo, em vez de uma por uma."
+                ],
+                "1.2.1": [
+                    "Mais rápido: um ícone só é redesenhado quando a pessoa troca de dispositivo, e os lugares que você desativou não recebem nenhum ícone."
+                ],
+                "1.2.0": [
+                    "Um ícone por pessoa, para o dispositivo em que ela realmente está. Uma sessão web esquecida aberta em segundo plano não aparece mais ao lado do app de computador.",
+                    "O dispositivo também aparece no diretório de insígnias do Discord (Suas insígnias)."
+                ],
+                "1.1.0": [
+                    "Ícones novos: um contorno limpo para cada dispositivo com uma bolinha de status, como a dos avatares.",
+                    "Agora também aparece na lista de membros, com uma configuração própria."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Индикаторы платформы",
+            "description": "Показывает, с чего человек сидит: с компьютера, телефона, браузера или консоли. Значок виден в профиле, рядом с именем в чате и в списке участников.",
+            "changelog": {
+                "1.3.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
+                "1.2.3": [
+                    "Значок больше не разрастается на всё сообщение там, куда не доходят стили Evi, например в чатах в отдельных окнах."
+                ],
+                "1.2.2": [
+                    "Быстрее: на оживлённых серверах обновления статуса проверяются пачкой несколько раз в секунду, а не по одному."
+                ],
+                "1.2.1": [
+                    "Быстрее: значок перерисовывается, только когда человек меняет устройство, а в местах, которые вы отключили, значков нет вообще."
+                ],
+                "1.2.0": [
+                    "Один значок на человека, для устройства, с которого он действительно сидит. Веб-сессия, забытая открытой в фоне, больше не показывается рядом с приложением для компьютера.",
+                    "Устройство теперь видно и в каталоге значков Discord («Ваши значки»)."
+                ],
+                "1.1.0": [
+                    "Новые значки: аккуратный контур для каждого устройства с точкой статуса, как на аватарах.",
+                    "Теперь значок есть и в списке участников, с отдельной настройкой."
+                ],
+                "1.0.0": [
+                    "Первый релиз."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Platform Göstergeleri",
+            "description": "Birinin masaüstünde, mobilde, web'de ya da konsolda olduğunu gösterir: profilinde, sohbette adının yanında ve üye listesinde.",
+            "changelog": {
+                "1.3.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
+                "1.2.3": [
+                    "Simge, Evi'nin stillerinin ulaşmadığı yerlerde (ayrı pencerede açılan sohbetler gibi) artık tüm mesajı kaplayacak kadar büyümüyor."
+                ],
+                "1.2.2": [
+                    "Daha hızlı: kalabalık sunucularda durum güncellemeleri tek tek yerine saniyede birkaç kez toplu olarak kontrol ediliyor."
+                ],
+                "1.2.1": [
+                    "Daha hızlı: simge yalnızca o kişi cihaz değiştirdiğinde yeniden çiziliyor ve kapattığın yerlerde hiç simge gösterilmiyor."
+                ],
+                "1.2.0": [
+                    "Kişi başına tek simge, gerçekten kullandığı cihaz için. Arka planda açık unutulan bir web oturumu artık masaüstü uygulamasının yanında görünmüyor.",
+                    "Cihaz, Discord'un rozet dizininde (Rozetlerin) de görünüyor."
+                ],
+                "1.1.0": [
+                    "Yeni simgeler: avatarlardakine benzer bir durum noktasıyla her cihaz için sade bir çizgi simge.",
+                    "Üye listesinde de görünüyor ve kendi ayarı var."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    },
     "main": "index.js"
 }

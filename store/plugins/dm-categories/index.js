@@ -42,7 +42,7 @@ __export(exports_dm_categories, {
   default: () => dm_categories_default
 });
 module.exports = __toCommonJS(exports_dm_categories);
-var import_api = require("@evi/api");
+var import_api2 = require("@evi/api");
 
 // plugins/dm-categories/categories.ts
 var EMPTY = { categories: [] };
@@ -86,9 +86,9 @@ var categoryOf = (state, channelId) => state.categories.find((c) => c.channels.i
 function nameError(state, name, exceptId) {
   const clean = cleanName(name);
   if (!clean)
-    return "Give it a name";
+    return "empty";
   const taken = state.categories.some((c) => c.id !== exceptId && c.name.toLowerCase() === clean.toLowerCase());
-  return taken ? "You already have a category with that name" : null;
+  return taken ? "taken" : null;
 }
 function update(state, id, change) {
   let changed = false;
@@ -253,6 +253,281 @@ var LIST_PATCH = {
   ]
 };
 
+// plugins/dm-categories/strings.ts
+var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    "settings.order": "Order inside categories",
+    "settings.order.recent": "Latest message first, like Direct Messages",
+    "settings.order.name": "By name",
+    "settings.showCounts": "Show counts",
+    "settings.showCounts.description": "How many DMs each category holds, next to its name.",
+    "menu.rename": "Rename Category",
+    "menu.moveUp": "Move Up",
+    "menu.moveDown": "Move Down",
+    "menu.new": "New Category",
+    "menu.delete": "Delete Category",
+    "menu.delete.subtext": "Its DMs go back to Direct Messages",
+    "menu.addNew": "Add to New Category",
+    "menu.addTo": "Add to Category",
+    "menu.moveTo": "Move to Category",
+    "menu.remove": "Remove from {name}",
+    "header.aria": "{name} category",
+    "header.count": { one: "{count} DM", other: "{count} DMs" },
+    "dialog.new": "New Category",
+    "dialog.rename": "Rename Category",
+    "dialog.close": "Close",
+    "dialog.hint": "Categories sit above Direct Messages. Right-click any DM to add it to one.",
+    "dialog.label": "Category name",
+    "dialog.placeholder": "Friends, Work, Gaming…",
+    "dialog.create": "Create Category",
+    "dialog.cancel": "Cancel",
+    "error.empty": "Give it a name",
+    "error.taken": "You already have a category with that name",
+    "error.max": "You can't make any more categories"
+  },
+  de: {
+    "settings.order": "Reihenfolge in Kategorien",
+    "settings.order.recent": "Neueste Nachricht zuerst, wie bei Direktnachrichten",
+    "settings.order.name": "Nach Name",
+    "settings.showCounts": "Anzahl anzeigen",
+    "settings.showCounts.description": "Wie viele DMs jede Kategorie enthält, neben ihrem Namen.",
+    "menu.rename": "Kategorie umbenennen",
+    "menu.moveUp": "Nach oben",
+    "menu.moveDown": "Nach unten",
+    "menu.new": "Neue Kategorie",
+    "menu.delete": "Kategorie löschen",
+    "menu.delete.subtext": "Ihre DMs wandern zurück zu den Direktnachrichten",
+    "menu.addNew": "Zu neuer Kategorie hinzufügen",
+    "menu.addTo": "Zu Kategorie hinzufügen",
+    "menu.moveTo": "In Kategorie verschieben",
+    "menu.remove": "Aus {name} entfernen",
+    "header.aria": "Kategorie {name}",
+    "header.count": { one: "{count} DM", other: "{count} DMs" },
+    "dialog.new": "Neue Kategorie",
+    "dialog.rename": "Kategorie umbenennen",
+    "dialog.close": "Schließen",
+    "dialog.hint": "Kategorien stehen über den Direktnachrichten. Klicke eine DM mit der rechten Maustaste an, um sie einer Kategorie hinzuzufügen.",
+    "dialog.label": "Kategoriename",
+    "dialog.placeholder": "Freunde, Arbeit, Gaming …",
+    "dialog.create": "Kategorie erstellen",
+    "dialog.cancel": "Abbrechen",
+    "error.empty": "Gib einen Namen ein",
+    "error.taken": "Du hast bereits eine Kategorie mit diesem Namen",
+    "error.max": "Du kannst keine weiteren Kategorien erstellen"
+  },
+  es: {
+    "settings.order": "Orden dentro de las categorías",
+    "settings.order.recent": "Último mensaje primero, como en los mensajes directos",
+    "settings.order.name": "Por nombre",
+    "settings.showCounts": "Mostrar recuentos",
+    "settings.showCounts.description": "Cuántos MD tiene cada categoría, junto a su nombre.",
+    "menu.rename": "Cambiar nombre de la categoría",
+    "menu.moveUp": "Subir",
+    "menu.moveDown": "Bajar",
+    "menu.new": "Nueva categoría",
+    "menu.delete": "Eliminar categoría",
+    "menu.delete.subtext": "Sus MD vuelven a Mensajes directos",
+    "menu.addNew": "Añadir a una categoría nueva",
+    "menu.addTo": "Añadir a categoría",
+    "menu.moveTo": "Mover a categoría",
+    "menu.remove": "Quitar de {name}",
+    "header.aria": "Categoría {name}",
+    "header.count": { other: "{count} MD" },
+    "dialog.new": "Nueva categoría",
+    "dialog.rename": "Cambiar nombre de la categoría",
+    "dialog.close": "Cerrar",
+    "dialog.hint": "Las categorías van encima de Mensajes directos. Haz clic derecho en cualquier MD para añadirlo a una.",
+    "dialog.label": "Nombre de la categoría",
+    "dialog.placeholder": "Amigos, Trabajo, Juegos…",
+    "dialog.create": "Crear categoría",
+    "dialog.cancel": "Cancelar",
+    "error.empty": "Ponle un nombre",
+    "error.taken": "Ya tienes una categoría con ese nombre",
+    "error.max": "No puedes crear más categorías"
+  },
+  fr: {
+    "settings.order": "Ordre dans les catégories",
+    "settings.order.recent": "Dernier message en premier, comme dans les messages privés",
+    "settings.order.name": "Par nom",
+    "settings.showCounts": "Afficher les compteurs",
+    "settings.showCounts.description": "Le nombre de MP de chaque catégorie, à côté de son nom.",
+    "menu.rename": "Renommer la catégorie",
+    "menu.moveUp": "Monter",
+    "menu.moveDown": "Descendre",
+    "menu.new": "Nouvelle catégorie",
+    "menu.delete": "Supprimer la catégorie",
+    "menu.delete.subtext": "Ses MP retournent dans Messages privés",
+    "menu.addNew": "Ajouter à une nouvelle catégorie",
+    "menu.addTo": "Ajouter à une catégorie",
+    "menu.moveTo": "Déplacer vers une catégorie",
+    "menu.remove": "Retirer de {name}",
+    "header.aria": "Catégorie {name}",
+    "header.count": { other: "{count} MP" },
+    "dialog.new": "Nouvelle catégorie",
+    "dialog.rename": "Renommer la catégorie",
+    "dialog.close": "Fermer",
+    "dialog.hint": "Les catégories se placent au-dessus des messages privés. Fais un clic droit sur un MP pour l'ajouter à l'une d'elles.",
+    "dialog.label": "Nom de la catégorie",
+    "dialog.placeholder": "Amis, Travail, Jeux…",
+    "dialog.create": "Créer la catégorie",
+    "dialog.cancel": "Annuler",
+    "error.empty": "Donne-lui un nom",
+    "error.taken": "Tu as déjà une catégorie portant ce nom",
+    "error.max": "Tu ne peux plus créer de catégories"
+  },
+  ja: {
+    "settings.order": "カテゴリ内の並び順",
+    "settings.order.recent": "ダイレクトメッセージと同じく、新しいメッセージ順",
+    "settings.order.name": "名前順",
+    "settings.showCounts": "件数を表示",
+    "settings.showCounts.description": "各カテゴリのDMの数を、名前の横に表示します。",
+    "menu.rename": "カテゴリ名を変更",
+    "menu.moveUp": "上へ移動",
+    "menu.moveDown": "下へ移動",
+    "menu.new": "新しいカテゴリ",
+    "menu.delete": "カテゴリを削除",
+    "menu.delete.subtext": "DMはダイレクトメッセージに戻ります",
+    "menu.addNew": "新しいカテゴリに追加",
+    "menu.addTo": "カテゴリに追加",
+    "menu.moveTo": "カテゴリに移動",
+    "menu.remove": "{name}から削除",
+    "header.aria": "{name}カテゴリ",
+    "header.count": { other: "DM {count}件" },
+    "dialog.new": "新しいカテゴリ",
+    "dialog.rename": "カテゴリ名を変更",
+    "dialog.close": "閉じる",
+    "dialog.hint": "カテゴリはダイレクトメッセージの上に表示されます。DMを右クリックすると、カテゴリに追加できます。",
+    "dialog.label": "カテゴリ名",
+    "dialog.placeholder": "友達、仕事、ゲーム…",
+    "dialog.create": "カテゴリを作成",
+    "dialog.cancel": "キャンセル",
+    "error.empty": "名前を入力してください",
+    "error.taken": "その名前のカテゴリはすでにあります",
+    "error.max": "これ以上カテゴリは作成できません"
+  },
+  pl: {
+    "settings.order": "Kolejność w kategoriach",
+    "settings.order.recent": "Najnowsza wiadomość na górze, jak w wiadomościach prywatnych",
+    "settings.order.name": "Według nazwy",
+    "settings.showCounts": "Pokaż liczby",
+    "settings.showCounts.description": "Ile DM zawiera każda kategoria, obok jej nazwy.",
+    "menu.rename": "Zmień nazwę kategorii",
+    "menu.moveUp": "Przenieś w górę",
+    "menu.moveDown": "Przenieś w dół",
+    "menu.new": "Nowa kategoria",
+    "menu.delete": "Usuń kategorię",
+    "menu.delete.subtext": "Jej DM wrócą do wiadomości prywatnych",
+    "menu.addNew": "Dodaj do nowej kategorii",
+    "menu.addTo": "Dodaj do kategorii",
+    "menu.moveTo": "Przenieś do kategorii",
+    "menu.remove": "Usuń z kategorii {name}",
+    "header.aria": "Kategoria {name}",
+    "header.count": { other: "{count} DM" },
+    "dialog.new": "Nowa kategoria",
+    "dialog.rename": "Zmień nazwę kategorii",
+    "dialog.close": "Zamknij",
+    "dialog.hint": "Kategorie są nad wiadomościami prywatnymi. Kliknij DM prawym przyciskiem myszy, aby dodać go do kategorii.",
+    "dialog.label": "Nazwa kategorii",
+    "dialog.placeholder": "Znajomi, Praca, Gry…",
+    "dialog.create": "Utwórz kategorię",
+    "dialog.cancel": "Anuluj",
+    "error.empty": "Nadaj jej nazwę",
+    "error.taken": "Masz już kategorię o takiej nazwie",
+    "error.max": "Nie możesz utworzyć więcej kategorii"
+  },
+  "pt-BR": {
+    "settings.order": "Ordem dentro das categorias",
+    "settings.order.recent": "Mensagem mais recente primeiro, como nas mensagens diretas",
+    "settings.order.name": "Por nome",
+    "settings.showCounts": "Mostrar contagens",
+    "settings.showCounts.description": "Quantas DMs cada categoria tem, ao lado do nome.",
+    "menu.rename": "Renomear categoria",
+    "menu.moveUp": "Mover para cima",
+    "menu.moveDown": "Mover para baixo",
+    "menu.new": "Nova categoria",
+    "menu.delete": "Excluir categoria",
+    "menu.delete.subtext": "As DMs dela voltam para as mensagens diretas",
+    "menu.addNew": "Adicionar a uma nova categoria",
+    "menu.addTo": "Adicionar à categoria",
+    "menu.moveTo": "Mover para a categoria",
+    "menu.remove": "Remover de {name}",
+    "header.aria": "Categoria {name}",
+    "header.count": { one: "{count} DM", other: "{count} DMs" },
+    "dialog.new": "Nova categoria",
+    "dialog.rename": "Renomear categoria",
+    "dialog.close": "Fechar",
+    "dialog.hint": "As categorias ficam acima das mensagens diretas. Clique com o botão direito em qualquer DM para adicioná-la a uma.",
+    "dialog.label": "Nome da categoria",
+    "dialog.placeholder": "Amigos, Trabalho, Jogos…",
+    "dialog.create": "Criar categoria",
+    "dialog.cancel": "Cancelar",
+    "error.empty": "Dê um nome a ela",
+    "error.taken": "Você já tem uma categoria com esse nome",
+    "error.max": "Você não pode criar mais categorias"
+  },
+  ru: {
+    "settings.order": "Порядок внутри категорий",
+    "settings.order.recent": "Сначала последние сообщения, как в личных сообщениях",
+    "settings.order.name": "По имени",
+    "settings.showCounts": "Показывать количество",
+    "settings.showCounts.description": "Сколько ЛС в каждой категории, рядом с её названием.",
+    "menu.rename": "Переименовать категорию",
+    "menu.moveUp": "Переместить вверх",
+    "menu.moveDown": "Переместить вниз",
+    "menu.new": "Новая категория",
+    "menu.delete": "Удалить категорию",
+    "menu.delete.subtext": "Её ЛС вернутся в личные сообщения",
+    "menu.addNew": "Добавить в новую категорию",
+    "menu.addTo": "Добавить в категорию",
+    "menu.moveTo": "Переместить в категорию",
+    "menu.remove": "Убрать из категории «{name}»",
+    "header.aria": "Категория «{name}»",
+    "header.count": { other: "ЛС: {count}" },
+    "dialog.new": "Новая категория",
+    "dialog.rename": "Переименовать категорию",
+    "dialog.close": "Закрыть",
+    "dialog.hint": "Категории расположены над личными сообщениями. Нажмите на ЛС правой кнопкой мыши, чтобы добавить его в категорию.",
+    "dialog.label": "Название категории",
+    "dialog.placeholder": "Друзья, Работа, Игры…",
+    "dialog.create": "Создать категорию",
+    "dialog.cancel": "Отмена",
+    "error.empty": "Введите название",
+    "error.taken": "Категория с таким названием уже есть",
+    "error.max": "Больше категорий создать нельзя"
+  },
+  tr: {
+    "settings.order": "Kategorilerin içindeki sıralama",
+    "settings.order.recent": "Direkt Mesajlar gibi en yeni mesaj önce",
+    "settings.order.name": "Ada göre",
+    "settings.showCounts": "Sayıları göster",
+    "settings.showCounts.description": "Her kategoride kaç DM olduğunu adının yanında gösterir.",
+    "menu.rename": "Kategoriyi Yeniden Adlandır",
+    "menu.moveUp": "Yukarı Taşı",
+    "menu.moveDown": "Aşağı Taşı",
+    "menu.new": "Yeni Kategori",
+    "menu.delete": "Kategoriyi Sil",
+    "menu.delete.subtext": "DM'leri Direkt Mesajlar'a geri döner",
+    "menu.addNew": "Yeni Kategoriye Ekle",
+    "menu.addTo": "Kategoriye Ekle",
+    "menu.moveTo": "Kategoriye Taşı",
+    "menu.remove": "{name} kategorisinden çıkar",
+    "header.aria": "{name} kategorisi",
+    "header.count": { other: "{count} DM" },
+    "dialog.new": "Yeni Kategori",
+    "dialog.rename": "Kategoriyi Yeniden Adlandır",
+    "dialog.close": "Kapat",
+    "dialog.hint": "Kategoriler Direkt Mesajlar'ın üstünde yer alır. Bir kategoriye eklemek için herhangi bir DM'ye sağ tıkla.",
+    "dialog.label": "Kategori adı",
+    "dialog.placeholder": "Arkadaşlar, İş, Oyun…",
+    "dialog.create": "Kategori Oluştur",
+    "dialog.cancel": "İptal",
+    "error.empty": "Bir ad ver",
+    "error.taken": "Bu ada sahip bir kategorin zaten var",
+    "error.max": "Daha fazla kategori oluşturamazsın"
+  }
+});
+
 // plugins/dm-categories/index.tsx
 var jsx_runtime = require("react/jsx-runtime");
 var STORAGE_KEY = "categories";
@@ -262,17 +537,27 @@ var GROUP_DM = 3;
 var settings = {
   order: {
     type: "select",
-    label: "Order inside categories",
+    get label() {
+      return t("settings.order");
+    },
     default: "recent",
     options: [
-      { label: "Latest message first, like Direct Messages", value: "recent" },
-      { label: "By name", value: "name" }
+      { get label() {
+        return t("settings.order.recent");
+      }, value: "recent" },
+      { get label() {
+        return t("settings.order.name");
+      }, value: "name" }
     ]
   },
   showCounts: {
     type: "boolean",
-    label: "Show counts",
-    description: "How many DMs each category holds, next to its name.",
+    get label() {
+      return t("settings.showCounts");
+    },
+    get description() {
+      return t("settings.showCounts.description");
+    },
     default: true
   }
 };
@@ -313,20 +598,20 @@ function commit(next) {
 }
 var hasUnread = (channelId) => {
   try {
-    return !!import_api.getStore("ReadStateStore")?.hasUnread?.(channelId);
+    return !!import_api2.getStore("ReadStateStore")?.hasUnread?.(channelId);
   } catch {
     return false;
   }
 };
 var collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 function channelName(channelId) {
-  const channel = import_api.getStore("ChannelStore")?.getChannel?.(channelId);
+  const channel = import_api2.getStore("ChannelStore")?.getChannel?.(channelId);
   if (!channel)
     return "";
   if (channel.name)
     return channel.name;
-  const users = import_api.getStore("UserStore");
-  const relationships = import_api.getStore("RelationshipStore");
+  const users = import_api2.getStore("UserStore");
+  const relationships = import_api2.getStore("RelationshipStore");
   const ids = channel.recipients ?? [];
   return ids.map((id) => {
     const user = users?.getUser?.(id);
@@ -357,9 +642,9 @@ function onReadState() {
   if (collapsedKey(next) !== shownWhileCollapsed)
     refresh();
 }
-var openContextMenu = () => import_api.find(import_api.filters.byCode("enableSpellCheck", "renderLazy"));
-var MenuRoot = () => import_api.find(import_api.filters.componentByCode("Menu API only allows Items"));
-var closeContextMenu = () => void import_api.Dispatcher.dispatch({ type: "CONTEXT_MENU_CLOSE" });
+var openContextMenu = () => import_api2.find(import_api2.filters.byCode("enableSpellCheck", "renderLazy"));
+var MenuRoot = () => import_api2.find(import_api2.filters.componentByCode("Menu API only allows Items"));
+var closeContextMenu = () => void import_api2.Dispatcher.dispatch({ type: "CONTEXT_MENU_CLOSE" });
 function openHeaderMenu(event, category) {
   const open = openContextMenu();
   const Root = MenuRoot();
@@ -369,42 +654,42 @@ function openHeaderMenu(event, category) {
   open(event, () => /* @__PURE__ */ jsx_runtime.jsxs(Root, {
     navId: "evi-dm-category",
     onClose: closeContextMenu,
-    "aria-label": `${category.name} category`,
+    "aria-label": t("header.aria", { name: category.name }),
     onSelect: undefined,
     children: [
-      /* @__PURE__ */ jsx_runtime.jsxs(import_api.Menu.Group, {
+      /* @__PURE__ */ jsx_runtime.jsxs(import_api2.Menu.Group, {
         children: [
-          /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+          /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
             id: "evi-dmc-rename",
-            label: "Rename Category",
+            label: t("menu.rename"),
             action: () => openNameDialog({ category })
           }),
-          /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+          /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
             id: "evi-dmc-up",
-            label: "Move Up",
+            label: t("menu.moveUp"),
             disabled: index <= 0,
             action: () => commit(moveCategory(state, category.id, -1))
           }),
-          /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+          /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
             id: "evi-dmc-down",
-            label: "Move Down",
+            label: t("menu.moveDown"),
             disabled: index < 0 || index >= state.categories.length - 1,
             action: () => commit(moveCategory(state, category.id, 1))
           })
         ]
       }),
-      /* @__PURE__ */ jsx_runtime.jsxs(import_api.Menu.Group, {
+      /* @__PURE__ */ jsx_runtime.jsxs(import_api2.Menu.Group, {
         children: [
-          /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+          /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
             id: "evi-dmc-new-empty",
-            label: "New Category",
+            label: t("menu.new"),
             action: () => openNameDialog({})
           }),
-          /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+          /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
             id: "evi-dmc-delete",
-            label: "Delete Category",
+            label: t("menu.delete"),
             color: "danger",
-            subtext: category.channels.length ? "Its DMs go back to Direct Messages" : undefined,
+            subtext: category.channels.length ? t("menu.delete.subtext") : undefined,
             action: () => commit(deleteCategory(state, category.id))
           })
         ]
@@ -413,8 +698,8 @@ function openHeaderMenu(event, category) {
   }));
 }
 function useStateVersion() {
-  const [, rerender] = import_api.React.useReducer((n) => n + 1, 0);
-  import_api.React.useEffect(() => {
+  const [, rerender] = import_api2.React.useReducer((n) => n + 1, 0);
+  import_api2.React.useEffect(() => {
     listeners.add(rerender);
     return () => void listeners.delete(rerender);
   }, []);
@@ -441,7 +726,7 @@ function CategoryHeader({ entry }) {
         }),
         showCounts && /* @__PURE__ */ jsx_runtime.jsx("span", {
           className: "evi-dmc-count",
-          "aria-label": `${entry.size} DMs`,
+          "aria-label": t("header.count", { count: entry.size }),
           children: entry.size
         }),
         /* @__PURE__ */ jsx_runtime.jsx("svg", {
@@ -462,7 +747,7 @@ function CategoryHeader({ entry }) {
 var closeOpen;
 function openNameDialog(options) {
   closeOpen?.();
-  const close = import_api.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(NameDialog, {
+  const close = import_api2.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(NameDialog, {
     ...options,
     onClose: () => close2()
   }), {
@@ -471,11 +756,11 @@ function openNameDialog(options) {
   closeOpen = close;
 }
 function NameDialog({ category, channelId, onClose }) {
-  const [name, setName] = import_api.React.useState(category?.name ?? "");
-  const [error, setError] = import_api.React.useState(null);
-  const input = import_api.React.useRef(null);
+  const [name, setName] = import_api2.React.useState(category?.name ?? "");
+  const [error, setError] = import_api2.React.useState(null);
+  const input = import_api2.React.useRef(null);
   const renaming = !!category;
-  import_api.React.useEffect(() => {
+  import_api2.React.useEffect(() => {
     const previous = document.activeElement;
     input.current?.focus();
     input.current?.select();
@@ -496,7 +781,7 @@ function NameDialog({ category, channelId, onClose }) {
     e.preventDefault();
     const problem = nameError(state, name, category?.id);
     if (problem) {
-      setError(problem);
+      setError(t(problem === "empty" ? "error.empty" : "error.taken"));
       input.current?.focus();
       return;
     }
@@ -505,7 +790,7 @@ function NameDialog({ category, channelId, onClose }) {
     } else {
       const created = createCategory(state, name);
       if (!created.category) {
-        setError("You can't make any more categories");
+        setError(t("error.max"));
         return;
       }
       commit(channelId ? assign(created.state, channelId, created.category.id) : created.state);
@@ -526,12 +811,12 @@ function NameDialog({ category, channelId, onClose }) {
           children: [
             /* @__PURE__ */ jsx_runtime.jsx("h2", {
               id: "evi-dmc-title",
-              children: renaming ? "Rename Category" : "New Category"
+              children: renaming ? t("dialog.rename") : t("dialog.new")
             }),
             /* @__PURE__ */ jsx_runtime.jsx("button", {
               type: "button",
               className: "evi-dmc-close",
-              "aria-label": "Close",
+              "aria-label": t("dialog.close"),
               onClick: onClose,
               children: /* @__PURE__ */ jsx_runtime.jsx("svg", {
                 viewBox: "0 0 24 24",
@@ -555,12 +840,12 @@ function NameDialog({ category, channelId, onClose }) {
           children: [
             !renaming && /* @__PURE__ */ jsx_runtime.jsx("p", {
               className: "evi-dmc-hint",
-              children: "Categories sit above Direct Messages. Right-click any DM to add it to one."
+              children: t("dialog.hint")
             }),
             /* @__PURE__ */ jsx_runtime.jsx("label", {
               className: "evi-dmc-label",
               htmlFor: "evi-dmc-name",
-              children: "Category name"
+              children: t("dialog.label")
             }),
             /* @__PURE__ */ jsx_runtime.jsx("input", {
               id: "evi-dmc-name",
@@ -570,7 +855,7 @@ function NameDialog({ category, channelId, onClose }) {
               inputMode: "text",
               value: name,
               maxLength: MAX_NAME_LENGTH,
-              placeholder: "Friends, Work, Gaming…",
+              placeholder: t("dialog.placeholder"),
               autoComplete: "off",
               spellCheck: false,
               "aria-invalid": !!error,
@@ -594,12 +879,12 @@ function NameDialog({ category, channelId, onClose }) {
                   className: "evi-dmc-button",
                   "data-variant": "secondary",
                   onClick: onClose,
-                  children: "Cancel"
+                  children: t("dialog.cancel")
                 }),
                 /* @__PURE__ */ jsx_runtime.jsx("button", {
                   type: "submit",
                   className: "evi-dmc-button",
-                  children: renaming ? "Rename Category" : "Create Category"
+                  children: renaming ? t("dialog.rename") : t("dialog.create")
                 })
               ]
             })
@@ -612,38 +897,38 @@ function NameDialog({ category, channelId, onClose }) {
 function dmMenuItems(channelId) {
   const inCategory = categoryOf(state, channelId);
   if (!state.categories.length) {
-    return /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+    return /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
       id: "evi-dmc-add-new",
-      label: "Add to New Category",
+      label: t("menu.addNew"),
       action: () => openNameDialog({ channelId })
     });
   }
-  const choices = state.categories.map((c) => /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.CheckboxItem, {
+  const choices = state.categories.map((c) => /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.CheckboxItem, {
     id: `evi-dmc-to-${c.id}`,
     label: c.name,
     checked: c.id === inCategory?.id,
     action: () => commit(assign(state, channelId, c.id === inCategory?.id ? null : c.id))
   }, c.id));
-  choices.push(/* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Separator, {}, "evi-dmc-sep"), /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+  choices.push(/* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Separator, {}, "evi-dmc-sep"), /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
     id: "evi-dmc-add-new",
-    label: "New Category",
+    label: t("menu.new"),
     action: () => openNameDialog({ channelId })
   }, "evi-dmc-add-new"));
-  const items = [/* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+  const items = [/* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
     id: "evi-dmc-add",
-    label: inCategory ? "Move to Category" : "Add to Category",
+    label: inCategory ? t("menu.moveTo") : t("menu.addTo"),
     children: choices
   }, "evi-dmc-add")];
   if (inCategory) {
-    items.push(/* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+    items.push(/* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
       id: "evi-dmc-remove",
-      label: `Remove from ${inCategory.name}`,
+      label: t("menu.remove", { name: inCategory.name }),
       action: () => commit(assign(state, channelId, null))
     }, "evi-dmc-remove"));
   }
   return items;
 }
-var dm_categories_default = import_api.definePlugin({
+var dm_categories_default = import_api2.definePlugin({
   settings,
   patches: [LIST_PATCH],
   css: `
@@ -753,7 +1038,7 @@ var dm_categories_default = import_api.definePlugin({
     ctx = context;
     state = parseState(storage()?.get(STORAGE_KEY));
     context.settings.onChange(refresh);
-    const readStates = import_api.getStore("ReadStateStore");
+    const readStates = import_api2.getStore("ReadStateStore");
     if (readStates?.addChangeListener) {
       readStates.addChangeListener(onReadState);
       context.onDispose(() => readStates.removeChangeListener?.(onReadState));
@@ -761,14 +1046,14 @@ var dm_categories_default = import_api.definePlugin({
     context.contextMenu("user-context", (children, props) => {
       const channel = props?.channel;
       if (channel?.id && channel.type === DM && !channel.guild_id)
-        children.push(/* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Group, {
+        children.push(/* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Group, {
           children: dmMenuItems(channel.id)
         }, "evi-dmc"));
     });
     context.contextMenu("gdm-context", (children, props) => {
       const channel = props?.channel;
       if (channel?.id && channel.type === GROUP_DM)
-        children.push(/* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Group, {
+        children.push(/* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Group, {
           children: dmMenuItems(channel.id)
         }, "evi-dmc"));
     });

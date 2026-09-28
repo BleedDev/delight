@@ -54,6 +54,9 @@ export function exeAsset(platform: string = globalThis.process?.platform, arch: 
 
 export const EXE_ASSET = exeAsset();
 export const CHECKSUM_ASSET = `${EXE_ASSET}.sha256`;
+/** Evi's own files (core and official plugins) as one JSON, a few MB: what Evi Setup downloads, and what updates install */
+export const CORE_ASSET = "evi-core.json";
+export const CORE_CHECKSUM_ASSET = `${CORE_ASSET}.sha256`;
 
 /** Discord's install folders in %LOCALAPPDATA%, by flavor. Also its executable's name on every system, minus spaces and .exe */
 export const FLAVORS = {
@@ -114,6 +117,9 @@ export interface ReleaseInfo {
     prerelease: boolean;
     exeUrl: string;
     checksumUrl: string;
+    /** evi-core.json and its checksum: updating needs only these. Missing on releases from before Evi Setup */
+    coreUrl?: string;
+    coreChecksumUrl?: string;
 }
 
 /** One release as GitHub's API describes it, or undefined if it isn't a usable release */
@@ -131,6 +137,7 @@ export function parseRelease(json: any): ReleaseInfo | { error: string; } | unde
         prerelease: json.prerelease === true || isPrerelease(json.tag_name),
         exeUrl,
         checksumUrl,
+        ...typeof asset(CORE_ASSET) === "string" && typeof asset(CORE_CHECKSUM_ASSET) === "string" && { coreUrl: asset(CORE_ASSET), coreChecksumUrl: asset(CORE_CHECKSUM_ASSET) },
     };
 }
 

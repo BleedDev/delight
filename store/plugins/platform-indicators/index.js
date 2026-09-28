@@ -42,13 +42,180 @@ __export(exports_platform_indicators, {
   default: () => platform_indicators_default
 });
 module.exports = __toCommonJS(exports_platform_indicators);
+var import_api2 = require("@evi/api");
+
+// plugins/platform-indicators/strings.ts
 var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    "settings.showOnProfiles": "On profiles",
+    "settings.showOnProfiles.description": "Next to the badges on someone's profile.",
+    "settings.showInChat": "In chat",
+    "settings.showInChat.description": "After the name on each message.",
+    "settings.showInMemberList": "In the member list",
+    "settings.showInMemberList.description": "After each name in a server's member list.",
+    "settings.showOwn": "Your own devices",
+    "settings.showOwn.description": "Show which of your own clients are online too.",
+    "status.online": "Online",
+    "status.idle": "Idle",
+    "status.dnd": "Do Not Disturb",
+    "device.desktop": "desktop",
+    "device.mobile": "mobile",
+    "device.web": "the web",
+    "device.embedded": "a console",
+    tooltip: "{status} on {device}"
+  },
+  de: {
+    "settings.showOnProfiles": "In Profilen",
+    "settings.showOnProfiles.description": "Neben den Abzeichen im Profil einer Person.",
+    "settings.showInChat": "Im Chat",
+    "settings.showInChat.description": "Hinter dem Namen bei jeder Nachricht.",
+    "settings.showInMemberList": "In der Mitgliederliste",
+    "settings.showInMemberList.description": "Hinter jedem Namen in der Mitgliederliste eines Servers.",
+    "settings.showOwn": "Deine eigenen Geräte",
+    "settings.showOwn.description": "Zeigt auch, welche deiner eigenen Clients online sind.",
+    "status.online": "Online",
+    "status.idle": "Abwesend",
+    "status.dnd": "Bitte nicht stören",
+    "device.desktop": "auf dem Desktop",
+    "device.mobile": "auf dem Handy",
+    "device.web": "im Web",
+    "device.embedded": "auf einer Konsole",
+    tooltip: "{status} {device}"
+  },
+  es: {
+    "settings.showOnProfiles": "En los perfiles",
+    "settings.showOnProfiles.description": "Junto a las insignias del perfil de alguien.",
+    "settings.showInChat": "En el chat",
+    "settings.showInChat.description": "Después del nombre en cada mensaje.",
+    "settings.showInMemberList": "En la lista de miembros",
+    "settings.showInMemberList.description": "Después de cada nombre en la lista de miembros de un servidor.",
+    "settings.showOwn": "Tus propios dispositivos",
+    "settings.showOwn.description": "Muestra también cuáles de tus propios clientes están conectados.",
+    "status.online": "En línea",
+    "status.idle": "Ausente",
+    "status.dnd": "No molestar",
+    "device.desktop": "el escritorio",
+    "device.mobile": "el móvil",
+    "device.web": "la web",
+    "device.embedded": "una consola",
+    tooltip: "{status} en {device}"
+  },
+  fr: {
+    "settings.showOnProfiles": "Sur les profils",
+    "settings.showOnProfiles.description": "À côté des badges sur le profil de quelqu'un.",
+    "settings.showInChat": "Dans le chat",
+    "settings.showInChat.description": "Après le nom sur chaque message.",
+    "settings.showInMemberList": "Dans la liste des membres",
+    "settings.showInMemberList.description": "Après chaque nom dans la liste des membres d'un serveur.",
+    "settings.showOwn": "Tes propres appareils",
+    "settings.showOwn.description": "Affiche aussi lesquels de tes propres clients sont en ligne.",
+    "status.online": "En ligne",
+    "status.idle": "Inactif",
+    "status.dnd": "Ne pas déranger",
+    "device.desktop": "sur ordinateur",
+    "device.mobile": "sur mobile",
+    "device.web": "sur le web",
+    "device.embedded": "sur console",
+    tooltip: "{status} {device}"
+  },
+  ja: {
+    "settings.showOnProfiles": "プロフィール",
+    "settings.showOnProfiles.description": "ユーザープロフィールのバッジの横に表示します。",
+    "settings.showInChat": "チャット",
+    "settings.showInChat.description": "各メッセージの名前の後ろに表示します。",
+    "settings.showInMemberList": "メンバーリスト",
+    "settings.showInMemberList.description": "サーバーのメンバーリストの各名前の後ろに表示します。",
+    "settings.showOwn": "自分のデバイス",
+    "settings.showOwn.description": "自分のクライアントのうちオンラインのものも表示します。",
+    "status.online": "オンライン",
+    "status.idle": "退席中",
+    "status.dnd": "取り込み中",
+    "device.desktop": "デスクトップ",
+    "device.mobile": "モバイル",
+    "device.web": "ウェブ",
+    "device.embedded": "ゲーム機",
+    tooltip: "{device}で{status}"
+  },
+  pl: {
+    "settings.showOnProfiles": "Na profilach",
+    "settings.showOnProfiles.description": "Obok odznak na profilu użytkownika.",
+    "settings.showInChat": "Na czacie",
+    "settings.showInChat.description": "Po nazwie przy każdej wiadomości.",
+    "settings.showInMemberList": "Na liście członków",
+    "settings.showInMemberList.description": "Po każdej nazwie na liście członków serwera.",
+    "settings.showOwn": "Twoje urządzenia",
+    "settings.showOwn.description": "Pokazuje też, które z twoich klientów są online.",
+    "status.online": "Online",
+    "status.idle": "Zaraz wracam",
+    "status.dnd": "Nie przeszkadzać",
+    "device.desktop": "na komputerze",
+    "device.mobile": "na telefonie",
+    "device.web": "w przeglądarce",
+    "device.embedded": "na konsoli",
+    tooltip: "{status} {device}"
+  },
+  "pt-BR": {
+    "settings.showOnProfiles": "Nos perfis",
+    "settings.showOnProfiles.description": "Ao lado das insígnias no perfil de alguém.",
+    "settings.showInChat": "No chat",
+    "settings.showInChat.description": "Depois do nome em cada mensagem.",
+    "settings.showInMemberList": "Na lista de membros",
+    "settings.showInMemberList.description": "Depois de cada nome na lista de membros de um servidor.",
+    "settings.showOwn": "Seus próprios dispositivos",
+    "settings.showOwn.description": "Mostra também quais dos seus próprios clientes estão online.",
+    "status.online": "Online",
+    "status.idle": "Ausente",
+    "status.dnd": "Não perturbe",
+    "device.desktop": "no computador",
+    "device.mobile": "no celular",
+    "device.web": "na web",
+    "device.embedded": "em um console",
+    tooltip: "{status} {device}"
+  },
+  ru: {
+    "settings.showOnProfiles": "В профилях",
+    "settings.showOnProfiles.description": "Рядом со значками в профиле пользователя.",
+    "settings.showInChat": "В чате",
+    "settings.showInChat.description": "После имени в каждом сообщении.",
+    "settings.showInMemberList": "В списке участников",
+    "settings.showInMemberList.description": "После каждого имени в списке участников сервера.",
+    "settings.showOwn": "Ваши устройства",
+    "settings.showOwn.description": "Показывать также, какие из ваших клиентов сейчас в сети.",
+    "status.online": "В сети",
+    "status.idle": "Не активен",
+    "status.dnd": "Не беспокоить",
+    "device.desktop": "на компьютере",
+    "device.mobile": "на телефоне",
+    "device.web": "в браузере",
+    "device.embedded": "на консоли",
+    tooltip: "{status} {device}"
+  },
+  tr: {
+    "settings.showOnProfiles": "Profillerde",
+    "settings.showOnProfiles.description": "Birinin profilinde rozetlerin yanında.",
+    "settings.showInChat": "Sohbette",
+    "settings.showInChat.description": "Her mesajda adın yanında.",
+    "settings.showInMemberList": "Üye listesinde",
+    "settings.showInMemberList.description": "Bir sunucunun üye listesinde her adın yanında.",
+    "settings.showOwn": "Kendi cihazların",
+    "settings.showOwn.description": "Kendi istemcilerinden hangilerinin çevrimiçi olduğunu da gösterir.",
+    "status.online": "Çevrimiçi",
+    "status.idle": "Boşta",
+    "status.dnd": "Rahatsız Etmeyin",
+    "device.desktop": "Masaüstünde",
+    "device.mobile": "Mobilde",
+    "device.web": "Web'de",
+    "device.embedded": "Konsolda",
+    tooltip: "{device} {status}"
+  }
+});
+
+// plugins/platform-indicators/index.tsx
 var jsx_runtime = require("react/jsx-runtime");
-var usernameFilter = import_api.filters.componentByCode("withMentionPrefix", "hideSystemTag", "decorations");
+var usernameFilter = import_api2.filters.componentByCode("withMentionPrefix", "hideSystemTag", "decorations");
 var BADGES = 1;
 var PLATFORMS = ["desktop", "mobile", "web", "embedded"];
-var NAMES = { desktop: "desktop", mobile: "mobile", web: "the web", embedded: "a console" };
-var STATUS_NAMES = { online: "Online", idle: "Idle", dnd: "Do Not Disturb" };
 var COLORS = { online: "#23a55a", idle: "#f0b232", dnd: "#f23f43" };
 var MUTED = "#949ba4";
 var GLYPHS = {
@@ -69,10 +236,26 @@ var iconSrc = (p, s) => {
   return src;
 };
 var settings = {
-  showOnProfiles: { type: "boolean", label: "On profiles", description: "Next to the badges on someone's profile.", default: true },
-  showInChat: { type: "boolean", label: "In chat", description: "After the name on each message.", default: true },
-  showInMemberList: { type: "boolean", label: "In the member list", description: "After each name in a server's member list.", default: true },
-  showOwn: { type: "boolean", label: "Your own devices", description: "Show which of your own clients are online too.", default: true }
+  showOnProfiles: { type: "boolean", get label() {
+    return t("settings.showOnProfiles");
+  }, get description() {
+    return t("settings.showOnProfiles.description");
+  }, default: true },
+  showInChat: { type: "boolean", get label() {
+    return t("settings.showInChat");
+  }, get description() {
+    return t("settings.showInChat.description");
+  }, default: true },
+  showInMemberList: { type: "boolean", get label() {
+    return t("settings.showInMemberList");
+  }, get description() {
+    return t("settings.showInMemberList.description");
+  }, default: true },
+  showOwn: { type: "boolean", get label() {
+    return t("settings.showOwn");
+  }, get description() {
+    return t("settings.showOwn.description");
+  }, default: true }
 };
 var context;
 var stores = new Map;
@@ -81,7 +264,7 @@ var store = (name) => {
   if (found)
     return found;
   try {
-    found = import_api.getStore(name);
+    found = import_api2.getStore(name);
   } catch {
     return;
   }
@@ -128,7 +311,7 @@ function deviceKey(userId) {
   const [device] = devicesOf(userId);
   return device ? `${device[0]}:${device[1]}` : "";
 }
-var tooltip = (p, s) => `${STATUS_NAMES[s]} on ${NAMES[p]}`;
+var tooltip = (p, s) => t("tooltip", { status: t(`status.${s}`), device: t(`device.${p}`) });
 var listeners = new Map;
 var lastKeys = new Map;
 var diffTimer;
@@ -166,11 +349,11 @@ var diffSoon = () => {
   diffTimer ??= setTimeout(diff, DIFF_DELAY_MS);
 };
 function useDevice(userId) {
-  const sub = import_api.React.useCallback((cb) => subscribe(userId, cb), [userId]);
-  return import_api.React.useSyncExternalStore(sub, () => lastKeys.get(userId) ?? deviceKey(userId));
+  const sub = import_api2.React.useCallback((cb) => subscribe(userId, cb), [userId]);
+  return import_api2.React.useSyncExternalStore(sub, () => lastKeys.get(userId) ?? deviceKey(userId));
 }
 function Icon({ platform, status }) {
-  const id = `evi-platform-${import_api.React.useId().replace(/:/g, "")}`;
+  const id = `evi-platform-${import_api2.React.useId().replace(/:/g, "")}`;
   return /* @__PURE__ */ jsx_runtime.jsx("span", {
     className: "evi-platform-icon",
     style: { width: 16, height: 16 },
@@ -180,13 +363,13 @@ function Icon({ platform, status }) {
   });
 }
 var memoized;
-var indicators = () => memoized ??= import_api.React.memo(Indicators);
+var indicators = () => memoized ??= import_api2.React.memo(Indicators);
 function Indicators({ userId, where }) {
   const key = useDevice(userId);
   if (!key || !context?.settings.get(where === "chat" ? "showInChat" : "showInMemberList"))
     return null;
   const [p, s] = key.split(":");
-  const Tooltip = import_api.Components.Tooltip;
+  const Tooltip = import_api2.Components.Tooltip;
   const icon = /* @__PURE__ */ jsx_runtime.jsx(Icon, {
     platform: p,
     status: s
@@ -212,7 +395,7 @@ var css = `
 .evi-platform-icon { display: inline-flex; width: 16px; height: 16px; }
 .evi-platform-icon svg { width: 100%; height: 100%; }
 `;
-var platform_indicators_default = import_api.definePlugin({
+var platform_indicators_default = import_api2.definePlugin({
   settings,
   patches: [
     {
@@ -245,7 +428,7 @@ var platform_indicators_default = import_api.definePlugin({
       diff(true);
     });
     diff(true);
-    ctx.profileBadges((userId) => ctx.settings.get("showOnProfiles") ? devicesOf(userId).map(([p, s]) => ({ id: `platform-${p}`, name: `${STATUS_NAMES[s]} on ${NAMES[p]}`, description: tooltip(p, s), iconSrc: iconSrc(p, s) })) : []);
+    ctx.profileBadges((userId) => ctx.settings.get("showOnProfiles") ? devicesOf(userId).map(([p, s]) => ({ id: `platform-${p}`, name: tooltip(p, s), description: tooltip(p, s), iconSrc: iconSrc(p, s) })) : []);
     ctx.hookExport("before", usernameFilter, ({ args }) => {
       const props = args[0];
       const userId = props?.message?.author?.id;

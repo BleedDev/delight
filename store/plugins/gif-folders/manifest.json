@@ -2,7 +2,7 @@
     "id": "gif-folders",
     "name": "GIF Folders",
     "description": "Sort your favourite GIFs into folders. All shows every favourite, Unsorted the ones not in a folder yet, and each folder its own. Right-click a GIF to add it to one, and drag the GIF picker's corner to resize it.",
-    "version": "1.2.3",
+    "version": "1.3.0",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.3.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
         {
             "version": "1.2.3",
             "notes": [
@@ -55,6 +61,280 @@
             ]
         }
     ],
+    "locales": {
+        "de": {
+            "name": "GIF-Ordner",
+            "description": "Sortiere deine Lieblings-GIFs in Ordner. „Alle“ zeigt jeden Favoriten, „Unsortiert“ die, die noch in keinem Ordner sind, und jeder Ordner seine eigenen. Rechtsklicke ein GIF, um es zu einem Ordner hinzuzufügen, und zieh an der Ecke der GIF-Auswahl, um sie zu vergrößern oder zu verkleinern.",
+            "changelog": {
+                "1.3.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
+                "1.2.3": [
+                    "Sagt jetzt, was es braucht: nichts, was Discord ihm nicht ohnehin zeigt. Evi hält es dazu an."
+                ],
+                "1.2.2": [
+                    "Der Start des Plugins hält Discord nicht mehr auf, während es deine Ordner aufräumt."
+                ],
+                "1.2.1": [
+                    "„Alle“ zeigt wieder jeden Favoriten, und der Tab „Unsortiert“ (jetzt standardmäßig an) zeigt nur die GIFs, die in keinem Ordner sind.",
+                    "Die Einstellung „Ordner-GIFs in Alle ausblenden“ mit ihren Optionen „In Alle anzeigen“ und Suche wurde entfernt: „Unsortiert“ übernimmt diese Aufgabe."
+                ],
+                "1.2.0": [
+                    "Neue Einstellung: Ordner-GIFs in „Alle“ ausblenden. Sobald ein GIF in einem Ordner ist, wird es nur noch dort angezeigt; setze im Rechtsklickmenü eines Ordners „In Alle anzeigen“, damit dessen GIFs in „Alle“ bleiben.",
+                    "Neue Einstellung: Die Suche findet auch ausgeblendete GIFs, sodass eine Suche in „Alle“ sie weiterhin anzeigt.",
+                    "Neue Einstellung: Tab „Unsortiert“, der die Favoriten auflistet, die noch in keinem Ordner sind.",
+                    "Neue Einstellung: Ein Ordner pro GIF. Wenn du ein GIF zu einem Ordner hinzufügst, wird es dorthin verschoben.",
+                    "Neue Einstellung: Anzahl neben den Tab-Namen anzeigen.",
+                    "Behoben: Der Tab-Text wurde beim Darüberfahren schwarz."
+                ],
+                "1.1.0": [
+                    "Ändere die Größe der GIF-Auswahl, indem du an ihrer Ecke ziehst. Doppelklicke auf die Ecke zum Zurücksetzen; die Größe wird gespeichert.",
+                    "Behoben: Der beim Benennen oder Umbenennen eines Ordners eingegebene Text wurde nicht angezeigt."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Carpetas de GIF",
+            "description": "Ordena tus GIF favoritos en carpetas. Todos muestra todos los favoritos, Sin clasificar los que aún no están en una carpeta y cada carpeta los suyos. Haz clic derecho en un GIF para añadirlo a una y arrastra la esquina del selector de GIF para cambiar su tamaño.",
+            "changelog": {
+                "1.3.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
+                "1.2.3": [
+                    "Ahora dice qué necesita, que es nada más allá de lo que Discord ya le muestra, y Evi se lo exige."
+                ],
+                "1.2.2": [
+                    "Iniciar el plugin ya no retrasa Discord mientras ordena tus carpetas."
+                ],
+                "1.2.1": [
+                    "Todos vuelve a mostrar todos los favoritos, y la pestaña Sin clasificar (ahora activada por defecto) muestra solo los GIF que no están en ninguna carpeta.",
+                    "Se eliminó el ajuste Ocultar en Todos los GIF con carpeta y sus opciones Mostrar en Todos y búsqueda: Sin clasificar cumple esa función."
+                ],
+                "1.2.0": [
+                    "Nuevo ajuste: Ocultar en Todos los GIF con carpeta. Cuando un GIF está en una carpeta, solo se muestra allí; marca Mostrar en Todos en el menú de clic derecho de una carpeta para que sus GIF sigan en Todos.",
+                    "Nuevo ajuste: la búsqueda sigue encontrando los GIF ocultos, así que buscar en Todos los sigue mostrando.",
+                    "Nuevo ajuste: pestaña Sin clasificar, con los favoritos que aún no están en ninguna carpeta.",
+                    "Nuevo ajuste: Una carpeta por GIF. Al añadir un GIF a una carpeta, se mueve a ella.",
+                    "Nuevo ajuste: mostrar recuentos junto a los nombres de las pestañas.",
+                    "Corregido: el texto de las pestañas se volvía negro al pasar el ratón."
+                ],
+                "1.1.0": [
+                    "Cambia el tamaño del selector de GIF arrastrando su esquina. Haz doble clic en la esquina para restablecerlo; el tamaño se recuerda.",
+                    "Corregido: el texto escrito al poner o cambiar el nombre de una carpeta no se veía."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Dossiers de GIF",
+            "description": "Rangez vos GIF favoris dans des dossiers. Tous affiche chaque favori, Non classés ceux qui ne sont pas encore dans un dossier, et chaque dossier les siens. Faites un clic droit sur un GIF pour l'ajouter à un dossier, et faites glisser le coin du sélecteur de GIF pour le redimensionner.",
+            "changelog": {
+                "1.3.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
+                "1.2.3": [
+                    "Indique désormais ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi le lui fait respecter."
+                ],
+                "1.2.2": [
+                    "Le démarrage du plugin ne ralentit plus Discord pendant qu'il range vos dossiers."
+                ],
+                "1.2.1": [
+                    "Tous affiche de nouveau chaque favori, et l'onglet Non classés (désormais activé par défaut) n'affiche que les GIF qui ne sont dans aucun dossier.",
+                    "Le réglage Masquer de Tous les GIF rangés et ses options Afficher dans Tous et recherche ont été supprimés : Non classés remplit ce rôle."
+                ],
+                "1.2.0": [
+                    "Nouveau réglage : Masquer de Tous les GIF rangés. Une fois un GIF dans un dossier, il n'apparaît que là ; cochez Afficher dans Tous dans le menu du clic droit d'un dossier pour garder ses GIF dans Tous.",
+                    "Nouveau réglage : la recherche trouve toujours les GIF masqués, donc une recherche dans Tous les affiche encore.",
+                    "Nouveau réglage : onglet Non classés, qui liste les favoris qui ne sont encore dans aucun dossier.",
+                    "Nouveau réglage : Un dossier par GIF. Ajouter un GIF à un dossier l'y déplace.",
+                    "Nouveau réglage : afficher les totaux à côté du nom des onglets.",
+                    "Corrigé : le texte des onglets devenait noir au survol."
+                ],
+                "1.1.0": [
+                    "Redimensionnez le sélecteur de GIF en faisant glisser son coin. Double-cliquez sur le coin pour le réinitialiser ; la taille est mémorisée.",
+                    "Corrigé : le texte saisi en nommant ou renommant un dossier ne s'affichait pas."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "GIFフォルダ",
+            "description": "お気に入りのGIFをフォルダに整理できます。「すべて」はすべてのお気に入り、「未分類」はまだフォルダに入っていないもの、各フォルダはそのフォルダのGIFを表示します。GIFを右クリックしてフォルダに追加でき、GIFピッカーの角をドラッグしてサイズを変更できます。",
+            "changelog": {
+                "1.3.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
+                "1.2.3": [
+                    "必要とするものを明示するようになりました。Discordがすでに表示している範囲を超えるものは不要で、Eviがそれを守らせます。"
+                ],
+                "1.2.2": [
+                    "プラグインの起動時にフォルダを整理している間、Discordが待たされることはなくなりました。"
+                ],
+                "1.2.1": [
+                    "「すべて」が再びすべてのお気に入りを表示するようになり、「未分類」タブ(デフォルトでオン)はフォルダに入っていないGIFだけを表示します。",
+                    "「フォルダ内のGIFを「すべて」から隠す」設定と、その「「すべて」に表示」および検索のオプションを削除しました。その役割は「未分類」が担います。"
+                ],
+                "1.2.0": [
+                    "新しい設定: フォルダ内のGIFを「すべて」から隠す。GIFがフォルダに入ると、そのフォルダにだけ表示されます。フォルダの右クリックメニューで「「すべて」に表示」にチェックを入れると、そのフォルダのGIFは「すべて」にも残ります。",
+                    "新しい設定: 検索では隠れたGIFも見つかるため、「すべて」で検索すれば表示されます。",
+                    "新しい設定: まだどのフォルダにも入っていないお気に入りを一覧表示する「未分類」タブ。",
+                    "新しい設定: GIFごとにフォルダは1つ。GIFをフォルダに追加すると、そこに移動します。",
+                    "新しい設定: タブ名の横に件数を表示。",
+                    "修正: カーソルを合わせるとタブの文字が黒くなる問題。"
+                ],
+                "1.1.0": [
+                    "GIFピッカーの角をドラッグしてサイズを変更できます。角をダブルクリックするとリセットされ、サイズは記憶されます。",
+                    "修正: フォルダの命名や名前変更の際に入力した文字が表示されない問題。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Foldery GIF-ów",
+            "description": "Sortuj ulubione GIF-y w foldery. Wszystkie pokazuje każdy ulubiony, Nieposortowane te, których nie ma jeszcze w żadnym folderze, a każdy folder swoje. Kliknij GIF prawym przyciskiem, aby dodać go do folderu, i przeciągnij róg selektora GIF-ów, aby zmienić jego rozmiar.",
+            "changelog": {
+                "1.3.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
+                "1.2.3": [
+                    "Podaje teraz, czego potrzebuje, czyli niczego ponad to, co Discord już mu pokazuje, a Evi tego pilnuje."
+                ],
+                "1.2.2": [
+                    "Uruchamianie wtyczki nie wstrzymuje już Discorda, gdy porządkuje twoje foldery."
+                ],
+                "1.2.1": [
+                    "Wszystkie znowu pokazuje każdy ulubiony, a karta Nieposortowane (teraz domyślnie włączona) pokazuje tylko GIF-y, których nie ma w żadnym folderze.",
+                    "Usunięto ustawienie Ukryj GIF-y z folderów w Wszystkie oraz opcje Pokaż w Wszystkie i wyszukiwanie: tę rolę pełni teraz Nieposortowane."
+                ],
+                "1.2.0": [
+                    "Nowe ustawienie: Ukryj GIF-y z folderów w Wszystkie. Gdy GIF trafi do folderu, pokazuje się tylko tam; zaznacz Pokaż w Wszystkie w menu prawego przycisku folderu, aby jego GIF-y zostały też w Wszystkie.",
+                    "Nowe ustawienie: wyszukiwanie nadal znajduje ukryte GIF-y, więc szukanie w Wszystkie nadal je pokazuje.",
+                    "Nowe ustawienie: karta Nieposortowane z ulubionymi, których nie ma jeszcze w żadnym folderze.",
+                    "Nowe ustawienie: Jeden folder na GIF. Dodanie GIF-a do folderu przenosi go tam.",
+                    "Nowe ustawienie: pokazywanie liczników obok nazw kart.",
+                    "Naprawiono: tekst karty robił się czarny po najechaniu kursorem."
+                ],
+                "1.1.0": [
+                    "Zmieniaj rozmiar selektora GIF-ów, przeciągając jego róg. Kliknij róg dwukrotnie, aby zresetować; rozmiar jest zapamiętywany.",
+                    "Naprawiono: tekst wpisywany podczas nazywania lub zmiany nazwy folderu nie był widoczny."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Pastas de GIFs",
+            "description": "Organize seus GIFs favoritos em pastas. Todos mostra cada favorito, Sem pasta os que ainda não estão em uma pasta e cada pasta os seus. Clique com o botão direito em um GIF para adicioná-lo a uma pasta e arraste o canto do seletor de GIFs para redimensioná-lo.",
+            "changelog": {
+                "1.3.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
+                "1.2.3": [
+                    "Agora diz do que precisa, que é nada além do que o Discord já mostra a ele, e o Evi garante isso."
+                ],
+                "1.2.2": [
+                    "Iniciar o plugin não segura mais o Discord enquanto ele arruma suas pastas."
+                ],
+                "1.2.1": [
+                    "Todos volta a mostrar todos os favoritos, e a aba Sem pasta (agora ativada por padrão) mostra só os GIFs que não estão em nenhuma pasta.",
+                    "Removemos a configuração Ocultar GIFs com pasta em Todos e as opções Mostrar em Todos e busca: Sem pasta faz esse papel."
+                ],
+                "1.2.0": [
+                    "Nova configuração: Ocultar GIFs com pasta em Todos. Quando um GIF está em uma pasta, ele só aparece lá; marque Mostrar em Todos no menu de clique direito de uma pasta para manter os GIFs dela em Todos.",
+                    "Nova configuração: a busca ainda encontra GIFs ocultos, então pesquisar em Todos continua mostrando eles.",
+                    "Nova configuração: aba Sem pasta, que lista os favoritos que ainda não estão em nenhuma pasta.",
+                    "Nova configuração: Uma pasta por GIF. Adicionar um GIF a uma pasta o move para lá.",
+                    "Nova configuração: mostrar contagens ao lado dos nomes das abas.",
+                    "Corrigido: o texto das abas ficava preto ao passar o mouse."
+                ],
+                "1.1.0": [
+                    "Redimensione o seletor de GIFs arrastando o canto dele. Clique duas vezes no canto para redefinir; o tamanho fica salvo.",
+                    "Corrigido: o que você digitava ao nomear ou renomear uma pasta não aparecia."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Папки с GIF",
+            "description": "Раскладывайте любимые GIF по папкам. «Все» показывает всё избранное, «Без папки» — то, что ещё не лежит ни в одной папке, а каждая папка — свои GIF. Нажмите правой кнопкой на GIF, чтобы добавить его в папку, и потяните за угол выбора GIF, чтобы изменить его размер.",
+            "changelog": {
+                "1.3.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
+                "1.2.3": [
+                    "Теперь указывает, что ему нужно, а нужно ему лишь то, что Discord и так показывает, и Evi следит за этим."
+                ],
+                "1.2.2": [
+                    "Запуск плагина больше не тормозит Discord, пока он наводит порядок в ваших папках."
+                ],
+                "1.2.1": [
+                    "«Все» снова показывает всё избранное, а вкладка «Без папки» (теперь включена по умолчанию) показывает только те GIF, которых нет ни в одной папке.",
+                    "Убраны настройка «Скрывать GIF из папок во вкладке „Все“» и её параметры «Показывать во „Все“» и поиск: эту задачу выполняет «Без папки»."
+                ],
+                "1.2.0": [
+                    "Новая настройка: скрывать GIF из папок во вкладке «Все». Когда GIF лежит в папке, он виден только там; отметьте «Показывать во „Все“» в контекстном меню папки, чтобы её GIF оставались и во «Все».",
+                    "Новая настройка: поиск по-прежнему находит скрытые GIF, так что поиск во вкладке «Все» их покажет.",
+                    "Новая настройка: вкладка «Без папки» со списком избранного, которого ещё нет ни в одной папке.",
+                    "Новая настройка: одна папка на GIF. При добавлении GIF в папку он переносится туда.",
+                    "Новая настройка: показывать количество рядом с названиями вкладок.",
+                    "Исправлено: текст вкладки чернел при наведении курсора."
+                ],
+                "1.1.0": [
+                    "Меняйте размер выбора GIF, потянув за его угол. Дважды щёлкните по углу, чтобы сбросить; размер запоминается.",
+                    "Исправлено: текст, который вводили при назывании или переименовании папки, не отображался."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "GIF Klasörleri",
+            "description": "Favori GIF'lerini klasörlere ayır. Tümü her favoriyi, Sınıflandırılmamış henüz bir klasörde olmayanları, her klasör de kendi GIF'lerini gösterir. Bir klasöre eklemek için GIF'e sağ tıkla, boyutunu değiştirmek için GIF seçicinin köşesini sürükle.",
+            "changelog": {
+                "1.3.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
+                "1.2.3": [
+                    "Neye ihtiyaç duyduğunu artık belirtiyor: Discord'un zaten gösterdiği şeyin ötesinde hiçbir şey. Evi de buna uymasını sağlıyor."
+                ],
+                "1.2.2": [
+                    "Eklenti başlarken klasörlerini düzenlerken artık Discord'u bekletmiyor."
+                ],
+                "1.2.1": [
+                    "Tümü yine her favoriyi gösteriyor; Sınıflandırılmamış sekmesi (artık varsayılan olarak açık) yalnızca hiçbir klasörde olmayan GIF'leri gösteriyor.",
+                    "Klasördeki GIF'leri Tümü'nden gizle ayarı ile Tümü'nde göster ve arama seçenekleri kaldırıldı: bu işi artık Sınıflandırılmamış yapıyor."
+                ],
+                "1.2.0": [
+                    "Yeni ayar: Klasördeki GIF'leri Tümü'nden gizle. Bir GIF klasöre girince yalnızca orada görünür; bir klasörün GIF'lerini Tümü'nde tutmak için klasörün sağ tık menüsünden Tümü'nde göster'i işaretle.",
+                    "Yeni ayar: Arama gizli GIF'leri de buluyor, yani Tümü'nde arama yapınca yine çıkıyorlar.",
+                    "Yeni ayar: Henüz hiçbir klasörde olmayan favorileri listeleyen Sınıflandırılmamış sekmesi.",
+                    "Yeni ayar: GIF başına tek klasör. Bir GIF'i klasöre eklemek onu oraya taşır.",
+                    "Yeni ayar: Sekme adlarının yanında sayıları göster.",
+                    "Düzeltildi: Sekme yazısı üzerine gelince siyaha dönüyordu."
+                ],
+                "1.1.0": [
+                    "GIF seçicinin köşesini sürükleyerek boyutunu değiştir. Sıfırlamak için köşeye çift tıkla; boyut hatırlanır.",
+                    "Düzeltildi: Bir klasörü adlandırırken veya yeniden adlandırırken yazdıkların görünmüyordu."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    },
     "enabledByDefault": false,
     "main": "index.js"
 }

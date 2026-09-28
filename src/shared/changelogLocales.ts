@@ -18,6 +18,8 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Wähle, was durchsichtig ist.** Stell ein, wie deckend Serverliste, Kanäle, Chat und Nachrichtenfeld über dem Hintergrund bleiben, und färbe sie in den Farben deines Designs.",
             ],
             improved: [
+                "**Discord läuft viel flüssiger.** Evi entfernt eine versteckte Stilregel von Discord, durch die die ganze App bei jeder Änderung neu gestylt wurde, etwa wenn jemand im Anruf spricht: In einem vollen Anruf sank die längste Hängephase von etwa 100 ms auf 15 ms, und die Einstellungen öffnen schneller. Die Schriften von Discord laden jetzt im Hintergrund, damit Text beim ersten Einsatz eines Stils nicht springt.",
+                "**Kleinere Updates.** Ab der nächsten Version lädt ein Evi-Update nur noch seine Dateien herunter, ein paar MB statt des ganzen 100-MB-Installers.",
                 "**Einstellungen und Pop-ups bleiben deckend.** Der Hintergrund zeigt sich nur hinter dem Hauptfenster von Discord, außer du schaltest ihn auch für Einstellungen oder Pop-ups ein.",
                 "**„Quellcode ansehen“ zeigt den echten Code.** Auf der Seite eines Community-Plugins öffnet es genau den Code, den Evi installiert, mit dem Link des Autors daneben.",
             ],
@@ -200,6 +202,8 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Elige qué es transparente.** Ajusta qué tan opacos quedan la lista de servidores, los canales, el chat y el cuadro de mensaje sobre el fondo, y tíñelos con los colores de tu tema.",
             ],
             improved: [
+                "**Discord va mucho más fluido.** Evi quita una regla de estilo oculta de Discord que hacía que toda la app se volviera a dibujar con cualquier cambio, como alguien hablando en una llamada: en una llamada concurrida el bloqueo más largo pasó de unos 100 ms a 15 ms, y los ajustes se abren más rápido. Las fuentes de Discord también se cargan en segundo plano, así que el texto no salta la primera vez que se usa un estilo.",
+                "**Actualizaciones más pequeñas.** A partir de la próxima versión, actualizar Evi descarga solo sus archivos, unos pocos MB, en vez del instalador completo de 100 MB.",
                 "**Los ajustes y las ventanas emergentes siguen opacos.** El fondo solo se ve detrás de la ventana principal de Discord, salvo que lo actives también para ajustes o ventanas emergentes.",
                 "**Ver código fuente muestra el código real.** En la página de un plugin de la comunidad abre exactamente el código que Evi instala, con el enlace del autor al lado.",
             ],
@@ -382,6 +386,8 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Choisis ce qui est transparent.** Règle l'opacité de la liste des serveurs, des salons, de la discussion et de la zone de message au-dessus du fond d'écran, et teinte-les aux couleurs de ton thème.",
             ],
             improved: [
+                "**Discord est bien plus fluide.** Evi retire une règle de style cachée de Discord qui obligeait toute l'appli à recalculer ses styles au moindre changement, comme quelqu'un qui parle en appel : dans un appel chargé, le plus long blocage est passé d'environ 100 ms à 15 ms, et les paramètres s'ouvrent plus vite. Les polices de Discord se chargent aussi en arrière-plan, pour que le texte ne saute plus la première fois qu'un style est utilisé.",
+                "**Des mises à jour plus légères.** Dès la prochaine version, mettre à jour Evi ne télécharge que ses fichiers, quelques Mo, au lieu de tout l'installateur de 100 Mo.",
                 "**Les paramètres et les fenêtres contextuelles restent opaques.** Le fond d'écran n'apparaît que derrière la fenêtre principale de Discord, sauf si tu l'actives aussi pour les paramètres ou les fenêtres contextuelles.",
                 "**Voir le code source montre le vrai code.** Sur la page d'un plugin de la communauté, il ouvre exactement le code qu'Evi installe, avec le lien de l'auteur à côté.",
             ],
@@ -564,6 +570,8 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**透ける部分を選べます。** サーバーリスト、チャンネル、チャット、入力欄が壁紙の上でどれだけ不透明に残るかを設定し、テーマの色で染められます。",
             ],
             improved: [
+                "**Discordがずっと滑らかに。** 通話中に誰かが話すなど、何かが変わるたびにアプリ全体のスタイルを再計算させていた、Discordの隠れたスタイルルールをEviが取り除きます。混雑した通話では最長の引っかかりが約100msから15msに減り、設定も速く開くようになりました。Discordのフォントもバックグラウンドで読み込むため、スタイルを初めて使うときに文字がずれなくなりました。",
+                "**アップデートが軽くなりました。** 次のバージョンからは、100MBのインストーラー全体ではなく、数MBのEviのファイルだけをダウンロードして更新します。",
                 "**設定やポップアウトは不透明のまま。** 壁紙はDiscordのメイン画面の後ろにだけ表示されます。設定やポップアウトでも表示したい場合はオンにできます。",
                 "**「ソースを見る」で実際のコードを表示。** コミュニティプラグインのページでは、Eviがインストールするコードそのものが開き、作者のリンクはその隣に表示されます。",
             ],
@@ -746,6 +754,8 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Wybierz, co ma być przezroczyste.** Ustaw, jak bardzo lista serwerów, kanały, czat i pole wiadomości zakrywają tapetę, i zabarw je kolorami swojego motywu.",
             ],
             improved: [
+                "**Discord działa dużo płynniej.** Evi usuwa ukrytą regułę stylów Discorda, przez którą cała aplikacja przeliczała style przy każdej zmianie, na przykład gdy ktoś mówi na rozmowie: w zatłoczonej rozmowie najdłuższe przycięcie spadło z około 100 ms do 15 ms, a ustawienia otwierają się szybciej. Czcionki Discorda ładują się też w tle, więc tekst nie przeskakuje, gdy styl zostanie użyty pierwszy raz.",
+                "**Mniejsze aktualizacje.** Od następnej wersji aktualizacja Evi pobiera tylko jego pliki, kilka MB, zamiast całego 100-megabajtowego instalatora.",
                 "**Ustawienia i wyskakujące okna zostają nieprzezroczyste.** Tapetę widać tylko za głównym oknem Discorda, chyba że włączysz ją też dla ustawień albo wyskakujących okien.",
                 "**Kod źródłowy pokazuje prawdziwy kod.** Na stronie pluginu społeczności otwiera dokładnie ten kod, który instaluje Evi, a link autora jest obok.",
             ],
@@ -928,6 +938,8 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Escolha o que fica transparente.** Defina o quanto a lista de servidores, os canais, o chat e a caixa de mensagem ficam sólidos sobre o papel de parede, e tinja-os com as cores do seu tema.",
             ],
             improved: [
+                "**O Discord ficou muito mais fluido.** O Evi remove uma regra de estilo escondida do Discord que fazia o app inteiro recalcular os estilos a cada mudança, como alguém falando numa chamada: numa chamada cheia, o maior travamento caiu de uns 100 ms para 15 ms, e as configurações abrem mais rápido. As fontes do Discord também carregam em segundo plano, então o texto não pula na primeira vez que um estilo é usado.",
+                "**Atualizações menores.** A partir da próxima versão, atualizar o Evi baixa só os arquivos dele, alguns MB, em vez do instalador inteiro de 100 MB.",
                 "**Configurações e pop-ups continuam sólidos.** O papel de parede só aparece atrás da janela principal do Discord, a menos que você o ative também nas configurações ou nos pop-ups.",
                 "**Ver código-fonte mostra o código de verdade.** Na página de um plugin da comunidade, ele abre exatamente o código que o Evi instala, com o link do autor ao lado.",
             ],
@@ -1110,6 +1122,8 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Выберите, что будет прозрачным.** Задайте, насколько плотными остаются список серверов, каналы, чат и поле ввода поверх обоев, и окрасьте их в цвета своей темы.",
             ],
             improved: [
+                "**Discord работает гораздо плавнее.** Evi убирает скрытое правило стилей Discord, из-за которого всё приложение пересчитывало стили при любом изменении, например когда кто-то говорит в звонке: в загруженном звонке самая долгая заминка сократилась примерно со 100 мс до 15 мс, а настройки открываются быстрее. Шрифты Discord теперь загружаются в фоне, так что текст не прыгает, когда стиль используется впервые.",
+                "**Обновления стали меньше.** Со следующей версии обновление Evi скачивает только его файлы, несколько МБ, а не весь установщик на 100 МБ.",
                 "**Настройки и всплывающие окна остаются непрозрачными.** Обои видны только за главным окном Discord, если не включить их и для настроек или всплывающих окон.",
                 "**«Исходный код» показывает настоящий код.** На странице плагина от сообщества открывается именно тот код, который устанавливает Evi, а ссылка автора стоит рядом.",
             ],
@@ -1292,6 +1306,8 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Neyin saydam olacağını sen seç.** Sunucu listesinin, kanalların, sohbetin ve mesaj kutusunun duvar kâğıdının üstünde ne kadar opak kalacağını ayarla, temanın renkleriyle boya.",
             ],
             improved: [
+                "**Discord çok daha akıcı.** Evi, aramada biri konuştuğunda olduğu gibi her değişiklikte tüm uygulamanın stillerini yeniden hesaplatan gizli bir Discord stil kuralını kaldırıyor: kalabalık bir aramada en uzun takılma yaklaşık 100 ms'den 15 ms'ye indi, ayarlar da daha hızlı açılıyor. Discord'un yazı tipleri artık arka planda yükleniyor; bir stil ilk kez kullanıldığında metin kaymıyor.",
+                "**Daha küçük güncellemeler.** Bir sonraki sürümden itibaren Evi'yi güncellemek 100 MB'lık yükleyicinin tamamı yerine yalnızca birkaç MB'lık dosyalarını indirir.",
                 "**Ayarlar ve açılır pencereler opak kalıyor.** Duvar kâğıdı yalnızca Discord'un ana penceresinin arkasında görünür; istersen ayarlar ve açılır pencereler için de açabilirsin.",
                 "**Kaynağı görüntüle artık gerçek kodu gösteriyor.** Topluluk eklentisinin sayfasında Evi'nin kurduğu kodun ta kendisini açar, yazarın bağlantısı hemen yanında durur.",
             ],

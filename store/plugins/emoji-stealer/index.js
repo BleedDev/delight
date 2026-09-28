@@ -42,7 +42,7 @@ __export(exports_emoji_stealer, {
   default: () => emoji_stealer_default
 });
 module.exports = __toCommonJS(exports_emoji_stealer);
-var import_api = require("@evi/api");
+var import_api2 = require("@evi/api");
 
 // plugins/emoji-stealer/emoji.ts
 var EMOJI_NAME_MIN = 2;
@@ -298,12 +298,440 @@ function firstFieldError(value, depth = 0) {
   }
 }
 
+// plugins/emoji-stealer/strings.ts
+var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    "menu.add.emoji": "Add to Server",
+    "menu.add.sticker": "Add Sticker to Server",
+    "menu.noServers": "No servers you can add to",
+    "menu.noSlots": "No slots left",
+    "menu.slots.static": { one: "{count} static slot left", other: "{count} static slots left" },
+    "menu.slots.animated": { one: "{count} animated slot left", other: "{count} animated slots left" },
+    "menu.slots.sticker": { one: "{count} slot left", other: "{count} slots left" },
+    "menu.copyLink.emoji": "Copy Emoji Link",
+    "menu.copyLink.sticker": "Copy Sticker Link",
+    "menu.copyId.emoji": "Copy Emoji ID",
+    "menu.copyId.sticker": "Copy Sticker ID",
+    "toast.linkCopied": "Link copied",
+    "toast.idCopied": "ID copied",
+    "toast.copyFailed": "Couldn't copy to the clipboard",
+    "toast.added.emoji": "Added :{name}: to {server}",
+    "toast.added.sticker": 'Added "{name}" to {server}',
+    "toast.failed.emoji": "Couldn't add the emoji: {message}",
+    "toast.failed.sticker": "Couldn't add the sticker: {message}",
+    "error.failed.emoji": "Couldn't add the emoji",
+    "error.failed.sticker": "Couldn't add the sticker",
+    "error.download": "Couldn't download it (HTTP {status})",
+    "error.tooBig": "It's {size} KB, over Discord's {limit} KB limit",
+    "error.read": "Couldn't read the image",
+    "error.lottie": "Lottie stickers can only be uploaded to partnered and verified servers",
+    "error.noEmojiUpload": "Couldn't find Discord's emoji upload",
+    "error.noStickerUpload": "Couldn't find Discord's sticker upload",
+    "dialog.title.emoji": "Add Emoji to Server",
+    "dialog.title.sticker": "Add Sticker to Server",
+    "dialog.close": "Close",
+    "dialog.animated": "Animated",
+    "dialog.name": "Name",
+    "dialog.hint.emoji": "2 to 32 characters: letters, numbers and underscores.",
+    "dialog.hint.sticker": "2 to 30 characters.",
+    "dialog.server": "Server",
+    "dialog.full": "full",
+    "dialog.detail.emoji": "{staticLeft} static, {animatedLeft} animated left",
+    "dialog.detail.sticker": "{left} of {limit} sticker slots left",
+    "dialog.summary.emoji": "{staticLeft} static, {animatedLeft} animated left. Limit {limit} of each kind at this server's boost level.",
+    "dialog.summary.sticker": "{left} of {limit} sticker slots left. Limit {limit} at this server's boost level.",
+    "dialog.noPermission.emoji": "You don't have permission to add emoji to any other server.",
+    "dialog.noPermission.sticker": "You don't have permission to add stickers to any other server.",
+    "dialog.cancel": "Cancel",
+    "dialog.uploading": "Uploading…",
+    "dialog.submit.emoji": "Add Emoji",
+    "dialog.submit.sticker": "Add Sticker"
+  },
+  de: {
+    "menu.add.emoji": "Zum Server hinzufügen",
+    "menu.add.sticker": "Sticker zum Server hinzufügen",
+    "menu.noServers": "Keine Server, zu denen du hinzufügen kannst",
+    "menu.noSlots": "Keine Plätze mehr frei",
+    "menu.slots.static": { one: "{count} statischer Platz frei", other: "{count} statische Plätze frei" },
+    "menu.slots.animated": { one: "{count} animierter Platz frei", other: "{count} animierte Plätze frei" },
+    "menu.slots.sticker": { one: "{count} Platz frei", other: "{count} Plätze frei" },
+    "menu.copyLink.emoji": "Emoji-Link kopieren",
+    "menu.copyLink.sticker": "Sticker-Link kopieren",
+    "menu.copyId.emoji": "Emoji-ID kopieren",
+    "menu.copyId.sticker": "Sticker-ID kopieren",
+    "toast.linkCopied": "Link kopiert",
+    "toast.idCopied": "ID kopiert",
+    "toast.copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen",
+    "toast.added.emoji": ":{name}: wurde zu {server} hinzugefügt",
+    "toast.added.sticker": "„{name}“ wurde zu {server} hinzugefügt",
+    "toast.failed.emoji": "Emoji konnte nicht hinzugefügt werden: {message}",
+    "toast.failed.sticker": "Sticker konnte nicht hinzugefügt werden: {message}",
+    "error.failed.emoji": "Emoji konnte nicht hinzugefügt werden",
+    "error.failed.sticker": "Sticker konnte nicht hinzugefügt werden",
+    "error.download": "Download fehlgeschlagen (HTTP {status})",
+    "error.tooBig": "Die Datei ist {size} KB groß und überschreitet Discords Limit von {limit} KB",
+    "error.read": "Das Bild konnte nicht gelesen werden",
+    "error.lottie": "Lottie-Sticker können nur auf Partner- und verifizierte Server hochgeladen werden",
+    "error.noEmojiUpload": "Discords Emoji-Upload wurde nicht gefunden",
+    "error.noStickerUpload": "Discords Sticker-Upload wurde nicht gefunden",
+    "dialog.title.emoji": "Emoji zum Server hinzufügen",
+    "dialog.title.sticker": "Sticker zum Server hinzufügen",
+    "dialog.close": "Schließen",
+    "dialog.animated": "Animiert",
+    "dialog.name": "Name",
+    "dialog.hint.emoji": "2 bis 32 Zeichen: Buchstaben, Zahlen und Unterstriche.",
+    "dialog.hint.sticker": "2 bis 30 Zeichen.",
+    "dialog.server": "Server",
+    "dialog.full": "voll",
+    "dialog.detail.emoji": "{staticLeft} statisch, {animatedLeft} animiert frei",
+    "dialog.detail.sticker": "{left} von {limit} Sticker-Plätzen frei",
+    "dialog.summary.emoji": "{staticLeft} statisch, {animatedLeft} animiert frei. Limit: {limit} pro Art bei der Boost-Stufe dieses Servers.",
+    "dialog.summary.sticker": "{left} von {limit} Sticker-Plätzen frei. Limit: {limit} bei der Boost-Stufe dieses Servers.",
+    "dialog.noPermission.emoji": "Du hast auf keinem anderen Server die Berechtigung, Emojis hinzuzufügen.",
+    "dialog.noPermission.sticker": "Du hast auf keinem anderen Server die Berechtigung, Sticker hinzuzufügen.",
+    "dialog.cancel": "Abbrechen",
+    "dialog.uploading": "Wird hochgeladen …",
+    "dialog.submit.emoji": "Emoji hinzufügen",
+    "dialog.submit.sticker": "Sticker hinzufügen"
+  },
+  es: {
+    "menu.add.emoji": "Añadir al servidor",
+    "menu.add.sticker": "Añadir sticker al servidor",
+    "menu.noServers": "No hay servidores a los que puedas añadirlo",
+    "menu.noSlots": "No quedan espacios",
+    "menu.slots.static": { one: "{count} espacio estático libre", other: "{count} espacios estáticos libres" },
+    "menu.slots.animated": { one: "{count} espacio animado libre", other: "{count} espacios animados libres" },
+    "menu.slots.sticker": { one: "{count} espacio libre", other: "{count} espacios libres" },
+    "menu.copyLink.emoji": "Copiar enlace del emoji",
+    "menu.copyLink.sticker": "Copiar enlace del sticker",
+    "menu.copyId.emoji": "Copiar ID del emoji",
+    "menu.copyId.sticker": "Copiar ID del sticker",
+    "toast.linkCopied": "Enlace copiado",
+    "toast.idCopied": "ID copiado",
+    "toast.copyFailed": "No se pudo copiar al portapapeles",
+    "toast.added.emoji": "Se añadió :{name}: a {server}",
+    "toast.added.sticker": "Se añadió «{name}» a {server}",
+    "toast.failed.emoji": "No se pudo añadir el emoji: {message}",
+    "toast.failed.sticker": "No se pudo añadir el sticker: {message}",
+    "error.failed.emoji": "No se pudo añadir el emoji",
+    "error.failed.sticker": "No se pudo añadir el sticker",
+    "error.download": "No se pudo descargar (HTTP {status})",
+    "error.tooBig": "Pesa {size} KB, más del límite de {limit} KB de Discord",
+    "error.read": "No se pudo leer la imagen",
+    "error.lottie": "Los stickers Lottie solo se pueden subir a servidores asociados y verificados",
+    "error.noEmojiUpload": "No se encontró la subida de emojis de Discord",
+    "error.noStickerUpload": "No se encontró la subida de stickers de Discord",
+    "dialog.title.emoji": "Añadir emoji al servidor",
+    "dialog.title.sticker": "Añadir sticker al servidor",
+    "dialog.close": "Cerrar",
+    "dialog.animated": "Animado",
+    "dialog.name": "Nombre",
+    "dialog.hint.emoji": "De 2 a 32 caracteres: letras, números y guiones bajos.",
+    "dialog.hint.sticker": "De 2 a 30 caracteres.",
+    "dialog.server": "Servidor",
+    "dialog.full": "lleno",
+    "dialog.detail.emoji": "{staticLeft} estáticos, {animatedLeft} animados libres",
+    "dialog.detail.sticker": "{left} de {limit} espacios de stickers libres",
+    "dialog.summary.emoji": "{staticLeft} estáticos, {animatedLeft} animados libres. Límite de {limit} de cada tipo con el nivel de potenciación de este servidor.",
+    "dialog.summary.sticker": "{left} de {limit} espacios de stickers libres. Límite de {limit} con el nivel de potenciación de este servidor.",
+    "dialog.noPermission.emoji": "No tienes permiso para añadir emojis a ningún otro servidor.",
+    "dialog.noPermission.sticker": "No tienes permiso para añadir stickers a ningún otro servidor.",
+    "dialog.cancel": "Cancelar",
+    "dialog.uploading": "Subiendo…",
+    "dialog.submit.emoji": "Añadir emoji",
+    "dialog.submit.sticker": "Añadir sticker"
+  },
+  fr: {
+    "menu.add.emoji": "Ajouter au serveur",
+    "menu.add.sticker": "Ajouter le sticker au serveur",
+    "menu.noServers": "Aucun serveur où tu peux l'ajouter",
+    "menu.noSlots": "Plus d'emplacements",
+    "menu.slots.static": { one: "{count} emplacement statique restant", other: "{count} emplacements statiques restants" },
+    "menu.slots.animated": { one: "{count} emplacement animé restant", other: "{count} emplacements animés restants" },
+    "menu.slots.sticker": { one: "{count} emplacement restant", other: "{count} emplacements restants" },
+    "menu.copyLink.emoji": "Copier le lien de l'émoji",
+    "menu.copyLink.sticker": "Copier le lien du sticker",
+    "menu.copyId.emoji": "Copier l'ID de l'émoji",
+    "menu.copyId.sticker": "Copier l'ID du sticker",
+    "toast.linkCopied": "Lien copié",
+    "toast.idCopied": "ID copié",
+    "toast.copyFailed": "Impossible de copier dans le presse-papiers",
+    "toast.added.emoji": ":{name}: ajouté à {server}",
+    "toast.added.sticker": "« {name} » ajouté à {server}",
+    "toast.failed.emoji": "Impossible d'ajouter l'émoji : {message}",
+    "toast.failed.sticker": "Impossible d'ajouter le sticker : {message}",
+    "error.failed.emoji": "Impossible d'ajouter l'émoji",
+    "error.failed.sticker": "Impossible d'ajouter le sticker",
+    "error.download": "Téléchargement impossible (HTTP {status})",
+    "error.tooBig": "Le fichier fait {size} Ko, au-delà de la limite de {limit} Ko de Discord",
+    "error.read": "Impossible de lire l'image",
+    "error.lottie": "Les stickers Lottie ne peuvent être importés que sur les serveurs partenaires et vérifiés",
+    "error.noEmojiUpload": "Import d'émojis de Discord introuvable",
+    "error.noStickerUpload": "Import de stickers de Discord introuvable",
+    "dialog.title.emoji": "Ajouter l'émoji au serveur",
+    "dialog.title.sticker": "Ajouter le sticker au serveur",
+    "dialog.close": "Fermer",
+    "dialog.animated": "Animé",
+    "dialog.name": "Nom",
+    "dialog.hint.emoji": "De 2 à 32 caractères : lettres, chiffres et tirets bas.",
+    "dialog.hint.sticker": "De 2 à 30 caractères.",
+    "dialog.server": "Serveur",
+    "dialog.full": "plein",
+    "dialog.detail.emoji": "{staticLeft} statiques, {animatedLeft} animés restants",
+    "dialog.detail.sticker": "{left} emplacements de stickers restants sur {limit}",
+    "dialog.summary.emoji": "{staticLeft} statiques, {animatedLeft} animés restants. Limite de {limit} de chaque type au niveau de boost de ce serveur.",
+    "dialog.summary.sticker": "{left} emplacements de stickers restants sur {limit}. Limite de {limit} au niveau de boost de ce serveur.",
+    "dialog.noPermission.emoji": "Tu n'as la permission d'ajouter des émojis sur aucun autre serveur.",
+    "dialog.noPermission.sticker": "Tu n'as la permission d'ajouter des stickers sur aucun autre serveur.",
+    "dialog.cancel": "Annuler",
+    "dialog.uploading": "Import en cours…",
+    "dialog.submit.emoji": "Ajouter l'émoji",
+    "dialog.submit.sticker": "Ajouter le sticker"
+  },
+  ja: {
+    "menu.add.emoji": "サーバーに追加",
+    "menu.add.sticker": "ステッカーをサーバーに追加",
+    "menu.noServers": "追加できるサーバーがありません",
+    "menu.noSlots": "空きがありません",
+    "menu.slots.static": { other: "静止画の空き: {count}" },
+    "menu.slots.animated": { other: "アニメーションの空き: {count}" },
+    "menu.slots.sticker": { other: "空き: {count}" },
+    "menu.copyLink.emoji": "絵文字のリンクをコピー",
+    "menu.copyLink.sticker": "ステッカーのリンクをコピー",
+    "menu.copyId.emoji": "絵文字IDをコピー",
+    "menu.copyId.sticker": "ステッカーIDをコピー",
+    "toast.linkCopied": "リンクをコピーしました",
+    "toast.idCopied": "IDをコピーしました",
+    "toast.copyFailed": "クリップボードにコピーできませんでした",
+    "toast.added.emoji": ":{name}: を{server}に追加しました",
+    "toast.added.sticker": "「{name}」を{server}に追加しました",
+    "toast.failed.emoji": "絵文字を追加できませんでした: {message}",
+    "toast.failed.sticker": "ステッカーを追加できませんでした: {message}",
+    "error.failed.emoji": "絵文字を追加できませんでした",
+    "error.failed.sticker": "ステッカーを追加できませんでした",
+    "error.download": "ダウンロードできませんでした (HTTP {status})",
+    "error.tooBig": "{size} KBあり、Discordの上限 {limit} KBを超えています",
+    "error.read": "画像を読み込めませんでした",
+    "error.lottie": "Lottieステッカーは、パートナーおよび認証済みサーバーにのみアップロードできます",
+    "error.noEmojiUpload": "Discordの絵文字アップロードが見つかりませんでした",
+    "error.noStickerUpload": "Discordのステッカーアップロードが見つかりませんでした",
+    "dialog.title.emoji": "絵文字をサーバーに追加",
+    "dialog.title.sticker": "ステッカーをサーバーに追加",
+    "dialog.close": "閉じる",
+    "dialog.animated": "アニメーション",
+    "dialog.name": "名前",
+    "dialog.hint.emoji": "2〜32文字。英数字とアンダースコアが使えます。",
+    "dialog.hint.sticker": "2〜30文字。",
+    "dialog.server": "サーバー",
+    "dialog.full": "満杯",
+    "dialog.detail.emoji": "静止画 残り{staticLeft}、アニメーション 残り{animatedLeft}",
+    "dialog.detail.sticker": "ステッカー枠 残り{left}/{limit}",
+    "dialog.summary.emoji": "静止画 残り{staticLeft}、アニメーション 残り{animatedLeft}。このサーバーのブーストレベルでは、それぞれ最大{limit}個です。",
+    "dialog.summary.sticker": "ステッカー枠 残り{left}/{limit}。このサーバーのブーストレベルでは最大{limit}個です。",
+    "dialog.noPermission.emoji": "他のどのサーバーにも絵文字を追加する権限がありません。",
+    "dialog.noPermission.sticker": "他のどのサーバーにもステッカーを追加する権限がありません。",
+    "dialog.cancel": "キャンセル",
+    "dialog.uploading": "アップロード中…",
+    "dialog.submit.emoji": "絵文字を追加",
+    "dialog.submit.sticker": "ステッカーを追加"
+  },
+  pl: {
+    "menu.add.emoji": "Dodaj do serwera",
+    "menu.add.sticker": "Dodaj naklejkę do serwera",
+    "menu.noServers": "Brak serwerów, do których możesz dodawać",
+    "menu.noSlots": "Brak wolnych miejsc",
+    "menu.slots.static": { one: "{count} wolne miejsce na statyczne", few: "{count} wolne miejsca na statyczne", many: "{count} wolnych miejsc na statyczne", other: "{count} wolnego miejsca na statyczne" },
+    "menu.slots.animated": { one: "{count} wolne miejsce na animowane", few: "{count} wolne miejsca na animowane", many: "{count} wolnych miejsc na animowane", other: "{count} wolnego miejsca na animowane" },
+    "menu.slots.sticker": { one: "{count} wolne miejsce", few: "{count} wolne miejsca", many: "{count} wolnych miejsc", other: "{count} wolnego miejsca" },
+    "menu.copyLink.emoji": "Kopiuj link do emoji",
+    "menu.copyLink.sticker": "Kopiuj link do naklejki",
+    "menu.copyId.emoji": "Kopiuj ID emoji",
+    "menu.copyId.sticker": "Kopiuj ID naklejki",
+    "toast.linkCopied": "Skopiowano link",
+    "toast.idCopied": "Skopiowano ID",
+    "toast.copyFailed": "Nie udało się skopiować do schowka",
+    "toast.added.emoji": "Dodano :{name}: do serwera {server}",
+    "toast.added.sticker": "Dodano „{name}” do serwera {server}",
+    "toast.failed.emoji": "Nie udało się dodać emoji: {message}",
+    "toast.failed.sticker": "Nie udało się dodać naklejki: {message}",
+    "error.failed.emoji": "Nie udało się dodać emoji",
+    "error.failed.sticker": "Nie udało się dodać naklejki",
+    "error.download": "Nie udało się pobrać (HTTP {status})",
+    "error.tooBig": "Plik ma {size} KB, czyli więcej niż limit Discorda ({limit} KB)",
+    "error.read": "Nie udało się odczytać obrazu",
+    "error.lottie": "Naklejki Lottie można przesyłać tylko na serwery partnerskie i zweryfikowane",
+    "error.noEmojiUpload": "Nie znaleziono przesyłania emoji w Discordzie",
+    "error.noStickerUpload": "Nie znaleziono przesyłania naklejek w Discordzie",
+    "dialog.title.emoji": "Dodaj emoji do serwera",
+    "dialog.title.sticker": "Dodaj naklejkę do serwera",
+    "dialog.close": "Zamknij",
+    "dialog.animated": "Animowane",
+    "dialog.name": "Nazwa",
+    "dialog.hint.emoji": "Od 2 do 32 znaków: litery, cyfry i podkreślenia.",
+    "dialog.hint.sticker": "Od 2 do 30 znaków.",
+    "dialog.server": "Serwer",
+    "dialog.full": "pełny",
+    "dialog.detail.emoji": "wolne: {staticLeft} statycznych, {animatedLeft} animowanych",
+    "dialog.detail.sticker": "wolne miejsca na naklejki: {left} z {limit}",
+    "dialog.summary.emoji": "Wolne: {staticLeft} statycznych, {animatedLeft} animowanych. Limit to {limit} każdego rodzaju przy poziomie ulepszenia tego serwera.",
+    "dialog.summary.sticker": "Wolne miejsca na naklejki: {left} z {limit}. Limit to {limit} przy poziomie ulepszenia tego serwera.",
+    "dialog.noPermission.emoji": "Nie masz uprawnień do dodawania emoji na żadnym innym serwerze.",
+    "dialog.noPermission.sticker": "Nie masz uprawnień do dodawania naklejek na żadnym innym serwerze.",
+    "dialog.cancel": "Anuluj",
+    "dialog.uploading": "Przesyłanie…",
+    "dialog.submit.emoji": "Dodaj emoji",
+    "dialog.submit.sticker": "Dodaj naklejkę"
+  },
+  "pt-BR": {
+    "menu.add.emoji": "Adicionar ao servidor",
+    "menu.add.sticker": "Adicionar figurinha ao servidor",
+    "menu.noServers": "Nenhum servidor onde você possa adicionar",
+    "menu.noSlots": "Sem vagas restantes",
+    "menu.slots.static": { one: "{count} vaga estática restante", other: "{count} vagas estáticas restantes" },
+    "menu.slots.animated": { one: "{count} vaga animada restante", other: "{count} vagas animadas restantes" },
+    "menu.slots.sticker": { one: "{count} vaga restante", other: "{count} vagas restantes" },
+    "menu.copyLink.emoji": "Copiar link do emoji",
+    "menu.copyLink.sticker": "Copiar link da figurinha",
+    "menu.copyId.emoji": "Copiar ID do emoji",
+    "menu.copyId.sticker": "Copiar ID da figurinha",
+    "toast.linkCopied": "Link copiado",
+    "toast.idCopied": "ID copiado",
+    "toast.copyFailed": "Não foi possível copiar para a área de transferência",
+    "toast.added.emoji": ":{name}: adicionado a {server}",
+    "toast.added.sticker": "“{name}” adicionada a {server}",
+    "toast.failed.emoji": "Não foi possível adicionar o emoji: {message}",
+    "toast.failed.sticker": "Não foi possível adicionar a figurinha: {message}",
+    "error.failed.emoji": "Não foi possível adicionar o emoji",
+    "error.failed.sticker": "Não foi possível adicionar a figurinha",
+    "error.download": "Não foi possível baixar (HTTP {status})",
+    "error.tooBig": "O arquivo tem {size} KB, acima do limite de {limit} KB do Discord",
+    "error.read": "Não foi possível ler a imagem",
+    "error.lottie": "Figurinhas Lottie só podem ser enviadas para servidores parceiros e verificados",
+    "error.noEmojiUpload": "Não foi possível encontrar o envio de emojis do Discord",
+    "error.noStickerUpload": "Não foi possível encontrar o envio de figurinhas do Discord",
+    "dialog.title.emoji": "Adicionar emoji ao servidor",
+    "dialog.title.sticker": "Adicionar figurinha ao servidor",
+    "dialog.close": "Fechar",
+    "dialog.animated": "Animado",
+    "dialog.name": "Nome",
+    "dialog.hint.emoji": "De 2 a 32 caracteres: letras, números e underscores.",
+    "dialog.hint.sticker": "De 2 a 30 caracteres.",
+    "dialog.server": "Servidor",
+    "dialog.full": "cheio",
+    "dialog.detail.emoji": "{staticLeft} estáticos, {animatedLeft} animados restantes",
+    "dialog.detail.sticker": "{left} de {limit} vagas de figurinhas restantes",
+    "dialog.summary.emoji": "{staticLeft} estáticos, {animatedLeft} animados restantes. Limite de {limit} de cada tipo no nível de impulso deste servidor.",
+    "dialog.summary.sticker": "{left} de {limit} vagas de figurinhas restantes. Limite de {limit} no nível de impulso deste servidor.",
+    "dialog.noPermission.emoji": "Você não tem permissão para adicionar emojis a nenhum outro servidor.",
+    "dialog.noPermission.sticker": "Você não tem permissão para adicionar figurinhas a nenhum outro servidor.",
+    "dialog.cancel": "Cancelar",
+    "dialog.uploading": "Enviando…",
+    "dialog.submit.emoji": "Adicionar emoji",
+    "dialog.submit.sticker": "Adicionar figurinha"
+  },
+  ru: {
+    "menu.add.emoji": "Добавить на сервер",
+    "menu.add.sticker": "Добавить стикер на сервер",
+    "menu.noServers": "Нет серверов, куда можно добавить",
+    "menu.noSlots": "Свободных слотов нет",
+    "menu.slots.static": { one: "{count} свободный статичный слот", few: "{count} свободных статичных слота", many: "{count} свободных статичных слотов", other: "{count} свободных статичных слота" },
+    "menu.slots.animated": { one: "{count} свободный анимированный слот", few: "{count} свободных анимированных слота", many: "{count} свободных анимированных слотов", other: "{count} свободных анимированных слота" },
+    "menu.slots.sticker": { one: "{count} свободный слот", few: "{count} свободных слота", many: "{count} свободных слотов", other: "{count} свободных слота" },
+    "menu.copyLink.emoji": "Копировать ссылку на эмодзи",
+    "menu.copyLink.sticker": "Копировать ссылку на стикер",
+    "menu.copyId.emoji": "Копировать ID эмодзи",
+    "menu.copyId.sticker": "Копировать ID стикера",
+    "toast.linkCopied": "Ссылка скопирована",
+    "toast.idCopied": "ID скопирован",
+    "toast.copyFailed": "Не удалось скопировать в буфер обмена",
+    "toast.added.emoji": ":{name}: добавлен на сервер {server}",
+    "toast.added.sticker": "Стикер «{name}» добавлен на сервер {server}",
+    "toast.failed.emoji": "Не удалось добавить эмодзи: {message}",
+    "toast.failed.sticker": "Не удалось добавить стикер: {message}",
+    "error.failed.emoji": "Не удалось добавить эмодзи",
+    "error.failed.sticker": "Не удалось добавить стикер",
+    "error.download": "Не удалось скачать (HTTP {status})",
+    "error.tooBig": "Размер файла {size} КБ, что больше лимита Discord в {limit} КБ",
+    "error.read": "Не удалось прочитать изображение",
+    "error.lottie": "Стикеры Lottie можно загружать только на серверы партнёров и верифицированные серверы",
+    "error.noEmojiUpload": "Не удалось найти загрузку эмодзи в Discord",
+    "error.noStickerUpload": "Не удалось найти загрузку стикеров в Discord",
+    "dialog.title.emoji": "Добавить эмодзи на сервер",
+    "dialog.title.sticker": "Добавить стикер на сервер",
+    "dialog.close": "Закрыть",
+    "dialog.animated": "Анимированный",
+    "dialog.name": "Название",
+    "dialog.hint.emoji": "От 2 до 32 символов: буквы, цифры и знаки подчёркивания.",
+    "dialog.hint.sticker": "От 2 до 30 символов.",
+    "dialog.server": "Сервер",
+    "dialog.full": "заполнен",
+    "dialog.detail.emoji": "свободно: статичных {staticLeft}, анимированных {animatedLeft}",
+    "dialog.detail.sticker": "свободно слотов для стикеров: {left} из {limit}",
+    "dialog.summary.emoji": "Свободно: статичных {staticLeft}, анимированных {animatedLeft}. Лимит на уровне буста этого сервера: {limit} каждого вида.",
+    "dialog.summary.sticker": "Свободно слотов для стикеров: {left} из {limit}. Лимит на уровне буста этого сервера: {limit}.",
+    "dialog.noPermission.emoji": "У вас нет прав на добавление эмодзи ни на один другой сервер.",
+    "dialog.noPermission.sticker": "У вас нет прав на добавление стикеров ни на один другой сервер.",
+    "dialog.cancel": "Отмена",
+    "dialog.uploading": "Загрузка…",
+    "dialog.submit.emoji": "Добавить эмодзи",
+    "dialog.submit.sticker": "Добавить стикер"
+  },
+  tr: {
+    "menu.add.emoji": "Sunucuya Ekle",
+    "menu.add.sticker": "Çıkartmayı Sunucuya Ekle",
+    "menu.noServers": "Ekleyebileceğin sunucu yok",
+    "menu.noSlots": "Boş yuva kalmadı",
+    "menu.slots.static": { other: "{count} sabit yuva boş" },
+    "menu.slots.animated": { other: "{count} hareketli yuva boş" },
+    "menu.slots.sticker": { other: "{count} yuva boş" },
+    "menu.copyLink.emoji": "Emoji Bağlantısını Kopyala",
+    "menu.copyLink.sticker": "Çıkartma Bağlantısını Kopyala",
+    "menu.copyId.emoji": "Emoji Kimliğini Kopyala",
+    "menu.copyId.sticker": "Çıkartma Kimliğini Kopyala",
+    "toast.linkCopied": "Bağlantı kopyalandı",
+    "toast.idCopied": "Kimlik kopyalandı",
+    "toast.copyFailed": "Panoya kopyalanamadı",
+    "toast.added.emoji": ":{name}: {server} sunucusuna eklendi",
+    "toast.added.sticker": '"{name}" {server} sunucusuna eklendi',
+    "toast.failed.emoji": "Emoji eklenemedi: {message}",
+    "toast.failed.sticker": "Çıkartma eklenemedi: {message}",
+    "error.failed.emoji": "Emoji eklenemedi",
+    "error.failed.sticker": "Çıkartma eklenemedi",
+    "error.download": "İndirilemedi (HTTP {status})",
+    "error.tooBig": "Dosya {size} KB, Discord'un {limit} KB sınırını aşıyor",
+    "error.read": "Görsel okunamadı",
+    "error.lottie": "Lottie çıkartmaları yalnızca ortak ve doğrulanmış sunuculara yüklenebilir",
+    "error.noEmojiUpload": "Discord'un emoji yüklemesi bulunamadı",
+    "error.noStickerUpload": "Discord'un çıkartma yüklemesi bulunamadı",
+    "dialog.title.emoji": "Emojiyi Sunucuya Ekle",
+    "dialog.title.sticker": "Çıkartmayı Sunucuya Ekle",
+    "dialog.close": "Kapat",
+    "dialog.animated": "Hareketli",
+    "dialog.name": "Ad",
+    "dialog.hint.emoji": "2 ila 32 karakter: harfler, rakamlar ve alt çizgiler.",
+    "dialog.hint.sticker": "2 ila 30 karakter.",
+    "dialog.server": "Sunucu",
+    "dialog.full": "dolu",
+    "dialog.detail.emoji": "{staticLeft} sabit, {animatedLeft} hareketli boş",
+    "dialog.detail.sticker": "{limit} çıkartma yuvasından {left} tanesi boş",
+    "dialog.summary.emoji": "{staticLeft} sabit, {animatedLeft} hareketli boş. Bu sunucunun destek seviyesinde her türden {limit} sınırı var.",
+    "dialog.summary.sticker": "{limit} çıkartma yuvasından {left} tanesi boş. Bu sunucunun destek seviyesinde sınır {limit}.",
+    "dialog.noPermission.emoji": "Başka hiçbir sunucuya emoji ekleme iznin yok.",
+    "dialog.noPermission.sticker": "Başka hiçbir sunucuya çıkartma ekleme iznin yok.",
+    "dialog.cancel": "İptal",
+    "dialog.uploading": "Yükleniyor…",
+    "dialog.submit.emoji": "Emoji Ekle",
+    "dialog.submit.sticker": "Çıkartma Ekle"
+  }
+});
+
 // plugins/emoji-stealer/index.tsx
 var jsx_runtime = require("react/jsx-runtime");
 var context;
 var store = (name) => {
   try {
-    return import_api.getStore(name);
+    return import_api2.getStore(name);
   } catch {
     return;
   }
@@ -340,30 +768,37 @@ var guildStickers = (guildId) => store("StickersStore")?.getStickersByGuildId?.(
 function slotsLeft(guild, expression) {
   if (expression.kind === "emoji") {
     const s2 = emojiSlots(guild, guildEmojis(guild.id));
-    return { left: expression.animated ? s2.animatedLeft : s2.staticLeft, limit: s2.limit, detail: `${s2.staticLeft} static, ${s2.animatedLeft} animated left` };
+    const vars2 = { staticLeft: s2.staticLeft, animatedLeft: s2.animatedLeft, limit: s2.limit };
+    return {
+      left: expression.animated ? s2.animatedLeft : s2.staticLeft,
+      limit: s2.limit,
+      detail: t("dialog.detail.emoji", vars2),
+      summary: t("dialog.summary.emoji", vars2)
+    };
   }
   const s = stickerSlots(guild, guildStickers(guild.id));
-  return { left: s.left, limit: s.limit, detail: `${s.left} of ${s.limit} sticker slots left` };
+  const vars = { left: s.left, limit: s.limit };
+  return { left: s.left, limit: s.limit, detail: t("dialog.detail.sticker", vars), summary: t("dialog.summary.sticker", vars) };
 }
 function sourceGuildId(expression) {
   if (expression.kind === "emoji")
     return store("EmojiStore")?.getCustomEmojiById?.(expression.id)?.guildId;
   return store("StickersStore")?.getStickerById?.(expression.id)?.guild_id;
 }
-var http = () => import_api.find(import_api.filters.byProps("get", "post", "put", "patch", "del"));
+var http = () => import_api2.find(import_api2.filters.byProps("get", "post", "put", "patch", "del"));
 async function fetchBlob(url, maxBytes) {
   const res = await fetch(url);
   if (!res.ok)
-    throw new Error(`Couldn't download it (HTTP ${res.status})`);
+    throw new Error(t("error.download", { status: res.status }));
   const blob = await res.blob();
   if (blob.size > maxBytes)
-    throw new Error(`It's ${Math.ceil(blob.size / 1024)} KB, over Discord's ${maxBytes / 1024} KB limit`);
+    throw new Error(t("error.tooBig", { size: Math.ceil(blob.size / 1024), limit: maxBytes / 1024 }));
   return blob;
 }
 var toDataUri = (blob) => new Promise((resolve, reject) => {
   const reader = new FileReader;
   reader.onload = () => resolve(String(reader.result));
-  reader.onerror = () => reject(reader.error ?? new Error("Couldn't read the image"));
+  reader.onerror = () => reject(reader.error ?? new Error(t("error.read")));
   reader.readAsDataURL(blob);
 });
 async function uploadEmoji(emoji, guildId, name) {
@@ -380,12 +815,12 @@ async function uploadEmoji(emoji, guildId, name) {
   if (!blob)
     throw lastError;
   const image = await toDataUri(blob);
-  const action = import_api.findByCode('"EMOJI_UPLOAD_START"', "GUILD_EMOJIS(");
+  const action = import_api2.findByCode('"EMOJI_UPLOAD_START"', "GUILD_EMOJIS(");
   if (typeof action === "function")
     return action({ guildId, image, name, roles: [] });
   const client = http();
   if (!client)
-    throw new Error("Couldn't find Discord's emoji upload");
+    throw new Error(t("error.noEmojiUpload"));
   return (await client.post({ url: `/guilds/${guildId}/emojis`, body: { image, name, roles: [] }, oldFormErrors: true, rejectWithError: true }))?.body;
 }
 async function stickerDetails(sticker) {
@@ -402,7 +837,7 @@ async function uploadSticker(sticker, guildId, name) {
   const details = await stickerDetails(sticker);
   const formatType = sticker.formatType ?? details.format_type;
   if (!canCopySticker(formatType))
-    throw new Error("Lottie stickers can only be uploaded to partnered and verified servers");
+    throw new Error(t("error.lottie"));
   const blob = await fetchBlob(stickerUrl(sticker.id, formatType), STICKER_MAX_BYTES);
   const mime = stickerMime(formatType);
   const body = new FormData;
@@ -410,12 +845,12 @@ async function uploadSticker(sticker, guildId, name) {
   body.append("tags", details.tags?.trim() || name);
   body.append("description", details.description ?? "");
   body.append("file", new File([blob], `${name}.${mime === "image/gif" ? "gif" : "png"}`, { type: mime }));
-  const action = import_api.findByCode('"GUILD_STICKERS_CREATE_SUCCESS"', "GUILD_STICKER_PACKS(");
+  const action = import_api2.findByCode('"GUILD_STICKERS_CREATE_SUCCESS"', "GUILD_STICKER_PACKS(");
   if (typeof action === "function")
     return action({ guildId, body, platform: "web", originalMd5: null });
   const client = http();
   if (!client)
-    throw new Error("Couldn't find Discord's sticker upload");
+    throw new Error(t("error.noStickerUpload"));
   return (await client.post({ url: `/guilds/${guildId}/stickers`, body, rejectWithError: true }))?.body;
 }
 async function copy(text, done) {
@@ -427,13 +862,13 @@ async function copy(text, done) {
       await navigator.clipboard.writeText(text);
     context?.toast(done, { type: "success" });
   } catch {
-    context?.toast("Couldn't copy to the clipboard", { type: "failure" });
+    context?.toast(t("toast.copyFailed"), { type: "failure" });
   }
 }
 var closeOpen;
 function openDialog(expression, guildId) {
   closeOpen?.();
-  const close = import_api.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(Dialog, {
+  const close = import_api2.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(Dialog, {
     expression,
     initialGuildId: guildId,
     onClose: () => close2()
@@ -445,21 +880,21 @@ function openDialog(expression, guildId) {
 var previewUrl = (e) => e.kind === "emoji" ? emojiUrl(e.id, e.animated, 128) : stickerUrl(e.id, e.formatType);
 function Dialog({ expression, initialGuildId, onClose }) {
   const isEmoji = expression.kind === "emoji";
-  const noun = isEmoji ? "emoji" : "sticker";
-  const guilds = import_api.React.useMemo(() => {
+  const noun = expression.kind;
+  const guilds = import_api2.React.useMemo(() => {
     const source = sourceGuildId(expression);
     return eligibleGuilds().filter((g) => g.id !== source).map((g) => ({ guild: g, slots: slotsLeft(g, expression) }));
   }, [expression]);
   const firstOpen = guilds.find((g) => g.slots.left > 0)?.guild.id;
-  const [guildId, setGuildId] = import_api.React.useState(guilds.some((g) => g.guild.id === initialGuildId) ? initialGuildId : firstOpen ?? guilds[0]?.guild.id ?? "");
-  const [name, setName] = import_api.React.useState(isEmoji ? sanitizeEmojiName(expression.name) : sanitizeStickerName(expression.name));
-  const [busy, setBusy] = import_api.React.useState(false);
-  const [error, setError] = import_api.React.useState();
-  const ref = import_api.React.useRef(null);
+  const [guildId, setGuildId] = import_api2.React.useState(guilds.some((g) => g.guild.id === initialGuildId) ? initialGuildId : firstOpen ?? guilds[0]?.guild.id ?? "");
+  const [name, setName] = import_api2.React.useState(isEmoji ? sanitizeEmojiName(expression.name) : sanitizeStickerName(expression.name));
+  const [busy, setBusy] = import_api2.React.useState(false);
+  const [error, setError] = import_api2.React.useState();
+  const ref = import_api2.React.useRef(null);
   const selected = guilds.find((g) => g.guild.id === guildId);
   const nameOk = isEmoji ? isValidEmojiName(name) : isValidStickerName(name);
   const canSubmit = !busy && !!selected && selected.slots.left > 0 && nameOk;
-  import_api.React.useEffect(() => {
+  import_api2.React.useEffect(() => {
     const previous = document.activeElement;
     ref.current?.querySelector("input")?.focus();
     const onKey = (e) => {
@@ -487,13 +922,13 @@ function Dialog({ expression, initialGuildId, onClose }) {
         await uploadEmoji(expression, selected.guild.id, finalName);
       else
         await uploadSticker(expression, selected.guild.id, finalName);
-      context?.toast(`Added ${isEmoji ? `:${finalName}:` : `"${finalName}"`} to ${selected.guild.name}`, { type: "success" });
+      context?.toast(t(isEmoji ? "toast.added.emoji" : "toast.added.sticker", { name: finalName, server: selected.guild.name }), { type: "success" });
       onClose();
     } catch (err) {
       context?.logger.error(`Uploading the ${noun} failed`, err);
-      const message = describeError(err, `Couldn't add the ${noun}`);
+      const message = describeError(err, t(isEmoji ? "error.failed.emoji" : "error.failed.sticker"));
       setError(message);
-      context?.toast(`Couldn't add the ${noun}: ${message}`, { type: "failure" });
+      context?.toast(t(isEmoji ? "toast.failed.emoji" : "toast.failed.sticker", { message }), { type: "failure" });
       setBusy(false);
     }
   }
@@ -510,18 +945,14 @@ function Dialog({ expression, initialGuildId, onClose }) {
         /* @__PURE__ */ jsx_runtime.jsxs("header", {
           className: "evi-es-head",
           children: [
-            /* @__PURE__ */ jsx_runtime.jsxs("h2", {
+            /* @__PURE__ */ jsx_runtime.jsx("h2", {
               id: "evi-es-title",
-              children: [
-                "Add ",
-                isEmoji ? "Emoji" : "Sticker",
-                " to Server"
-              ]
+              children: t(isEmoji ? "dialog.title.emoji" : "dialog.title.sticker")
             }),
             /* @__PURE__ */ jsx_runtime.jsx("button", {
               type: "button",
               className: "evi-es-close",
-              "aria-label": "Close",
+              "aria-label": t("dialog.close"),
               onClick: onClose,
               disabled: busy,
               children: /* @__PURE__ */ jsx_runtime.jsx("svg", {
@@ -555,14 +986,14 @@ function Dialog({ expression, initialGuildId, onClose }) {
                 }),
                 isEmoji && expression.animated && /* @__PURE__ */ jsx_runtime.jsx("span", {
                   className: "evi-es-badge",
-                  children: "Animated"
+                  children: t("dialog.animated")
                 })
               ]
             }),
             /* @__PURE__ */ jsx_runtime.jsx("label", {
               className: "evi-es-label",
               htmlFor: "evi-es-name",
-              children: "Name"
+              children: t("dialog.name")
             }),
             /* @__PURE__ */ jsx_runtime.jsx("input", {
               id: "evi-es-name",
@@ -580,12 +1011,12 @@ function Dialog({ expression, initialGuildId, onClose }) {
               id: "evi-es-name-hint",
               className: "evi-es-hint",
               "data-error": !nameOk || undefined,
-              children: isEmoji ? "2 to 32 characters: letters, numbers and underscores." : "2 to 30 characters."
+              children: t(isEmoji ? "dialog.hint.emoji" : "dialog.hint.sticker")
             }),
             /* @__PURE__ */ jsx_runtime.jsx("label", {
               className: "evi-es-label",
               htmlFor: "evi-es-guild",
-              children: "Server"
+              children: t("dialog.server")
             }),
             guilds.length ? /* @__PURE__ */ jsx_runtime.jsx("select", {
               id: "evi-es-guild",
@@ -599,28 +1030,18 @@ function Dialog({ expression, initialGuildId, onClose }) {
                 children: [
                   guild.name,
                   " (",
-                  slots.left <= 0 ? "full" : slots.detail,
+                  slots.left <= 0 ? t("dialog.full") : slots.detail,
                   ")"
                 ]
               }, guild.id))
-            }) : /* @__PURE__ */ jsx_runtime.jsxs("p", {
+            }) : /* @__PURE__ */ jsx_runtime.jsx("p", {
               className: "evi-es-hint",
               "data-error": true,
-              children: [
-                "You don't have permission to add ",
-                noun,
-                "s to any other server."
-              ]
+              children: t(isEmoji ? "dialog.noPermission.emoji" : "dialog.noPermission.sticker")
             }),
-            selected && /* @__PURE__ */ jsx_runtime.jsxs("p", {
+            selected && /* @__PURE__ */ jsx_runtime.jsx("p", {
               className: "evi-es-hint",
-              children: [
-                selected.slots.detail,
-                ". Limit ",
-                selected.slots.limit,
-                isEmoji ? " of each kind" : "",
-                " at this server's boost level."
-              ]
+              children: selected.slots.summary
             }),
             error && /* @__PURE__ */ jsx_runtime.jsx("p", {
               className: "evi-es-error",
@@ -636,13 +1057,13 @@ function Dialog({ expression, initialGuildId, onClose }) {
                   "data-variant": "secondary",
                   onClick: onClose,
                   disabled: busy,
-                  children: "Cancel"
+                  children: t("dialog.cancel")
                 }),
                 /* @__PURE__ */ jsx_runtime.jsx("button", {
                   type: "submit",
                   className: "evi-es-button",
                   disabled: !canSubmit,
-                  children: busy ? "Uploading…" : `Add ${isEmoji ? "Emoji" : "Sticker"}`
+                  children: busy ? t("dialog.uploading") : t(isEmoji ? "dialog.submit.emoji" : "dialog.submit.sticker")
                 })
               ]
             })
@@ -692,39 +1113,39 @@ function menuItems(expression, children) {
   if (isEmoji || canCopySticker(expression.formatType)) {
     const source = sourceGuildId(expression);
     const guilds = eligibleGuilds().filter((g) => g.id !== source);
-    items.push(guilds.length ? /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+    items.push(guilds.length ? /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
       id: "evi-es-add",
-      label: isEmoji ? "Add to Server" : "Add Sticker to Server",
+      label: t(isEmoji ? "menu.add.emoji" : "menu.add.sticker"),
       children: guilds.map((g) => {
         const slots = slotsLeft(g, expression);
-        return /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+        return /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
           id: `evi-es-add-${g.id}`,
           label: g.name,
-          subtext: slots.left > 0 ? `${slots.left} ${isEmoji ? expression.animated ? "animated " : "static " : ""}slot${slots.left === 1 ? "" : "s"} left` : "No slots left",
+          subtext: slots.left > 0 ? t(!isEmoji ? "menu.slots.sticker" : expression.animated ? "menu.slots.animated" : "menu.slots.static", { count: slots.left }) : t("menu.noSlots"),
           disabled: slots.left <= 0,
           action: () => openDialog(expression, g.id)
         }, g.id);
       })
-    }, "evi-es-add") : /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+    }, "evi-es-add") : /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
       id: "evi-es-add",
-      label: isEmoji ? "Add to Server" : "Add Sticker to Server",
-      subtext: "No servers you can add to",
+      label: t(isEmoji ? "menu.add.emoji" : "menu.add.sticker"),
+      subtext: t("menu.noServers"),
       disabled: true
     }, "evi-es-add"));
   }
   const url = isEmoji ? emojiUrl(expression.id, expression.animated) : stickerUrl(expression.id, expression.formatType);
-  if (!import_api.findMenuGroup(children, "copy-image-link")) {
-    items.push(/* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+  if (!import_api2.findMenuGroup(children, "copy-image-link")) {
+    items.push(/* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
       id: "evi-es-copy-link",
-      label: isEmoji ? "Copy Emoji Link" : "Copy Sticker Link",
-      action: () => copy(url, "Link copied")
+      label: t(isEmoji ? "menu.copyLink.emoji" : "menu.copyLink.sticker"),
+      action: () => copy(url, t("toast.linkCopied"))
     }, "evi-es-link"));
   }
-  if (!import_api.findMenuGroup(children, `devmode-copy-id-${expression.id}`)) {
-    items.push(/* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+  if (!import_api2.findMenuGroup(children, `devmode-copy-id-${expression.id}`)) {
+    items.push(/* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
       id: "evi-es-copy-id",
-      label: isEmoji ? "Copy Emoji ID" : "Copy Sticker ID",
-      action: () => copy(expression.id, "ID copied")
+      label: t(isEmoji ? "menu.copyId.emoji" : "menu.copyId.sticker"),
+      action: () => copy(expression.id, t("toast.idCopied"))
     }, "evi-es-id"));
   }
   return items;
@@ -739,7 +1160,7 @@ function withKnownName(expression) {
   const known = store("StickersStore")?.getStickerById?.(expression.id);
   return known ? { ...expression, name: known.name, formatType: expression.formatType ?? known.format_type } : expression;
 }
-var emoji_stealer_default = import_api.definePlugin({
+var emoji_stealer_default = import_api2.definePlugin({
   start(ctx) {
     context = ctx;
     ctx.addStyle(css);
@@ -753,7 +1174,7 @@ var emoji_stealer_default = import_api.definePlugin({
         return;
       const items = menuItems(withKnownName(found), children);
       if (items.length)
-        children.push(/* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Group, {
+        children.push(/* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Group, {
           children: items
         }, "evi-emoji-stealer"));
     });

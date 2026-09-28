@@ -2,7 +2,7 @@
     "id": "read-all",
     "name": "Read All",
     "description": "Mark every server as read in one click, with a button above the server list, /readall, or the server right-click menu. DMs too if you want.",
-    "version": "1.0.3",
+    "version": "1.1.0",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.1.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
         {
             "version": "1.0.3",
             "notes": [
@@ -37,5 +43,175 @@
         }
     ],
     "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Alles gelesen",
+            "description": "Markiere alle Server mit einem Klick als gelesen: mit einem Button über der Serverliste, mit /readall oder über das Rechtsklickmenü eines Servers. Auf Wunsch auch Direktnachrichten.",
+            "changelog": {
+                "1.1.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
+                "1.0.3": [
+                    "Sagt, was es braucht, und das ist nichts, was Discord ihm nicht ohnehin zeigt. Evi sorgt dafür, dass es dabei bleibt."
+                ],
+                "1.0.2": [
+                    "Flüssiger: Die Zählung der ungelesenen Kanäle bremst Discord beim Start nicht mehr aus und zählt immer ein paar Server auf einmal, wenn der Browser gerade nichts zu tun hat."
+                ],
+                "1.0.1": [
+                    "Schneller: Die Zählung der ungelesenen Kanäle wartet auf einen ruhigen Moment und überspringt Server ohne Ungelesenes, statt bei jeder Nachricht neu zu zählen."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Leer todo",
+            "description": "Marca todos los servidores como leídos con un clic: con un botón sobre la lista de servidores, con /readall o desde el menú del clic derecho de un servidor. También los MD, si quieres.",
+            "changelog": {
+                "1.1.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
+                "1.0.3": [
+                    "Indica qué necesita, que no es nada más allá de lo que Discord ya le muestra, y Evi se encarga de que así sea."
+                ],
+                "1.0.2": [
+                    "Más fluido: el recuento de no leídos ya no retrasa el inicio de Discord y cuenta unos pocos servidores cada vez, cuando el navegador está inactivo."
+                ],
+                "1.0.1": [
+                    "Más rápido: el recuento de no leídos espera a un momento tranquilo y omite los servidores sin nada sin leer, en lugar de recontar con cada mensaje."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Tout lire",
+            "description": "Marque tous les serveurs comme lus en un clic : avec un bouton au-dessus de la liste des serveurs, avec /readall ou depuis le menu du clic droit d'un serveur. Les MP aussi, si tu veux.",
+            "changelog": {
+                "1.1.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
+                "1.0.3": [
+                    "Indique ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi veille à ce qu'il s'y tienne."
+                ],
+                "1.0.2": [
+                    "Plus fluide : le décompte des non-lus ne ralentit plus Discord au démarrage et compte quelques serveurs à la fois quand le navigateur est au repos."
+                ],
+                "1.0.1": [
+                    "Plus rapide : le décompte des non-lus attend un moment calme et ignore les serveurs sans rien de non lu, au lieu de recompter à chaque message."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "すべて既読",
+            "description": "ワンクリックですべてのサーバーを既読にします。サーバーリストの上のボタン、/readall、サーバーの右クリックメニューから使えます。お好みで DM も対象にできます。",
+            "changelog": {
+                "1.1.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
+                "1.0.3": [
+                    "必要な権限を明示するようになりました。Discord がすでに表示している以外は何も必要とせず、Evi がそれを守らせます。"
+                ],
+                "1.0.2": [
+                    "動作がなめらかになりました。未読数の集計が Discord の起動を妨げなくなり、ブラウザーが空いているときに数サーバーずつ集計します。"
+                ],
+                "1.0.1": [
+                    "高速化しました。未読数の集計は落ち着いたタイミングまで待ち、未読のないサーバーは飛ばします。メッセージのたびに数え直すことはありません。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Przeczytaj wszystko",
+            "description": "Oznacz wszystkie serwery jako przeczytane jednym kliknięciem: przyciskiem nad listą serwerów, poleceniem /readall albo z menu prawego przycisku myszy na serwerze. Jeśli chcesz, także wiadomości prywatne.",
+            "changelog": {
+                "1.1.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
+                "1.0.3": [
+                    "Mówi, czego potrzebuje, a nie potrzebuje niczego poza tym, co Discord już mu pokazuje. Evi pilnuje, żeby tak zostało."
+                ],
+                "1.0.2": [
+                    "Płynniej: liczenie nieprzeczytanych nie spowalnia już startu Discorda i zlicza po kilka serwerów naraz, gdy przeglądarka jest bezczynna."
+                ],
+                "1.0.1": [
+                    "Szybciej: liczenie nieprzeczytanych czeka na spokojniejszy moment i pomija serwery bez nieprzeczytanych, zamiast liczyć od nowa przy każdej wiadomości."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Ler tudo",
+            "description": "Marque todos os servidores como lidos com um clique: por um botão acima da lista de servidores, pelo /readall ou pelo menu de clique direito de um servidor. As DMs também, se você quiser.",
+            "changelog": {
+                "1.1.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
+                "1.0.3": [
+                    "Informa do que precisa, que é nada além do que o Discord já mostra, e o Evi garante que seja assim."
+                ],
+                "1.0.2": [
+                    "Mais fluido: a contagem de não lidas não atrasa mais a abertura do Discord e conta alguns servidores por vez quando o navegador está ocioso."
+                ],
+                "1.0.1": [
+                    "Mais rápido: a contagem de não lidas espera um momento tranquilo e pula servidores sem nada não lido, em vez de recontar a cada mensagem."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Всё прочитано",
+            "description": "Отмечайте все серверы прочитанными одним щелчком: кнопкой над списком серверов, командой /readall или через меню правой кнопки мыши на сервере. По желанию и личные сообщения.",
+            "changelog": {
+                "1.1.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
+                "1.0.3": [
+                    "Теперь сообщает, что ему нужно, а нужно ему только то, что Discord и так показывает, и Evi следит, чтобы так и оставалось."
+                ],
+                "1.0.2": [
+                    "Стало плавнее: подсчёт непрочитанного больше не тормозит запуск Discord и обрабатывает по нескольку серверов за раз, когда браузер простаивает."
+                ],
+                "1.0.1": [
+                    "Стало быстрее: подсчёт непрочитанного ждёт спокойного момента и пропускает серверы без непрочитанных, а не пересчитывает всё при каждом сообщении."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Tümünü Oku",
+            "description": "Tüm sunucuları tek tıkla okundu olarak işaretle: sunucu listesinin üstündeki bir düğmeyle, /readall ile ya da bir sunucunun sağ tık menüsüyle. İstersen DM'ler de dahil.",
+            "changelog": {
+                "1.1.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
+                "1.0.3": [
+                    "Neye ihtiyacı olduğunu söylüyor: Discord'un zaten gösterdiğinden fazlasına değil, ve Evi onu buna bağlı tutuyor."
+                ],
+                "1.0.2": [
+                    "Daha akıcı: okunmamış sayısı artık Discord açılırken onu yavaşlatmıyor ve tarayıcı boştayken bir seferde birkaç sunucuyu sayıyor."
+                ],
+                "1.0.1": [
+                    "Daha hızlı: okunmamış sayısı sakin bir anı bekliyor ve okunmamış hiçbir şeyi olmayan sunucuları atlıyor; her mesajda yeniden saymıyor."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    },
     "main": "index.js"
 }

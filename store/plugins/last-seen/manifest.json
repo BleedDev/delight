@@ -2,7 +2,7 @@
     "id": "last-seen",
     "name": "Last Seen",
     "description": "See when someone was last online, last active and last sent a message: on their profile, next to offline members, in your friends list and in your DMs. Only counts what your client has seen, kept on this device.",
-    "version": "1.1.4",
+    "version": "1.2.0",
     "authors": [
         "Evi"
     ],
@@ -14,6 +14,12 @@
         "readMessages": true
     },
     "changelog": [
+        {
+            "version": "1.2.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
         {
             "version": "1.1.4",
             "notes": [
@@ -57,5 +63,263 @@
         }
     ],
     "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Zuletzt online",
+            "description": "Sieh, wann jemand zuletzt online, zuletzt aktiv war und zuletzt eine Nachricht geschrieben hat: im Profil, neben Offline-Mitgliedern, in deiner Freundesliste und in deinen DMs. Zählt nur, was dein Client gesehen hat, und bleibt auf diesem Gerät gespeichert.",
+            "changelog": {
+                "1.2.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
+                "1.1.4": [
+                    "Sagt jetzt, was sie braucht (Nachrichten lesen), und Evi hält sie dazu an."
+                ],
+                "1.1.3": [
+                    "Schneller: Das Speichern des Gesehenen lässt Discord bei vielen gemerkten Personen nicht mehr alle 30 Sekunden ruckeln."
+                ],
+                "1.1.2": [
+                    "Schneller: Das Öffnen von Kanälen und DMs wartet nicht mehr auf Last Seen, und eine Änderung zeichnet nur die Zeilen der betroffenen Person neu."
+                ],
+                "1.1.1": [
+                    "Die Uhr für „Zuletzt online“ erscheint auch im Abzeichenverzeichnis von Discord (Deine Abzeichen)."
+                ],
+                "1.1.0": [
+                    "Merkt sich bis zu 25.000 Personen; Freunde und DM-Kontakte werden als Letzte vergessen.",
+                    "Zuletzt aktiv: Tippen, Sprachkanäle und Reaktionen zählen ebenfalls, auch wenn jemand offline wirkt.",
+                    "Beim Öffnen eines Kanals wird nachgetragen, wann Personen dort zuletzt geschrieben haben; beim Darüberfahren steht, wo. Klicke auf die Uhr im Profil, um dorthin zu springen.",
+                    "Wird unter Offline-Freunden in der Freundesliste und unter Offline-Personen in deinen DMs angezeigt.",
+                    "Zeiten, die nur geschätzt sind (jemand war online, als Discord geschlossen wurde), heißen jetzt „in den letzten 3 Std.“.",
+                    "Einstellungen: Alle gemerkten Personen durchsuchen, exportieren und importieren; Löschen fragt vorher nach und lässt sich rückgängig machen."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Última conexión",
+            "description": "Mira cuándo estuvo alguien en línea por última vez, cuándo estuvo activo y cuándo envió su último mensaje: en su perfil, junto a los miembros desconectados, en tu lista de amigos y en tus MD. Solo cuenta lo que tu cliente ha visto y se guarda en este dispositivo.",
+            "changelog": {
+                "1.2.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
+                "1.1.4": [
+                    "Ahora dice lo que necesita (leer mensajes), y Evi se lo hace cumplir."
+                ],
+                "1.1.3": [
+                    "Más rápido: guardar lo que ha visto ya no hace que Discord se trabe cada 30 segundos cuando recuerda a muchas personas."
+                ],
+                "1.1.2": [
+                    "Más rápido: abrir canales y MD ya no espera a Última conexión, y un cambio solo redibuja las líneas de la persona afectada."
+                ],
+                "1.1.1": [
+                    "El reloj de última conexión también aparece en el directorio de insignias de Discord (Tus insignias)."
+                ],
+                "1.1.0": [
+                    "Recuerda hasta 25 000 personas; los amigos y los contactos de MD son los últimos en olvidarse.",
+                    "Última actividad: escribir, la voz y las reacciones también cuentan, aunque alguien parezca desconectado.",
+                    "Al abrir un canal se completa cuándo envió cada persona su último mensaje allí, y al pasar el cursor se indica dónde. Haz clic en el reloj de un perfil para ir a él.",
+                    "Aparece debajo de los amigos desconectados en la lista de amigos y de las personas desconectadas en tus MD.",
+                    "Las horas que son solo aproximadas (alguien estaba en línea cuando se cerró Discord) ahora dicen «en las últimas 3 h».",
+                    "Ajustes: busca entre todas las personas guardadas, exporta e importa; borrar pide confirmación y se puede deshacer."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Dernière connexion",
+            "description": "Vois quand quelqu'un s'est connecté pour la dernière fois, a été actif pour la dernière fois et a envoyé un message pour la dernière fois : sur son profil, à côté des membres hors ligne, dans ta liste d'amis et dans tes MP. Ne compte que ce que ton client a vu, et reste stocké sur cet appareil.",
+            "changelog": {
+                "1.2.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
+                "1.1.4": [
+                    "Indique désormais ce dont il a besoin (lire les messages), et Evi l'y tient."
+                ],
+                "1.1.3": [
+                    "Plus rapide : l'enregistrement de ce qu'il a vu ne fait plus saccader Discord toutes les 30 secondes quand beaucoup de personnes sont mémorisées."
+                ],
+                "1.1.2": [
+                    "Plus rapide : l'ouverture des salons et des MP n'attend plus Dernière connexion, et un changement ne redessine que les lignes de la personne concernée."
+                ],
+                "1.1.1": [
+                    "L'horloge de dernière connexion apparaît aussi dans l'annuaire des badges de Discord (Tes badges)."
+                ],
+                "1.1.0": [
+                    "Mémorise jusqu'à 25 000 personnes ; les amis et les contacts de MP sont les derniers à être oubliés.",
+                    "Dernière activité : écrire, le vocal et les réactions comptent aussi, même quand quelqu'un semble hors ligne.",
+                    "L'ouverture d'un salon complète la date du dernier message des personnes qui y ont écrit, et le survol indique où. Clique sur l'horloge d'un profil pour y accéder.",
+                    "S'affiche sous les amis hors ligne dans la liste d'amis et sous les personnes hors ligne dans tes MP.",
+                    "Les heures qui ne sont qu'une estimation (quelqu'un était en ligne à la fermeture de Discord) affichent désormais « il y a moins de 3 h ».",
+                    "Paramètres : recherche parmi toutes les personnes mémorisées, export et import ; l'effacement demande confirmation et peut être annulé."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "最終オンライン",
+            "description": "相手が最後にオンラインだった時刻、最後にアクティブだった時刻、最後にメッセージを送った時刻を、プロフィール、オフラインのメンバーの横、フレンドリスト、DMで確認できます。クライアントが見た情報だけを記録し、このデバイスに保存されます。",
+            "changelog": {
+                "1.2.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
+                "1.1.4": [
+                    "必要な権限(メッセージの読み取り)を宣言するようになり、Eviがその範囲を守らせます。"
+                ],
+                "1.1.3": [
+                    "高速化: 多くの人を記憶していても、記録の保存で30秒ごとにDiscordがカクつくことがなくなりました。"
+                ],
+                "1.1.2": [
+                    "高速化: チャンネルやDMを開くときにLast Seenを待たなくなり、変更時は対象の人の行だけを再描画します。"
+                ],
+                "1.1.1": [
+                    "最終オンラインの時計が、Discordのバッジ一覧(あなたのバッジ)にも表示されます。"
+                ],
+                "1.1.0": [
+                    "最大25,000人を記憶し、フレンドとDMの相手は最後まで残ります。",
+                    "最終アクティブ: 入力中、ボイスチャット、リアクションも対象になり、オフラインに見えていても記録されます。",
+                    "チャンネルを開くと、そこで各ユーザーが最後にメッセージを送った時刻が補完され、ホバーすると場所が分かります。プロフィールの時計をクリックするとそこへ移動します。",
+                    "フレンドリストのオフラインのフレンド、DMのオフラインのユーザーの下に表示されます。",
+                    "推測でしか分からない時刻(Discordを閉じたときにオンラインだった場合)は「過去3時間以内」と表示されます。",
+                    "設定: 記憶している全員の検索、エクスポートとインポートができ、消去は確認があり、元に戻せます。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Ostatnio online",
+            "description": "Zobacz, kiedy ktoś był ostatnio online, ostatnio aktywny i ostatnio napisał wiadomość: na jego profilu, obok członków offline, na liście znajomych i w wiadomościach prywatnych. Liczy tylko to, co widział Twój klient, i jest przechowywane na tym urządzeniu.",
+            "changelog": {
+                "1.2.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
+                "1.1.4": [
+                    "Podaje teraz, czego potrzebuje (czytanie wiadomości), a Evi tego pilnuje."
+                ],
+                "1.1.3": [
+                    "Szybciej: zapisywanie tego, co zobaczył, nie powoduje już zacinania Discorda co 30 sekund, gdy zapamiętanych jest wiele osób."
+                ],
+                "1.1.2": [
+                    "Szybciej: otwieranie kanałów i wiadomości prywatnych nie czeka już na Last Seen, a zmiana odświeża tylko wiersze danej osoby."
+                ],
+                "1.1.1": [
+                    "Zegar ostatniej obecności pojawia się też w katalogu odznak Discorda (Twoje odznaki)."
+                ],
+                "1.1.0": [
+                    "Zapamiętuje do 25 000 osób, a znajomi i osoby z wiadomości prywatnych są zapominani na końcu.",
+                    "Ostatnia aktywność: liczy się też pisanie, rozmowy głosowe i reakcje, nawet gdy ktoś wygląda na offline.",
+                    "Otwarcie kanału uzupełnia informację, kiedy ludzie ostatnio tam pisali, a najechanie pokazuje gdzie. Kliknij zegar na profilu, aby tam przejść.",
+                    "Wyświetla się pod znajomymi offline na liście znajomych i pod osobami offline w wiadomościach prywatnych.",
+                    "Godziny, które są tylko przybliżone (ktoś był online, gdy Discord się zamknął), pokazują teraz „w ciągu ostatnich 3 godz.”.",
+                    "Ustawienia: wyszukiwanie wszystkich zapamiętanych osób, eksport i import, a czyszczenie pyta o potwierdzenie i można je cofnąć."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Visto por último",
+            "description": "Veja quando alguém esteve online pela última vez, ficou ativo pela última vez e enviou a última mensagem: no perfil, ao lado de membros offline, na sua lista de amigos e nas suas DMs. Conta apenas o que o seu cliente viu e fica guardado neste dispositivo.",
+            "changelog": {
+                "1.2.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
+                "1.1.4": [
+                    "Agora informa o que precisa (ler mensagens), e o Evi garante que ele respeite isso."
+                ],
+                "1.1.3": [
+                    "Mais rápido: salvar o que ele viu não faz mais o Discord travar a cada 30 segundos quando muitas pessoas estão guardadas."
+                ],
+                "1.1.2": [
+                    "Mais rápido: abrir canais e DMs não espera mais o Last Seen, e uma mudança só redesenha as linhas da pessoa em questão."
+                ],
+                "1.1.1": [
+                    "O relógio de visto por último também aparece no diretório de insígnias do Discord (Suas insígnias)."
+                ],
+                "1.1.0": [
+                    "Lembra até 25.000 pessoas, e amigos e contatos de DM são os últimos a serem esquecidos.",
+                    "Última atividade: digitar, voz e reações também contam, mesmo quando alguém parece offline.",
+                    "Abrir um canal preenche quando as pessoas enviaram a última mensagem ali, e passar o mouse mostra onde. Clique no relógio de um perfil para ir até lá.",
+                    "Aparece abaixo dos amigos offline na lista de amigos e das pessoas offline nas suas DMs.",
+                    "Horários que são apenas uma estimativa (alguém estava online quando o Discord foi fechado) agora dizem \"nas últimas 3 h\".",
+                    "Configurações: busque entre todas as pessoas lembradas, exporte e importe; apagar pede confirmação e pode ser desfeito."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Последний визит",
+            "description": "Смотрите, когда человек был в сети, проявлял активность и писал сообщения в последний раз: в профиле, рядом с участниками не в сети, в списке друзей и в личных сообщениях. Учитывает только то, что видел ваш клиент, и хранится на этом устройстве.",
+            "changelog": {
+                "1.2.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
+                "1.1.4": [
+                    "Теперь заявляет, что ему нужно (чтение сообщений), и Evi следит, чтобы он не выходил за эти рамки."
+                ],
+                "1.1.3": [
+                    "Быстрее: сохранение увиденного больше не вызывает подвисаний Discord каждые 30 секунд, когда запомнено много людей."
+                ],
+                "1.1.2": [
+                    "Быстрее: открытие каналов и личных сообщений больше не ждёт Last Seen, а изменение перерисовывает только строки нужного человека."
+                ],
+                "1.1.1": [
+                    "Часы последнего визита теперь есть и в каталоге значков Discord («Ваши значки»)."
+                ],
+                "1.1.0": [
+                    "Запоминает до 25 000 человек; друзья и собеседники из ЛС забываются последними.",
+                    "Последняя активность: набор текста, голосовые каналы и реакции тоже учитываются, даже если человек выглядит не в сети.",
+                    "При открытии канала подтягивается время последнего сообщения людей в нём, а при наведении указано где. Нажмите на часы в профиле, чтобы перейти к нему.",
+                    "Показывается под друзьями не в сети в списке друзей и под людьми не в сети в личных сообщениях.",
+                    "Время, которое лишь приблизительное (человек был в сети, когда Discord закрылся), теперь пишется как «за последние 3 ч».",
+                    "Настройки: поиск по всем запомненным людям, экспорт и импорт; удаление спрашивает подтверждение и его можно отменить."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Son Görülme",
+            "description": "Birinin en son ne zaman çevrimiçi olduğunu, en son ne zaman aktif olduğunu ve en son ne zaman mesaj gönderdiğini gör: profilinde, çevrimdışı üyelerin yanında, arkadaş listende ve DM'lerinde. Yalnızca istemcinin gördüklerini sayar ve bu cihazda saklanır.",
+            "changelog": {
+                "1.2.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
+                "1.1.4": [
+                    "Artık neye ihtiyaç duyduğunu (mesajları okuma) belirtiyor ve Evi bunu denetliyor."
+                ],
+                "1.1.3": [
+                    "Daha hızlı: çok sayıda kişi hatırlanırken gördüklerini kaydetmek artık Discord'un her 30 saniyede bir takılmasına yol açmıyor."
+                ],
+                "1.1.2": [
+                    "Daha hızlı: kanalları ve DM'leri açmak artık Last Seen'i beklemiyor ve bir değişiklik yalnızca ilgili kişinin satırlarını yeniden çiziyor."
+                ],
+                "1.1.1": [
+                    "Son görülme saati Discord'un rozet dizininde (Rozetlerin) de görünüyor."
+                ],
+                "1.1.0": [
+                    "25.000 kişiye kadar hatırlar; arkadaşlar ve DM kişileri en son unutulanlardır.",
+                    "Son aktiflik: yazma, sesli kanallar ve tepkiler de sayılır, biri çevrimdışı görünse bile.",
+                    "Bir kanalı açmak, insanların orada en son ne zaman mesaj attığını doldurur ve üzerine gelmek nerede olduğunu söyler. Oraya gitmek için profildeki saate tıkla.",
+                    "Arkadaş listesindeki çevrimdışı arkadaşların ve DM'lerindeki çevrimdışı kişilerin altında görünür.",
+                    "Yalnızca tahmin olan zamanlar (Discord kapanırken biri çevrimiçiydi) artık \"son 3 sa içinde\" diyor.",
+                    "Ayarlar: hatırlanan herkesi ara, dışa ve içe aktar; temizleme önce sorar ve geri alınabilir."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    },
     "main": "index.js"
 }

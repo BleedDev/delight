@@ -42,7 +42,18 @@ __export(exports_voice_activity_log, {
   default: () => voice_activity_log_default
 });
 module.exports = __toCommonJS(exports_voice_activity_log);
+var import_api2 = require("@evi/api");
+
+// plugins/voice-activity-log/strings.ts
 var import_api = require("@evi/api");
+
+// src/shared/i18n.ts
+function format(template, vars) {
+  if (!vars)
+    return template;
+  return template.replace(/\{(\w+)\}/g, (whole, name) => (name in vars) ? String(vars[name]) : whole);
+}
+var pluralRules = new Map;
 
 // plugins/voice-activity-log/log.ts
 var MAX_ENTRIES = 500;
@@ -273,87 +284,101 @@ class VoiceLog {
     }
   }
 }
+var EN_WORDS = {
+  "duration.s": "{n}s",
+  "duration.m": "{n}m",
+  "duration.h": "{n}h",
+  "duration.hm": "{h}h {m}m",
+  "channel.id": "channel {id}",
+  "channel.other": "another channel",
+  "stay.some": " (stayed {d})",
+  "stay.atLeast": " (stayed at least {d})",
+  "entry.selfJoin": "You joined {channel}",
+  "entry.selfMove": "You moved to {other}{stayed}",
+  "entry.selfLeave": "You left{stayed}",
+  "entry.present": "{n} was already here",
+  "entry.join": "{n} joined",
+  "entry.leave": "{n} left{stayed}",
+  "entry.moveIn": "{n} moved in from {other}",
+  "entry.moveOut": "{n} moved to {other}{stayed}",
+  "entry.streamStart": "{n} started streaming",
+  "entry.streamStop": "{n} stopped streaming",
+  "entry.videoStart": "{n} turned on their camera",
+  "entry.videoStop": "{n} turned off their camera",
+  "entry.mute": "{n} muted",
+  "entry.unmute": "{n} unmuted",
+  "entry.deafen": "{n} deafened",
+  "entry.undeafen": "{n} undeafened",
+  "note.here": "still here · {d}",
+  "note.stillThere": "still there when you left · {d}",
+  "note.atLeast": "stayed at least {d}",
+  "note.stayed": "stayed {d}",
+  "text.now": "now",
+  "text.nothing": "(nothing logged)",
+  "filter.all": "All",
+  "filter.people": "Joins & leaves",
+  "filter.streams": "Streams",
+  "filter.voice": "Mute & deafen"
+};
+var english = (key, vars) => format(EN_WORDS[key], vars);
 var pad = (n) => String(n).padStart(2, "0");
 function formatClock(ms) {
   const d = new Date(ms);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-function formatDuration(ms) {
+function formatDuration(ms, tr = english) {
   const s = Math.max(0, Math.floor(ms / 1000));
   if (s < 60)
-    return `${s}s`;
+    return tr("duration.s", { n: s });
   const m = Math.floor(s / 60);
   if (m < 60)
-    return `${m}m`;
+    return tr("duration.m", { n: m });
   const h = Math.floor(m / 60);
-  return m % 60 ? `${h}h ${m % 60}m` : `${h}h`;
+  return m % 60 ? tr("duration.hm", { h, m: m % 60 }) : tr("duration.h", { n: h });
 }
-var channelLabel = (name, id) => name || (id ? `channel ${id}` : "another channel");
-function describe(entry, sessionChannelName) {
+var channelLabel = (name, id, tr) => name || (id ? tr("channel.id", { id }) : tr("channel.other"));
+function describe(entry, sessionChannelName, tr = english) {
   const n = entry.name;
-  const stayed = entry.stayed !== undefined ? ` (stayed ${entry.sinceBefore ? "at least " : ""}${formatDuration(entry.stayed)})` : "";
-  const other = channelLabel(entry.otherChannelName, entry.otherChannelId);
+  const stayed = entry.stayed !== undefined ? tr(entry.sinceBefore ? "stay.atLeast" : "stay.some", { d: formatDuration(entry.stayed, tr) }) : "";
+  const other = channelLabel(entry.otherChannelName, entry.otherChannelId, tr);
+  const vars = { n, other, stayed };
   switch (entry.kind) {
     case "selfJoin":
-      return `You joined ${channelLabel(sessionChannelName, entry.channelId)}`;
+      return tr("entry.selfJoin", { channel: channelLabel(sessionChannelName, entry.channelId, tr) });
     case "selfLeave":
-      return entry.otherChannelId ? `You moved to ${other}${stayed}` : `You left${stayed}`;
-    case "present":
-      return `${n} was already here`;
-    case "join":
-      return `${n} joined`;
-    case "leave":
-      return `${n} left${stayed}`;
-    case "moveIn":
-      return `${n} moved in from ${other}`;
-    case "moveOut":
-      return `${n} moved to ${other}${stayed}`;
-    case "streamStart":
-      return `${n} started streaming`;
-    case "streamStop":
-      return `${n} stopped streaming`;
-    case "videoStart":
-      return `${n} turned on their camera`;
-    case "videoStop":
-      return `${n} turned off their camera`;
-    case "mute":
-      return `${n} muted`;
-    case "unmute":
-      return `${n} unmuted`;
-    case "deafen":
-      return `${n} deafened`;
-    case "undeafen":
-      return `${n} undeafened`;
+      return entry.otherChannelId ? tr("entry.selfMove", vars) : tr("entry.selfLeave", vars);
+    default:
+      return tr(`entry.${entry.kind}`, vars);
   }
 }
-function stayNote(entry, now) {
+function stayNote(entry, now, tr = english) {
   if (!ARRIVALS.has(entry.kind))
     return;
   if (entry.leftAt === undefined)
-    return `still here · ${formatDuration(now - entry.at)}`;
-  const d = formatDuration(entry.leftAt - entry.at);
+    return tr("note.here", { d: formatDuration(now - entry.at, tr) });
+  const d = formatDuration(entry.leftAt - entry.at, tr);
   if (entry.stillThere)
-    return `still there when you left · ${d}`;
-  return entry.kind === "present" ? `stayed at least ${d}` : `stayed ${d}`;
+    return tr("note.stillThere", { d });
+  return tr(entry.kind === "present" ? "note.atLeast" : "note.stayed", { d });
 }
-var formatLine = (entry, sessionChannelName) => `${formatClock(entry.at)}  ${describe(entry, sessionChannelName)}`;
-function formatSessions(sessions, now = Date.now()) {
+var formatLine = (entry, sessionChannelName, tr = english) => `${formatClock(entry.at)}  ${describe(entry, sessionChannelName, tr)}`;
+function formatSessions(sessions, now = Date.now(), tr = english) {
   return sessions.map((s) => {
-    const end = s.endedAt !== undefined ? formatClock(s.endedAt) : "now";
+    const end = s.endedAt !== undefined ? formatClock(s.endedAt) : tr("text.now");
     const date = new Date(s.startedAt).toLocaleDateString();
-    const head = `${channelLabel(s.channelName, s.channelId)} · ${date} ${formatClock(s.startedAt)}–${end} (${formatDuration((s.endedAt ?? now) - s.startedAt)})`;
-    const lines = s.entries.map((e) => formatLine(e, s.channelName));
-    return [head, ...lines.length ? lines : ["(nothing logged)"]].join(`
+    const head = `${channelLabel(s.channelName, s.channelId, tr)} · ${date} ${formatClock(s.startedAt)}–${end} (${formatDuration((s.endedAt ?? now) - s.startedAt, tr)})`;
+    const lines = s.entries.map((e) => formatLine(e, s.channelName, tr));
+    return [head, ...lines.length ? lines : [tr("text.nothing")]].join(`
 `);
   }).join(`
 
 `);
 }
 var FILTERS = [
-  { value: "all", label: "All" },
-  { value: "people", label: "Joins & leaves" },
-  { value: "streams", label: "Streams" },
-  { value: "voice", label: "Mute & deafen" }
+  { value: "all", label: EN_WORDS["filter.all"], key: "filter.all" },
+  { value: "people", label: EN_WORDS["filter.people"], key: "filter.people" },
+  { value: "streams", label: EN_WORDS["filter.streams"], key: "filter.streams" },
+  { value: "voice", label: EN_WORDS["filter.voice"], key: "filter.voice" }
 ];
 var GROUPS = {
   people: new Set(["selfJoin", "selfLeave", "present", "join", "leave", "moveIn", "moveOut"]),
@@ -379,22 +404,722 @@ var PATCHES = {
   }
 };
 
+// plugins/voice-activity-log/strings.ts
+var t = import_api.defineStrings({
+  en: {
+    ...EN_WORDS,
+    "settings.moves": "Moves",
+    "settings.moves.description": "Log moves from and to other channels as moves, not as plain joins and leaves.",
+    "settings.streams": "Streams and camera",
+    "settings.streams.description": "Log when someone starts or stops streaming or their camera.",
+    "settings.muteDeafen": "Mutes and deafens",
+    "settings.muteDeafen.description": "Log when someone mutes, unmutes, deafens or undeafens.",
+    "settings.toasts": "Toasts",
+    "settings.toasts.description": "Pop up a toast when someone joins, leaves or moves.",
+    "settings.onlyUnfocused": "Only when Discord isn't focused",
+    "settings.onlyUnfocused.description": "Show those toasts only while the Discord window isn't focused.",
+    "settings.showButton": "Voice panel button",
+    "settings.showButton.description": "A log button in the Voice Connected panel. /vclog works either way.",
+    "user.unknown": "Unknown user",
+    "channel.call": "a call",
+    "dialog.title": "Voice Activity Log",
+    "dialog.subtitle": "Who came and went in your voice channels. Kept until Discord restarts.",
+    "dialog.close": "Close",
+    "dialog.empty": "Nothing yet. Join a voice channel and who comes and goes shows up here.",
+    "dialog.sessions": "Sessions",
+    "dialog.live": "You're here now",
+    "dialog.sessionNow": "Now · {d}",
+    "dialog.filterName": "Filter by name",
+    "dialog.show": "Show",
+    "dialog.activityIn": "Activity in {channel}",
+    "dialog.noMatch": "Nothing matches the filter.",
+    "dialog.noneInSession": "Nothing logged in this session yet.",
+    "dialog.clear": "Clear log",
+    "dialog.copy": "Copy as text",
+    "toast.copied": "Copied the log",
+    "toast.copyFailed": "Couldn't copy the log",
+    "button.label": "Voice activity log",
+    "panel.log": "Log",
+    "panel.open": "Open log",
+    "panel.entries": { one: "{count} entry", other: "{count} entries" },
+    "panel.sessions": { one: "{count} session", other: "{count} sessions" },
+    "panel.summary": "{entries} over {sessions}. Kept in memory only.",
+    "panel.nothing": "Nothing yet. Kept in memory only.",
+    "command.description": "Who joined and left your voice channel recently",
+    "command.empty": "Nothing logged yet. Join a voice channel and who comes and goes shows up here."
+  },
+  de: {
+    "duration.s": "{n} s",
+    "duration.m": "{n} Min.",
+    "duration.h": "{n} Std.",
+    "duration.hm": "{h} Std. {m} Min.",
+    "channel.id": "Kanal {id}",
+    "channel.other": "einem anderen Kanal",
+    "stay.some": " (blieb {d})",
+    "stay.atLeast": " (blieb mindestens {d})",
+    "entry.selfJoin": "Du bist {channel} beigetreten",
+    "entry.selfMove": "Du bist zu {other} gewechselt{stayed}",
+    "entry.selfLeave": "Du hast den Kanal verlassen{stayed}",
+    "entry.present": "{n} war schon da",
+    "entry.join": "{n} ist beigetreten",
+    "entry.leave": "{n} hat den Kanal verlassen{stayed}",
+    "entry.moveIn": "{n} ist von {other} hierher gewechselt",
+    "entry.moveOut": "{n} ist zu {other} gewechselt{stayed}",
+    "entry.streamStart": "{n} hat einen Stream gestartet",
+    "entry.streamStop": "{n} hat den Stream beendet",
+    "entry.videoStart": "{n} hat die Kamera eingeschaltet",
+    "entry.videoStop": "{n} hat die Kamera ausgeschaltet",
+    "entry.mute": "{n} hat das Mikrofon stummgeschaltet",
+    "entry.unmute": "{n} hat die Stummschaltung aufgehoben",
+    "entry.deafen": "{n} hat den Ton deaktiviert",
+    "entry.undeafen": "{n} hat den Ton wieder aktiviert",
+    "note.here": "noch da · {d}",
+    "note.stillThere": "noch da, als du gegangen bist · {d}",
+    "note.atLeast": "blieb mindestens {d}",
+    "note.stayed": "blieb {d}",
+    "text.now": "jetzt",
+    "text.nothing": "(nichts protokolliert)",
+    "filter.all": "Alle",
+    "filter.people": "Beitritte & Austritte",
+    "filter.streams": "Streams",
+    "filter.voice": "Stumm & Ton aus",
+    "settings.moves": "Kanalwechsel",
+    "settings.moves.description": "Wechsel aus und in andere Kanäle als Wechsel protokollieren, nicht als einfache Beitritte und Austritte.",
+    "settings.streams": "Streams und Kamera",
+    "settings.streams.description": "Protokollieren, wenn jemand einen Stream oder die Kamera startet oder beendet.",
+    "settings.muteDeafen": "Stummschaltungen",
+    "settings.muteDeafen.description": "Protokollieren, wenn jemand das Mikrofon oder den Ton ein- oder ausschaltet.",
+    "settings.toasts": "Hinweise",
+    "settings.toasts.description": "Einen Hinweis einblenden, wenn jemand beitritt, geht oder wechselt.",
+    "settings.onlyUnfocused": "Nur wenn Discord nicht im Fokus ist",
+    "settings.onlyUnfocused.description": "Diese Hinweise nur zeigen, solange das Discord-Fenster nicht im Fokus ist.",
+    "settings.showButton": "Button im Sprachbereich",
+    "settings.showButton.description": "Ein Protokoll-Button im Bereich „Sprache verbunden“. /vclog funktioniert in beiden Fällen.",
+    "user.unknown": "Unbekannter Nutzer",
+    "channel.call": "einem Anruf",
+    "dialog.title": "Sprachaktivitätsprotokoll",
+    "dialog.subtitle": "Wer in deinen Sprachkanälen gekommen und gegangen ist. Bleibt bis zum Neustart von Discord erhalten.",
+    "dialog.close": "Schließen",
+    "dialog.empty": "Noch nichts. Tritt einem Sprachkanal bei, dann erscheint hier, wer kommt und geht.",
+    "dialog.sessions": "Sitzungen",
+    "dialog.live": "Du bist gerade hier",
+    "dialog.sessionNow": "Jetzt · {d}",
+    "dialog.filterName": "Nach Namen filtern",
+    "dialog.show": "Anzeigen",
+    "dialog.activityIn": "Aktivität in {channel}",
+    "dialog.noMatch": "Nichts passt zum Filter.",
+    "dialog.noneInSession": "In dieser Sitzung wurde noch nichts protokolliert.",
+    "dialog.clear": "Protokoll leeren",
+    "dialog.copy": "Als Text kopieren",
+    "toast.copied": "Protokoll kopiert",
+    "toast.copyFailed": "Protokoll konnte nicht kopiert werden",
+    "button.label": "Sprachaktivitätsprotokoll",
+    "panel.log": "Protokoll",
+    "panel.open": "Protokoll öffnen",
+    "panel.entries": { one: "{count} Eintrag", other: "{count} Einträge" },
+    "panel.sessions": { one: "{count} Sitzung", other: "{count} Sitzungen" },
+    "panel.summary": "{entries} in {sessions}. Nur im Arbeitsspeicher.",
+    "panel.nothing": "Noch nichts. Nur im Arbeitsspeicher.",
+    "command.description": "Wer in letzter Zeit deinem Sprachkanal beigetreten ist und ihn verlassen hat",
+    "command.empty": "Noch nichts protokolliert. Tritt einem Sprachkanal bei, dann erscheint hier, wer kommt und geht."
+  },
+  es: {
+    "duration.s": "{n} s",
+    "duration.m": "{n} min",
+    "duration.h": "{n} h",
+    "duration.hm": "{h} h {m} min",
+    "channel.id": "canal {id}",
+    "channel.other": "otro canal",
+    "stay.some": " (estuvo {d})",
+    "stay.atLeast": " (estuvo al menos {d})",
+    "entry.selfJoin": "Te uniste a {channel}",
+    "entry.selfMove": "Te moviste a {other}{stayed}",
+    "entry.selfLeave": "Saliste{stayed}",
+    "entry.present": "{n} ya estaba aquí",
+    "entry.join": "{n} se unió",
+    "entry.leave": "{n} salió{stayed}",
+    "entry.moveIn": "{n} llegó desde {other}",
+    "entry.moveOut": "{n} se movió a {other}{stayed}",
+    "entry.streamStart": "{n} empezó a transmitir",
+    "entry.streamStop": "{n} dejó de transmitir",
+    "entry.videoStart": "{n} activó su cámara",
+    "entry.videoStop": "{n} desactivó su cámara",
+    "entry.mute": "{n} se silenció",
+    "entry.unmute": "{n} activó su micrófono",
+    "entry.deafen": "{n} se ensordeció",
+    "entry.undeafen": "{n} activó su audio",
+    "note.here": "sigue aquí · {d}",
+    "note.stillThere": "seguía allí cuando saliste · {d}",
+    "note.atLeast": "estuvo al menos {d}",
+    "note.stayed": "estuvo {d}",
+    "text.now": "ahora",
+    "text.nothing": "(nada registrado)",
+    "filter.all": "Todo",
+    "filter.people": "Entradas y salidas",
+    "filter.streams": "Transmisiones",
+    "filter.voice": "Silencio y ensordecer",
+    "settings.moves": "Movimientos",
+    "settings.moves.description": "Registra los movimientos desde y hacia otros canales como movimientos, no como simples entradas y salidas.",
+    "settings.streams": "Transmisiones y cámara",
+    "settings.streams.description": "Registra cuando alguien empieza o deja de transmitir o de usar la cámara.",
+    "settings.muteDeafen": "Silencios y ensordecimientos",
+    "settings.muteDeafen.description": "Registra cuando alguien se silencia, activa su micrófono, se ensordece o activa su audio.",
+    "settings.toasts": "Avisos",
+    "settings.toasts.description": "Muestra un aviso cuando alguien entra, sale o se mueve.",
+    "settings.onlyUnfocused": "Solo cuando Discord no está en primer plano",
+    "settings.onlyUnfocused.description": "Muestra esos avisos solo mientras la ventana de Discord no está en primer plano.",
+    "settings.showButton": "Botón del panel de voz",
+    "settings.showButton.description": "Un botón de registro en el panel de Voz conectada. /vclog funciona de las dos formas.",
+    "user.unknown": "Usuario desconocido",
+    "channel.call": "una llamada",
+    "dialog.title": "Registro de actividad de voz",
+    "dialog.subtitle": "Quién entró y salió de tus canales de voz. Se conserva hasta que Discord se reinicie.",
+    "dialog.close": "Cerrar",
+    "dialog.empty": "Aún no hay nada. Únete a un canal de voz y aquí verás quién entra y sale.",
+    "dialog.sessions": "Sesiones",
+    "dialog.live": "Estás aquí ahora",
+    "dialog.sessionNow": "Ahora · {d}",
+    "dialog.filterName": "Filtrar por nombre",
+    "dialog.show": "Mostrar",
+    "dialog.activityIn": "Actividad en {channel}",
+    "dialog.noMatch": "Nada coincide con el filtro.",
+    "dialog.noneInSession": "Aún no hay nada registrado en esta sesión.",
+    "dialog.clear": "Borrar registro",
+    "dialog.copy": "Copiar como texto",
+    "toast.copied": "Registro copiado",
+    "toast.copyFailed": "No se pudo copiar el registro",
+    "button.label": "Registro de actividad de voz",
+    "panel.log": "Registro",
+    "panel.open": "Abrir registro",
+    "panel.entries": { one: "{count} entrada", other: "{count} entradas" },
+    "panel.sessions": { one: "{count} sesión", other: "{count} sesiones" },
+    "panel.summary": "{entries} en {sessions}. Solo se guarda en memoria.",
+    "panel.nothing": "Aún no hay nada. Solo se guarda en memoria.",
+    "command.description": "Quién entró y salió hace poco de tu canal de voz",
+    "command.empty": "Aún no hay nada registrado. Únete a un canal de voz y aquí verás quién entra y sale."
+  },
+  fr: {
+    "duration.s": "{n} s",
+    "duration.m": "{n} min",
+    "duration.h": "{n} h",
+    "duration.hm": "{h} h {m} min",
+    "channel.id": "salon {id}",
+    "channel.other": "un autre salon",
+    "stay.some": " (resté {d})",
+    "stay.atLeast": " (resté au moins {d})",
+    "entry.selfJoin": "Tu as rejoint {channel}",
+    "entry.selfMove": "Tu es passé dans {other}{stayed}",
+    "entry.selfLeave": "Tu es parti{stayed}",
+    "entry.present": "{n} était déjà là",
+    "entry.join": "{n} a rejoint le salon",
+    "entry.leave": "{n} a quitté le salon{stayed}",
+    "entry.moveIn": "{n} est arrivé depuis {other}",
+    "entry.moveOut": "{n} est passé dans {other}{stayed}",
+    "entry.streamStart": "{n} a lancé un stream",
+    "entry.streamStop": "{n} a arrêté son stream",
+    "entry.videoStart": "{n} a activé sa caméra",
+    "entry.videoStop": "{n} a désactivé sa caméra",
+    "entry.mute": "{n} s'est mis en sourdine",
+    "entry.unmute": "{n} a réactivé son micro",
+    "entry.deafen": "{n} a coupé le son",
+    "entry.undeafen": "{n} a réactivé le son",
+    "note.here": "toujours là · {d}",
+    "note.stillThere": "encore là quand tu es parti · {d}",
+    "note.atLeast": "resté au moins {d}",
+    "note.stayed": "resté {d}",
+    "text.now": "maintenant",
+    "text.nothing": "(rien d'enregistré)",
+    "filter.all": "Tout",
+    "filter.people": "Arrivées et départs",
+    "filter.streams": "Streams",
+    "filter.voice": "Sourdine et son coupé",
+    "settings.moves": "Déplacements",
+    "settings.moves.description": "Enregistre les passages depuis et vers d'autres salons comme des déplacements, et non comme de simples arrivées et départs.",
+    "settings.streams": "Streams et caméra",
+    "settings.streams.description": "Enregistre quand quelqu'un lance ou arrête un stream ou sa caméra.",
+    "settings.muteDeafen": "Sourdines et sons coupés",
+    "settings.muteDeafen.description": "Enregistre quand quelqu'un coupe ou réactive son micro ou son son.",
+    "settings.toasts": "Notifications",
+    "settings.toasts.description": "Affiche une notification quand quelqu'un arrive, part ou change de salon.",
+    "settings.onlyUnfocused": "Seulement quand Discord n'est pas au premier plan",
+    "settings.onlyUnfocused.description": "N'affiche ces notifications que lorsque la fenêtre Discord n'est pas au premier plan.",
+    "settings.showButton": "Bouton du panneau vocal",
+    "settings.showButton.description": "Un bouton d'historique dans le panneau « Vocal connecté ». /vclog fonctionne dans les deux cas.",
+    "user.unknown": "Utilisateur inconnu",
+    "channel.call": "un appel",
+    "dialog.title": "Journal d'activité vocale",
+    "dialog.subtitle": "Qui est venu et parti dans tes salons vocaux. Conservé jusqu'au redémarrage de Discord.",
+    "dialog.close": "Fermer",
+    "dialog.empty": "Rien pour l'instant. Rejoins un salon vocal et tu verras ici qui arrive et qui part.",
+    "dialog.sessions": "Sessions",
+    "dialog.live": "Tu es ici en ce moment",
+    "dialog.sessionNow": "Maintenant · {d}",
+    "dialog.filterName": "Filtrer par nom",
+    "dialog.show": "Afficher",
+    "dialog.activityIn": "Activité dans {channel}",
+    "dialog.noMatch": "Aucun résultat pour ce filtre.",
+    "dialog.noneInSession": "Rien d'enregistré dans cette session pour l'instant.",
+    "dialog.clear": "Effacer le journal",
+    "dialog.copy": "Copier en texte",
+    "toast.copied": "Journal copié",
+    "toast.copyFailed": "Impossible de copier le journal",
+    "button.label": "Journal d'activité vocale",
+    "panel.log": "Journal",
+    "panel.open": "Ouvrir le journal",
+    "panel.entries": { one: "{count} entrée", other: "{count} entrées" },
+    "panel.sessions": { one: "{count} session", other: "{count} sessions" },
+    "panel.summary": "{entries} sur {sessions}. Gardé en mémoire uniquement.",
+    "panel.nothing": "Rien pour l'instant. Gardé en mémoire uniquement.",
+    "command.description": "Qui a rejoint et quitté ton salon vocal récemment",
+    "command.empty": "Rien d'enregistré pour l'instant. Rejoins un salon vocal et tu verras ici qui arrive et qui part."
+  },
+  ja: {
+    "duration.s": "{n}秒",
+    "duration.m": "{n}分",
+    "duration.h": "{n}時間",
+    "duration.hm": "{h}時間{m}分",
+    "channel.id": "チャンネル {id}",
+    "channel.other": "別のチャンネル",
+    "stay.some": "（{d}滞在）",
+    "stay.atLeast": "（{d}以上滞在）",
+    "entry.selfJoin": "{channel}に参加しました",
+    "entry.selfMove": "{other}に移動しました{stayed}",
+    "entry.selfLeave": "退出しました{stayed}",
+    "entry.present": "{n}は最初からいました",
+    "entry.join": "{n}が参加しました",
+    "entry.leave": "{n}が退出しました{stayed}",
+    "entry.moveIn": "{n}が{other}から移動してきました",
+    "entry.moveOut": "{n}が{other}に移動しました{stayed}",
+    "entry.streamStart": "{n}が配信を開始しました",
+    "entry.streamStop": "{n}が配信を終了しました",
+    "entry.videoStart": "{n}がカメラをオンにしました",
+    "entry.videoStop": "{n}がカメラをオフにしました",
+    "entry.mute": "{n}がミュートしました",
+    "entry.unmute": "{n}がミュートを解除しました",
+    "entry.deafen": "{n}がスピーカーミュートしました",
+    "entry.undeafen": "{n}がスピーカーミュートを解除しました",
+    "note.here": "まだいます · {d}",
+    "note.stillThere": "あなたが退出したときもいました · {d}",
+    "note.atLeast": "{d}以上滞在",
+    "note.stayed": "{d}滞在",
+    "text.now": "現在",
+    "text.nothing": "（記録なし）",
+    "filter.all": "すべて",
+    "filter.people": "参加と退出",
+    "filter.streams": "配信",
+    "filter.voice": "ミュートとスピーカーミュート",
+    "settings.moves": "移動",
+    "settings.moves.description": "他のチャンネルとの行き来を、単なる参加と退出ではなく移動として記録します。",
+    "settings.streams": "配信とカメラ",
+    "settings.streams.description": "誰かが配信やカメラを開始または終了したときに記録します。",
+    "settings.muteDeafen": "ミュートとスピーカーミュート",
+    "settings.muteDeafen.description": "誰かがミュートやスピーカーミュートを切り替えたときに記録します。",
+    "settings.toasts": "トースト通知",
+    "settings.toasts.description": "誰かが参加、退出、移動したときにトースト通知を表示します。",
+    "settings.onlyUnfocused": "Discord がアクティブでないときのみ",
+    "settings.onlyUnfocused.description": "Discord のウィンドウがアクティブでない間だけ、これらのトースト通知を表示します。",
+    "settings.showButton": "ボイスパネルのボタン",
+    "settings.showButton.description": "「ボイス接続」パネルにログボタンを表示します。/vclog はどちらの設定でも使えます。",
+    "user.unknown": "不明なユーザー",
+    "channel.call": "通話",
+    "dialog.title": "ボイスアクティビティログ",
+    "dialog.subtitle": "ボイスチャンネルに出入りした人の記録です。Discord を再起動するまで保持されます。",
+    "dialog.close": "閉じる",
+    "dialog.empty": "まだ何もありません。ボイスチャンネルに参加すると、出入りした人がここに表示されます。",
+    "dialog.sessions": "セッション",
+    "dialog.live": "現在参加中",
+    "dialog.sessionNow": "現在 · {d}",
+    "dialog.filterName": "名前で絞り込む",
+    "dialog.show": "表示",
+    "dialog.activityIn": "{channel}のアクティビティ",
+    "dialog.noMatch": "条件に一致するものはありません。",
+    "dialog.noneInSession": "このセッションにはまだ記録がありません。",
+    "dialog.clear": "ログを消去",
+    "dialog.copy": "テキストとしてコピー",
+    "toast.copied": "ログをコピーしました",
+    "toast.copyFailed": "ログをコピーできませんでした",
+    "button.label": "ボイスアクティビティログ",
+    "panel.log": "ログ",
+    "panel.open": "ログを開く",
+    "panel.entries": { other: "{count} 件の記録" },
+    "panel.sessions": { other: "{count} 件のセッション" },
+    "panel.summary": "{sessions}で{entries}。メモリ内にのみ保持されます。",
+    "panel.nothing": "まだ何もありません。メモリ内にのみ保持されます。",
+    "command.description": "最近ボイスチャンネルに参加・退出した人",
+    "command.empty": "まだ記録がありません。ボイスチャンネルに参加すると、出入りした人がここに表示されます。"
+  },
+  pl: {
+    "duration.s": "{n} s",
+    "duration.m": "{n} min",
+    "duration.h": "{n} godz.",
+    "duration.hm": "{h} godz. {m} min",
+    "channel.id": "kanał {id}",
+    "channel.other": "inny kanał",
+    "stay.some": " (był(a) {d})",
+    "stay.atLeast": " (był(a) co najmniej {d})",
+    "entry.selfJoin": "Dołączasz do: {channel}",
+    "entry.selfMove": "Przenosisz się do: {other}{stayed}",
+    "entry.selfLeave": "Wychodzisz{stayed}",
+    "entry.present": "{n} był(a) tu już wcześniej",
+    "entry.join": "{n} dołączył(a)",
+    "entry.leave": "{n} wyszedł/wyszła{stayed}",
+    "entry.moveIn": "{n} przeszedł/przeszła tu z: {other}",
+    "entry.moveOut": "{n} przeszedł/przeszła do: {other}{stayed}",
+    "entry.streamStart": "{n} rozpoczął(-ęła) transmisję",
+    "entry.streamStop": "{n} zakończył(a) transmisję",
+    "entry.videoStart": "{n} włączył(a) kamerę",
+    "entry.videoStop": "{n} wyłączył(a) kamerę",
+    "entry.mute": "{n} wyciszył(a) mikrofon",
+    "entry.unmute": "{n} włączył(a) mikrofon",
+    "entry.deafen": "{n} wyłączył(a) dźwięk",
+    "entry.undeafen": "{n} włączył(a) dźwięk",
+    "note.here": "nadal jest · {d}",
+    "note.stillThere": "nadal był(a), gdy wyszedłeś(-łaś) · {d}",
+    "note.atLeast": "był(a) co najmniej {d}",
+    "note.stayed": "był(a) {d}",
+    "text.now": "teraz",
+    "text.nothing": "(nic nie zapisano)",
+    "filter.all": "Wszystko",
+    "filter.people": "Dołączenia i wyjścia",
+    "filter.streams": "Transmisje",
+    "filter.voice": "Wyciszenia",
+    "settings.moves": "Przenosiny",
+    "settings.moves.description": "Zapisuj przejścia z innych kanałów i do nich jako przenosiny, a nie zwykłe dołączenia i wyjścia.",
+    "settings.streams": "Transmisje i kamera",
+    "settings.streams.description": "Zapisuj, gdy ktoś rozpoczyna lub kończy transmisję albo włącza lub wyłącza kamerę.",
+    "settings.muteDeafen": "Wyciszenia",
+    "settings.muteDeafen.description": "Zapisuj, gdy ktoś wycisza lub włącza mikrofon albo dźwięk.",
+    "settings.toasts": "Powiadomienia",
+    "settings.toasts.description": "Pokazuj powiadomienie, gdy ktoś dołącza, wychodzi lub się przenosi.",
+    "settings.onlyUnfocused": "Tylko gdy Discord nie jest na wierzchu",
+    "settings.onlyUnfocused.description": "Pokazuj te powiadomienia tylko wtedy, gdy okno Discorda nie jest aktywne.",
+    "settings.showButton": "Przycisk w panelu głosowym",
+    "settings.showButton.description": "Przycisk dziennika w panelu „Połączono z kanałem głosowym”. Polecenie /vclog działa tak czy inaczej.",
+    "user.unknown": "Nieznany użytkownik",
+    "channel.call": "rozmowa",
+    "dialog.title": "Dziennik aktywności głosowej",
+    "dialog.subtitle": "Kto przychodził i wychodził z Twoich kanałów głosowych. Przechowywane do zrestartowania Discorda.",
+    "dialog.close": "Zamknij",
+    "dialog.empty": "Na razie nic. Dołącz do kanału głosowego, a tutaj pojawi się, kto przychodzi i wychodzi.",
+    "dialog.sessions": "Sesje",
+    "dialog.live": "Jesteś tu teraz",
+    "dialog.sessionNow": "Teraz · {d}",
+    "dialog.filterName": "Filtruj według nazwy",
+    "dialog.show": "Pokaż",
+    "dialog.activityIn": "Aktywność na kanale {channel}",
+    "dialog.noMatch": "Nic nie pasuje do filtra.",
+    "dialog.noneInSession": "W tej sesji nic jeszcze nie zapisano.",
+    "dialog.clear": "Wyczyść dziennik",
+    "dialog.copy": "Kopiuj jako tekst",
+    "toast.copied": "Skopiowano dziennik",
+    "toast.copyFailed": "Nie udało się skopiować dziennika",
+    "button.label": "Dziennik aktywności głosowej",
+    "panel.log": "Dziennik",
+    "panel.open": "Otwórz dziennik",
+    "panel.entries": { one: "{count} wpis", few: "{count} wpisy", many: "{count} wpisów", other: "{count} wpisu" },
+    "panel.sessions": { one: "{count} sesja", few: "{count} sesje", many: "{count} sesji", other: "{count} sesji" },
+    "panel.summary": "{entries} w {sessions}. Tylko w pamięci.",
+    "panel.nothing": "Na razie nic. Tylko w pamięci.",
+    "command.description": "Kto ostatnio dołączał do Twojego kanału głosowego i z niego wychodził",
+    "command.empty": "Nic jeszcze nie zapisano. Dołącz do kanału głosowego, a tutaj pojawi się, kto przychodzi i wychodzi."
+  },
+  "pt-BR": {
+    "duration.s": "{n}s",
+    "duration.m": "{n}min",
+    "duration.h": "{n}h",
+    "duration.hm": "{h}h {m}min",
+    "channel.id": "canal {id}",
+    "channel.other": "outro canal",
+    "stay.some": " (ficou {d})",
+    "stay.atLeast": " (ficou pelo menos {d})",
+    "entry.selfJoin": "Você entrou em {channel}",
+    "entry.selfMove": "Você foi para {other}{stayed}",
+    "entry.selfLeave": "Você saiu{stayed}",
+    "entry.present": "{n} já estava aqui",
+    "entry.join": "{n} entrou",
+    "entry.leave": "{n} saiu{stayed}",
+    "entry.moveIn": "{n} veio de {other}",
+    "entry.moveOut": "{n} foi para {other}{stayed}",
+    "entry.streamStart": "{n} começou a transmitir",
+    "entry.streamStop": "{n} parou de transmitir",
+    "entry.videoStart": "{n} ligou a câmera",
+    "entry.videoStop": "{n} desligou a câmera",
+    "entry.mute": "{n} se silenciou",
+    "entry.unmute": "{n} ativou o microfone",
+    "entry.deafen": "{n} desativou o áudio",
+    "entry.undeafen": "{n} reativou o áudio",
+    "note.here": "ainda está aqui · {d}",
+    "note.stillThere": "ainda estava lá quando você saiu · {d}",
+    "note.atLeast": "ficou pelo menos {d}",
+    "note.stayed": "ficou {d}",
+    "text.now": "agora",
+    "text.nothing": "(nada registrado)",
+    "filter.all": "Tudo",
+    "filter.people": "Entradas e saídas",
+    "filter.streams": "Transmissões",
+    "filter.voice": "Silenciar e ensurdecer",
+    "settings.moves": "Movimentações",
+    "settings.moves.description": "Registra idas e vindas de outros canais como movimentações, e não como simples entradas e saídas.",
+    "settings.streams": "Transmissões e câmera",
+    "settings.streams.description": "Registra quando alguém começa ou para de transmitir ou de usar a câmera.",
+    "settings.muteDeafen": "Silenciamentos e ensurdecimentos",
+    "settings.muteDeafen.description": "Registra quando alguém se silencia, ativa o microfone, desativa ou reativa o áudio.",
+    "settings.toasts": "Avisos",
+    "settings.toasts.description": "Mostra um aviso quando alguém entra, sai ou muda de canal.",
+    "settings.onlyUnfocused": "Só quando o Discord não está em foco",
+    "settings.onlyUnfocused.description": "Mostra esses avisos apenas enquanto a janela do Discord não está em foco.",
+    "settings.showButton": "Botão no painel de voz",
+    "settings.showButton.description": "Um botão de registro no painel de Voz conectada. O /vclog funciona nos dois casos.",
+    "user.unknown": "Usuário desconhecido",
+    "channel.call": "uma chamada",
+    "dialog.title": "Registro de atividade de voz",
+    "dialog.subtitle": "Quem entrou e saiu dos seus canais de voz. Guardado até o Discord reiniciar.",
+    "dialog.close": "Fechar",
+    "dialog.empty": "Nada por enquanto. Entre em um canal de voz e quem entra e sai aparece aqui.",
+    "dialog.sessions": "Sessões",
+    "dialog.live": "Você está aqui agora",
+    "dialog.sessionNow": "Agora · {d}",
+    "dialog.filterName": "Filtrar por nome",
+    "dialog.show": "Mostrar",
+    "dialog.activityIn": "Atividade em {channel}",
+    "dialog.noMatch": "Nada corresponde ao filtro.",
+    "dialog.noneInSession": "Nada registrado nesta sessão ainda.",
+    "dialog.clear": "Limpar registro",
+    "dialog.copy": "Copiar como texto",
+    "toast.copied": "Registro copiado",
+    "toast.copyFailed": "Não foi possível copiar o registro",
+    "button.label": "Registro de atividade de voz",
+    "panel.log": "Registro",
+    "panel.open": "Abrir registro",
+    "panel.entries": { one: "{count} entrada", other: "{count} entradas" },
+    "panel.sessions": { one: "{count} sessão", other: "{count} sessões" },
+    "panel.summary": "{entries} em {sessions}. Guardado apenas na memória.",
+    "panel.nothing": "Nada por enquanto. Guardado apenas na memória.",
+    "command.description": "Quem entrou e saiu do seu canal de voz recentemente",
+    "command.empty": "Nada registrado ainda. Entre em um canal de voz e quem entra e sai aparece aqui."
+  },
+  ru: {
+    "duration.s": "{n} с",
+    "duration.m": "{n} мин",
+    "duration.h": "{n} ч",
+    "duration.hm": "{h} ч {m} мин",
+    "channel.id": "канал {id}",
+    "channel.other": "другой канал",
+    "stay.some": " (пробыл(а) {d})",
+    "stay.atLeast": " (пробыл(а) не менее {d})",
+    "entry.selfJoin": "Вы подключились к каналу {channel}",
+    "entry.selfMove": "Вы перешли в канал {other}{stayed}",
+    "entry.selfLeave": "Вы вышли{stayed}",
+    "entry.present": "{n} уже был(а) здесь",
+    "entry.join": "{n} подключился(-ась)",
+    "entry.leave": "{n} вышел(-ла){stayed}",
+    "entry.moveIn": "{n} перешёл(-ла) сюда из канала {other}",
+    "entry.moveOut": "{n} перешёл(-ла) в канал {other}{stayed}",
+    "entry.streamStart": "{n} начал(а) трансляцию",
+    "entry.streamStop": "{n} завершил(а) трансляцию",
+    "entry.videoStart": "{n} включил(а) камеру",
+    "entry.videoStop": "{n} выключил(а) камеру",
+    "entry.mute": "{n} выключил(а) микрофон",
+    "entry.unmute": "{n} включил(а) микрофон",
+    "entry.deafen": "{n} выключил(а) звук",
+    "entry.undeafen": "{n} включил(а) звук",
+    "note.here": "всё ещё здесь · {d}",
+    "note.stillThere": "был(а) здесь, когда вы вышли · {d}",
+    "note.atLeast": "пробыл(а) не менее {d}",
+    "note.stayed": "пробыл(а) {d}",
+    "text.now": "сейчас",
+    "text.nothing": "(ничего не записано)",
+    "filter.all": "Все",
+    "filter.people": "Входы и выходы",
+    "filter.streams": "Трансляции",
+    "filter.voice": "Микрофон и звук",
+    "settings.moves": "Переходы",
+    "settings.moves.description": "Записывать переходы из других каналов и в них как переходы, а не как обычные входы и выходы.",
+    "settings.streams": "Трансляции и камера",
+    "settings.streams.description": "Записывать, когда кто-то начинает или завершает трансляцию либо включает или выключает камеру.",
+    "settings.muteDeafen": "Отключения микрофона и звука",
+    "settings.muteDeafen.description": "Записывать, когда кто-то выключает или включает микрофон или звук.",
+    "settings.toasts": "Уведомления",
+    "settings.toasts.description": "Показывать уведомление, когда кто-то заходит, выходит или переходит в другой канал.",
+    "settings.onlyUnfocused": "Только когда Discord не в фокусе",
+    "settings.onlyUnfocused.description": "Показывать эти уведомления, только пока окно Discord не в фокусе.",
+    "settings.showButton": "Кнопка на голосовой панели",
+    "settings.showButton.description": "Кнопка журнала на панели «Голосовая связь подключена». Команда /vclog работает в любом случае.",
+    "user.unknown": "Неизвестный пользователь",
+    "channel.call": "звонок",
+    "dialog.title": "Журнал голосовой активности",
+    "dialog.subtitle": "Кто заходил в ваши голосовые каналы и выходил из них. Хранится до перезапуска Discord.",
+    "dialog.close": "Закрыть",
+    "dialog.empty": "Пока ничего нет. Подключитесь к голосовому каналу, и здесь появится, кто заходит и выходит.",
+    "dialog.sessions": "Сеансы",
+    "dialog.live": "Вы здесь сейчас",
+    "dialog.sessionNow": "Сейчас · {d}",
+    "dialog.filterName": "Фильтр по имени",
+    "dialog.show": "Показать",
+    "dialog.activityIn": "Активность в канале {channel}",
+    "dialog.noMatch": "Ничего не подходит под фильтр.",
+    "dialog.noneInSession": "В этом сеансе пока ничего не записано.",
+    "dialog.clear": "Очистить журнал",
+    "dialog.copy": "Копировать как текст",
+    "toast.copied": "Журнал скопирован",
+    "toast.copyFailed": "Не удалось скопировать журнал",
+    "button.label": "Журнал голосовой активности",
+    "panel.log": "Журнал",
+    "panel.open": "Открыть журнал",
+    "panel.entries": { one: "{count} запись", few: "{count} записи", many: "{count} записей", other: "{count} записи" },
+    "panel.sessions": { one: "{count} сеанс", few: "{count} сеанса", many: "{count} сеансов", other: "{count} сеанса" },
+    "panel.summary": "{entries} за {sessions}. Хранится только в памяти.",
+    "panel.nothing": "Пока ничего нет. Хранится только в памяти.",
+    "command.description": "Кто недавно заходил в ваш голосовой канал и выходил из него",
+    "command.empty": "Пока ничего не записано. Подключитесь к голосовому каналу, и здесь появится, кто заходит и выходит."
+  },
+  tr: {
+    "duration.s": "{n} sn",
+    "duration.m": "{n} dk",
+    "duration.h": "{n} sa",
+    "duration.hm": "{h} sa {m} dk",
+    "channel.id": "{id} kanalı",
+    "channel.other": "başka bir kanal",
+    "stay.some": " ({d} kaldı)",
+    "stay.atLeast": " (en az {d} kaldı)",
+    "entry.selfJoin": "{channel} kanalına katıldın",
+    "entry.selfMove": "{other} kanalına geçtin{stayed}",
+    "entry.selfLeave": "Ayrıldın{stayed}",
+    "entry.present": "{n} zaten buradaydı",
+    "entry.join": "{n} katıldı",
+    "entry.leave": "{n} ayrıldı{stayed}",
+    "entry.moveIn": "{n}, {other} kanalından buraya geçti",
+    "entry.moveOut": "{n}, {other} kanalına geçti{stayed}",
+    "entry.streamStart": "{n} yayın başlattı",
+    "entry.streamStop": "{n} yayını bitirdi",
+    "entry.videoStart": "{n} kamerasını açtı",
+    "entry.videoStop": "{n} kamerasını kapattı",
+    "entry.mute": "{n} mikrofonunu kapattı",
+    "entry.unmute": "{n} mikrofonunu açtı",
+    "entry.deafen": "{n} sesi kapattı",
+    "entry.undeafen": "{n} sesi açtı",
+    "note.here": "hâlâ burada · {d}",
+    "note.stillThere": "sen ayrıldığında hâlâ oradaydı · {d}",
+    "note.atLeast": "en az {d} kaldı",
+    "note.stayed": "{d} kaldı",
+    "text.now": "şimdi",
+    "text.nothing": "(kayıt yok)",
+    "filter.all": "Tümü",
+    "filter.people": "Katılma ve ayrılma",
+    "filter.streams": "Yayınlar",
+    "filter.voice": "Mikrofon ve ses",
+    "settings.moves": "Kanal geçişleri",
+    "settings.moves.description": "Başka kanallardan gelenleri ve oralara gidenleri düz katılma ve ayrılma olarak değil, geçiş olarak kaydet.",
+    "settings.streams": "Yayınlar ve kamera",
+    "settings.streams.description": "Biri yayın veya kamerasını başlattığında ya da bitirdiğinde kaydet.",
+    "settings.muteDeafen": "Susturmalar ve sağırlaştırmalar",
+    "settings.muteDeafen.description": "Biri mikrofonunu veya sesini kapattığında ya da açtığında kaydet.",
+    "settings.toasts": "Bildirimler",
+    "settings.toasts.description": "Biri katıldığında, ayrıldığında veya kanal değiştirdiğinde bildirim göster.",
+    "settings.onlyUnfocused": "Yalnızca Discord odakta değilken",
+    "settings.onlyUnfocused.description": "Bu bildirimleri yalnızca Discord penceresi odakta değilken göster.",
+    "settings.showButton": "Ses paneli düğmesi",
+    "settings.showButton.description": "Ses Bağlı panelinde bir kayıt düğmesi. /vclog her iki durumda da çalışır.",
+    "user.unknown": "Bilinmeyen kullanıcı",
+    "channel.call": "bir arama",
+    "dialog.title": "Ses Etkinliği Kaydı",
+    "dialog.subtitle": "Ses kanallarına kimlerin girip çıktığı. Discord yeniden başlatılana kadar saklanır.",
+    "dialog.close": "Kapat",
+    "dialog.empty": "Henüz bir şey yok. Bir ses kanalına katıl, kimlerin girip çıktığı burada görünsün.",
+    "dialog.sessions": "Oturumlar",
+    "dialog.live": "Şu an buradasın",
+    "dialog.sessionNow": "Şimdi · {d}",
+    "dialog.filterName": "Ada göre filtrele",
+    "dialog.show": "Göster",
+    "dialog.activityIn": "{channel} kanalındaki etkinlik",
+    "dialog.noMatch": "Filtreyle eşleşen bir şey yok.",
+    "dialog.noneInSession": "Bu oturumda henüz bir şey kaydedilmedi.",
+    "dialog.clear": "Kaydı temizle",
+    "dialog.copy": "Metin olarak kopyala",
+    "toast.copied": "Kayıt kopyalandı",
+    "toast.copyFailed": "Kayıt kopyalanamadı",
+    "button.label": "Ses etkinliği kaydı",
+    "panel.log": "Kayıt",
+    "panel.open": "Kaydı aç",
+    "panel.entries": { one: "{count} giriş", other: "{count} giriş" },
+    "panel.sessions": { one: "{count} oturum", other: "{count} oturum" },
+    "panel.summary": "{sessions} içinde {entries}. Yalnızca bellekte tutulur.",
+    "panel.nothing": "Henüz bir şey yok. Yalnızca bellekte tutulur.",
+    "command.description": "Ses kanalına son zamanlarda kimlerin katılıp ayrıldığı",
+    "command.empty": "Henüz kayıt yok. Bir ses kanalına katıl, kimlerin girip çıktığı burada görünsün."
+  }
+});
+
 // plugins/voice-activity-log/index.tsx
 var jsx_runtime = require("react/jsx-runtime");
 var settings = {
-  moves: { type: "boolean", label: "Moves", description: "Log moves from and to other channels as moves, not as plain joins and leaves.", default: true },
-  streams: { type: "boolean", label: "Streams and camera", description: "Log when someone starts or stops streaming or their camera.", default: false },
-  muteDeafen: { type: "boolean", label: "Mutes and deafens", description: "Log when someone mutes, unmutes, deafens or undeafens.", default: false },
-  toasts: { type: "boolean", label: "Toasts", description: "Pop up a toast when someone joins, leaves or moves.", default: false },
-  onlyUnfocused: { type: "boolean", label: "Only when Discord isn't focused", description: "Show those toasts only while the Discord window isn't focused.", default: false },
-  showButton: { type: "boolean", label: "Voice panel button", description: "A log button in the Voice Connected panel. /vclog works either way.", default: true }
+  moves: {
+    type: "boolean",
+    get label() {
+      return t("settings.moves");
+    },
+    get description() {
+      return t("settings.moves.description");
+    },
+    default: true
+  },
+  streams: {
+    type: "boolean",
+    get label() {
+      return t("settings.streams");
+    },
+    get description() {
+      return t("settings.streams.description");
+    },
+    default: false
+  },
+  muteDeafen: {
+    type: "boolean",
+    get label() {
+      return t("settings.muteDeafen");
+    },
+    get description() {
+      return t("settings.muteDeafen.description");
+    },
+    default: false
+  },
+  toasts: {
+    type: "boolean",
+    get label() {
+      return t("settings.toasts");
+    },
+    get description() {
+      return t("settings.toasts.description");
+    },
+    default: false
+  },
+  onlyUnfocused: {
+    type: "boolean",
+    get label() {
+      return t("settings.onlyUnfocused");
+    },
+    get description() {
+      return t("settings.onlyUnfocused.description");
+    },
+    default: false
+  },
+  showButton: {
+    type: "boolean",
+    get label() {
+      return t("settings.showButton");
+    },
+    get description() {
+      return t("settings.showButton.description");
+    },
+    default: true
+  }
 };
 var context;
 var log;
 var selectedChannels;
 function store(name) {
   try {
-    return import_api.findStore(name);
+    return import_api2.findStore(name);
   } catch {
     return;
   }
@@ -410,13 +1135,13 @@ function nameOf(userId, guildId) {
   if (friendNick)
     return friendNick;
   const user = store("UserStore")?.getUser?.(userId);
-  return user?.globalName ?? user?.global_name ?? user?.username ?? "Unknown user";
+  return user?.globalName ?? user?.global_name ?? user?.username ?? t("user.unknown");
 }
 function channelName(channelId) {
   const channel = getChannel(channelId);
   if (channel?.name)
     return channel.name;
-  return channel ? "a call" : "another channel";
+  return channel ? t("channel.call") : t("channel.other");
 }
 function avatarOf(userId, guildId) {
   try {
@@ -449,9 +1174,10 @@ function sync(moves) {
   const focused = typeof document !== "undefined" && document.hasFocus();
   for (const entry of added) {
     if (shouldToast(entry, s, focused))
-      context.toast(describe(entry), { type: "info" });
+      context.toast(describe(entry, undefined, tr), { type: "info" });
   }
 }
+var tr = (key, vars) => t(key, vars);
 function movesOf(action) {
   const moves = new Map;
   for (const vs of action.voiceStates ?? []) {
@@ -473,7 +1199,7 @@ function openLog() {
     return;
   closeOpen?.();
   const current = log;
-  const close = import_api.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(LogDialog, {
+  const close = import_api2.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(LogDialog, {
     log: current,
     onClose: () => close2()
   }), {
@@ -482,8 +1208,8 @@ function openLog() {
   closeOpen = close;
 }
 function useNow(ms) {
-  const [now, setNow] = import_api.React.useState(Date.now);
-  import_api.React.useEffect(() => {
+  const [now, setNow] = import_api2.React.useState(Date.now);
+  import_api2.React.useEffect(() => {
     const handle = setInterval(() => setNow(Date.now()), ms);
     return () => clearInterval(handle);
   }, [ms]);
@@ -491,11 +1217,11 @@ function useNow(ms) {
 }
 function sessionDetail(session, now) {
   if (session.endedAt === undefined)
-    return `Now · ${formatDuration(now - session.startedAt)}`;
-  return `${formatClock(session.startedAt)} · ${formatDuration(session.endedAt - session.startedAt)}`;
+    return t("dialog.sessionNow", { d: formatDuration(now - session.startedAt, tr) });
+  return `${formatClock(session.startedAt)} · ${formatDuration(session.endedAt - session.startedAt, tr)}`;
 }
 function Avatar({ entry, guildId }) {
-  const [broken, setBroken] = import_api.React.useState(false);
+  const [broken, setBroken] = import_api2.React.useState(false);
   const src = entry.userId ? avatarOf(entry.userId, guildId) : undefined;
   if (!src || broken)
     return /* @__PURE__ */ jsx_runtime.jsx("span", {
@@ -513,9 +1239,9 @@ function Avatar({ entry, guildId }) {
   });
 }
 function Row({ entry, session, now }) {
-  const text = describe(entry, session.channelName);
+  const text = describe(entry, session.channelName, tr);
   const self = entry.kind === "selfJoin" || entry.kind === "selfLeave";
-  const note = stayNote(entry, now);
+  const note = stayNote(entry, now, tr);
   const named = !self && text.startsWith(entry.name);
   return /* @__PURE__ */ jsx_runtime.jsxs("li", {
     className: "evi-vcl-row",
@@ -577,16 +1303,16 @@ var SearchIcon = () => /* @__PURE__ */ jsx_runtime.jsx("svg", {
   })
 });
 function LogDialog({ log: log2, onClose }) {
-  import_api.React.useSyncExternalStore(log2.subscribe, log2.getVersion);
+  import_api2.React.useSyncExternalStore(log2.subscribe, log2.getVersion);
   const now = useNow(15000);
   const sessions = log2.sessions;
-  const [selected, setSelected] = import_api.React.useState(sessions[0]?.id);
-  const [kind, setKind] = import_api.React.useState("all");
-  const [query, setQuery] = import_api.React.useState("");
-  const ref = import_api.React.useRef(null);
+  const [selected, setSelected] = import_api2.React.useState(sessions[0]?.id);
+  const [kind, setKind] = import_api2.React.useState("all");
+  const [query, setQuery] = import_api2.React.useState("");
+  const ref = import_api2.React.useRef(null);
   const session = sessions.find((s) => s.id === selected) ?? sessions[0];
   const entries = session ? filterEntries(session.entries, kind, query) : [];
-  import_api.React.useEffect(() => {
+  import_api2.React.useEffect(() => {
     const previous = document.activeElement;
     ref.current?.focus();
     const onKey = (e) => {
@@ -606,11 +1332,11 @@ function LogDialog({ log: log2, onClose }) {
     if (!session)
       return;
     try {
-      await copy(formatSessions([{ ...session, entries }], Date.now()));
-      context?.toast("Copied the log", { type: "success" });
+      await copy(formatSessions([{ ...session, entries }], Date.now(), tr));
+      context?.toast(t("toast.copied"), { type: "success" });
     } catch (err) {
       context?.logger.error("Couldn't copy", err);
-      context?.toast("Couldn't copy the log", { type: "failure" });
+      context?.toast(t("toast.copyFailed"), { type: "failure" });
     }
   };
   return /* @__PURE__ */ jsx_runtime.jsx("div", {
@@ -632,18 +1358,18 @@ function LogDialog({ log: log2, onClose }) {
               children: [
                 /* @__PURE__ */ jsx_runtime.jsx("h2", {
                   id: "evi-vcl-title",
-                  children: "Voice Activity Log"
+                  children: t("dialog.title")
                 }),
                 /* @__PURE__ */ jsx_runtime.jsx("p", {
                   id: "evi-vcl-subtitle",
-                  children: "Who came and went in your voice channels. Kept until Discord restarts."
+                  children: t("dialog.subtitle")
                 })
               ]
             }),
             /* @__PURE__ */ jsx_runtime.jsx("button", {
               type: "button",
               className: "evi-vcl-close",
-              "aria-label": "Close",
+              "aria-label": t("dialog.close"),
               onClick: onClose,
               children: /* @__PURE__ */ jsx_runtime.jsx(CloseIcon, {})
             })
@@ -651,7 +1377,7 @@ function LogDialog({ log: log2, onClose }) {
         }),
         !session ? /* @__PURE__ */ jsx_runtime.jsx("p", {
           className: "evi-vcl-empty",
-          children: "Nothing yet. Join a voice channel and who comes and goes shows up here."
+          children: t("dialog.empty")
         }) : /* @__PURE__ */ jsx_runtime.jsxs("div", {
           className: "evi-vcl-main",
           children: [
@@ -661,7 +1387,7 @@ function LogDialog({ log: log2, onClose }) {
               children: [
                 /* @__PURE__ */ jsx_runtime.jsx("h3", {
                   id: "evi-vcl-sessions",
-                  children: "Sessions"
+                  children: t("dialog.sessions")
                 }),
                 sessions.map((s) => /* @__PURE__ */ jsx_runtime.jsxs("button", {
                   type: "button",
@@ -676,7 +1402,7 @@ function LogDialog({ log: log2, onClose }) {
                         s.endedAt === undefined && /* @__PURE__ */ jsx_runtime.jsx("span", {
                           className: "evi-vcl-live",
                           role: "img",
-                          "aria-label": "You're here now"
+                          "aria-label": t("dialog.live")
                         }),
                         /* @__PURE__ */ jsx_runtime.jsx("span", {
                           children: s.channelName
@@ -703,8 +1429,8 @@ function LogDialog({ log: log2, onClose }) {
                         /* @__PURE__ */ jsx_runtime.jsx("input", {
                           type: "search",
                           inputMode: "search",
-                          placeholder: "Filter by name",
-                          "aria-label": "Filter by name",
+                          placeholder: t("dialog.filterName"),
+                          "aria-label": t("dialog.filterName"),
                           autoComplete: "off",
                           spellCheck: false,
                           value: query,
@@ -715,20 +1441,20 @@ function LogDialog({ log: log2, onClose }) {
                     /* @__PURE__ */ jsx_runtime.jsx("div", {
                       className: "evi-vcl-chips",
                       role: "group",
-                      "aria-label": "Show",
+                      "aria-label": t("dialog.show"),
                       children: FILTERS.map((f) => /* @__PURE__ */ jsx_runtime.jsx("button", {
                         type: "button",
                         className: "evi-vcl-chip",
                         "aria-pressed": kind === f.value,
                         onClick: () => setKind(f.value),
-                        children: f.label
+                        children: t(f.key)
                       }, f.value))
                     })
                   ]
                 }),
                 entries.length ? /* @__PURE__ */ jsx_runtime.jsx("ul", {
                   className: "evi-vcl-list",
-                  "aria-label": `Activity in ${session.channelName}`,
+                  "aria-label": t("dialog.activityIn", { channel: session.channelName }),
                   children: [...entries].reverse().map((e) => /* @__PURE__ */ jsx_runtime.jsx(Row, {
                     entry: e,
                     session,
@@ -736,7 +1462,7 @@ function LogDialog({ log: log2, onClose }) {
                   }, e.id))
                 }) : /* @__PURE__ */ jsx_runtime.jsx("p", {
                   className: "evi-vcl-empty",
-                  children: session.entries.length ? "Nothing matches the filter." : "Nothing logged in this session yet."
+                  children: session.entries.length ? t("dialog.noMatch") : t("dialog.noneInSession")
                 })
               ]
             })
@@ -751,7 +1477,7 @@ function LogDialog({ log: log2, onClose }) {
               "data-variant": "danger",
               disabled: !log2.size,
               onClick: () => log2.clear(),
-              children: "Clear log"
+              children: t("dialog.clear")
             }),
             /* @__PURE__ */ jsx_runtime.jsx("button", {
               type: "button",
@@ -759,7 +1485,7 @@ function LogDialog({ log: log2, onClose }) {
               "data-variant": "primary",
               disabled: !entries.length,
               onClick: copyText,
-              children: "Copy as text"
+              children: t("dialog.copy")
             })
           ]
         })
@@ -809,7 +1535,7 @@ function LogButton() {
   const { showButton } = context.settings.use();
   if (!showButton)
     return null;
-  const label = "Voice activity log";
+  const label = t("button.label");
   const button = /* @__PURE__ */ jsx_runtime.jsx("button", {
     type: "button",
     className: "evi-vcl-panel-button",
@@ -817,17 +1543,17 @@ function LogButton() {
     "aria-label": label,
     children: /* @__PURE__ */ jsx_runtime.jsx(LogIcon, {})
   });
-  const Tooltip = import_api.Components.Tooltip;
+  const Tooltip = import_api2.Components.Tooltip;
   return Tooltip ? /* @__PURE__ */ jsx_runtime.jsx(Tooltip, {
     text: label,
     position: "top",
     children: button
-  }) : import_api.React.cloneElement(button, { title: label });
+  }) : import_api2.React.cloneElement(button, { title: label });
 }
 function SettingsPanel({ log: log2 }) {
-  import_api.React.useSyncExternalStore(log2.subscribe, log2.getVersion);
-  const Button = import_api.Components.Button;
-  const label = "Open log";
+  import_api2.React.useSyncExternalStore(log2.subscribe, log2.getVersion);
+  const Button = import_api2.Components.Button;
+  const label = t("panel.open");
   return /* @__PURE__ */ jsx_runtime.jsxs("div", {
     className: "dl-field-row",
     children: [
@@ -836,15 +1562,12 @@ function SettingsPanel({ log: log2 }) {
         children: [
           /* @__PURE__ */ jsx_runtime.jsx("div", {
             className: "dl-label",
-            children: "Log"
+            children: t("panel.log")
           }),
-          /* @__PURE__ */ jsx_runtime.jsxs("p", {
+          /* @__PURE__ */ jsx_runtime.jsx("p", {
             className: "dl-hint",
             role: "status",
-            children: [
-              log2.size ? `${log2.size} entries over ${log2.sessions.length} session${log2.sessions.length === 1 ? "" : "s"}.` : "Nothing yet.",
-              " Kept in memory only."
-            ]
+            children: log2.size ? t("panel.summary", { entries: t("panel.entries", { count: log2.size }), sessions: t("panel.sessions", { count: log2.sessions.length }) }) : t("panel.nothing")
           })
         ]
       }),
@@ -958,7 +1681,7 @@ var css = `
 }
 @media (prefers-reduced-motion: reduce) { .evi-vcl-panel-button { transition: none; } }
 `;
-var voice_activity_log_default = import_api.definePlugin({
+var voice_activity_log_default = import_api2.definePlugin({
   settings,
   patches: [PATCHES.rtcPanel],
   css,
@@ -1007,13 +1730,15 @@ var voice_activity_log_default = import_api.definePlugin({
     sync();
     ctx.command({
       name: "vclog",
-      description: "Who joined and left your voice channel recently",
+      get description() {
+        return t("command.description");
+      },
       execute() {
         const entries = current.last(15);
         if (!entries.length)
-          return { ephemeral: "Nothing logged yet. Join a voice channel and who comes and goes shows up here." };
+          return { ephemeral: t("command.empty") };
         const names = new Map(current.sessions.map((s) => [s.id, s.channelName]));
-        return { ephemeral: entries.map((e) => formatLine(e, names.get(e.sessionId))).join(`
+        return { ephemeral: entries.map((e) => formatLine(e, names.get(e.sessionId), tr)).join(`
 `) };
       }
     });

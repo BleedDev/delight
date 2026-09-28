@@ -2,7 +2,7 @@
     "id": "message-logger",
     "name": "Message Logger",
     "description": "Deleted messages stay in the chat, marked as deleted, with their pictures, videos and files, and edited messages show what they said before. Kept in memory only: nothing is saved, and it's all gone when Discord restarts.",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "authors": [
         "Evi"
     ],
@@ -17,6 +17,12 @@
         "readMessages": true
     },
     "changelog": [
+        {
+            "version": "1.3.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
         {
             "version": "1.2.0",
             "notes": [
@@ -50,5 +56,207 @@
         }
     ],
     "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Message Logger",
+            "description": "Gelöschte Nachrichten bleiben im Chat, als gelöscht markiert, samt Bildern, Videos und Dateien, und bearbeitete Nachrichten zeigen, was vorher dort stand. Nur im Arbeitsspeicher gehalten: Nichts wird gespeichert, und beim Neustart von Discord ist alles weg.",
+            "changelog": {
+                "1.3.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
+                "1.2.0": [
+                    "Gelöschte Bilder, Videos und Dateien bleiben ebenfalls erhalten. Discord löscht sie zusammen mit der Nachricht von seinen Servern, deshalb werden die im gerade angesehenen Kanal beim Laden gespeichert, im Arbeitsspeicher, bis zu 25 MB pro Datei.",
+                    "Eine Bearbeitung, die einen Anhang entfernt, behält ihn bei der alten Version."
+                ],
+                "1.1.2": [
+                    "Sagt, was es braucht (Nachrichten lesen), und Evi hält es daran."
+                ],
+                "1.1.1": [
+                    "Schnellerer Start: Es findet, was es in Discord braucht, ohne jedes Mal den gesamten Code zu durchsuchen."
+                ],
+                "1.1.0": [
+                    "Klicke mit der rechten Maustaste auf einen Kanal, Thread, eine DM oder einen Server, um nur die protokollierten Nachrichten dort zu löschen, ohne die Einstellungen zu öffnen."
+                ],
+                "1.0.0": [
+                    "Erste Veröffentlichung."
+                ]
+            }
+        },
+        "es": {
+            "name": "Registro de mensajes",
+            "description": "Los mensajes eliminados se quedan en el chat, marcados como eliminados, con sus imágenes, vídeos y archivos, y los mensajes editados muestran lo que decían antes. Solo se guardan en la memoria: no se almacena nada y todo desaparece al reiniciar Discord.",
+            "changelog": {
+                "1.3.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
+                "1.2.0": [
+                    "Las imágenes, vídeos y archivos eliminados también se conservan. Discord los borra de sus servidores junto con el mensaje, así que los del canal que estás viendo se guardan al cargar, en memoria, hasta 25 MB cada uno.",
+                    "Una edición que quita un archivo adjunto lo conserva en la versión anterior."
+                ],
+                "1.1.2": [
+                    "Indica lo que necesita (leer mensajes) y Evi se lo exige."
+                ],
+                "1.1.1": [
+                    "Inicio más rápido: encuentra lo que necesita en Discord sin buscar en todo su código cada vez."
+                ],
+                "1.1.0": [
+                    "Haz clic derecho en un canal, hilo, MD o servidor para borrar solo sus mensajes registrados, sin abrir los ajustes."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Journal des messages",
+            "description": "Les messages supprimés restent dans la discussion, marqués comme supprimés, avec leurs images, vidéos et fichiers, et les messages modifiés affichent ce qu'ils disaient avant. Conservé uniquement en mémoire : rien n'est enregistré, et tout disparaît au redémarrage de Discord.",
+            "changelog": {
+                "1.3.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
+                "1.2.0": [
+                    "Les images, vidéos et fichiers supprimés sont eux aussi conservés. Discord les efface de ses serveurs avec le message, donc ceux du salon que tu regardes sont enregistrés au chargement, en mémoire, jusqu'à 25 Mo chacun.",
+                    "Une modification qui retire une pièce jointe la garde avec l'ancienne version."
+                ],
+                "1.1.2": [
+                    "Indique ce dont il a besoin (lire les messages), et Evi l'y tient."
+                ],
+                "1.1.1": [
+                    "Démarrage plus rapide : il trouve ce dont il a besoin dans Discord sans fouiller tout son code à chaque fois."
+                ],
+                "1.1.0": [
+                    "Fais un clic droit sur un salon, un fil, un MP ou un serveur pour effacer uniquement ses messages enregistrés, sans ouvrir les paramètres."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "メッセージログ",
+            "description": "削除されたメッセージは、画像・動画・ファイルとともに「削除済み」の表示でチャットに残り、編集されたメッセージは編集前の内容を表示します。メモリ上にのみ保持され、何も保存されません。Discord を再起動するとすべて消えます。",
+            "changelog": {
+                "1.3.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
+                "1.2.0": [
+                    "削除された画像、動画、ファイルも残るようになりました。Discord はメッセージと一緒にサーバーからも削除するため、表示中のチャンネルのものは読み込み時にメモリへ保存されます(1 件あたり最大 25 MB)。",
+                    "添付ファイルを削除する編集をした場合、そのファイルは編集前のバージョンに残ります。"
+                ],
+                "1.1.2": [
+                    "必要な権限(メッセージの読み取り)を明示し、Evi がそれを守らせます。"
+                ],
+                "1.1.1": [
+                    "起動が速くなりました。Discord のコード全体を毎回検索せずに、必要なものを見つけます。"
+                ],
+                "1.1.0": [
+                    "チャンネル、スレッド、DM、サーバーを右クリックすると、設定を開かずにそこで記録されたメッセージだけを消去できます。"
+                ],
+                "1.0.0": [
+                    "最初のリリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Dziennik wiadomości",
+            "description": "Usunięte wiadomości zostają na czacie, oznaczone jako usunięte, razem ze zdjęciami, filmami i plikami, a edytowane wiadomości pokazują, co było w nich wcześniej. Trzymane tylko w pamięci: nic nie jest zapisywane, a po ponownym uruchomieniu Discorda wszystko znika.",
+            "changelog": {
+                "1.3.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
+                "1.2.0": [
+                    "Usunięte zdjęcia, filmy i pliki również zostają. Discord kasuje je ze swoich serwerów razem z wiadomością, więc te z oglądanego kanału są zapisywane w trakcie ładowania, w pamięci, do 25 MB każdy.",
+                    "Edycja, która usuwa załącznik, zachowuje go przy starej wersji."
+                ],
+                "1.1.2": [
+                    "Podaje, czego potrzebuje (czytanie wiadomości), a Evi go tego pilnuje."
+                ],
+                "1.1.1": [
+                    "Szybszy start: znajduje to, czego potrzebuje w Discordzie, bez przeszukiwania za każdym razem całego jego kodu."
+                ],
+                "1.1.0": [
+                    "Kliknij prawym przyciskiem kanał, wątek, wiadomość prywatną lub serwer, aby wyczyścić tylko jego zapisane wiadomości, bez otwierania ustawień."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Registro de Mensagens",
+            "description": "As mensagens excluídas continuam no chat, marcadas como excluídas, com suas imagens, vídeos e arquivos, e as mensagens editadas mostram o que diziam antes. Mantido apenas na memória: nada é salvo, e tudo some quando o Discord é reiniciado.",
+            "changelog": {
+                "1.3.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
+                "1.2.0": [
+                    "Imagens, vídeos e arquivos excluídos também ficam. O Discord os apaga dos servidores junto com a mensagem, então os do canal que você está vendo são salvos conforme carregam, na memória, até 25 MB cada.",
+                    "Uma edição que remove um anexo o mantém na versão antiga."
+                ],
+                "1.1.2": [
+                    "Informa do que precisa (ler mensagens), e o Evi o mantém nisso."
+                ],
+                "1.1.1": [
+                    "Início mais rápido: ele encontra o que precisa no Discord sem vasculhar todo o código toda vez."
+                ],
+                "1.1.0": [
+                    "Clique com o botão direito em um canal, tópico, DM ou servidor para limpar apenas as mensagens registradas dele, sem abrir as configurações."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Журнал сообщений",
+            "description": "Удалённые сообщения остаются в чате с пометкой об удалении, вместе с картинками, видео и файлами, а изменённые сообщения показывают, что в них было раньше. Хранится только в памяти: ничего не сохраняется, а после перезапуска Discord всё исчезает.",
+            "changelog": {
+                "1.3.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
+                "1.2.0": [
+                    "Удалённые картинки, видео и файлы теперь тоже сохраняются. Discord удаляет их со своих серверов вместе с сообщением, поэтому вложения в открытом канале сохраняются по мере загрузки, в памяти, до 25 МБ каждое.",
+                    "Если при изменении сообщения вложение убрали, оно остаётся у старой версии."
+                ],
+                "1.1.2": [
+                    "Теперь указывает, что ему нужно (чтение сообщений), и Evi следит, чтобы он не выходил за эти рамки."
+                ],
+                "1.1.1": [
+                    "Быстрее запускается: находит нужное в Discord, не перебирая каждый раз весь его код."
+                ],
+                "1.1.0": [
+                    "Щёлкните правой кнопкой мыши по каналу, ветке, личному сообщению или серверу, чтобы очистить только его записанные сообщения, не заходя в настройки."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Mesaj Günlüğü",
+            "description": "Silinen mesajlar; resimleri, videoları ve dosyalarıyla birlikte silindi olarak işaretlenmiş şekilde sohbette kalır, düzenlenen mesajlar ise daha önce ne yazdığını gösterir. Yalnızca bellekte tutulur: hiçbir şey kaydedilmez ve Discord yeniden başlatıldığında her şey silinir.",
+            "changelog": {
+                "1.3.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
+                "1.2.0": [
+                    "Silinen resimler, videolar ve dosyalar da artık kalıyor. Discord bunları mesajla birlikte sunucularından siler, bu yüzden baktığın kanaldakiler yüklenirken bellekte, her biri en fazla 25 MB olacak şekilde kaydedilir.",
+                    "Bir eki kaldıran düzenleme, o eki eski sürümle birlikte tutar."
+                ],
+                "1.1.2": [
+                    "Neye ihtiyacı olduğunu (mesajları okumak) belirtir ve Evi onu bununla sınırlar."
+                ],
+                "1.1.1": [
+                    "Daha hızlı başlar: Discord'un tüm kodunu her seferinde taramadan ihtiyacı olanı bulur."
+                ],
+                "1.1.0": [
+                    "Bir kanala, alt kanala, DM'ye veya sunucuya sağ tıklayarak ayarları açmadan yalnızca oradaki kaydedilmiş mesajları temizleyebilirsin."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    },
     "main": "index.js"
 }

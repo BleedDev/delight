@@ -2,7 +2,7 @@
     "id": "friend-online-alerts",
     "name": "Friend Online Alerts",
     "description": "Get told when the people you pick come online, with a toast, a desktop notification or a sound. Optionally when they go offline, start a game or start streaming.",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.1.0",
+            "notes": [
+                "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
+            ]
+        },
         {
             "version": "1.0.2",
             "notes": [
@@ -31,5 +37,151 @@
         }
     ],
     "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Freunde-Online-Hinweise",
+            "description": "Lass dich benachrichtigen, wenn die Leute, die du auswählst, online kommen, mit einem Hinweis, einer Desktop-Benachrichtigung oder einem Sound. Auf Wunsch auch, wenn sie offline gehen, ein Spiel starten oder streamen.",
+            "changelog": {
+                "1.1.0": [
+                    "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
+                ],
+                "1.0.2": [
+                    "Sagt, was es braucht, nämlich nichts über das hinaus, was Discord ihm ohnehin zeigt, und Evi sorgt dafür, dass es sich daran hält."
+                ],
+                "1.0.1": [
+                    "Schonender auf großen Servern: Eine Welle von Statusänderungen liest die Beobachtungsliste einmal statt einmal pro Person."
+                ],
+                "1.0.0": [
+                    "Erste Veröffentlichung."
+                ]
+            }
+        },
+        "es": {
+            "name": "Avisos de amigos en línea",
+            "description": "Recibe un aviso cuando las personas que elijas se conecten, con un aviso en la app, una notificación de escritorio o un sonido. Opcionalmente también cuando se desconecten, empiecen a jugar o empiecen un directo.",
+            "changelog": {
+                "1.1.0": [
+                    "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
+                ],
+                "1.0.2": [
+                    "Indica lo que necesita, que no es nada más allá de lo que Discord ya le muestra, y Evi hace que lo cumpla."
+                ],
+                "1.0.1": [
+                    "Más ligero en servidores grandes: una ráfaga de cambios de estado lee tu lista de vigilancia una vez en lugar de una vez por persona."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Alertes d'amis en ligne",
+            "description": "Sois prévenu quand les personnes que tu choisis se connectent, avec une notification dans l'app, une notification de bureau ou un son. En option, aussi quand elles se déconnectent, lancent un jeu ou démarrent un stream.",
+            "changelog": {
+                "1.1.0": [
+                    "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
+                ],
+                "1.0.2": [
+                    "Indique ce dont il a besoin, c'est-à-dire rien de plus que ce que Discord lui montre déjà, et Evi veille à ce qu'il s'y tienne."
+                ],
+                "1.0.1": [
+                    "Plus léger sur les gros serveurs : une rafale de changements de statut lit ta liste de surveillance une seule fois au lieu d'une fois par personne."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "フレンドオンライン通知",
+            "description": "選んだ人がオンラインになると、トースト、デスクトップ通知、サウンドでお知らせします。オフラインになったとき、ゲームを始めたとき、配信を始めたときの通知も設定できます。",
+            "changelog": {
+                "1.1.0": [
+                    "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
+                ],
+                "1.0.2": [
+                    "必要なもの (Discordがすでに表示している情報以外は何も不要) を明示し、Evi がその範囲内に制限します。"
+                ],
+                "1.0.1": [
+                    "大規模サーバーでの負荷を軽減: ステータス更新が大量に届いても、ウォッチリストを1人ごとではなく1回だけ読み込みます。"
+                ],
+                "1.0.0": [
+                    "最初のリリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Powiadomienia o znajomych online",
+            "description": "Dostawaj powiadomienie, gdy wybrane osoby przejdą w tryb online, w formie powiadomienia w aplikacji, na pulpicie lub dźwięku. Opcjonalnie także gdy przejdą w tryb offline, zaczną grać lub rozpoczną transmisję.",
+            "changelog": {
+                "1.1.0": [
+                    "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
+                ],
+                "1.0.2": [
+                    "Podaje, czego potrzebuje, czyli niczego ponad to, co Discord i tak jej pokazuje, a Evi pilnuje, żeby się tego trzymała."
+                ],
+                "1.0.1": [
+                    "Lżejsza na dużych serwerach: seria zmian statusu odczytuje listę obserwowanych raz, a nie raz na osobę."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Avisos de amigos online",
+            "description": "Receba um aviso quando as pessoas que você escolher ficarem online, com um aviso no app, uma notificação da área de trabalho ou um som. Opcionalmente também quando ficarem offline, começarem a jogar ou a transmitir.",
+            "changelog": {
+                "1.1.0": [
+                    "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
+                ],
+                "1.0.2": [
+                    "Informa o que precisa, que é nada além do que o Discord já mostra, e o Evi garante que ele respeite isso."
+                ],
+                "1.0.1": [
+                    "Mais leve em servidores grandes: uma enxurrada de atualizações de status lê sua lista de acompanhamento uma vez em vez de uma vez por pessoa."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Друзья в сети: уведомления",
+            "description": "Получайте уведомление, когда выбранные вами люди появляются в сети: всплывающее в приложении, на рабочем столе или звуковое. По желанию также когда они выходят из сети, запускают игру или начинают трансляцию.",
+            "changelog": {
+                "1.1.0": [
+                    "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
+                ],
+                "1.0.2": [
+                    "Сообщает, что ему нужно (ничего сверх того, что Discord и так показывает), а Evi следит, чтобы он не выходил за эти рамки."
+                ],
+                "1.0.1": [
+                    "Меньше нагрузки на больших серверах: при пачке обновлений статусов список отслеживаемых читается один раз, а не для каждого человека."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Arkadaş Çevrimiçi Bildirimleri",
+            "description": "Seçtiğin kişiler çevrimiçi olduğunda uygulama içi bildirim, masaüstü bildirimi veya sesle haberdar ol. İstersen çevrimdışı olduklarında, oyun başlattıklarında veya yayın açtıklarında da.",
+            "changelog": {
+                "1.1.0": [
+                    "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
+                ],
+                "1.0.2": [
+                    "İhtiyacını belirtir; bu, Discord'un zaten gösterdiğinin ötesinde hiçbir şey değildir ve Evi onu bunun dışına çıkarmaz."
+                ],
+                "1.0.1": [
+                    "Büyük sunucularda daha hafif: bir grup durum güncellemesi, izleme listeni kişi başına bir kez yerine tek seferde okur."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    },
     "main": "index.js"
 }

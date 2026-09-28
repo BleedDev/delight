@@ -42,7 +42,7 @@ __export(exports_hide_blocked, {
   default: () => hide_blocked_default
 });
 module.exports = __toCommonJS(exports_hide_blocked);
-var import_api = require("@evi/api");
+var import_api2 = require("@evi/api");
 
 // plugins/hide-blocked/filter.ts
 var BLOCKED_GROUP = "MESSAGE_GROUP_BLOCKED";
@@ -169,36 +169,196 @@ var PATCHES = {
   }
 };
 
+// plugins/hide-blocked/strings.ts
+var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    "settings.active": "Hide blocked messages",
+    "settings.active.description": `Turn off to get Discord's collapsed "blocked messages" rows back. /hideblocked flips this.`,
+    "settings.ignored": "Ignored users too",
+    "settings.ignored.description": "Treat users you ignored like users you blocked.",
+    "settings.replies": "Hide replies to them",
+    "settings.replies.description": 'Also hide messages replying to a hidden user. When off, the reply stays and its quote reads "Blocked message".',
+    "settings.memberList": "Hide from the member list",
+    "settings.memberList.description": "Leave them out of a server's member list. Takes effect as the list updates.",
+    "settings.voice": "Hide from voice channels",
+    "settings.voice.description": "Leave them out of the users listed under voice channels.",
+    "command.description": "Toggle hiding blocked users' messages",
+    "command.on": "Blocked users' messages are hidden.",
+    "command.off": "Blocked users' messages show as Discord's collapsed rows again."
+  },
+  de: {
+    "settings.active": "Blockierte Nachrichten ausblenden",
+    "settings.active.description": "Ausschalten, um Discords eingeklappte Zeilen „blockierte Nachrichten“ zurückzubekommen. /hideblocked schaltet das um.",
+    "settings.ignored": "Auch ignorierte Nutzer",
+    "settings.ignored.description": "Ignorierte Nutzer wie blockierte Nutzer behandeln.",
+    "settings.replies": "Antworten auf sie ausblenden",
+    "settings.replies.description": "Blendet auch Nachrichten aus, die auf einen ausgeblendeten Nutzer antworten. Wenn aus, bleibt die Antwort stehen und ihr Zitat lautet „Blockierte Nachricht“.",
+    "settings.memberList": "In der Mitgliederliste ausblenden",
+    "settings.memberList.description": "Lässt sie in der Mitgliederliste eines Servers weg. Wirkt, sobald sich die Liste aktualisiert.",
+    "settings.voice": "In Sprachkanälen ausblenden",
+    "settings.voice.description": "Lässt sie in der Nutzerliste unter den Sprachkanälen weg.",
+    "command.description": "Ausblenden der Nachrichten blockierter Nutzer ein- oder ausschalten",
+    "command.on": "Nachrichten blockierter Nutzer werden ausgeblendet.",
+    "command.off": "Nachrichten blockierter Nutzer erscheinen wieder als Discords eingeklappte Zeilen."
+  },
+  es: {
+    "settings.active": "Ocultar mensajes bloqueados",
+    "settings.active.description": "Desactívalo para recuperar las filas plegadas de «mensajes bloqueados» de Discord. /hideblocked lo activa o desactiva.",
+    "settings.ignored": "También usuarios ignorados",
+    "settings.ignored.description": "Trata a los usuarios que ignoraste como a los que bloqueaste.",
+    "settings.replies": "Ocultar respuestas a ellos",
+    "settings.replies.description": "También oculta los mensajes que responden a un usuario oculto. Si está desactivado, la respuesta se queda y su cita dice «Mensaje bloqueado».",
+    "settings.memberList": "Ocultar de la lista de miembros",
+    "settings.memberList.description": "Los deja fuera de la lista de miembros de un servidor. Surte efecto cuando se actualiza la lista.",
+    "settings.voice": "Ocultar de los canales de voz",
+    "settings.voice.description": "Los deja fuera de los usuarios que aparecen bajo los canales de voz.",
+    "command.description": "Activa o desactiva la ocultación de mensajes de usuarios bloqueados",
+    "command.on": "Los mensajes de usuarios bloqueados están ocultos.",
+    "command.off": "Los mensajes de usuarios bloqueados vuelven a mostrarse como las filas plegadas de Discord."
+  },
+  fr: {
+    "settings.active": "Masquer les messages bloqués",
+    "settings.active.description": "Désactive pour retrouver les lignes repliées « messages bloqués » de Discord. /hideblocked l'active ou le désactive.",
+    "settings.ignored": "Aussi les utilisateurs ignorés",
+    "settings.ignored.description": "Traite les utilisateurs que tu as ignorés comme ceux que tu as bloqués.",
+    "settings.replies": "Masquer les réponses à ces utilisateurs",
+    "settings.replies.description": "Masque aussi les messages qui répondent à un utilisateur masqué. Désactivé, la réponse reste et sa citation affiche « Message bloqué ».",
+    "settings.memberList": "Masquer de la liste des membres",
+    "settings.memberList.description": "Les retire de la liste des membres d'un serveur. Prend effet à la mise à jour de la liste.",
+    "settings.voice": "Masquer des salons vocaux",
+    "settings.voice.description": "Les retire des utilisateurs listés sous les salons vocaux.",
+    "command.description": "Active ou désactive le masquage des messages des utilisateurs bloqués",
+    "command.on": "Les messages des utilisateurs bloqués sont masqués.",
+    "command.off": "Les messages des utilisateurs bloqués s'affichent de nouveau en lignes repliées de Discord."
+  },
+  ja: {
+    "settings.active": "ブロックしたメッセージを非表示",
+    "settings.active.description": "オフにすると、Discord の折りたたまれた「ブロックしたメッセージ」の行が戻ります。/hideblocked で切り替えられます。",
+    "settings.ignored": "無視したユーザーも対象にする",
+    "settings.ignored.description": "無視したユーザーを、ブロックしたユーザーと同じように扱います。",
+    "settings.replies": "そのユーザーへの返信を非表示",
+    "settings.replies.description": "非表示のユーザーへの返信メッセージも隠します。オフの場合、返信は残り、引用部分は「ブロックしたメッセージ」と表示されます。",
+    "settings.memberList": "メンバーリストから非表示",
+    "settings.memberList.description": "サーバーのメンバーリストに表示しません。リストが更新されると反映されます。",
+    "settings.voice": "ボイスチャンネルから非表示",
+    "settings.voice.description": "ボイスチャンネルの下に並ぶユーザーに表示しません。",
+    "command.description": "ブロックしたユーザーのメッセージの非表示を切り替える",
+    "command.on": "ブロックしたユーザーのメッセージを非表示にしました。",
+    "command.off": "ブロックしたユーザーのメッセージが、Discord の折りたたみ行として表示されるようになりました。"
+  },
+  pl: {
+    "settings.active": "Ukrywaj zablokowane wiadomości",
+    "settings.active.description": "Wyłącz, aby wróciły zwinięte wiersze „zablokowanych wiadomości” z Discorda. Przełączysz to poleceniem /hideblocked.",
+    "settings.ignored": "Także ignorowani użytkownicy",
+    "settings.ignored.description": "Traktuj zignorowanych użytkowników tak jak zablokowanych.",
+    "settings.replies": "Ukrywaj odpowiedzi do nich",
+    "settings.replies.description": "Ukrywa też wiadomości odpowiadające ukrytemu użytkownikowi. Gdy wyłączone, odpowiedź zostaje, a jej cytat brzmi „Zablokowana wiadomość”.",
+    "settings.memberList": "Ukrywaj na liście członków",
+    "settings.memberList.description": "Pomija ich na liście członków serwera. Działa po odświeżeniu listy.",
+    "settings.voice": "Ukrywaj na kanałach głosowych",
+    "settings.voice.description": "Pomija ich wśród użytkowników wyświetlanych pod kanałami głosowymi.",
+    "command.description": "Włącz lub wyłącz ukrywanie wiadomości zablokowanych użytkowników",
+    "command.on": "Wiadomości zablokowanych użytkowników są ukryte.",
+    "command.off": "Wiadomości zablokowanych użytkowników znów pojawiają się jako zwinięte wiersze Discorda."
+  },
+  "pt-BR": {
+    "settings.active": "Ocultar mensagens bloqueadas",
+    "settings.active.description": "Desative para voltar às linhas recolhidas de “mensagens bloqueadas” do Discord. /hideblocked ativa ou desativa.",
+    "settings.ignored": "Usuários ignorados também",
+    "settings.ignored.description": "Trata os usuários que você ignorou como os que você bloqueou.",
+    "settings.replies": "Ocultar respostas a eles",
+    "settings.replies.description": "Também oculta mensagens que respondem a um usuário oculto. Desativado, a resposta continua e a citação mostra “Mensagem bloqueada”.",
+    "settings.memberList": "Ocultar da lista de membros",
+    "settings.memberList.description": "Deixa eles de fora da lista de membros de um servidor. Vale quando a lista for atualizada.",
+    "settings.voice": "Ocultar dos canais de voz",
+    "settings.voice.description": "Deixa eles de fora dos usuários listados embaixo dos canais de voz.",
+    "command.description": "Ativa ou desativa a ocultação das mensagens de usuários bloqueados",
+    "command.on": "As mensagens de usuários bloqueados estão ocultas.",
+    "command.off": "As mensagens de usuários bloqueados voltam a aparecer como as linhas recolhidas do Discord."
+  },
+  ru: {
+    "settings.active": "Скрывать сообщения заблокированных",
+    "settings.active.description": "Выключите, чтобы вернуть свёрнутые строки Discord «заблокированные сообщения». Команда /hideblocked переключает это.",
+    "settings.ignored": "И игнорируемых пользователей",
+    "settings.ignored.description": "Относиться к игнорируемым пользователям так же, как к заблокированным.",
+    "settings.replies": "Скрывать ответы им",
+    "settings.replies.description": "Также скрывает сообщения-ответы скрытому пользователю. Если выключено, ответ остаётся, а в его цитате написано «Заблокированное сообщение».",
+    "settings.memberList": "Скрывать в списке участников",
+    "settings.memberList.description": "Не показывать их в списке участников сервера. Вступает в силу при обновлении списка.",
+    "settings.voice": "Скрывать в голосовых каналах",
+    "settings.voice.description": "Не показывать их среди пользователей под голосовыми каналами.",
+    "command.description": "Включить или выключить скрытие сообщений заблокированных пользователей",
+    "command.on": "Сообщения заблокированных пользователей скрыты.",
+    "command.off": "Сообщения заблокированных пользователей снова показываются свёрнутыми строками Discord."
+  },
+  tr: {
+    "settings.active": "Engellenen mesajları gizle",
+    "settings.active.description": `Kapatırsan Discord'un daralmış "engellenen mesajlar" satırları geri gelir. /hideblocked bunu açıp kapatır.`,
+    "settings.ignored": "Yok sayılan kullanıcılar da",
+    "settings.ignored.description": "Yok saydığın kullanıcılara engellediğin kullanıcılar gibi davran.",
+    "settings.replies": "Onlara verilen yanıtları gizle",
+    "settings.replies.description": 'Gizlenen bir kullanıcıya yanıt veren mesajları da gizler. Kapalıyken yanıt kalır ve alıntısında "Engellenen mesaj" yazar.',
+    "settings.memberList": "Üye listesinde gizle",
+    "settings.memberList.description": "Bir sunucunun üye listesinde görünmezler. Liste güncellenince geçerli olur.",
+    "settings.voice": "Ses kanallarında gizle",
+    "settings.voice.description": "Ses kanallarının altında listelenen kullanıcılar arasında görünmezler.",
+    "command.description": "Engellenen kullanıcıların mesajlarını gizlemeyi aç veya kapat",
+    "command.on": "Engellenen kullanıcıların mesajları gizlendi.",
+    "command.off": "Engellenen kullanıcıların mesajları yine Discord'un daralmış satırları olarak görünüyor."
+  }
+});
+
 // plugins/hide-blocked/index.ts
 var settings = {
   active: {
     type: "boolean",
-    label: "Hide blocked messages",
-    description: `Turn off to get Discord's collapsed "blocked messages" rows back. /hideblocked flips this.`,
+    get label() {
+      return t("settings.active");
+    },
+    get description() {
+      return t("settings.active.description");
+    },
     default: true
   },
   ignored: {
     type: "boolean",
-    label: "Ignored users too",
-    description: "Treat users you ignored like users you blocked.",
+    get label() {
+      return t("settings.ignored");
+    },
+    get description() {
+      return t("settings.ignored.description");
+    },
     default: true
   },
   replies: {
     type: "boolean",
-    label: "Hide replies to them",
-    description: 'Also hide messages replying to a hidden user. When off, the reply stays and its quote reads "Blocked message".',
+    get label() {
+      return t("settings.replies");
+    },
+    get description() {
+      return t("settings.replies.description");
+    },
     default: false
   },
   memberList: {
     type: "boolean",
-    label: "Hide from the member list",
-    description: "Leave them out of a server's member list. Takes effect as the list updates.",
+    get label() {
+      return t("settings.memberList");
+    },
+    get description() {
+      return t("settings.memberList.description");
+    },
     default: true
   },
   voice: {
     type: "boolean",
-    label: "Hide from voice channels",
-    description: "Leave them out of the users listed under voice channels.",
+    get label() {
+      return t("settings.voice");
+    },
+    get description() {
+      return t("settings.voice.description");
+    },
     default: false
   }
 };
@@ -223,10 +383,10 @@ function subscribe(cb) {
   return () => void listeners.delete(cb);
 }
 function useVersion() {
-  return import_api.React.useSyncExternalStore(subscribe, () => version);
+  return import_api2.React.useSyncExternalStore(subscribe, () => version);
 }
 var voiceCache = new WeakMap;
-var hide_blocked_default = import_api.definePlugin({
+var hide_blocked_default = import_api2.definePlugin({
   settings,
   patches: [PATCHES.stream, PATCHES.memberList, PATCHES.voiceUsers],
   hide(message, collapse) {
@@ -248,8 +408,8 @@ var hide_blocked_default = import_api.definePlugin({
     return out;
   },
   start(ctx) {
-    relationships = import_api.findStore("RelationshipStore");
-    referencedStore = import_api.findStore("ReferencedMessageStore");
+    relationships = import_api2.findStore("RelationshipStore");
+    referencedStore = import_api2.findStore("ReferencedMessageStore");
     options = { ...ctx.settings.all };
     if (!relationships)
       ctx.logger.warn("RelationshipStore not found, only Discord's own blocked flags are used");
@@ -263,11 +423,13 @@ var hide_blocked_default = import_api.definePlugin({
     });
     ctx.command({
       name: "hideblocked",
-      description: "Toggle hiding blocked users' messages",
+      get description() {
+        return t("command.description");
+      },
       execute() {
         const next = !ctx.settings.get("active");
         ctx.settings.set("active", next);
-        return { ephemeral: next ? "Blocked users' messages are hidden." : "Blocked users' messages show as Discord's collapsed rows again." };
+        return { ephemeral: next ? t("command.on") : t("command.off") };
       }
     });
     ctx.onDispose(() => {

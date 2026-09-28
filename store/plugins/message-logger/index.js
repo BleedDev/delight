@@ -42,7 +42,7 @@ __export(exports_message_logger, {
   default: () => message_logger_default
 });
 module.exports = __toCommonJS(exports_message_logger);
-var import_api = require("@evi/api");
+var import_api2 = require("@evi/api");
 
 // plugins/message-logger/log.ts
 var MAX_SAVED_BYTES = 25 * 1024 * 1024;
@@ -326,22 +326,288 @@ class MessageLog {
   }
 }
 
+// plugins/message-logger/strings.ts
+var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    "spoiler.show": "Show spoiler",
+    spoiler: "Spoiler",
+    versions: "Previous versions",
+    "edited.from": "Edited from",
+    deleted: "Deleted",
+    "summary.title": "Logged right now",
+    "summary.text": "{deleted} deleted, {edited} edited. Kept in memory only.",
+    clear: "Clear logged messages",
+    "clear.menu": "Clear Logged Messages",
+    "count.deleted": "{count} deleted",
+    "count.edited": "{count} edited",
+    "count.sep": ", ",
+    cleared: "Cleared {counts}",
+    "settings.keepDeleted": "Keep deleted messages",
+    "settings.keepDeleted.description": "Deleted messages stay in the chat, tinted red and marked Deleted.",
+    "settings.logEdits": "Keep edit history",
+    "settings.logEdits.description": "Edited messages show what they said before, under the message.",
+    "settings.ignoreOwnDeletes": "Ignore my own deletes",
+    "settings.ignoreOwnDeletes.description": "Messages you delete yourself disappear as usual.",
+    "settings.ignoreSelf": "Ignore my own messages",
+    "settings.ignoreSelf.description": "Never log your messages, whoever deletes or edits them.",
+    "settings.ignoreBots": "Ignore bots",
+    "settings.ignoreBots.description": "Don't log messages from bots and apps.",
+    "settings.saveMedia": "Keep deleted pictures, videos and files",
+    "settings.saveMedia.description": "Saves the attachments in the channel you're looking at as they load (up to 25 MB each, in memory), so a deleted message still shows them.",
+    "settings.limit": "Messages logged per channel",
+    "settings.limit.description": "Past this, the oldest are forgotten, and deleted ones among them disappear for real."
+  },
+  de: {
+    "spoiler.show": "Spoiler anzeigen",
+    spoiler: "Spoiler",
+    versions: "Frühere Versionen",
+    "edited.from": "Bearbeitet von",
+    deleted: "Gelöscht",
+    "summary.title": "Aktuell protokolliert",
+    "summary.text": "{deleted} gelöscht, {edited} bearbeitet. Nur im Arbeitsspeicher gehalten.",
+    clear: "Protokollierte Nachrichten löschen",
+    "clear.menu": "Protokollierte Nachrichten löschen",
+    "count.deleted": "{count} gelöscht",
+    "count.edited": "{count} bearbeitet",
+    "count.sep": ", ",
+    cleared: "Gelöscht: {counts}",
+    "settings.keepDeleted": "Gelöschte Nachrichten behalten",
+    "settings.keepDeleted.description": "Gelöschte Nachrichten bleiben im Chat, rot eingefärbt und als gelöscht markiert.",
+    "settings.logEdits": "Bearbeitungsverlauf behalten",
+    "settings.logEdits.description": "Bearbeitete Nachrichten zeigen unter der Nachricht, was vorher dort stand.",
+    "settings.ignoreOwnDeletes": "Eigene Löschungen ignorieren",
+    "settings.ignoreOwnDeletes.description": "Nachrichten, die du selbst löschst, verschwinden wie gewohnt.",
+    "settings.ignoreSelf": "Eigene Nachrichten ignorieren",
+    "settings.ignoreSelf.description": "Deine Nachrichten werden nie protokolliert, egal wer sie löscht oder bearbeitet.",
+    "settings.ignoreBots": "Bots ignorieren",
+    "settings.ignoreBots.description": "Nachrichten von Bots und Apps nicht protokollieren.",
+    "settings.saveMedia": "Gelöschte Bilder, Videos und Dateien behalten",
+    "settings.saveMedia.description": "Speichert die Anhänge im Kanal, den du gerade ansiehst, beim Laden (bis zu 25 MB pro Datei, im Arbeitsspeicher), damit eine gelöschte Nachricht sie weiterhin zeigt.",
+    "settings.limit": "Protokollierte Nachrichten pro Kanal",
+    "settings.limit.description": "Darüber hinaus werden die ältesten vergessen, und gelöschte darunter verschwinden endgültig."
+  },
+  es: {
+    "spoiler.show": "Mostrar spoiler",
+    spoiler: "Spoiler",
+    versions: "Versiones anteriores",
+    "edited.from": "Editado desde",
+    deleted: "Eliminado",
+    "summary.title": "Registrado ahora mismo",
+    "summary.text": "{deleted} eliminados, {edited} editados. Solo se guardan en la memoria.",
+    clear: "Borrar mensajes registrados",
+    "clear.menu": "Borrar mensajes registrados",
+    "count.deleted": "{count} eliminados",
+    "count.edited": "{count} editados",
+    "count.sep": ", ",
+    cleared: "Borrados: {counts}",
+    "settings.keepDeleted": "Conservar mensajes eliminados",
+    "settings.keepDeleted.description": "Los mensajes eliminados se quedan en el chat, teñidos de rojo y marcados como eliminados.",
+    "settings.logEdits": "Conservar historial de ediciones",
+    "settings.logEdits.description": "Los mensajes editados muestran debajo lo que decían antes.",
+    "settings.ignoreOwnDeletes": "Ignorar mis propios borrados",
+    "settings.ignoreOwnDeletes.description": "Los mensajes que eliminas tú desaparecen como siempre.",
+    "settings.ignoreSelf": "Ignorar mis propios mensajes",
+    "settings.ignoreSelf.description": "Nunca registra tus mensajes, sin importar quién los elimine o edite.",
+    "settings.ignoreBots": "Ignorar bots",
+    "settings.ignoreBots.description": "No registra mensajes de bots ni de aplicaciones.",
+    "settings.saveMedia": "Conservar imágenes, vídeos y archivos eliminados",
+    "settings.saveMedia.description": "Guarda los archivos adjuntos del canal que estás viendo a medida que cargan (hasta 25 MB cada uno, en memoria), para que un mensaje eliminado los siga mostrando.",
+    "settings.limit": "Mensajes registrados por canal",
+    "settings.limit.description": "Pasado este número, se olvidan los más antiguos, y los eliminados entre ellos desaparecen de verdad."
+  },
+  fr: {
+    "spoiler.show": "Afficher le spoiler",
+    spoiler: "Spoiler",
+    versions: "Versions précédentes",
+    "edited.from": "Modifié depuis",
+    deleted: "Supprimé",
+    "summary.title": "Actuellement enregistré",
+    "summary.text": "{deleted} supprimés, {edited} modifiés. Conservés en mémoire uniquement.",
+    clear: "Effacer les messages enregistrés",
+    "clear.menu": "Effacer les messages enregistrés",
+    "count.deleted": "{count} supprimés",
+    "count.edited": "{count} modifiés",
+    "count.sep": ", ",
+    cleared: "Effacés : {counts}",
+    "settings.keepDeleted": "Garder les messages supprimés",
+    "settings.keepDeleted.description": "Les messages supprimés restent dans la discussion, teintés de rouge et marqués comme supprimés.",
+    "settings.logEdits": "Garder l'historique des modifications",
+    "settings.logEdits.description": "Les messages modifiés affichent sous le message ce qu'ils disaient avant.",
+    "settings.ignoreOwnDeletes": "Ignorer mes propres suppressions",
+    "settings.ignoreOwnDeletes.description": "Les messages que tu supprimes toi-même disparaissent comme d'habitude.",
+    "settings.ignoreSelf": "Ignorer mes propres messages",
+    "settings.ignoreSelf.description": "N'enregistre jamais tes messages, peu importe qui les supprime ou les modifie.",
+    "settings.ignoreBots": "Ignorer les bots",
+    "settings.ignoreBots.description": "N'enregistre pas les messages des bots et des applications.",
+    "settings.saveMedia": "Garder les images, vidéos et fichiers supprimés",
+    "settings.saveMedia.description": "Enregistre les pièces jointes du salon que tu regardes au fur et à mesure de leur chargement (jusqu'à 25 Mo chacune, en mémoire), pour qu'un message supprimé les affiche toujours.",
+    "settings.limit": "Messages enregistrés par salon",
+    "settings.limit.description": "Au-delà, les plus anciens sont oubliés, et ceux qui ont été supprimés disparaissent pour de bon."
+  },
+  ja: {
+    "spoiler.show": "ネタバレを表示",
+    spoiler: "ネタバレ",
+    versions: "以前のバージョン",
+    "edited.from": "編集前",
+    deleted: "削除済み",
+    "summary.title": "現在の記録",
+    "summary.text": "削除 {deleted} 件、編集 {edited} 件。メモリ上にのみ保持されます。",
+    clear: "記録したメッセージを消去",
+    "clear.menu": "記録したメッセージを消去",
+    "count.deleted": "削除 {count} 件",
+    "count.edited": "編集 {count} 件",
+    "count.sep": "、",
+    cleared: "消去しました: {counts}",
+    "settings.keepDeleted": "削除されたメッセージを残す",
+    "settings.keepDeleted.description": "削除されたメッセージはチャットに残り、赤く表示されて「削除済み」と表示されます。",
+    "settings.logEdits": "編集履歴を残す",
+    "settings.logEdits.description": "編集されたメッセージの下に、編集前の内容を表示します。",
+    "settings.ignoreOwnDeletes": "自分で削除したものは無視",
+    "settings.ignoreOwnDeletes.description": "自分で削除したメッセージは通常どおり消えます。",
+    "settings.ignoreSelf": "自分のメッセージは無視",
+    "settings.ignoreSelf.description": "誰が削除や編集をしても、自分のメッセージは記録しません。",
+    "settings.ignoreBots": "ボットを無視",
+    "settings.ignoreBots.description": "ボットやアプリのメッセージを記録しません。",
+    "settings.saveMedia": "削除された画像、動画、ファイルを残す",
+    "settings.saveMedia.description": "表示中のチャンネルの添付ファイルを読み込み時に保存し (1 件あたり最大 25 MB、メモリ上)、削除されたメッセージでも表示できるようにします。",
+    "settings.limit": "チャンネルごとの記録メッセージ数",
+    "settings.limit.description": "この数を超えると古いものから忘れられ、その中の削除済みメッセージは完全に消えます。"
+  },
+  pl: {
+    "spoiler.show": "Pokaż spoiler",
+    spoiler: "Spoiler",
+    versions: "Poprzednie wersje",
+    "edited.from": "Edytowano z",
+    deleted: "Usunięto",
+    "summary.title": "Aktualnie zapisane",
+    "summary.text": "Usunięte: {deleted}, edytowane: {edited}. Trzymane tylko w pamięci.",
+    clear: "Wyczyść zapisane wiadomości",
+    "clear.menu": "Wyczyść zapisane wiadomości",
+    "count.deleted": "usunięte: {count}",
+    "count.edited": "edytowane: {count}",
+    "count.sep": ", ",
+    cleared: "Wyczyszczono ({counts})",
+    "settings.keepDeleted": "Zachowuj usunięte wiadomości",
+    "settings.keepDeleted.description": "Usunięte wiadomości zostają na czacie, zabarwione na czerwono i oznaczone jako usunięte.",
+    "settings.logEdits": "Zachowuj historię edycji",
+    "settings.logEdits.description": "Edytowane wiadomości pokazują pod spodem, co było w nich wcześniej.",
+    "settings.ignoreOwnDeletes": "Ignoruj moje usunięcia",
+    "settings.ignoreOwnDeletes.description": "Wiadomości, które sam usuwasz, znikają jak zwykle.",
+    "settings.ignoreSelf": "Ignoruj moje wiadomości",
+    "settings.ignoreSelf.description": "Nigdy nie zapisuje Twoich wiadomości, niezależnie od tego, kto je usuwa lub edytuje.",
+    "settings.ignoreBots": "Ignoruj boty",
+    "settings.ignoreBots.description": "Nie zapisuj wiadomości od botów i aplikacji.",
+    "settings.saveMedia": "Zachowuj usunięte zdjęcia, filmy i pliki",
+    "settings.saveMedia.description": "Zapisuje załączniki z oglądanego kanału w trakcie ich ładowania (do 25 MB każdy, w pamięci), dzięki czemu usunięta wiadomość nadal je pokazuje.",
+    "settings.limit": "Zapisane wiadomości na kanał",
+    "settings.limit.description": "Po przekroczeniu tej liczby najstarsze są zapominane, a usunięte wśród nich znikają naprawdę."
+  },
+  "pt-BR": {
+    "spoiler.show": "Mostrar spoiler",
+    spoiler: "Spoiler",
+    versions: "Versões anteriores",
+    "edited.from": "Editada de",
+    deleted: "Excluída",
+    "summary.title": "Registrado agora",
+    "summary.text": "{deleted} excluídas, {edited} editadas. Mantidas apenas na memória.",
+    clear: "Limpar mensagens registradas",
+    "clear.menu": "Limpar mensagens registradas",
+    "count.deleted": "{count} excluídas",
+    "count.edited": "{count} editadas",
+    "count.sep": ", ",
+    cleared: "Limpo: {counts}",
+    "settings.keepDeleted": "Manter mensagens excluídas",
+    "settings.keepDeleted.description": "As mensagens excluídas continuam no chat, em tom avermelhado e marcadas como excluídas.",
+    "settings.logEdits": "Manter histórico de edições",
+    "settings.logEdits.description": "As mensagens editadas mostram, abaixo delas, o que diziam antes.",
+    "settings.ignoreOwnDeletes": "Ignorar minhas próprias exclusões",
+    "settings.ignoreOwnDeletes.description": "As mensagens que você mesmo exclui somem normalmente.",
+    "settings.ignoreSelf": "Ignorar minhas próprias mensagens",
+    "settings.ignoreSelf.description": "Nunca registra suas mensagens, não importa quem as exclua ou edite.",
+    "settings.ignoreBots": "Ignorar bots",
+    "settings.ignoreBots.description": "Não registra mensagens de bots e apps.",
+    "settings.saveMedia": "Manter imagens, vídeos e arquivos excluídos",
+    "settings.saveMedia.description": "Salva os anexos do canal que você está vendo conforme carregam (até 25 MB cada, na memória), para que uma mensagem excluída ainda os mostre.",
+    "settings.limit": "Mensagens registradas por canal",
+    "settings.limit.description": "Depois disso, as mais antigas são esquecidas, e as excluídas entre elas somem de verdade."
+  },
+  ru: {
+    "spoiler.show": "Показать спойлер",
+    spoiler: "Спойлер",
+    versions: "Предыдущие версии",
+    "edited.from": "Изменено с",
+    deleted: "Удалено",
+    "summary.title": "Сейчас записано",
+    "summary.text": "Удалено: {deleted}, изменено: {edited}. Хранится только в памяти.",
+    clear: "Очистить записанные сообщения",
+    "clear.menu": "Очистить записанные сообщения",
+    "count.deleted": "удалено: {count}",
+    "count.edited": "изменено: {count}",
+    "count.sep": ", ",
+    cleared: "Очищено ({counts})",
+    "settings.keepDeleted": "Сохранять удалённые сообщения",
+    "settings.keepDeleted.description": "Удалённые сообщения остаются в чате, подсвечены красным и помечены как удалённые.",
+    "settings.logEdits": "Сохранять историю изменений",
+    "settings.logEdits.description": "Под изменёнными сообщениями показано, что в них было раньше.",
+    "settings.ignoreOwnDeletes": "Игнорировать мои удаления",
+    "settings.ignoreOwnDeletes.description": "Сообщения, которые вы удаляете сами, исчезают как обычно.",
+    "settings.ignoreSelf": "Игнорировать мои сообщения",
+    "settings.ignoreSelf.description": "Ваши сообщения не записываются, кто бы их ни удалял и ни изменял.",
+    "settings.ignoreBots": "Игнорировать ботов",
+    "settings.ignoreBots.description": "Не записывать сообщения от ботов и приложений.",
+    "settings.saveMedia": "Сохранять удалённые картинки, видео и файлы",
+    "settings.saveMedia.description": "Сохраняет вложения в открытом канале по мере загрузки (до 25 МБ каждое, в памяти), чтобы удалённое сообщение по-прежнему их показывало.",
+    "settings.limit": "Записанных сообщений на канал",
+    "settings.limit.description": "Сверх этого самые старые забываются, а удалённые среди них исчезают по-настоящему."
+  },
+  tr: {
+    "spoiler.show": "Spoiler'ı göster",
+    spoiler: "Spoiler",
+    versions: "Önceki sürümler",
+    "edited.from": "Şundan düzenlendi",
+    deleted: "Silindi",
+    "summary.title": "Şu an kaydedilenler",
+    "summary.text": "{deleted} silindi, {edited} düzenlendi. Yalnızca bellekte tutulur.",
+    clear: "Kaydedilen mesajları temizle",
+    "clear.menu": "Kaydedilen Mesajları Temizle",
+    "count.deleted": "{count} silindi",
+    "count.edited": "{count} düzenlendi",
+    "count.sep": ", ",
+    cleared: "Temizlendi: {counts}",
+    "settings.keepDeleted": "Silinen mesajları koru",
+    "settings.keepDeleted.description": "Silinen mesajlar sohbette kalır, kırmızıya boyanır ve silindi olarak işaretlenir.",
+    "settings.logEdits": "Düzenleme geçmişini koru",
+    "settings.logEdits.description": "Düzenlenen mesajlar, altında önceden ne yazdığını gösterir.",
+    "settings.ignoreOwnDeletes": "Kendi sildiklerimi yok say",
+    "settings.ignoreOwnDeletes.description": "Kendi sildiğin mesajlar her zamanki gibi kaybolur.",
+    "settings.ignoreSelf": "Kendi mesajlarımı yok say",
+    "settings.ignoreSelf.description": "Kim silerse ya da düzenlerse düzenlesin, mesajların hiç kaydedilmez.",
+    "settings.ignoreBots": "Botları yok say",
+    "settings.ignoreBots.description": "Botların ve uygulamaların mesajlarını kaydetme.",
+    "settings.saveMedia": "Silinen resim, video ve dosyaları koru",
+    "settings.saveMedia.description": "Baktığın kanaldaki ekleri yüklenirken kaydeder (her biri en fazla 25 MB, bellekte), böylece silinen bir mesaj bunları göstermeye devam eder.",
+    "settings.limit": "Kanal başına kaydedilen mesaj",
+    "settings.limit.description": "Bu sayıdan sonra en eskiler unutulur, aralarındaki silinenler de gerçekten kaybolur."
+  }
+});
+
 // plugins/message-logger/index.tsx
 var jsx_runtime = require("react/jsx-runtime");
 var PURGE_ACTION = "EVI_MESSAGE_LOGGER_PURGE";
 var SELF_DELETE_WINDOW = 60000;
 var CACHE_BYTES = 150 * 1024 * 1024;
 var SAVE_FROM_LOADED = 50;
-var accessoriesFilter = import_api.filters.byCode("channelMessageProps:{message:", "isAutomodBlockedMessage:");
-var renderedContentFilter = import_api.filters.byCode('"useMessageRenderedContent"', "hideSimpleEmbedContent");
+var accessoriesFilter = import_api2.filters.byCode("channelMessageProps:{message:", "isAutomodBlockedMessage:");
+var renderedContentFilter = import_api2.filters.byCode('"useMessageRenderedContent"', "hideSimpleEmbedContent");
 var markupFilter = Object.assign((v) => !!v && typeof v === "object" && !Array.isArray(v) && Object.values(v).some((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) && Object.values(v).some((c) => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)), { $code: ['"markup_', '"codeContainer_'] });
-var messageActionsFilter = Object.assign(import_api.filters.byProps("deleteMessage", "editMessage", "sendMessage"), { $code: ["deleteMessage", "editMessage", "sendMessage"] });
+var messageActionsFilter = Object.assign(import_api2.filters.byProps("deleteMessage", "editMessage", "sendMessage"), { $code: ["deleteMessage", "editMessage", "sendMessage"] });
 function withStore(ctx, name, callback) {
-  const found = import_api.findStore(name);
+  const found = import_api2.findStore(name);
   if (found)
     callback(found);
   else
-    ctx.waitFor(import_api.filters.byStoreName(name), callback);
+    ctx.waitFor(import_api2.filters.byStoreName(name), callback);
 }
 var useRenderedContent;
 var markupClass = "";
@@ -461,7 +727,7 @@ function Time({ ms }) {
   });
 }
 function RichContent({ message, content, render }) {
-  const record = import_api.React.useMemo(() => message.set?.("content", content) ?? { ...message, content }, [message, content]);
+  const record = import_api2.React.useMemo(() => message.set?.("content", content) ?? { ...message, content }, [message, content]);
   const rendered = render(record, {
     hideSimpleEmbedContent: false,
     formatInline: false,
@@ -475,18 +741,18 @@ function RichContent({ message, content, render }) {
 }
 var formatSize = (bytes) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 function Spoiler({ children }) {
-  const [shown, setShown] = import_api.React.useState(false);
+  const [shown, setShown] = import_api2.React.useState(false);
   if (shown)
     return children;
   return /* @__PURE__ */ jsx_runtime.jsxs("button", {
     type: "button",
     className: "dl-ml-spoiler",
-    "aria-label": "Show spoiler",
+    "aria-label": t("spoiler.show"),
     onClick: () => setShown(true),
     children: [
       children,
       /* @__PURE__ */ jsx_runtime.jsx("span", {
-        children: "Spoiler"
+        children: t("spoiler")
       })
     ]
   });
@@ -503,7 +769,7 @@ function SavedMediaList({ media }) {
           height: m.height,
           loading: "lazy"
         });
-        return /* @__PURE__ */ jsx_runtime.jsx(import_api.React.Fragment, {
+        return /* @__PURE__ */ jsx_runtime.jsx(import_api2.React.Fragment, {
           children: m.spoiler ? /* @__PURE__ */ jsx_runtime.jsx(Spoiler, {
             children: img
           }) : img
@@ -561,7 +827,7 @@ function Version({ message, version }) {
   });
 }
 function Logged({ log, message }) {
-  const entry = import_api.React.useSyncExternalStore(log.subscribe, () => log.get(message.channel_id, message.id));
+  const entry = import_api2.React.useSyncExternalStore(log.subscribe, () => log.get(message.channel_id, message.id));
   if (!entry)
     return null;
   const saved = entry.deletedAt !== undefined && !!entry.media?.length;
@@ -574,11 +840,11 @@ function Logged({ log, message }) {
       entry.edits.length > 0 && /* @__PURE__ */ jsx_runtime.jsxs("div", {
         className: "dl-ml-history",
         role: "group",
-        "aria-label": "Previous versions",
+        "aria-label": t("versions"),
         children: [
           /* @__PURE__ */ jsx_runtime.jsx("div", {
             className: "dl-ml-caption",
-            children: "Edited from"
+            children: t("edited.from")
           }),
           entry.edits.map((version, i) => /* @__PURE__ */ jsx_runtime.jsx(Version, {
             message,
@@ -589,7 +855,8 @@ function Logged({ log, message }) {
       entry.deletedAt !== undefined && /* @__PURE__ */ jsx_runtime.jsxs("span", {
         className: "dl-ml-deleted",
         children: [
-          "Deleted ",
+          t("deleted"),
+          " ",
           /* @__PURE__ */ jsx_runtime.jsx("time", {
             dateTime: new Date(entry.deletedAt).toISOString(),
             children: formatTime(entry.deletedAt)
@@ -601,11 +868,11 @@ function Logged({ log, message }) {
 }
 var active;
 function Summary({ runtime }) {
-  import_api.React.useSyncExternalStore(runtime.log.subscribe, () => runtime.log.version);
+  import_api2.React.useSyncExternalStore(runtime.log.subscribe, () => runtime.log.version);
   const { deleted, edited } = runtime.log.counts();
-  const Button = import_api.Components.Button;
+  const Button = import_api2.Components.Button;
   const empty = deleted + edited === 0;
-  const label = "Clear logged messages";
+  const label = t("clear");
   return /* @__PURE__ */ jsx_runtime.jsxs("div", {
     className: "dl-field-row",
     children: [
@@ -614,18 +881,13 @@ function Summary({ runtime }) {
         children: [
           /* @__PURE__ */ jsx_runtime.jsx("div", {
             className: "dl-label",
-            children: "Logged right now"
+            children: t("summary.title")
           }),
-          /* @__PURE__ */ jsx_runtime.jsxs("p", {
+          /* @__PURE__ */ jsx_runtime.jsx("p", {
             className: "dl-hint",
             role: "status",
             style: { fontVariantNumeric: "tabular-nums" },
-            children: [
-              deleted,
-              " deleted, ",
-              edited,
-              " edited. Kept in memory only."
-            ]
+            children: t("summary.text", { deleted, edited })
           })
         ]
       }),
@@ -646,21 +908,49 @@ function Summary({ runtime }) {
   });
 }
 var settings = {
-  keepDeleted: { type: "boolean", label: "Keep deleted messages", description: "Deleted messages stay in the chat, tinted red and marked Deleted.", default: true },
-  logEdits: { type: "boolean", label: "Keep edit history", description: "Edited messages show what they said before, under the message.", default: true },
-  ignoreOwnDeletes: { type: "boolean", label: "Ignore my own deletes", description: "Messages you delete yourself disappear as usual.", default: true },
-  ignoreSelf: { type: "boolean", label: "Ignore my own messages", description: "Never log your messages, whoever deletes or edits them.", default: false },
-  ignoreBots: { type: "boolean", label: "Ignore bots", description: "Don't log messages from bots and apps.", default: false },
+  keepDeleted: { type: "boolean", get label() {
+    return t("settings.keepDeleted");
+  }, get description() {
+    return t("settings.keepDeleted.description");
+  }, default: true },
+  logEdits: { type: "boolean", get label() {
+    return t("settings.logEdits");
+  }, get description() {
+    return t("settings.logEdits.description");
+  }, default: true },
+  ignoreOwnDeletes: { type: "boolean", get label() {
+    return t("settings.ignoreOwnDeletes");
+  }, get description() {
+    return t("settings.ignoreOwnDeletes.description");
+  }, default: true },
+  ignoreSelf: { type: "boolean", get label() {
+    return t("settings.ignoreSelf");
+  }, get description() {
+    return t("settings.ignoreSelf.description");
+  }, default: false },
+  ignoreBots: { type: "boolean", get label() {
+    return t("settings.ignoreBots");
+  }, get description() {
+    return t("settings.ignoreBots.description");
+  }, default: false },
   saveMedia: {
     type: "boolean",
-    label: "Keep deleted pictures, videos and files",
-    description: "Saves the attachments in the channel you're looking at as they load (up to 25 MB each, in memory), so a deleted message still shows them.",
+    get label() {
+      return t("settings.saveMedia");
+    },
+    get description() {
+      return t("settings.saveMedia.description");
+    },
     default: true
   },
   limit: {
     type: "number",
-    label: "Messages logged per channel",
-    description: "Past this, the oldest are forgotten, and deleted ones among them disappear for real.",
+    get label() {
+      return t("settings.limit");
+    },
+    get description() {
+      return t("settings.limit.description");
+    },
     default: 50,
     min: 10,
     max: 200,
@@ -753,9 +1043,9 @@ function mediaSaver(ctx, cache) {
   };
 }
 function install(ctx, log, store, saver) {
-  const registry = import_api.Dispatcher._actionHandlers;
+  const registry = import_api2.Dispatcher._actionHandlers;
   const handlers = registry?._dependencyGraph?.getNodeData?.(store.getDispatchToken?.())?.actionHandler;
-  if (!handlers || !["MESSAGE_DELETE", "MESSAGE_DELETE_BULK", "MESSAGE_UPDATE"].every((t) => typeof handlers[t] === "function")) {
+  if (!handlers || !["MESSAGE_DELETE", "MESSAGE_DELETE_BULK", "MESSAGE_UPDATE"].every((t2) => typeof handlers[t2] === "function")) {
     ctx.logger.error("Couldn't find MessageStore's action handlers, Discord changed how Flux stores register");
     return;
   }
@@ -780,7 +1070,7 @@ function install(ctx, log, store, saver) {
     const byChannel = new Map;
     for (const { channelId, id } of refs)
       byChannel.set(channelId, [...byChannel.get(channelId) ?? [], id]);
-    return Promise.all([...byChannel].map(([channelId, ids]) => import_api.Dispatcher.dispatch({ type: PURGE_ACTION, channelId, ids })));
+    return Promise.all([...byChannel].map(([channelId, ids]) => import_api2.Dispatcher.dispatch({ type: PURGE_ACTION, channelId, ids })));
   };
   const purgeHandler = (action) => handlers.MESSAGE_DELETE_BULK({ type: "MESSAGE_DELETE_BULK", channelId: action.channelId, ids: action.ids, eviPurge: true });
   handlers[PURGE_ACTION] = purgeHandler;
@@ -879,7 +1169,7 @@ function install(ctx, log, store, saver) {
   });
 }
 function countLabel({ deleted, edited }) {
-  return [deleted && `${deleted} deleted`, edited && `${edited} edited`].filter(Boolean).join(", ");
+  return [deleted && t("count.deleted", { count: deleted }), edited && t("count.edited", { count: edited })].filter(Boolean).join(t("count.sep"));
 }
 function clearItem(ctx, id, label, channelIds) {
   const runtime = active;
@@ -888,24 +1178,24 @@ function clearItem(ctx, id, label, channelIds) {
   const counts = runtime.log.counts(channelIds);
   if (counts.deleted + counts.edited === 0)
     return;
-  return /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Group, {
-    children: /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+  return /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Group, {
+    children: /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
       id,
       label,
       subtext: countLabel(counts),
       color: "danger",
       action: () => {
         runtime.clearChannels(channelIds);
-        ctx.toast(`Cleared ${countLabel(counts)}`, { type: "success" });
+        ctx.toast(t("cleared", { counts: countLabel(counts) }), { type: "success" });
       }
     })
   }, `${id}-group`);
 }
 function guildChannelIds(guildId) {
-  const channels = import_api.findStore("ChannelStore");
+  const channels = import_api2.findStore("ChannelStore");
   return active?.log.channelIds().filter((id) => channels?.getChannel?.(id)?.guild_id === guildId) ?? [];
 }
-var message_logger_default = import_api.definePlugin({
+var message_logger_default = import_api2.definePlugin({
   settings,
   start(ctx) {
     const revoke = (m) => URL.revokeObjectURL(m.url);
@@ -942,7 +1232,7 @@ var message_logger_default = import_api.definePlugin({
         markupClass = Object.values(classes).find((c) => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
       });
     ctx.contextMenu(["channel-context", "thread-context", "gdm-context"], (children, props) => {
-      const item = props.channel?.id && clearItem(ctx, "evi-ml-clear-channel", "Clear Logged Messages", [props.channel.id]);
+      const item = props.channel?.id && clearItem(ctx, "evi-ml-clear-channel", t("clear.menu"), [props.channel.id]);
       if (item)
         children.push(item);
     });
@@ -950,12 +1240,12 @@ var message_logger_default = import_api.definePlugin({
       const channel = props.channel;
       if (!channel?.id || channel.guild_id || channel.type !== 1)
         return;
-      const item = clearItem(ctx, "evi-ml-clear-dm", "Clear Logged Messages", [channel.id]);
+      const item = clearItem(ctx, "evi-ml-clear-dm", t("clear.menu"), [channel.id]);
       if (item)
         children.push(item);
     });
     ctx.contextMenu("guild-context", (children, props) => {
-      const item = props.guild?.id && clearItem(ctx, "evi-ml-clear-guild", "Clear Logged Messages", guildChannelIds(props.guild.id));
+      const item = props.guild?.id && clearItem(ctx, "evi-ml-clear-guild", t("clear.menu"), guildChannelIds(props.guild.id));
       if (item)
         children.push(item);
     });

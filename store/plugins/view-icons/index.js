@@ -42,7 +42,120 @@ __export(exports_view_icons, {
   default: () => view_icons_default
 });
 module.exports = __toCommonJS(exports_view_icons);
+var import_api2 = require("@evi/api");
+
+// plugins/view-icons/strings.ts
 var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    download: "Download",
+    viewBanner: "View Banner",
+    "kind.avatar": "Avatar",
+    "kind.server-avatar": "Server Avatar",
+    "kind.banner": "Banner",
+    "kind.server-banner": "Server Banner",
+    "kind.icon": "Icon",
+    "kind.splash": "Invite Background",
+    "kind.discovery-splash": "Discovery Background",
+    "toast.downloadFailed": "Couldn't download the picture, opening it in your browser"
+  },
+  de: {
+    download: "Herunterladen",
+    viewBanner: "Banner ansehen",
+    "kind.avatar": "Avatar",
+    "kind.server-avatar": "Server-Avatar",
+    "kind.banner": "Banner",
+    "kind.server-banner": "Server-Banner",
+    "kind.icon": "Symbol",
+    "kind.splash": "Einladungshintergrund",
+    "kind.discovery-splash": "Entdecken-Hintergrund",
+    "toast.downloadFailed": "Das Bild konnte nicht heruntergeladen werden, es wird in deinem Browser geöffnet"
+  },
+  es: {
+    download: "Descargar",
+    viewBanner: "Ver banner",
+    "kind.avatar": "Avatar",
+    "kind.server-avatar": "Avatar del servidor",
+    "kind.banner": "Banner",
+    "kind.server-banner": "Banner del servidor",
+    "kind.icon": "Icono",
+    "kind.splash": "Fondo de invitación",
+    "kind.discovery-splash": "Fondo de Descubrimiento",
+    "toast.downloadFailed": "No se pudo descargar la imagen, se abrirá en tu navegador"
+  },
+  fr: {
+    download: "Télécharger",
+    viewBanner: "Voir la bannière",
+    "kind.avatar": "Avatar",
+    "kind.server-avatar": "Avatar du serveur",
+    "kind.banner": "Bannière",
+    "kind.server-banner": "Bannière du serveur",
+    "kind.icon": "Icône",
+    "kind.splash": "Arrière-plan d'invitation",
+    "kind.discovery-splash": "Arrière-plan de Découverte",
+    "toast.downloadFailed": "Impossible de télécharger l'image, ouverture dans ton navigateur"
+  },
+  ja: {
+    download: "ダウンロード",
+    viewBanner: "バナーを表示",
+    "kind.avatar": "アバター",
+    "kind.server-avatar": "サーバーアバター",
+    "kind.banner": "バナー",
+    "kind.server-banner": "サーバーバナー",
+    "kind.icon": "アイコン",
+    "kind.splash": "招待の背景",
+    "kind.discovery-splash": "ディスカバリーの背景",
+    "toast.downloadFailed": "画像をダウンロードできなかったため、ブラウザーで開きます"
+  },
+  pl: {
+    download: "Pobierz",
+    viewBanner: "Zobacz baner",
+    "kind.avatar": "Awatar",
+    "kind.server-avatar": "Awatar serwera",
+    "kind.banner": "Baner",
+    "kind.server-banner": "Baner serwera",
+    "kind.icon": "Ikona",
+    "kind.splash": "Tło zaproszenia",
+    "kind.discovery-splash": "Tło odkrywania",
+    "toast.downloadFailed": "Nie udało się pobrać obrazu, otwieram go w przeglądarce"
+  },
+  "pt-BR": {
+    download: "Baixar",
+    viewBanner: "Ver banner",
+    "kind.avatar": "Avatar",
+    "kind.server-avatar": "Avatar do servidor",
+    "kind.banner": "Banner",
+    "kind.server-banner": "Banner do servidor",
+    "kind.icon": "Ícone",
+    "kind.splash": "Plano de fundo do convite",
+    "kind.discovery-splash": "Plano de fundo do Descobrir",
+    "toast.downloadFailed": "Não foi possível baixar a imagem, abrindo no seu navegador"
+  },
+  ru: {
+    download: "Скачать",
+    viewBanner: "Посмотреть баннер",
+    "kind.avatar": "Аватар",
+    "kind.server-avatar": "Аватар сервера",
+    "kind.banner": "Баннер",
+    "kind.server-banner": "Баннер сервера",
+    "kind.icon": "Значок",
+    "kind.splash": "Фон приглашения",
+    "kind.discovery-splash": "Фон в «Обзоре»",
+    "toast.downloadFailed": "Не удалось скачать изображение, открываем его в браузере"
+  },
+  tr: {
+    download: "İndir",
+    viewBanner: "Banner'ı Görüntüle",
+    "kind.avatar": "Avatar",
+    "kind.server-avatar": "Sunucu Avatarı",
+    "kind.banner": "Banner",
+    "kind.server-banner": "Sunucu Banner'ı",
+    "kind.icon": "Simge",
+    "kind.splash": "Davet Arka Planı",
+    "kind.discovery-splash": "Keşfet Arka Planı",
+    "toast.downloadFailed": "Resim indirilemedi, tarayıcında açılıyor"
+  }
+});
 
 // plugins/view-icons/icons.ts
 var CDN = "https://cdn.discordapp.com";
@@ -181,10 +294,10 @@ function ownerName(linked) {
   const id = linked.ownerId;
   if (!id)
     return "discord";
-  const user = import_api.getStore("UserStore")?.getUser?.(id);
+  const user = import_api2.getStore("UserStore")?.getUser?.(id);
   if (user)
     return user.username || user.globalName || id;
-  return import_api.getStore("GuildStore")?.getGuild?.(id)?.name || import_api.getStore("ChannelStore")?.getChannel?.(id)?.name || id;
+  return import_api2.getStore("GuildStore")?.getGuild?.(id)?.name || import_api2.getStore("ChannelStore")?.getChannel?.(id)?.name || id;
 }
 function measure(url) {
   return new Promise((resolve) => {
@@ -201,7 +314,7 @@ function measure(url) {
     img.src = url;
   });
 }
-var findViewer = () => import_api.find(import_api.filters.byCode("markSessionStarted", "hasMediaOptions:!"));
+var findViewer = () => import_api2.find(import_api2.filters.byCode("markSessionStarted", "hasMediaOptions:!"));
 async function openViewer(picture2) {
   const open = findViewer();
   if (typeof open !== "function") {
@@ -216,7 +329,7 @@ async function openViewer(picture2) {
     proxyUrl: picture2.url,
     width,
     height,
-    alt: picture2.label,
+    alt: t(`kind.${picture2.kind}`),
     animated: picture2.animated,
     srcIsAnimated: picture2.animated,
     contentType: picture2.animated ? "image/gif" : "image/png"
@@ -253,12 +366,12 @@ async function download(picture2) {
     await save(data, fileName(picture2), res.headers.get("content-type") ?? (picture2.animated ? "image/gif" : "image/png"));
   } catch (err) {
     ctx?.logger.error(`Downloading the ${picture2.label.toLowerCase()} failed`, err);
-    ctx?.toast(`Couldn't download the ${picture2.label.toLowerCase()}, opening it in your browser`, { type: "failure" });
+    ctx?.toast(t("toast.downloadFailed"), { type: "failure" });
     openExternal(picture2.url);
   }
 }
 function DownloadIcon(props) {
-  const Native = import_api.find(import_api.filters.byProps("DownloadIcon"))?.DownloadIcon;
+  const Native = import_api2.find(import_api2.filters.byProps("DownloadIcon"))?.DownloadIcon;
   if (Native)
     return /* @__PURE__ */ jsx_runtime.jsx(Native, {
       ...props
@@ -276,7 +389,7 @@ function DownloadIcon(props) {
   });
 }
 function DownloadButton({ picture: picture2 }) {
-  const [saving, setSaving] = import_api.React.useState(false);
+  const [saving, setSaving] = import_api2.React.useState(false);
   const onClick = () => {
     if (saving)
       return;
@@ -285,7 +398,7 @@ function DownloadButton({ picture: picture2 }) {
   };
   if (ViewerButton)
     return /* @__PURE__ */ jsx_runtime.jsx(ViewerButton, {
-      tooltipText: "Download",
+      tooltipText: t("download"),
       icon: DownloadIcon,
       loading: saving,
       onClick
@@ -293,14 +406,14 @@ function DownloadButton({ picture: picture2 }) {
   const button = /* @__PURE__ */ jsx_runtime.jsx("button", {
     type: "button",
     className: "evi-vi-download",
-    "aria-label": "Download",
+    "aria-label": t("download"),
     "aria-busy": saving || undefined,
     onClick,
     children: /* @__PURE__ */ jsx_runtime.jsx(DownloadIcon, {})
   });
-  const Tooltip = import_api.Components.Tooltip;
+  const Tooltip = import_api2.Components.Tooltip;
   return Tooltip ? /* @__PURE__ */ jsx_runtime.jsx(Tooltip, {
-    text: "Download",
+    text: t("download"),
     position: "bottom",
     children: button
   }) : button;
@@ -338,7 +451,7 @@ var css = `
 }
 .evi-vi-banner:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: -2px; }
 `;
-var view_icons_default = import_api.definePlugin({
+var view_icons_default = import_api2.definePlugin({
   patches: [PATCHES.viewer, PATCHES.banner],
   start(context) {
     ctx = context;
@@ -373,7 +486,7 @@ var view_icons_default = import_api.definePlugin({
         /* @__PURE__ */ jsx_runtime.jsx("button", {
           type: "button",
           className: "evi-vi-banner",
-          "aria-label": "View Banner",
+          "aria-label": t("viewBanner"),
           onClick: open,
           ref: fillParent
         }),

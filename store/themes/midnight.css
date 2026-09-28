@@ -1,8 +1,24 @@
 /**
  * @name Midnight
+ * @name:de Mitternacht
+ * @name:es Medianoche
+ * @name:fr Minuit
+ * @name:ja ミッドナイト
+ * @name:pl Północ
+ * @name:pt-BR Meia-noite
+ * @name:ru Полночь
+ * @name:tr Gece Yarısı
  * @description True black backgrounds for OLED screens, with Discord's own accents left as they are.
+ * @description:de Tiefschwarze Hintergründe für OLED-Bildschirme, mit Discords eigenen Akzenten unverändert.
+ * @description:es Fondos negros puros para pantallas OLED, con los acentos originales de Discord.
+ * @description:fr Des fonds d’un noir profond pour les écrans OLED, avec les accents habituels de Discord.
+ * @description:ja OLED 画面向けの真っ黒な背景。Discord 本来のアクセントカラーはそのままです。
+ * @description:pl Idealnie czarne tła dla ekranów OLED, z oryginalnymi akcentami Discorda.
+ * @description:pt-BR Fundos totalmente pretos para telas OLED, mantendo os destaques originais do Discord.
+ * @description:ru Чисто чёрный фон для OLED-экранов, а фирменные акценты Discord остаются как есть.
+ * @description:tr OLED ekranlar için simsiyah arka planlar; Discord’un kendi vurgu renkleri olduğu gibi kalır.
  * @author Evi
- * @version 1.1.0
+ * @version 1.1.1
  * @tags dark, oled, minimal
  */
 

@@ -42,7 +42,15 @@ __export(exports_timezones, {
   default: () => timezones_default
 });
 module.exports = __toCommonJS(exports_timezones);
-var import_api = require("@evi/api");
+var import_api2 = require("@evi/api");
+
+// src/shared/i18n.ts
+function format(template, vars) {
+  if (!vars)
+    return template;
+  return template.replace(/\{(\w+)\}/g, (whole, name) => (name in vars) ? String(vars[name]) : whole);
+}
+var pluralRules = new Map;
 
 // plugins/timezones/tz.ts
 var valid = new Map;
@@ -154,15 +162,24 @@ function formatOffset(minutes) {
   const m = abs % 60;
   return `UTC${minutes < 0 ? "-" : "+"}${h}${m ? `:${String(m).padStart(2, "0")}` : ""}`;
 }
-function describeDiff(theirOffset, yourOffset) {
+var EN_WORDS = {
+  "diff.same": "same time as you",
+  "diff.ahead": "{amount} ahead of you",
+  "diff.behind": "{amount} behind you",
+  "amount.h": "{h}h",
+  "amount.m": "{m}m",
+  "amount.hm": "{h}h {m}m"
+};
+var english = (key, vars) => format(EN_WORDS[key], vars);
+function describeDiff(theirOffset, yourOffset, tr = english) {
   const diff = theirOffset - yourOffset;
   if (!diff)
-    return "same time as you";
+    return tr("diff.same");
   const abs = Math.abs(diff);
   const h = Math.floor(abs / 60);
   const m = abs % 60;
-  const amount = [h ? `${h}h` : "", m ? `${m}m` : ""].filter(Boolean).join(" ");
-  return `${amount} ${diff > 0 ? "ahead of" : "behind"} you`;
+  const amount = h && m ? tr("amount.hm", { h, m }) : h ? tr("amount.h", { h }) : tr("amount.m", { m });
+  return tr(diff > 0 ? "diff.ahead" : "diff.behind", { amount });
 }
 var uses12h = new Map;
 function localeUses12h(locale) {
@@ -207,14 +224,14 @@ function formatter(zone, o) {
 function formatTime(date, zone, o) {
   return formatter(zone, o).format(date).replace(ODD_SPACES, " ").replace(/,(?= )/, "");
 }
-function describeTime(date, zone, yourZone, o) {
+function describeTime(date, zone, yourZone, o, tr) {
   const theirs = offsetMinutes(zone, date);
   const yours = offsetMinutes(yourZone, date);
   return {
     short: formatTime(date, zone, o),
     long: formatTime(date, zone, { ...o, weekday: true }),
     offset: formatOffset(theirs),
-    diff: describeDiff(theirs, yours)
+    diff: describeDiff(theirs, yours, tr)
   };
 }
 function tooltipText(d, label = "Their time") {
@@ -433,38 +450,461 @@ function localZone() {
   }
 }
 
+// plugins/timezones/strings.ts
+var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    ...EN_WORDS,
+    "settings.timeFormat": "Time format",
+    "settings.timeFormat.description": "Auto follows Discord's language.",
+    "settings.timeFormat.auto": "Auto",
+    "settings.timeFormat.12h": "12-hour (3:42 PM)",
+    "settings.timeFormat.24h": "24-hour (15:42)",
+    "settings.chatTime": "Time in chat",
+    "settings.chatTime.description": "Their time right now, or what their clock said when they sent the message.",
+    "settings.chatTime.current": "Current time",
+    "settings.chatTime.sent": "When the message was sent",
+    "settings.inChat": "In chat",
+    "settings.inChat.description": "After the name on each message.",
+    "settings.onProfiles": "On profiles",
+    "settings.onProfiles.description": "A clock next to the badges; hover it for their time.",
+    "settings.inMemberList": "In the member list",
+    "settings.inMemberList.description": "After each name in the member list.",
+    "user.them": "them",
+    "tooltip.theirs": "Their time",
+    "tooltip.sent": "Their time when sent",
+    "picker.title": "Set timezone for {name}",
+    "picker.now": "Now {city}, {time} there.",
+    "picker.hint": "Search a city, a region, an abbreviation like EST, or an offset like UTC+3.",
+    "picker.close": "Close",
+    "picker.search": "Search timezones",
+    "picker.placeholder": "Istanbul, PST, UTC+3…",
+    "picker.list": "Timezones",
+    "picker.empty": "No timezone matches “{query}”.",
+    "picker.you": "You",
+    "toast.set": "Timezone set for {name}: {city}",
+    "saved.people": "People",
+    "saved.nobody": "Nobody yet. Right-click someone and choose Set Timezone.",
+    "saved.change": "Change",
+    "saved.remove": "Remove",
+    "menu.set": "Set Timezone",
+    "menu.remove": "Remove Timezone"
+  },
+  de: {
+    "diff.same": "gleiche Zeit wie du",
+    "diff.ahead": "{amount} vor dir",
+    "diff.behind": "{amount} hinter dir",
+    "amount.h": "{h} Std.",
+    "amount.m": "{m} Min.",
+    "amount.hm": "{h} Std. {m} Min.",
+    "settings.timeFormat": "Zeitformat",
+    "settings.timeFormat.description": "Automatisch richtet sich nach der Sprache von Discord.",
+    "settings.timeFormat.auto": "Automatisch",
+    "settings.timeFormat.12h": "12-Stunden (3:42 PM)",
+    "settings.timeFormat.24h": "24-Stunden (15:42)",
+    "settings.chatTime": "Zeit im Chat",
+    "settings.chatTime.description": "Die aktuelle Uhrzeit der Person oder die, die bei ihr galt, als sie die Nachricht gesendet hat.",
+    "settings.chatTime.current": "Aktuelle Uhrzeit",
+    "settings.chatTime.sent": "Beim Senden der Nachricht",
+    "settings.inChat": "Im Chat",
+    "settings.inChat.description": "Hinter dem Namen bei jeder Nachricht.",
+    "settings.onProfiles": "In Profilen",
+    "settings.onProfiles.description": "Eine Uhr neben den Abzeichen. Fahre darüber, um die Uhrzeit zu sehen.",
+    "settings.inMemberList": "In der Mitgliederliste",
+    "settings.inMemberList.description": "Hinter jedem Namen in der Mitgliederliste.",
+    "user.them": "die Person",
+    "tooltip.theirs": "Ortszeit",
+    "tooltip.sent": "Ortszeit beim Senden",
+    "picker.title": "Zeitzone für {name} festlegen",
+    "picker.now": "Dort ist es jetzt {time} ({city}).",
+    "picker.hint": "Suche nach einer Stadt, einer Region, einer Abkürzung wie EST oder einem Offset wie UTC+3.",
+    "picker.close": "Schließen",
+    "picker.search": "Zeitzonen durchsuchen",
+    "picker.placeholder": "Istanbul, PST, UTC+3…",
+    "picker.list": "Zeitzonen",
+    "picker.empty": "Keine Zeitzone passt zu „{query}“.",
+    "picker.you": "Du",
+    "toast.set": "Zeitzone für {name} festgelegt: {city}",
+    "saved.people": "Personen",
+    "saved.nobody": "Noch niemand. Klicke jemanden mit der rechten Maustaste an und wähle „Zeitzone festlegen“.",
+    "saved.change": "Ändern",
+    "saved.remove": "Entfernen",
+    "menu.set": "Zeitzone festlegen",
+    "menu.remove": "Zeitzone entfernen"
+  },
+  es: {
+    "diff.same": "la misma hora que tú",
+    "diff.ahead": "{amount} por delante de ti",
+    "diff.behind": "{amount} por detrás de ti",
+    "amount.h": "{h} h",
+    "amount.m": "{m} min",
+    "amount.hm": "{h} h {m} min",
+    "settings.timeFormat": "Formato de hora",
+    "settings.timeFormat.description": "Automático sigue el idioma de Discord.",
+    "settings.timeFormat.auto": "Automático",
+    "settings.timeFormat.12h": "12 horas (3:42 PM)",
+    "settings.timeFormat.24h": "24 horas (15:42)",
+    "settings.chatTime": "Hora en el chat",
+    "settings.chatTime.description": "Su hora actual, o la que marcaba su reloj cuando envió el mensaje.",
+    "settings.chatTime.current": "Hora actual",
+    "settings.chatTime.sent": "Cuando se envió el mensaje",
+    "settings.inChat": "En el chat",
+    "settings.inChat.description": "Después del nombre en cada mensaje.",
+    "settings.onProfiles": "En los perfiles",
+    "settings.onProfiles.description": "Un reloj junto a las insignias; pasa el cursor por encima para ver su hora.",
+    "settings.inMemberList": "En la lista de miembros",
+    "settings.inMemberList.description": "Después de cada nombre en la lista de miembros.",
+    "user.them": "esta persona",
+    "tooltip.theirs": "Su hora",
+    "tooltip.sent": "Su hora al enviarlo",
+    "picker.title": "Establecer la zona horaria de {name}",
+    "picker.now": "Ahora en {city} son las {time}.",
+    "picker.hint": "Busca una ciudad, una región, una abreviatura como EST o un desfase como UTC+3.",
+    "picker.close": "Cerrar",
+    "picker.search": "Buscar zonas horarias",
+    "picker.placeholder": "Estambul, PST, UTC+3…",
+    "picker.list": "Zonas horarias",
+    "picker.empty": "Ninguna zona horaria coincide con «{query}».",
+    "picker.you": "Tú",
+    "toast.set": "Zona horaria de {name} establecida: {city}",
+    "saved.people": "Personas",
+    "saved.nobody": "Todavía nadie. Haz clic derecho en alguien y elige Establecer zona horaria.",
+    "saved.change": "Cambiar",
+    "saved.remove": "Quitar",
+    "menu.set": "Establecer zona horaria",
+    "menu.remove": "Quitar zona horaria"
+  },
+  fr: {
+    "diff.same": "même heure que toi",
+    "diff.ahead": "{amount} d'avance sur toi",
+    "diff.behind": "{amount} de retard sur toi",
+    "amount.h": "{h} h",
+    "amount.m": "{m} min",
+    "amount.hm": "{h} h {m} min",
+    "settings.timeFormat": "Format de l'heure",
+    "settings.timeFormat.description": "Auto suit la langue de Discord.",
+    "settings.timeFormat.auto": "Auto",
+    "settings.timeFormat.12h": "12 heures (3:42 PM)",
+    "settings.timeFormat.24h": "24 heures (15:42)",
+    "settings.chatTime": "Heure dans le chat",
+    "settings.chatTime.description": "Son heure actuelle, ou l'heure qu'il était chez cette personne quand elle a envoyé le message.",
+    "settings.chatTime.current": "Heure actuelle",
+    "settings.chatTime.sent": "À l'envoi du message",
+    "settings.inChat": "Dans le chat",
+    "settings.inChat.description": "Après le nom sur chaque message.",
+    "settings.onProfiles": "Sur les profils",
+    "settings.onProfiles.description": "Une horloge à côté des badges ; survole-la pour voir son heure.",
+    "settings.inMemberList": "Dans la liste des membres",
+    "settings.inMemberList.description": "Après chaque nom dans la liste des membres.",
+    "user.them": "cette personne",
+    "tooltip.theirs": "Son heure",
+    "tooltip.sent": "Son heure à l'envoi",
+    "picker.title": "Définir le fuseau horaire de {name}",
+    "picker.now": "Là-bas ({city}), il est {time}.",
+    "picker.hint": "Cherche une ville, une région, une abréviation comme EST ou un décalage comme UTC+3.",
+    "picker.close": "Fermer",
+    "picker.search": "Rechercher un fuseau horaire",
+    "picker.placeholder": "Istanbul, PST, UTC+3…",
+    "picker.list": "Fuseaux horaires",
+    "picker.empty": "Aucun fuseau horaire ne correspond à « {query} ».",
+    "picker.you": "Toi",
+    "toast.set": "Fuseau horaire de {name} défini : {city}",
+    "saved.people": "Personnes",
+    "saved.nobody": "Personne pour l'instant. Fais un clic droit sur quelqu'un et choisis Définir le fuseau horaire.",
+    "saved.change": "Modifier",
+    "saved.remove": "Retirer",
+    "menu.set": "Définir le fuseau horaire",
+    "menu.remove": "Retirer le fuseau horaire"
+  },
+  ja: {
+    "diff.same": "あなたと同じ時刻",
+    "diff.ahead": "あなたより{amount}進んでいます",
+    "diff.behind": "あなたより{amount}遅れています",
+    "amount.h": "{h}時間",
+    "amount.m": "{m}分",
+    "amount.hm": "{h}時間{m}分",
+    "settings.timeFormat": "時刻の形式",
+    "settings.timeFormat.description": "「自動」は Discord の言語に合わせます。",
+    "settings.timeFormat.auto": "自動",
+    "settings.timeFormat.12h": "12時間制（3:42 PM）",
+    "settings.timeFormat.24h": "24時間制（15:42）",
+    "settings.chatTime": "チャットの時刻",
+    "settings.chatTime.description": "相手の現在の時刻、またはメッセージを送信したときの相手の時計の時刻。",
+    "settings.chatTime.current": "現在の時刻",
+    "settings.chatTime.sent": "メッセージ送信時",
+    "settings.inChat": "チャット",
+    "settings.inChat.description": "各メッセージの名前の後ろに表示します。",
+    "settings.onProfiles": "プロフィール",
+    "settings.onProfiles.description": "バッジの横に時計を表示します。マウスを重ねると相手の時刻が表示されます。",
+    "settings.inMemberList": "メンバーリスト",
+    "settings.inMemberList.description": "メンバーリストの各名前の後ろに表示します。",
+    "user.them": "この人",
+    "tooltip.theirs": "相手の時刻",
+    "tooltip.sent": "送信時の相手の時刻",
+    "picker.title": "{name}のタイムゾーンを設定",
+    "picker.now": "現在、{city}は{time}です。",
+    "picker.hint": "都市名、地域名、EST などの略称、UTC+3 などのオフセットで検索できます。",
+    "picker.close": "閉じる",
+    "picker.search": "タイムゾーンを検索",
+    "picker.placeholder": "Istanbul、PST、UTC+3…",
+    "picker.list": "タイムゾーン",
+    "picker.empty": "「{query}」に一致するタイムゾーンはありません。",
+    "picker.you": "あなた",
+    "toast.set": "{name}のタイムゾーンを設定しました：{city}",
+    "saved.people": "ユーザー",
+    "saved.nobody": "まだ誰も設定されていません。ユーザーを右クリックして「タイムゾーンを設定」を選んでください。",
+    "saved.change": "変更",
+    "saved.remove": "削除",
+    "menu.set": "タイムゾーンを設定",
+    "menu.remove": "タイムゾーンを削除"
+  },
+  pl: {
+    "diff.same": "ta sama godzina co u Ciebie",
+    "diff.ahead": "{amount} do przodu względem Ciebie",
+    "diff.behind": "{amount} do tyłu względem Ciebie",
+    "amount.h": "{h} godz.",
+    "amount.m": "{m} min",
+    "amount.hm": "{h} godz. {m} min",
+    "settings.timeFormat": "Format czasu",
+    "settings.timeFormat.description": "Automatyczny dopasowuje się do języka Discorda.",
+    "settings.timeFormat.auto": "Automatyczny",
+    "settings.timeFormat.12h": "12-godzinny (3:42 PM)",
+    "settings.timeFormat.24h": "24-godzinny (15:42)",
+    "settings.chatTime": "Czas na czacie",
+    "settings.chatTime.description": "Aktualna godzina u tej osoby albo ta, którą miała na zegarze, gdy wysłała wiadomość.",
+    "settings.chatTime.current": "Aktualny czas",
+    "settings.chatTime.sent": "W chwili wysłania wiadomości",
+    "settings.inChat": "Na czacie",
+    "settings.inChat.description": "Po nazwie przy każdej wiadomości.",
+    "settings.onProfiles": "W profilach",
+    "settings.onProfiles.description": "Zegar obok odznak. Najedź na niego, aby zobaczyć godzinę tej osoby.",
+    "settings.inMemberList": "Na liście członków",
+    "settings.inMemberList.description": "Po każdej nazwie na liście członków.",
+    "user.them": "ta osoba",
+    "tooltip.theirs": "Czas tej osoby",
+    "tooltip.sent": "Czas tej osoby w chwili wysłania",
+    "picker.title": "Ustaw strefę czasową dla: {name}",
+    "picker.now": "Teraz w miejscowości {city} jest {time}.",
+    "picker.hint": "Wyszukaj miasto, region, skrót taki jak EST albo przesunięcie takie jak UTC+3.",
+    "picker.close": "Zamknij",
+    "picker.search": "Szukaj stref czasowych",
+    "picker.placeholder": "Stambuł, PST, UTC+3…",
+    "picker.list": "Strefy czasowe",
+    "picker.empty": "Żadna strefa czasowa nie pasuje do „{query}”.",
+    "picker.you": "Ty",
+    "toast.set": "Ustawiono strefę czasową dla {name}: {city}",
+    "saved.people": "Osoby",
+    "saved.nobody": "Jeszcze nikogo. Kliknij kogoś prawym przyciskiem myszy i wybierz Ustaw strefę czasową.",
+    "saved.change": "Zmień",
+    "saved.remove": "Usuń",
+    "menu.set": "Ustaw strefę czasową",
+    "menu.remove": "Usuń strefę czasową"
+  },
+  "pt-BR": {
+    "diff.same": "mesmo horário que o seu",
+    "diff.ahead": "{amount} à frente de você",
+    "diff.behind": "{amount} atrás de você",
+    "amount.h": "{h}h",
+    "amount.m": "{m}min",
+    "amount.hm": "{h}h {m}min",
+    "settings.timeFormat": "Formato de hora",
+    "settings.timeFormat.description": "Automático segue o idioma do Discord.",
+    "settings.timeFormat.auto": "Automático",
+    "settings.timeFormat.12h": "12 horas (3:42 PM)",
+    "settings.timeFormat.24h": "24 horas (15:42)",
+    "settings.chatTime": "Hora no chat",
+    "settings.chatTime.description": "A hora atual da pessoa, ou a que o relógio dela marcava quando ela enviou a mensagem.",
+    "settings.chatTime.current": "Hora atual",
+    "settings.chatTime.sent": "Quando a mensagem foi enviada",
+    "settings.inChat": "No chat",
+    "settings.inChat.description": "Depois do nome em cada mensagem.",
+    "settings.onProfiles": "Nos perfis",
+    "settings.onProfiles.description": "Um relógio ao lado das insígnias; passe o mouse por cima para ver a hora da pessoa.",
+    "settings.inMemberList": "Na lista de membros",
+    "settings.inMemberList.description": "Depois de cada nome na lista de membros.",
+    "user.them": "essa pessoa",
+    "tooltip.theirs": "Hora dela",
+    "tooltip.sent": "Hora dela quando enviou",
+    "picker.title": "Definir fuso horário de {name}",
+    "picker.now": "Agora em {city} são {time}.",
+    "picker.hint": "Pesquise uma cidade, uma região, uma abreviação como EST ou um deslocamento como UTC+3.",
+    "picker.close": "Fechar",
+    "picker.search": "Pesquisar fusos horários",
+    "picker.placeholder": "Istambul, PST, UTC+3…",
+    "picker.list": "Fusos horários",
+    "picker.empty": "Nenhum fuso horário corresponde a “{query}”.",
+    "picker.you": "Você",
+    "toast.set": "Fuso horário de {name} definido: {city}",
+    "saved.people": "Pessoas",
+    "saved.nobody": "Ninguém ainda. Clique com o botão direito em alguém e escolha Definir fuso horário.",
+    "saved.change": "Alterar",
+    "saved.remove": "Remover",
+    "menu.set": "Definir fuso horário",
+    "menu.remove": "Remover fuso horário"
+  },
+  ru: {
+    "diff.same": "то же время, что и у вас",
+    "diff.ahead": "на {amount} впереди вас",
+    "diff.behind": "на {amount} позади вас",
+    "amount.h": "{h} ч",
+    "amount.m": "{m} мин",
+    "amount.hm": "{h} ч {m} мин",
+    "settings.timeFormat": "Формат времени",
+    "settings.timeFormat.description": "«Авто» следует языку Discord.",
+    "settings.timeFormat.auto": "Авто",
+    "settings.timeFormat.12h": "12-часовой (3:42 PM)",
+    "settings.timeFormat.24h": "24-часовой (15:42)",
+    "settings.chatTime": "Время в чате",
+    "settings.chatTime.description": "Текущее время у человека или то, которое было на его часах, когда он отправил сообщение.",
+    "settings.chatTime.current": "Текущее время",
+    "settings.chatTime.sent": "Когда отправлено сообщение",
+    "settings.inChat": "В чате",
+    "settings.inChat.description": "После имени в каждом сообщении.",
+    "settings.onProfiles": "В профилях",
+    "settings.onProfiles.description": "Часы рядом со значками. Наведите на них курсор, чтобы увидеть время человека.",
+    "settings.inMemberList": "В списке участников",
+    "settings.inMemberList.description": "После каждого имени в списке участников.",
+    "user.them": "этого человека",
+    "tooltip.theirs": "Время у человека",
+    "tooltip.sent": "Время у человека при отправке",
+    "picker.title": "Часовой пояс для {name}",
+    "picker.now": "Сейчас там ({city}) {time}.",
+    "picker.hint": "Ищите город, регион, сокращение вроде EST или смещение вроде UTC+3.",
+    "picker.close": "Закрыть",
+    "picker.search": "Поиск часовых поясов",
+    "picker.placeholder": "Стамбул, PST, UTC+3…",
+    "picker.list": "Часовые пояса",
+    "picker.empty": "Нет часовых поясов, подходящих под «{query}».",
+    "picker.you": "Вы",
+    "toast.set": "Часовой пояс для {name} задан: {city}",
+    "saved.people": "Люди",
+    "saved.nobody": "Пока никого. Нажмите правой кнопкой мыши на пользователя и выберите «Задать часовой пояс».",
+    "saved.change": "Изменить",
+    "saved.remove": "Удалить",
+    "menu.set": "Задать часовой пояс",
+    "menu.remove": "Убрать часовой пояс"
+  },
+  tr: {
+    "diff.same": "seninle aynı saat",
+    "diff.ahead": "senden {amount} ileride",
+    "diff.behind": "senden {amount} geride",
+    "amount.h": "{h} sa",
+    "amount.m": "{m} dk",
+    "amount.hm": "{h} sa {m} dk",
+    "settings.timeFormat": "Saat biçimi",
+    "settings.timeFormat.description": "Otomatik, Discord'un diline uyar.",
+    "settings.timeFormat.auto": "Otomatik",
+    "settings.timeFormat.12h": "12 saatlik (3:42 PM)",
+    "settings.timeFormat.24h": "24 saatlik (15:42)",
+    "settings.chatTime": "Sohbetteki saat",
+    "settings.chatTime.description": "Kişinin şu anki saati veya mesajı gönderdiği andaki saati.",
+    "settings.chatTime.current": "Şu anki saat",
+    "settings.chatTime.sent": "Mesajın gönderildiği an",
+    "settings.inChat": "Sohbette",
+    "settings.inChat.description": "Her mesajda adın yanında.",
+    "settings.onProfiles": "Profillerde",
+    "settings.onProfiles.description": "Rozetlerin yanında bir saat; kişinin saatini görmek için üzerine gel.",
+    "settings.inMemberList": "Üye listesinde",
+    "settings.inMemberList.description": "Üye listesinde her adın yanında.",
+    "user.them": "bu kişi",
+    "tooltip.theirs": "Kişinin saati",
+    "tooltip.sent": "Gönderildiği andaki saati",
+    "picker.title": "{name} için saat dilimi ayarla",
+    "picker.now": "Şu an {city} için saat {time}.",
+    "picker.hint": "Bir şehir, bölge, EST gibi bir kısaltma veya UTC+3 gibi bir fark ara.",
+    "picker.close": "Kapat",
+    "picker.search": "Saat dilimlerinde ara",
+    "picker.placeholder": "İstanbul, PST, UTC+3…",
+    "picker.list": "Saat dilimleri",
+    "picker.empty": "“{query}” ile eşleşen saat dilimi yok.",
+    "picker.you": "Sen",
+    "toast.set": "{name} için saat dilimi ayarlandı: {city}",
+    "saved.people": "Kişiler",
+    "saved.nobody": "Henüz kimse yok. Birine sağ tıkla ve Saat Dilimi Ayarla'yı seç.",
+    "saved.change": "Değiştir",
+    "saved.remove": "Kaldır",
+    "menu.set": "Saat Dilimi Ayarla",
+    "menu.remove": "Saat Dilimini Kaldır"
+  }
+});
+
 // plugins/timezones/index.tsx
 var jsx_runtime = require("react/jsx-runtime");
-var profileBadgesFilter = import_api.filters.byCode("getBadges()??[]", "hidePersonalInformation");
-var usernameFilter = import_api.filters.componentByCode("withMentionPrefix", "hideSystemTag", "decorations");
-var listRowFilter = import_api.filters.componentByCode("wrapContent:", "decorators:", "avatarClassName:");
+var profileBadgesFilter = import_api2.filters.byCode("getBadges()??[]", "hidePersonalInformation");
+var usernameFilter = import_api2.filters.componentByCode("withMentionPrefix", "hideSystemTag", "decorations");
+var listRowFilter = import_api2.filters.componentByCode("wrapContent:", "decorators:", "avatarClassName:");
 var BADGES = 1;
 var STORAGE_KEY = "zones";
 var settings = {
   timeFormat: {
     type: "select",
-    label: "Time format",
-    description: "Auto follows Discord's language.",
+    get label() {
+      return t("settings.timeFormat");
+    },
+    get description() {
+      return t("settings.timeFormat.description");
+    },
     default: "auto",
     options: [
-      { label: "Auto", value: "auto" },
-      { label: "12-hour (3:42 PM)", value: "12h" },
-      { label: "24-hour (15:42)", value: "24h" }
+      { get label() {
+        return t("settings.timeFormat.auto");
+      }, value: "auto" },
+      { get label() {
+        return t("settings.timeFormat.12h");
+      }, value: "12h" },
+      { get label() {
+        return t("settings.timeFormat.24h");
+      }, value: "24h" }
     ]
   },
   chatTime: {
     type: "select",
-    label: "Time in chat",
-    description: "Their time right now, or what their clock said when they sent the message.",
+    get label() {
+      return t("settings.chatTime");
+    },
+    get description() {
+      return t("settings.chatTime.description");
+    },
     default: "current",
     options: [
-      { label: "Current time", value: "current" },
-      { label: "When the message was sent", value: "sent" }
+      { get label() {
+        return t("settings.chatTime.current");
+      }, value: "current" },
+      { get label() {
+        return t("settings.chatTime.sent");
+      }, value: "sent" }
     ]
   },
-  showInChat: { type: "boolean", label: "In chat", description: "After the name on each message.", default: true },
-  showOnProfiles: { type: "boolean", label: "On profiles", description: "A clock next to the badges; hover it for their time.", default: true },
-  showInMemberList: { type: "boolean", label: "In the member list", description: "After each name in the member list.", default: false }
+  showInChat: {
+    type: "boolean",
+    get label() {
+      return t("settings.inChat");
+    },
+    get description() {
+      return t("settings.inChat.description");
+    },
+    default: true
+  },
+  showOnProfiles: {
+    type: "boolean",
+    get label() {
+      return t("settings.onProfiles");
+    },
+    get description() {
+      return t("settings.onProfiles.description");
+    },
+    default: true
+  },
+  showInMemberList: {
+    type: "boolean",
+    get label() {
+      return t("settings.inMemberList");
+    },
+    get description() {
+      return t("settings.inMemberList.description");
+    },
+    default: false
+  }
 };
 var context;
 var zones = {};
@@ -473,7 +913,7 @@ var zoneList;
 var getZoneList = () => zoneList ??= allZones();
 var store = (name) => {
   try {
-    return import_api.getStore(name);
+    return import_api2.getStore(name);
   } catch {
     return;
   }
@@ -486,7 +926,7 @@ var bump = () => {
   listeners.forEach((l) => l());
 };
 function useVersion() {
-  return import_api.React.useSyncExternalStore((cb) => {
+  return import_api2.React.useSyncExternalStore((cb) => {
     listeners.add(cb);
     return () => void listeners.delete(cb);
   }, () => version);
@@ -503,7 +943,8 @@ function cycle() {
   const f = context?.settings.get("timeFormat") ?? "auto";
   return f === "12h" || f === "24h" ? f : localeUses12h(locale()) ? "12h" : "24h";
 }
-var describeAt = (zone, at) => describeTime(at, zone, yourZone, { cycle: cycle(), locale: locale() });
+var tr = (key, vars) => t(key, vars);
+var describeAt = (zone, at) => describeTime(at, zone, yourZone, { cycle: cycle(), locale: locale() }, tr);
 function zoneOf(userId) {
   return userId ? zones[userId] : undefined;
 }
@@ -513,14 +954,14 @@ function toDate(timestamp) {
 }
 function userName(userId) {
   const user = store("UserStore")?.getUser?.(userId);
-  return user?.globalName || user?.username || "them";
+  return user?.globalName || user?.username || t("user.them");
 }
 function WithTooltip({ text, children }) {
-  const Tooltip = import_api.Components.Tooltip;
+  const Tooltip = import_api2.Components.Tooltip;
   return Tooltip ? /* @__PURE__ */ jsx_runtime.jsx(Tooltip, {
     text,
     children
-  }) : import_api.React.cloneElement(children, { title: text });
+  }) : import_api2.React.cloneElement(children, { title: text });
 }
 function ChatTime({ userId, sentAt }) {
   useVersion();
@@ -529,7 +970,7 @@ function ChatTime({ userId, sentAt }) {
     return null;
   const sent = context.settings.get("chatTime") === "sent" && sentAt;
   const d = describeAt(zone, sent ? sentAt : new Date);
-  const text = sent ? tooltipText(d, "Their time when sent") : tooltipText(d);
+  const text = sent ? tooltipText(d, t("tooltip.sent")) : tooltipText(d, t("tooltip.theirs"));
   return /* @__PURE__ */ jsx_runtime.jsx(WithTooltip, {
     text,
     children: /* @__PURE__ */ jsx_runtime.jsx("span", {
@@ -546,7 +987,7 @@ function MemberTime({ userId }) {
   if (!zone || !context?.settings.get("showInMemberList"))
     return null;
   const d = describeAt(zone, new Date);
-  const text = tooltipText(d);
+  const text = tooltipText(d, t("tooltip.theirs"));
   return /* @__PURE__ */ jsx_runtime.jsx(WithTooltip, {
     text,
     children: /* @__PURE__ */ jsx_runtime.jsx("span", {
@@ -571,7 +1012,7 @@ function clockIcon(zone, at) {
 var closeOpen;
 function openPicker(userId) {
   closeOpen?.();
-  const close = import_api.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(Picker, {
+  const close = import_api2.openLayer((close2) => /* @__PURE__ */ jsx_runtime.jsx(Picker, {
     userId,
     onClose: () => close2()
   }), {
@@ -581,17 +1022,17 @@ function openPicker(userId) {
 }
 function Picker({ userId, onClose }) {
   useVersion();
-  const [query, setQuery] = import_api.React.useState("");
-  const [active, setActive] = import_api.React.useState(0);
-  const inputRef = import_api.React.useRef(null);
-  const listRef = import_api.React.useRef(null);
+  const [query, setQuery] = import_api2.React.useState("");
+  const [active, setActive] = import_api2.React.useState(0);
+  const inputRef = import_api2.React.useRef(null);
+  const listRef = import_api2.React.useRef(null);
   const now = new Date;
   const current = zoneOf(userId);
   const name = userName(userId);
-  const results = import_api.React.useMemo(() => searchZones(query, getZoneList(), new Date), [query, version]);
+  const results = import_api2.React.useMemo(() => searchZones(query, getZoneList(), new Date), [query, version]);
   const listId = "evi-tz-results";
-  import_api.React.useEffect(() => setActive(0), [query]);
-  import_api.React.useEffect(() => {
+  import_api2.React.useEffect(() => setActive(0), [query]);
+  import_api2.React.useEffect(() => {
     const previous = document.activeElement;
     inputRef.current?.focus();
     const onKey = (e) => {
@@ -607,12 +1048,12 @@ function Picker({ userId, onClose }) {
       previous?.focus?.();
     };
   }, []);
-  import_api.React.useEffect(() => {
+  import_api2.React.useEffect(() => {
     listRef.current?.querySelector(`[data-index="${active}"]`)?.scrollIntoView({ block: "nearest" });
   }, [active]);
   const choose = (zone) => {
     commit(withZone(zones, userId, zone));
-    context?.toast(`Timezone set for ${name}: ${cityOf(zone)}`, { type: "success" });
+    context?.toast(t("toast.set", { name, city: cityOf(zone) }), { type: "success" });
     onClose();
   };
   const onKeyDown = (e) => {
@@ -643,24 +1084,15 @@ function Picker({ userId, onClose }) {
           children: [
             /* @__PURE__ */ jsx_runtime.jsxs("div", {
               children: [
-                /* @__PURE__ */ jsx_runtime.jsxs("h2", {
+                /* @__PURE__ */ jsx_runtime.jsx("h2", {
                   id: "evi-tz-title",
-                  children: [
-                    "Set timezone for ",
-                    name
-                  ]
+                  children: t("picker.title", { name })
                 }),
                 /* @__PURE__ */ jsx_runtime.jsx("p", {
-                  children: current ? /* @__PURE__ */ jsx_runtime.jsxs(jsx_runtime.Fragment, {
-                    children: [
-                      "Now ",
-                      cityOf(current),
-                      ", ",
-                      formatTime(now, current, { cycle: cyc, locale: loc, weekday: true }),
-                      " there."
-                    ]
+                  children: current ? /* @__PURE__ */ jsx_runtime.jsx(jsx_runtime.Fragment, {
+                    children: t("picker.now", { city: cityOf(current), time: formatTime(now, current, { cycle: cyc, locale: loc, weekday: true }) })
                   }) : /* @__PURE__ */ jsx_runtime.jsx(jsx_runtime.Fragment, {
-                    children: "Search a city, a region, an abbreviation like EST, or an offset like UTC+3."
+                    children: t("picker.hint")
                   })
                 })
               ]
@@ -668,7 +1100,7 @@ function Picker({ userId, onClose }) {
             /* @__PURE__ */ jsx_runtime.jsx("button", {
               type: "button",
               className: "evi-tz-close",
-              "aria-label": "Close",
+              "aria-label": t("picker.close"),
               onClick: onClose,
               children: /* @__PURE__ */ jsx_runtime.jsx("svg", {
                 viewBox: "0 0 24 24",
@@ -694,8 +1126,8 @@ function Picker({ userId, onClose }) {
             "aria-expanded": "true",
             "aria-controls": listId,
             "aria-activedescendant": results[active] ? `evi-tz-opt-${active}` : undefined,
-            "aria-label": "Search timezones",
-            placeholder: "Istanbul, PST, UTC+3…",
+            "aria-label": t("picker.search"),
+            placeholder: t("picker.placeholder"),
             spellCheck: false,
             autoComplete: "off",
             value: query,
@@ -707,17 +1139,13 @@ function Picker({ userId, onClose }) {
           className: "evi-tz-list",
           id: listId,
           role: "listbox",
-          "aria-label": "Timezones",
+          "aria-label": t("picker.list"),
           ref: listRef,
           children: [
-            results.length === 0 && /* @__PURE__ */ jsx_runtime.jsxs("p", {
+            results.length === 0 && /* @__PURE__ */ jsx_runtime.jsx("p", {
               className: "evi-tz-empty",
               role: "status",
-              children: [
-                "No timezone matches “",
-                query,
-                "”."
-              ]
+              children: t("picker.empty", { query })
             }),
             results.map((zone, i) => {
               const offset = offsetMinutes(zone, now);
@@ -741,7 +1169,7 @@ function Picker({ userId, onClose }) {
                           cityOf(zone),
                           sameZone(zone, yourZone) && /* @__PURE__ */ jsx_runtime.jsx("span", {
                             className: "evi-tz-tag",
-                            children: "You"
+                            children: t("picker.you")
                           })
                         ]
                       }),
@@ -777,11 +1205,11 @@ function SavedPanel() {
     children: [
       /* @__PURE__ */ jsx_runtime.jsx("div", {
         className: "dl-label",
-        children: "People"
+        children: t("saved.people")
       }),
       entries.length === 0 ? /* @__PURE__ */ jsx_runtime.jsx("p", {
         className: "dl-hint",
-        children: "Nobody yet. Right-click someone and choose Set Timezone."
+        children: t("saved.nobody")
       }) : /* @__PURE__ */ jsx_runtime.jsx("ul", {
         children: entries.map(([id, zone]) => /* @__PURE__ */ jsx_runtime.jsxs("li", {
           children: [
@@ -801,14 +1229,14 @@ function SavedPanel() {
               type: "button",
               className: "evi-tz-link",
               onClick: () => openPicker(id),
-              children: "Change"
+              children: t("saved.change")
             }),
             /* @__PURE__ */ jsx_runtime.jsx("button", {
               type: "button",
               className: "evi-tz-link",
               "data-danger": "true",
               onClick: () => commit(withoutZone(zones, id)),
-              children: "Remove"
+              children: t("saved.remove")
             })
           ]
         }, id))
@@ -852,7 +1280,7 @@ var css = `
 .evi-tz-link[data-danger="true"] { color: var(--text-danger, #f23f43); }
 .evi-tz-link:hover { text-decoration: underline; }
 `;
-var timezones_default = import_api.definePlugin({
+var timezones_default = import_api2.definePlugin({
   settings,
   start(ctx) {
     context = ctx;
@@ -870,17 +1298,17 @@ var timezones_default = import_api.definePlugin({
       if (!userId)
         return;
       const zone = zoneOf(userId);
-      children.push(/* @__PURE__ */ jsx_runtime.jsxs(import_api.Menu.Group, {
+      children.push(/* @__PURE__ */ jsx_runtime.jsxs(import_api2.Menu.Group, {
         children: [
-          /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+          /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
             id: "evi-tz-set",
-            label: "Set Timezone",
+            label: t("menu.set"),
             subtext: zone ? `${cityOf(zone)} · ${formatTime(new Date, zone, { cycle: cycle(), locale: locale() })}` : undefined,
             action: () => openPicker(userId)
           }),
-          zone && /* @__PURE__ */ jsx_runtime.jsx(import_api.Menu.Item, {
+          zone && /* @__PURE__ */ jsx_runtime.jsx(import_api2.Menu.Item, {
             id: "evi-tz-remove",
-            label: "Remove Timezone",
+            label: t("menu.remove"),
             color: "danger",
             action: () => commit(withoutZone(zones, userId))
           })
@@ -896,7 +1324,7 @@ var timezones_default = import_api.definePlugin({
       if (!userId || !zone || !isValidZone(zone))
         return;
       const now = new Date;
-      const description = tooltipText(describeAt(zone, now));
+      const description = tooltipText(describeAt(zone, now), t("tooltip.theirs"));
       const iconSrc = clockIcon(zone, now);
       const cached = badgeLists.get(userId);
       if (cached && cached.result === result && cached.description === description && cached.iconSrc === iconSrc)

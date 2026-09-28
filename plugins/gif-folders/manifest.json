@@ -14,6 +14,7 @@
         {
             "version": "1.3.0",
             "notes": [
+                "No longer slows Discord down in calls: a style rule that restyled all of Discord on every change is gone.",
                 "Follows Discord's language: German, Spanish, French, Japanese, Polish, Portuguese, Russian and Turkish, besides English."
             ]
         },
@@ -67,6 +68,7 @@
             "description": "Sortiere deine Lieblings-GIFs in Ordner. „Alle“ zeigt jeden Favoriten, „Unsortiert“ die, die noch in keinem Ordner sind, und jeder Ordner seine eigenen. Rechtsklicke ein GIF, um es zu einem Ordner hinzuzufügen, und zieh an der Ecke der GIF-Auswahl, um sie zu vergrößern oder zu verkleinern.",
             "changelog": {
                 "1.3.0": [
+                    "Bremst Discord in Anrufen nicht mehr aus: Eine Stilregel, die bei jeder Änderung ganz Discord neu gestylt hat, ist weg.",
                     "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
                 ],
                 "1.2.3": [
@@ -101,6 +103,7 @@
             "description": "Ordena tus GIF favoritos en carpetas. Todos muestra todos los favoritos, Sin clasificar los que aún no están en una carpeta y cada carpeta los suyos. Haz clic derecho en un GIF para añadirlo a una y arrastra la esquina del selector de GIF para cambiar su tamaño.",
             "changelog": {
                 "1.3.0": [
+                    "Ya no ralentiza Discord en las llamadas: se quitó una regla de estilo que volvía a dibujar todo Discord con cada cambio.",
                     "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
                 ],
                 "1.2.3": [
@@ -135,6 +138,7 @@
             "description": "Rangez vos GIF favoris dans des dossiers. Tous affiche chaque favori, Non classés ceux qui ne sont pas encore dans un dossier, et chaque dossier les siens. Faites un clic droit sur un GIF pour l'ajouter à un dossier, et faites glisser le coin du sélecteur de GIF pour le redimensionner.",
             "changelog": {
                 "1.3.0": [
+                    "Ne ralentit plus Discord en appel : une règle de style qui recalculait tout Discord à chaque changement a disparu.",
                     "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
                 ],
                 "1.2.3": [
@@ -169,6 +173,7 @@
             "description": "お気に入りのGIFをフォルダに整理できます。「すべて」はすべてのお気に入り、「未分類」はまだフォルダに入っていないもの、各フォルダはそのフォルダのGIFを表示します。GIFを右クリックしてフォルダに追加でき、GIFピッカーの角をドラッグしてサイズを変更できます。",
             "changelog": {
                 "1.3.0": [
+                    "通話中にDiscordを重くしなくなりました。変更のたびにDiscord全体のスタイルを再計算させていたルールを取り除きました。",
                     "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
                 ],
                 "1.2.3": [
@@ -203,6 +208,7 @@
             "description": "Sortuj ulubione GIF-y w foldery. Wszystkie pokazuje każdy ulubiony, Nieposortowane te, których nie ma jeszcze w żadnym folderze, a każdy folder swoje. Kliknij GIF prawym przyciskiem, aby dodać go do folderu, i przeciągnij róg selektora GIF-ów, aby zmienić jego rozmiar.",
             "changelog": {
                 "1.3.0": [
+                    "Nie spowalnia już Discorda podczas rozmów: zniknęła reguła stylów, która przy każdej zmianie przeliczała cały Discord.",
                     "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
                 ],
                 "1.2.3": [
@@ -237,6 +243,7 @@
             "description": "Organize seus GIFs favoritos em pastas. Todos mostra cada favorito, Sem pasta os que ainda não estão em uma pasta e cada pasta os seus. Clique com o botão direito em um GIF para adicioná-lo a uma pasta e arraste o canto do seletor de GIFs para redimensioná-lo.",
             "changelog": {
                 "1.3.0": [
+                    "Não deixa mais o Discord lento em chamadas: saiu uma regra de estilo que recalculava o Discord inteiro a cada mudança.",
                     "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
                 ],
                 "1.2.3": [
@@ -271,6 +278,7 @@
             "description": "Раскладывайте любимые GIF по папкам. «Все» показывает всё избранное, «Без папки» — то, что ещё не лежит ни в одной папке, а каждая папка — свои GIF. Нажмите правой кнопкой на GIF, чтобы добавить его в папку, и потяните за угол выбора GIF, чтобы изменить его размер.",
             "changelog": {
                 "1.3.0": [
+                    "Больше не тормозит Discord в звонках: убрано правило стилей, которое при каждом изменении пересчитывало весь Discord.",
                     "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
                 ],
                 "1.2.3": [
@@ -305,6 +313,7 @@
             "description": "Favori GIF'lerini klasörlere ayır. Tümü her favoriyi, Sınıflandırılmamış henüz bir klasörde olmayanları, her klasör de kendi GIF'lerini gösterir. Bir klasöre eklemek için GIF'e sağ tıkla, boyutunu değiştirmek için GIF seçicinin köşesini sürükle.",
             "changelog": {
                 "1.3.0": [
+                    "Aramalarda artık Discord'u yavaşlatmıyor: her değişiklikte tüm Discord'u yeniden biçimlendiren bir stil kuralı kaldırıldı.",
                     "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
                 ],
                 "1.2.3": [

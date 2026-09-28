@@ -42,13 +42,137 @@ __export(exports_silent_typing, {
   default: () => silent_typing_default
 });
 module.exports = __toCommonJS(exports_silent_typing);
+var import_api2 = require("@evi/api");
+
+// plugins/silent-typing/strings.ts
 var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    "settings.enabled": "Enabled",
+    "settings.enabled.description": "Hide your typing indicator from others. /silenttyping toggles this.",
+    "settings.showButton": "Chat bar button",
+    "settings.showButton.description": "A keyboard button in the chat bar that toggles it.",
+    "toast.on": "Silent typing is on: others won't see you typing.",
+    "toast.off": "Silent typing is off.",
+    "button.on": "Silent typing on (click to turn off)",
+    "button.off": "Silent typing off (click to turn on)",
+    "command.description": "Turn silent typing on or off"
+  },
+  de: {
+    "settings.enabled": "Aktiviert",
+    "settings.enabled.description": "Blendet deine Tippanzeige für andere aus. /silenttyping schaltet das um.",
+    "settings.showButton": "Button in der Chatleiste",
+    "settings.showButton.description": "Ein Tastatur-Button in der Chatleiste zum Umschalten.",
+    "toast.on": "Leises Tippen ist an: Andere sehen nicht, dass du tippst.",
+    "toast.off": "Leises Tippen ist aus.",
+    "button.on": "Leises Tippen an (zum Ausschalten klicken)",
+    "button.off": "Leises Tippen aus (zum Einschalten klicken)",
+    "command.description": "Leises Tippen ein- oder ausschalten"
+  },
+  es: {
+    "settings.enabled": "Activado",
+    "settings.enabled.description": "Oculta tu indicador de escritura a los demás. /silenttyping lo activa o desactiva.",
+    "settings.showButton": "Botón en la barra de chat",
+    "settings.showButton.description": "Un botón de teclado en la barra de chat para activarlo o desactivarlo.",
+    "toast.on": "Escritura silenciosa activada: los demás no verán que estás escribiendo.",
+    "toast.off": "Escritura silenciosa desactivada.",
+    "button.on": "Escritura silenciosa activada (clic para desactivar)",
+    "button.off": "Escritura silenciosa desactivada (clic para activar)",
+    "command.description": "Activa o desactiva la escritura silenciosa"
+  },
+  fr: {
+    "settings.enabled": "Activé",
+    "settings.enabled.description": "Masque votre indicateur de saisie aux autres. /silenttyping l'active ou le désactive.",
+    "settings.showButton": "Bouton dans la barre de discussion",
+    "settings.showButton.description": "Un bouton clavier dans la barre de discussion pour l'activer ou le désactiver.",
+    "toast.on": "Saisie silencieuse activée : les autres ne verront pas que vous écrivez.",
+    "toast.off": "Saisie silencieuse désactivée.",
+    "button.on": "Saisie silencieuse activée (cliquez pour désactiver)",
+    "button.off": "Saisie silencieuse désactivée (cliquez pour activer)",
+    "command.description": "Activer ou désactiver la saisie silencieuse"
+  },
+  ja: {
+    "settings.enabled": "有効",
+    "settings.enabled.description": "入力中の表示を他の人に見せません。/silenttyping で切り替えられます。",
+    "settings.showButton": "チャットバーのボタン",
+    "settings.showButton.description": "チャットバーに切り替え用のキーボードボタンを表示します。",
+    "toast.on": "サイレント入力をオンにしました。入力中であることは他の人に表示されません。",
+    "toast.off": "サイレント入力をオフにしました。",
+    "button.on": "サイレント入力オン(クリックでオフ)",
+    "button.off": "サイレント入力オフ(クリックでオン)",
+    "command.description": "サイレント入力のオン/オフを切り替えます"
+  },
+  pl: {
+    "settings.enabled": "Włączone",
+    "settings.enabled.description": "Ukrywa przed innymi twój wskaźnik pisania. /silenttyping przełącza tę funkcję.",
+    "settings.showButton": "Przycisk na pasku czatu",
+    "settings.showButton.description": "Przycisk klawiatury na pasku czatu, który to przełącza.",
+    "toast.on": "Ciche pisanie włączone: inni nie zobaczą, że piszesz.",
+    "toast.off": "Ciche pisanie wyłączone.",
+    "button.on": "Ciche pisanie włączone (kliknij, aby wyłączyć)",
+    "button.off": "Ciche pisanie wyłączone (kliknij, aby włączyć)",
+    "command.description": "Włącz lub wyłącz ciche pisanie"
+  },
+  "pt-BR": {
+    "settings.enabled": "Ativado",
+    "settings.enabled.description": "Esconde seu indicador de digitação dos outros. /silenttyping liga ou desliga.",
+    "settings.showButton": "Botão na barra de chat",
+    "settings.showButton.description": "Um botão de teclado na barra de chat para ligar ou desligar.",
+    "toast.on": "Digitação silenciosa ligada: os outros não vão ver que você está digitando.",
+    "toast.off": "Digitação silenciosa desligada.",
+    "button.on": "Digitação silenciosa ligada (clique para desligar)",
+    "button.off": "Digitação silenciosa desligada (clique para ligar)",
+    "command.description": "Liga ou desliga a digitação silenciosa"
+  },
+  ru: {
+    "settings.enabled": "Включено",
+    "settings.enabled.description": "Скрывает от других ваш индикатор набора текста. Переключается командой /silenttyping.",
+    "settings.showButton": "Кнопка в строке чата",
+    "settings.showButton.description": "Кнопка с клавиатурой в строке чата для переключения.",
+    "toast.on": "Тихий набор включён: другие не увидят, что вы печатаете.",
+    "toast.off": "Тихий набор выключен.",
+    "button.on": "Тихий набор включён (нажмите, чтобы выключить)",
+    "button.off": "Тихий набор выключен (нажмите, чтобы включить)",
+    "command.description": "Включить или выключить тихий набор"
+  },
+  tr: {
+    "settings.enabled": "Etkin",
+    "settings.enabled.description": "Yazıyor göstergenizi başkalarından gizler. /silenttyping ile açıp kapatabilirsiniz.",
+    "settings.showButton": "Sohbet çubuğu düğmesi",
+    "settings.showButton.description": "Sohbet çubuğunda açıp kapatmak için bir klavye düğmesi.",
+    "toast.on": "Sessiz yazma açık: diğerleri yazdığınızı görmeyecek.",
+    "toast.off": "Sessiz yazma kapalı.",
+    "button.on": "Sessiz yazma açık (kapatmak için tıklayın)",
+    "button.off": "Sessiz yazma kapalı (açmak için tıklayın)",
+    "command.description": "Sessiz yazmayı aç veya kapat"
+  }
+});
+
+// plugins/silent-typing/index.tsx
 var jsx_runtime = require("react/jsx-runtime");
-var typingActions = import_api.filters.byProps("startTyping", "stopTyping");
-var chatButtonFilter = import_api.filters.componentByCode("CHAT_INPUT_BUTTON_NOTIFICATION", "sparkle");
+var typingActions = import_api2.filters.byProps("startTyping", "stopTyping");
+var chatButtonFilter = import_api2.filters.componentByCode("CHAT_INPUT_BUTTON_NOTIFICATION", "sparkle");
 var settings = {
-  enabled: { type: "boolean", label: "Enabled", description: "Hide your typing indicator from others. /silenttyping toggles this.", default: true },
-  showButton: { type: "boolean", label: "Chat bar button", description: "A keyboard button in the chat bar that toggles it.", default: true }
+  enabled: {
+    type: "boolean",
+    get label() {
+      return t("settings.enabled");
+    },
+    get description() {
+      return t("settings.enabled.description");
+    },
+    default: true
+  },
+  showButton: {
+    type: "boolean",
+    get label() {
+      return t("settings.showButton");
+    },
+    get description() {
+      return t("settings.showButton.description");
+    },
+    default: true
+  }
 };
 var context;
 function toggle() {
@@ -56,7 +180,7 @@ function toggle() {
     return "";
   const enabled = !context.settings.get("enabled");
   context.settings.set("enabled", enabled);
-  return enabled ? "Silent typing is on: others won't see you typing." : "Silent typing is off.";
+  return t(enabled ? "toast.on" : "toast.off");
 }
 function lookup(search) {
   let value;
@@ -70,8 +194,8 @@ function lookup(search) {
     return value;
   };
 }
-var getContainerClass = lookup(() => Object.values(import_api.find((v) => typeof v === "object" && Object.values(v).some((c) => typeof c === "string" && c.startsWith("channelAppLauncherButtonPopoutIconAnimation_"))) ?? {}).find((c) => typeof c === "string" && c.startsWith("buttonContainer_")));
-var getChatButton = lookup(() => import_api.find(chatButtonFilter));
+var getContainerClass = lookup(() => Object.values(import_api2.find((v) => typeof v === "object" && Object.values(v).some((c) => typeof c === "string" && c.startsWith("channelAppLauncherButtonPopoutIconAnimation_"))) ?? {}).find((c) => typeof c === "string" && c.startsWith("buttonContainer_")));
+var getChatButton = lookup(() => import_api2.find(chatButtonFilter));
 function KeyboardIcon({ off }) {
   return /* @__PURE__ */ jsx_runtime.jsxs("svg", {
     width: 20,
@@ -111,7 +235,7 @@ function KeyboardIcon({ off }) {
 }
 function SilentTypingButton() {
   const { enabled } = context.settings.use();
-  const label = enabled ? "Silent typing on (click to turn off)" : "Silent typing off (click to turn on)";
+  const label = t(enabled ? "button.on" : "button.off");
   const ChatButton = getChatButton();
   const icon = /* @__PURE__ */ jsx_runtime.jsx(KeyboardIcon, {
     off: enabled
@@ -135,7 +259,7 @@ function SilentTypingButton() {
     })
   });
 }
-var silent_typing_default = import_api.definePlugin({
+var silent_typing_default = import_api2.definePlugin({
   settings,
   patches: [{
     find: '"ChannelTextAreaButtons"',
@@ -175,13 +299,15 @@ var silent_typing_default = import_api.definePlugin({
     ctx.settings.onChange(({ enabled }) => {
       if (!enabled)
         return;
-      const channelId = import_api.getStore("SelectedChannelStore")?.getChannelId?.();
+      const channelId = import_api2.getStore("SelectedChannelStore")?.getChannelId?.();
       if (channelId)
-        import_api.find(typingActions)?.stopTyping(channelId);
+        import_api2.find(typingActions)?.stopTyping(channelId);
     });
     ctx.command({
       name: "silenttyping",
-      description: "Turn silent typing on or off",
+      get description() {
+        return t("command.description");
+      },
       execute: () => ({ ephemeral: toggle() })
     });
   }

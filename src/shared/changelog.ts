@@ -44,6 +44,8 @@ export const RELEASES: Release[] = [
                 "**Choose what's see-through.** Set how solid the server list, channels, chat and message box stay over the wallpaper, and tint them with your theme's colors.",
             ],
             improved: [
+                "**Discord is much smoother.** Evi takes out a hidden Discord style rule that made the whole app restyle itself whenever anything changed, like someone talking in a call: in a busy call the longest stall went from about 100 ms to 15 ms, and settings open faster. Discord's fonts load in the background too, so text doesn't jump the first time a style is used.",
+                "**Smaller updates.** From the next version on, updating Evi downloads just its files, a few MB, instead of the whole 100 MB installer.",
                 "**Settings and popouts stay solid.** The wallpaper only shows behind Discord's main window, unless you turn it on for settings or popouts too.",
                 "**View source shows the real code.** On a community plugin's page it opens the exact code Evi installs, with the author's own link next to it.",
             ],

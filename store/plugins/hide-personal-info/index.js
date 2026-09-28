@@ -42,7 +42,7 @@ __export(exports_hide_personal_info, {
   default: () => hide_personal_info_default
 });
 module.exports = __toCommonJS(exports_hide_personal_info);
-var import_api = require("@evi/api");
+var import_api2 = require("@evi/api");
 
 // plugins/hide-personal-info/detect.ts
 var emptyKnown = () => ({ substrings: [], exact: [], phones: [] });
@@ -161,6 +161,137 @@ function collectKnown(src) {
   return known;
 }
 
+// plugins/hide-personal-info/strings.ts
+var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    "settings.enabled": "Enabled",
+    "settings.enabled.description": "Blur personal info in User Settings. /hidepersonal toggles this.",
+    "settings.onlyStreamerMode": "Only in Streamer Mode",
+    "settings.onlyStreamerMode.description": "Only blur while Discord's Streamer Mode is on, instead of always.",
+    "settings.reveal": "Reveal",
+    "settings.reveal.description": "How to see a blurred value.",
+    "reveal.hover": "Hover to reveal",
+    "reveal.click": "Click to reveal",
+    "reveal.never": "Never",
+    "toggle.on": "Personal info in User Settings is now blurred.",
+    "toggle.off": "Personal info is no longer blurred.",
+    "command.description": "Toggle blurring your personal info in User Settings"
+  },
+  de: {
+    "settings.enabled": "Aktiviert",
+    "settings.enabled.description": "Verwischt persönliche Infos in den Nutzereinstellungen. Mit /hidepersonal schaltest du das um.",
+    "settings.onlyStreamerMode": "Nur im Streamer-Modus",
+    "settings.onlyStreamerMode.description": "Nur verwischen, solange der Streamer-Modus von Discord an ist, statt immer.",
+    "settings.reveal": "Aufdecken",
+    "settings.reveal.description": "Wie ein verwischter Wert sichtbar wird.",
+    "reveal.hover": "Zum Aufdecken darüberfahren",
+    "reveal.click": "Zum Aufdecken klicken",
+    "reveal.never": "Nie",
+    "toggle.on": "Persönliche Infos in den Nutzereinstellungen sind jetzt verwischt.",
+    "toggle.off": "Persönliche Infos werden nicht mehr verwischt.",
+    "command.description": "Verwischen deiner persönlichen Infos in den Nutzereinstellungen ein- oder ausschalten"
+  },
+  es: {
+    "settings.enabled": "Activado",
+    "settings.enabled.description": "Difumina tu información personal en Ajustes de usuario. /hidepersonal lo activa o desactiva.",
+    "settings.onlyStreamerMode": "Solo en modo streamer",
+    "settings.onlyStreamerMode.description": "Difuminar solo mientras el modo streamer de Discord esté activado, en lugar de siempre.",
+    "settings.reveal": "Mostrar",
+    "settings.reveal.description": "Cómo ver un valor difuminado.",
+    "reveal.hover": "Pasar el ratón para mostrar",
+    "reveal.click": "Hacer clic para mostrar",
+    "reveal.never": "Nunca",
+    "toggle.on": "Tu información personal en Ajustes de usuario ahora está difuminada.",
+    "toggle.off": "Tu información personal ya no se difumina.",
+    "command.description": "Activa o desactiva el difuminado de tu información personal en Ajustes de usuario"
+  },
+  fr: {
+    "settings.enabled": "Activé",
+    "settings.enabled.description": "Floute tes informations personnelles dans les paramètres utilisateur. /hidepersonal l'active ou le désactive.",
+    "settings.onlyStreamerMode": "Uniquement en mode streamer",
+    "settings.onlyStreamerMode.description": "Ne flouter que lorsque le mode streamer de Discord est activé, au lieu de toujours.",
+    "settings.reveal": "Affichage",
+    "settings.reveal.description": "Comment voir une valeur floutée.",
+    "reveal.hover": "Survoler pour afficher",
+    "reveal.click": "Cliquer pour afficher",
+    "reveal.never": "Jamais",
+    "toggle.on": "Tes informations personnelles dans les paramètres utilisateur sont maintenant floutées.",
+    "toggle.off": "Tes informations personnelles ne sont plus floutées.",
+    "command.description": "Active ou désactive le floutage de tes informations personnelles dans les paramètres utilisateur"
+  },
+  ja: {
+    "settings.enabled": "有効",
+    "settings.enabled.description": "ユーザー設定内の個人情報をぼかします。/hidepersonal で切り替えられます。",
+    "settings.onlyStreamerMode": "配信者モードのときだけ",
+    "settings.onlyStreamerMode.description": "常にではなく、Discord の配信者モードがオンのときだけぼかします。",
+    "settings.reveal": "表示方法",
+    "settings.reveal.description": "ぼかした内容を見る方法です。",
+    "reveal.hover": "カーソルを合わせて表示",
+    "reveal.click": "クリックして表示",
+    "reveal.never": "表示しない",
+    "toggle.on": "ユーザー設定内の個人情報をぼかしました。",
+    "toggle.off": "個人情報のぼかしをオフにしました。",
+    "command.description": "ユーザー設定内の個人情報のぼかしを切り替える"
+  },
+  pl: {
+    "settings.enabled": "Włączone",
+    "settings.enabled.description": "Rozmywa dane osobowe w Ustawieniach użytkownika. Przełączysz to poleceniem /hidepersonal.",
+    "settings.onlyStreamerMode": "Tylko w trybie streamera",
+    "settings.onlyStreamerMode.description": "Rozmywaj tylko wtedy, gdy włączony jest tryb streamera Discorda, zamiast zawsze.",
+    "settings.reveal": "Odsłanianie",
+    "settings.reveal.description": "Jak zobaczyć rozmytą wartość.",
+    "reveal.hover": "Najedź, aby odsłonić",
+    "reveal.click": "Kliknij, aby odsłonić",
+    "reveal.never": "Nigdy",
+    "toggle.on": "Dane osobowe w Ustawieniach użytkownika są teraz rozmyte.",
+    "toggle.off": "Dane osobowe nie są już rozmywane.",
+    "command.description": "Włącz lub wyłącz rozmywanie danych osobowych w Ustawieniach użytkownika"
+  },
+  "pt-BR": {
+    "settings.enabled": "Ativado",
+    "settings.enabled.description": "Desfoca suas informações pessoais nas Configurações de usuário. /hidepersonal ativa ou desativa.",
+    "settings.onlyStreamerMode": "Só no modo streamer",
+    "settings.onlyStreamerMode.description": "Desfocar só enquanto o modo streamer do Discord estiver ativado, em vez de sempre.",
+    "settings.reveal": "Revelar",
+    "settings.reveal.description": "Como ver um valor desfocado.",
+    "reveal.hover": "Passe o mouse para revelar",
+    "reveal.click": "Clique para revelar",
+    "reveal.never": "Nunca",
+    "toggle.on": "Suas informações pessoais nas Configurações de usuário agora estão desfocadas.",
+    "toggle.off": "Suas informações pessoais não são mais desfocadas.",
+    "command.description": "Ativa ou desativa o desfoque das suas informações pessoais nas Configurações de usuário"
+  },
+  ru: {
+    "settings.enabled": "Включено",
+    "settings.enabled.description": "Размывает личные данные в настройках пользователя. Команда /hidepersonal включает и выключает это.",
+    "settings.onlyStreamerMode": "Только в режиме стримера",
+    "settings.onlyStreamerMode.description": "Размывать только при включённом режиме стримера Discord, а не всегда.",
+    "settings.reveal": "Показ",
+    "settings.reveal.description": "Как увидеть размытое значение.",
+    "reveal.hover": "Показывать при наведении",
+    "reveal.click": "Показывать по клику",
+    "reveal.never": "Никогда",
+    "toggle.on": "Личные данные в настройках пользователя теперь размыты.",
+    "toggle.off": "Личные данные больше не размываются.",
+    "command.description": "Включить или выключить размытие личных данных в настройках пользователя"
+  },
+  tr: {
+    "settings.enabled": "Etkin",
+    "settings.enabled.description": "Kullanıcı Ayarları'ndaki kişisel bilgileri bulanıklaştırır. /hidepersonal ile açıp kapatabilirsin.",
+    "settings.onlyStreamerMode": "Yalnızca Yayıncı Modu'nda",
+    "settings.onlyStreamerMode.description": "Her zaman yerine yalnızca Discord'un Yayıncı Modu açıkken bulanıklaştır.",
+    "settings.reveal": "Gösterme",
+    "settings.reveal.description": "Bulanık bir değerin nasıl görüleceği.",
+    "reveal.hover": "Göstermek için üzerine gel",
+    "reveal.click": "Göstermek için tıkla",
+    "reveal.never": "Asla",
+    "toggle.on": "Kullanıcı Ayarları'ndaki kişisel bilgiler artık bulanık.",
+    "toggle.off": "Kişisel bilgiler artık bulanıklaştırılmıyor.",
+    "command.description": "Kullanıcı Ayarları'ndaki kişisel bilgilerin bulanıklaştırılmasını aç veya kapat"
+  }
+});
+
 // plugins/hide-personal-info/index.ts
 var BLUR = "evi-hpi-blur";
 var REVEALED = "evi-hpi-revealed";
@@ -169,17 +300,45 @@ var CLASSIC_ROOT = '[class*="standardSidebarView_"]';
 var DIALOG_ROOT = '[role="dialog"], [aria-modal="true"]';
 var SKIP = new Set(["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "SVG", "CODE"]);
 var settings = {
-  enabled: { type: "boolean", label: "Enabled", description: "Blur personal info in User Settings. /hidepersonal toggles this.", default: true },
-  onlyStreamerMode: { type: "boolean", label: "Only in Streamer Mode", description: "Only blur while Discord's Streamer Mode is on, instead of always.", default: false },
+  enabled: {
+    type: "boolean",
+    get label() {
+      return t("settings.enabled");
+    },
+    get description() {
+      return t("settings.enabled.description");
+    },
+    default: true
+  },
+  onlyStreamerMode: {
+    type: "boolean",
+    get label() {
+      return t("settings.onlyStreamerMode");
+    },
+    get description() {
+      return t("settings.onlyStreamerMode.description");
+    },
+    default: false
+  },
   reveal: {
     type: "select",
-    label: "Reveal",
-    description: "How to see a blurred value.",
+    get label() {
+      return t("settings.reveal");
+    },
+    get description() {
+      return t("settings.reveal.description");
+    },
     default: "hover",
     options: [
-      { label: "Hover to reveal", value: "hover" },
-      { label: "Click to reveal", value: "click" },
-      { label: "Never", value: "never" }
+      { get label() {
+        return t("reveal.hover");
+      }, value: "hover" },
+      { get label() {
+        return t("reveal.click");
+      }, value: "click" },
+      { get label() {
+        return t("reveal.never");
+      }, value: "never" }
     ]
   }
 };
@@ -195,7 +354,7 @@ function isActive() {
     return false;
   if (!context.settings.get("onlyStreamerMode"))
     return true;
-  return !!import_api.findStore("StreamerModeStore")?.enabled;
+  return !!import_api2.findStore("StreamerModeStore")?.enabled;
 }
 function findRoots() {
   const roots = [...document.querySelectorAll(CLASSIC_ROOT)];
@@ -206,7 +365,7 @@ function findRoots() {
 function known() {
   const get = (name) => {
     try {
-      return import_api.findStore(name);
+      return import_api2.findStore(name);
     } catch {
       return;
     }
@@ -249,8 +408,8 @@ function scan(node, values) {
   if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE)
     return;
   const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-  for (let t = walker.nextNode();t; t = walker.nextNode())
-    checkText(t, values);
+  for (let t2 = walker.nextNode();t2; t2 = walker.nextNode())
+    checkText(t2, values);
 }
 function recheckTagged(values) {
   for (const el of tagged) {
@@ -340,9 +499,9 @@ function toggle() {
     return "";
   const enabled = !context.settings.get("enabled");
   context.settings.set("enabled", enabled);
-  return enabled ? "Personal info in User Settings is now blurred." : "Personal info is no longer blurred.";
+  return enabled ? t("toggle.on") : t("toggle.off");
 }
-var hide_personal_info_default = import_api.definePlugin({
+var hide_personal_info_default = import_api2.definePlugin({
   settings,
   toggle,
   detectSensitive,
@@ -390,7 +549,7 @@ var hide_personal_info_default = import_api.definePlugin({
       applyMode();
       refresh();
     });
-    const streamerMode = import_api.findStore("StreamerModeStore");
+    const streamerMode = import_api2.findStore("StreamerModeStore");
     if (streamerMode?.addChangeListener) {
       let last = !!streamerMode.enabled;
       const onStreamerMode = () => {
@@ -404,7 +563,7 @@ var hide_personal_info_default = import_api.definePlugin({
     }
     ctx.command({
       name: "hidepersonal",
-      description: "Toggle blurring your personal info in User Settings",
+      description: t("command.description"),
       execute: () => ({ ephemeral: toggle() })
     });
     refresh();

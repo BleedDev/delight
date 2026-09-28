@@ -42,7 +42,156 @@ __export(exports_typing_tweaks, {
   default: () => typing_tweaks_default
 });
 module.exports = __toCommonJS(exports_typing_tweaks);
+var import_api2 = require("@evi/api");
+
+// plugins/typing-tweaks/strings.ts
 var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    "settings.avatars": "Avatars in the typing line",
+    "settings.avatars.description": "A small avatar before each name in “is typing” above the chat box.",
+    "settings.roleColors": "Names in role colours",
+    "settings.roleColors.description": "Names in “is typing” in the colour of their top role, like in chat.",
+    "settings.channels": "Dots on channels",
+    "settings.channels.description": "Three dots on a channel or thread in the channel list while someone types in it.",
+    "settings.dms": "Dots on DMs",
+    "settings.dms.description": "Three dots on a DM in the DM list while someone types in it, next to the ones Discord puts on the avatar.",
+    someone: "Someone",
+    "typing.one": "{a} is typing",
+    "typing.two": "{a} and {b} are typing",
+    "typing.three": "{a}, {b} and {c} are typing",
+    "typing.many": { one: "{a}, {b} and {count} other are typing", other: "{a}, {b} and {count} others are typing" }
+  },
+  de: {
+    "settings.avatars": "Avatare in der Tippzeile",
+    "settings.avatars.description": "Ein kleiner Avatar vor jedem Namen in „schreibt gerade“ über dem Chatfeld.",
+    "settings.roleColors": "Namen in Rollenfarben",
+    "settings.roleColors.description": "Namen in „schreibt gerade“ in der Farbe ihrer höchsten Rolle, wie im Chat.",
+    "settings.channels": "Punkte bei Kanälen",
+    "settings.channels.description": "Drei Punkte bei einem Kanal oder Thread in der Kanalliste, solange dort jemand schreibt.",
+    "settings.dms": "Punkte bei DMs",
+    "settings.dms.description": "Drei Punkte bei einer DM in der DM-Liste, solange dort jemand schreibt, neben denen, die Discord am Avatar anzeigt.",
+    someone: "Jemand",
+    "typing.one": "{a} schreibt gerade",
+    "typing.two": "{a} und {b} schreiben gerade",
+    "typing.three": "{a}, {b} und {c} schreiben gerade",
+    "typing.many": "{a}, {b} und {count} weitere schreiben gerade"
+  },
+  es: {
+    "settings.avatars": "Avatares en la línea de escritura",
+    "settings.avatars.description": "Un pequeño avatar antes de cada nombre en «está escribiendo» sobre el cuadro de chat.",
+    "settings.roleColors": "Nombres con el color del rol",
+    "settings.roleColors.description": "Los nombres en «está escribiendo» con el color de su rol más alto, como en el chat.",
+    "settings.channels": "Puntos en los canales",
+    "settings.channels.description": "Tres puntos en un canal o hilo de la lista de canales mientras alguien escribe en él.",
+    "settings.dms": "Puntos en los MD",
+    "settings.dms.description": "Tres puntos en un MD de la lista de MD mientras alguien escribe en él, junto a los que Discord pone en el avatar.",
+    someone: "Alguien",
+    "typing.one": "{a} está escribiendo",
+    "typing.two": "{a} y {b} están escribiendo",
+    "typing.three": "{a}, {b} y {c} están escribiendo",
+    "typing.many": "{a}, {b} y {count} más están escribiendo"
+  },
+  fr: {
+    "settings.avatars": "Avatars dans la ligne d'écriture",
+    "settings.avatars.description": "Un petit avatar devant chaque nom dans « est en train d'écrire » au-dessus de la zone de chat.",
+    "settings.roleColors": "Noms aux couleurs des rôles",
+    "settings.roleColors.description": "Les noms dans « est en train d'écrire » à la couleur de leur rôle principal, comme dans le chat.",
+    "settings.channels": "Points sur les salons",
+    "settings.channels.description": "Trois points sur un salon ou un fil de la liste des salons pendant que quelqu'un y écrit.",
+    "settings.dms": "Points sur les MP",
+    "settings.dms.description": "Trois points sur un MP de la liste des MP pendant que quelqu'un y écrit, en plus de ceux que Discord met sur l'avatar.",
+    someone: "Quelqu'un",
+    "typing.one": "{a} est en train d'écrire",
+    "typing.two": "{a} et {b} sont en train d'écrire",
+    "typing.three": "{a}, {b} et {c} sont en train d'écrire",
+    "typing.many": { one: "{a}, {b} et {count} autre sont en train d'écrire", other: "{a}, {b} et {count} autres sont en train d'écrire" }
+  },
+  ja: {
+    "settings.avatars": "入力中の表示にアバターを追加",
+    "settings.avatars.description": "チャットボックスの上の「入力中」に表示される各名前の前に、小さなアバターを表示します。",
+    "settings.roleColors": "名前をロールの色にする",
+    "settings.roleColors.description": "「入力中」の名前を、チャットと同じく最上位ロールの色で表示します。",
+    "settings.channels": "チャンネルにドットを表示",
+    "settings.channels.description": "誰かが入力している間、チャンネルリストのチャンネルやスレッドに3つのドットを表示します。",
+    "settings.dms": "DMにドットを表示",
+    "settings.dms.description": "誰かが入力している間、DMリストのDMに3つのドットを表示します。Discordがアバターに表示するものとは別に表示されます。",
+    someone: "誰か",
+    "typing.one": "{a}さんが入力中",
+    "typing.two": "{a}さんと{b}さんが入力中",
+    "typing.three": "{a}さん、{b}さん、{c}さんが入力中",
+    "typing.many": "{a}さん、{b}さん、他{count}人が入力中"
+  },
+  pl: {
+    "settings.avatars": "Awatary w linii pisania",
+    "settings.avatars.description": "Mały awatar przed każdą nazwą w „pisze” nad polem czatu.",
+    "settings.roleColors": "Nazwy w kolorach ról",
+    "settings.roleColors.description": "Nazwy w „pisze” w kolorze najwyższej roli, tak jak na czacie.",
+    "settings.channels": "Kropki przy kanałach",
+    "settings.channels.description": "Trzy kropki przy kanale lub wątku na liście kanałów, gdy ktoś w nim pisze.",
+    "settings.dms": "Kropki przy DM-ach",
+    "settings.dms.description": "Trzy kropki przy DM-ie na liście wiadomości prywatnych, gdy ktoś w nim pisze, obok tych, które Discord pokazuje przy awatarze.",
+    someone: "Ktoś",
+    "typing.one": "{a} pisze",
+    "typing.two": "{a} i {b} piszą",
+    "typing.three": "{a}, {b} i {c} piszą",
+    "typing.many": {
+      few: "{a}, {b} i {count} inne osoby piszą",
+      many: "{a}, {b} i {count} innych osób pisze",
+      other: "{a}, {b} i {count} innych osób pisze"
+    }
+  },
+  "pt-BR": {
+    "settings.avatars": "Avatares na linha de digitação",
+    "settings.avatars.description": "Um avatar pequeno antes de cada nome em “está digitando” acima da caixa de chat.",
+    "settings.roleColors": "Nomes nas cores dos cargos",
+    "settings.roleColors.description": "Os nomes em “está digitando” na cor do cargo mais alto, como no chat.",
+    "settings.channels": "Pontinhos nos canais",
+    "settings.channels.description": "Três pontinhos em um canal ou tópico na lista de canais enquanto alguém digita nele.",
+    "settings.dms": "Pontinhos nas DMs",
+    "settings.dms.description": "Três pontinhos em uma DM na lista de DMs enquanto alguém digita nela, ao lado dos que o Discord coloca no avatar.",
+    someone: "Alguém",
+    "typing.one": "{a} está digitando",
+    "typing.two": "{a} e {b} estão digitando",
+    "typing.three": "{a}, {b} e {c} estão digitando",
+    "typing.many": "{a}, {b} e mais {count} pessoas estão digitando"
+  },
+  ru: {
+    "settings.avatars": "Аватары в строке набора",
+    "settings.avatars.description": "Маленький аватар перед каждым именем в строке «печатает» над полем ввода.",
+    "settings.roleColors": "Имена в цветах ролей",
+    "settings.roleColors.description": "Имена в строке «печатает» цветом высшей роли, как в чате.",
+    "settings.channels": "Точки у каналов",
+    "settings.channels.description": "Три точки у канала или ветки в списке каналов, пока в нём кто-то печатает.",
+    "settings.dms": "Точки у ЛС",
+    "settings.dms.description": "Три точки у личного чата в списке ЛС, пока в нём кто-то печатает, в дополнение к тем, что Discord показывает на аватаре.",
+    someone: "Кто-то",
+    "typing.one": "{a} печатает",
+    "typing.two": "{a} и {b} печатают",
+    "typing.three": "{a}, {b} и {c} печатают",
+    "typing.many": {
+      one: "{a}, {b} и ещё {count} человек печатают",
+      few: "{a}, {b} и ещё {count} человека печатают",
+      many: "{a}, {b} и ещё {count} человек печатают",
+      other: "{a}, {b} и ещё {count} человека печатают"
+    }
+  },
+  tr: {
+    "settings.avatars": "Yazıyor satırında avatarlar",
+    "settings.avatars.description": "Sohbet kutusunun üstündeki “yazıyor” satırında her adın önünde küçük bir avatar.",
+    "settings.roleColors": "Adlar rol renginde",
+    "settings.roleColors.description": "“Yazıyor” satırındaki adlar, sohbetteki gibi en üst rolün renginde görünür.",
+    "settings.channels": "Kanallarda noktalar",
+    "settings.channels.description": "Kanal listesinde, birisi yazarken o kanalda veya konuda üç nokta görünür.",
+    "settings.dms": "DM'lerde noktalar",
+    "settings.dms.description": "DM listesinde, birisi yazarken o DM'de, Discord'un avatarın üzerine koyduklarının yanında üç nokta görünür.",
+    someone: "Biri",
+    "typing.one": "{a} yazıyor",
+    "typing.two": "{a} ve {b} yazıyor",
+    "typing.three": "{a}, {b} ve {c} yazıyor",
+    "typing.many": "{a}, {b} ve {count} kişi daha yazıyor"
+  }
+});
 
 // plugins/typing-tweaks/typing.ts
 function typerIds(typing, selfId, hidden, known = () => true) {
@@ -56,17 +205,6 @@ function nameSlots(parts) {
       slots.push(i);
   });
   return slots;
-}
-function typingLabel(names) {
-  if (!names.length)
-    return "";
-  if (names.length === 1)
-    return `${names[0]} is typing`;
-  if (names.length === 2)
-    return `${names[0]} and ${names[1]} are typing`;
-  if (names.length === 3)
-    return `${names[0]}, ${names[1]} and ${names[2]} are typing`;
-  return `${names[0]}, ${names[1]} and ${names.length - 2} others are typing`;
 }
 var PATCHES = {
   typingLine: {
@@ -102,15 +240,31 @@ var PATCHES = {
 // plugins/typing-tweaks/index.tsx
 var jsx_runtime = require("react/jsx-runtime");
 var settings = {
-  avatars: { type: "boolean", label: "Avatars in the typing line", description: "A small avatar before each name in “is typing” above the chat box.", default: true },
-  roleColors: { type: "boolean", label: "Names in role colours", description: "Names in “is typing” in the colour of their top role, like in chat.", default: true },
-  channels: { type: "boolean", label: "Dots on channels", description: "Three dots on a channel or thread in the channel list while someone types in it.", default: true },
-  dms: { type: "boolean", label: "Dots on DMs", description: "Three dots on a DM in the DM list while someone types in it, next to the ones Discord puts on the avatar.", default: true }
+  avatars: { type: "boolean", get label() {
+    return t("settings.avatars");
+  }, get description() {
+    return t("settings.avatars.description");
+  }, default: true },
+  roleColors: { type: "boolean", get label() {
+    return t("settings.roleColors");
+  }, get description() {
+    return t("settings.roleColors.description");
+  }, default: true },
+  channels: { type: "boolean", get label() {
+    return t("settings.channels");
+  }, get description() {
+    return t("settings.channels.description");
+  }, default: true },
+  dms: { type: "boolean", get label() {
+    return t("settings.dms");
+  }, get description() {
+    return t("settings.dms.description");
+  }, default: true }
 };
 var context;
 function store(name) {
   try {
-    return import_api.findStore(name);
+    return import_api2.findStore(name);
   } catch {
     return;
   }
@@ -132,7 +286,7 @@ function subscribeTyping(onChange) {
 function displayName(id, guildId) {
   const user = store("UserStore")?.getUser?.(id);
   const nick = guildId ? store("GuildMemberStore")?.getNick?.(guildId, id) : undefined;
-  return nick ?? user?.globalName ?? user?.username ?? "Someone";
+  return nick ?? user?.globalName ?? user?.username ?? t("someone");
 }
 function TypingName({ userId, guildId, children }) {
   const { avatars, roleColors } = context.settings.use();
@@ -152,11 +306,21 @@ function TypingName({ userId, guildId, children }) {
     ]
   });
 }
+function typingText(names) {
+  const [a, b, c] = names;
+  if (names.length === 1)
+    return t("typing.one", { a });
+  if (names.length === 2)
+    return t("typing.two", { a, b });
+  if (names.length === 3)
+    return t("typing.three", { a, b, c });
+  return t("typing.many", { a, b, count: names.length - 2 });
+}
 function TypingIndicator({ channelId, guildId }) {
-  const ids = import_api.React.useSyncExternalStore(subscribeTyping, () => typersIn(channelId).join(","));
+  const ids = import_api2.React.useSyncExternalStore(subscribeTyping, () => typersIn(channelId).join(","));
   if (!ids)
     return null;
-  const label = typingLabel(ids.split(",").map((id) => displayName(id, guildId)));
+  const label = typingText(ids.split(",").map((id) => displayName(id, guildId)));
   const dots = /* @__PURE__ */ jsx_runtime.jsxs("span", {
     className: "evi-typing-dots",
     role: "img",
@@ -167,14 +331,14 @@ function TypingIndicator({ channelId, guildId }) {
       /* @__PURE__ */ jsx_runtime.jsx("span", {})
     ]
   });
-  const Tooltip = import_api.Components.Tooltip;
+  const Tooltip = import_api2.Components.Tooltip;
   return Tooltip ? /* @__PURE__ */ jsx_runtime.jsx(Tooltip, {
     text: label,
     position: "top",
     children: dots
   }) : dots;
 }
-var typing_tweaks_default = import_api.definePlugin({
+var typing_tweaks_default = import_api2.definePlugin({
   settings,
   patches: [PATCHES.typingLine, PATCHES.channel, PATCHES.thread, PATCHES.dm],
   renderTypingText(text, named, props) {
@@ -194,7 +358,7 @@ var typing_tweaks_default = import_api.definePlugin({
       const guildId = props.guildId ?? props.channel.guild_id ?? undefined;
       return text.map((part, i) => {
         const slot = slots.indexOf(i);
-        return slot === -1 ? /* @__PURE__ */ jsx_runtime.jsx(import_api.React.Fragment, {
+        return slot === -1 ? /* @__PURE__ */ jsx_runtime.jsx(import_api2.React.Fragment, {
           children: part
         }, i) : /* @__PURE__ */ jsx_runtime.jsx(TypingName, {
           userId: ids[slot],

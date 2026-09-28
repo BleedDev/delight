@@ -42,13 +42,13 @@ __export(exports_last_seen, {
   default: () => last_seen_default
 });
 module.exports = __toCommonJS(exports_last_seen);
-var import_api5 = require("@evi/api");
+var import_api6 = require("@evi/api");
 
 // plugins/last-seen/line.tsx
-var import_api2 = require("@evi/api");
+var import_api3 = require("@evi/api");
 
 // plugins/last-seen/state.ts
-var import_api = require("@evi/api");
+var import_api2 = require("@evi/api");
 
 // plugins/last-seen/track.ts
 var DEFAULT_CAP = 25000;
@@ -258,6 +258,23 @@ function merge(into, from) {
   }
   return out;
 }
+var ENGLISH = {
+  "unit.y": "{n}y",
+  "unit.mo": "{n}mo",
+  "unit.w": "{n}w",
+  "unit.d": "{n}d",
+  "unit.h": "{n}h",
+  "unit.m": "{n}m",
+  ago: "{span} ago",
+  justNow: "just now",
+  seen: "Last seen {when}",
+  seenIn: "Last seen in the last {span}",
+  active: "Active {when}",
+  online: "Online now",
+  message: "Last message {when}",
+  messageIn: "Last message {when} in {where}"
+};
+var english = (key, vars) => ENGLISH[key].replace(/\{(\w+)\}/g, (whole, name) => vars && (name in vars) ? String(vars[name]) : whole);
 var UNITS = [
   [365 * 24 * 3600000, "y"],
   [30 * 24 * 3600000, "mo"],
@@ -266,53 +283,575 @@ var UNITS = [
   [3600000, "h"],
   [60000, "m"]
 ];
-function formatSpan(then, now) {
+function formatSpan(then, now, say = english) {
   const diff = Math.max(0, now - then);
   for (const [ms, unit] of UNITS) {
     if (diff >= ms)
-      return `${Math.floor(diff / ms)}${unit}`;
+      return say(`unit.${unit}`, { n: Math.floor(diff / ms) });
   }
   return null;
 }
-function formatRelative(then, now) {
-  const span = formatSpan(then, now);
-  return span ? `${span} ago` : "just now";
+function formatRelative(then, now, say = english) {
+  const span = formatSpan(then, now, say);
+  return span ? say("ago", { span }) : say("justNow");
 }
-function seenText(entry, now) {
+function seenText(entry, now, say = english) {
   if (!entry.seen)
     return null;
   if (!entry.approx)
-    return `Last seen ${formatRelative(entry.seen, now)}`;
-  const span = formatSpan(entry.seen, now);
-  return span ? `Last seen in the last ${span}` : "Last seen just now";
+    return say("seen", { when: formatRelative(entry.seen, now, say) });
+  const span = formatSpan(entry.seen, now, say);
+  return span ? say("seenIn", { span }) : say("seen", { when: say("justNow") });
 }
-function lineText(entry, now) {
+function lineText(entry, now, say = english) {
   if (!entry)
     return null;
   if (entry.active && entry.active > (entry.seen ?? 0))
-    return `Active ${formatRelative(entry.active, now)}`;
-  return seenText(entry, now);
+    return say("active", { when: formatRelative(entry.active, now, say) });
+  return seenText(entry, now, say);
 }
-function describe(entry, onlineNow, now, where) {
+function describe(entry, onlineNow, now, where, say = english) {
   const parts = [];
   if (onlineNow)
-    parts.push("Online now");
+    parts.push(say("online"));
   else if (entry?.seen)
-    parts.push(seenText(entry, now));
+    parts.push(seenText(entry, now, say));
   if (!onlineNow && entry?.active && entry.active > (entry.seen ?? 0))
-    parts.push(`Active ${formatRelative(entry.active, now)}`);
-  if (entry?.message)
-    parts.push(`Last message ${formatRelative(entry.message, now)}${where ? ` in ${where}` : ""}`);
+    parts.push(say("active", { when: formatRelative(entry.active, now, say) }));
+  if (entry?.message) {
+    const when = formatRelative(entry.message, now, say);
+    parts.push(where ? say("messageIn", { when, where }) : say("message", { when }));
+  }
   return parts.length ? parts.join(" · ") : null;
 }
 
+// plugins/last-seen/strings.ts
+var import_api = require("@evi/api");
+var t = import_api.defineStrings({
+  en: {
+    "settings.showOnProfiles": "On profiles",
+    "settings.showOnProfiles.description": "A clock next to the badges on someone's profile; hover it for the times.",
+    "settings.showInMemberList": "In the member list",
+    "settings.showInMemberList.description": "Under the name of offline members.",
+    "settings.showInFriends": "In the friends list",
+    "settings.showInFriends.description": "Under the name of offline friends.",
+    "settings.showInDms": "In direct messages",
+    "settings.showInDms.description": "Under the name of offline people in the DM list.",
+    "settings.ignoreBots": "Ignore bots",
+    "settings.ignoreBots.description": "Don't track bots and apps.",
+    "unit.y": "{n}y",
+    "unit.mo": "{n}mo",
+    "unit.w": "{n}w",
+    "unit.d": "{n}d",
+    "unit.h": "{n}h",
+    "unit.m": "{n}m",
+    ago: "{span} ago",
+    justNow: "just now",
+    seen: "Last seen {when}",
+    seenIn: "Last seen in the last {span}",
+    active: "Active {when}",
+    online: "Online now",
+    message: "Last message {when}",
+    messageIn: "Last message {when} in {where}",
+    "where.channel": "#{name}",
+    "where.dms": "your DMs",
+    "where.group": "the group {name}",
+    "where.groupUnnamed": "a group DM",
+    people: { one: "{n} person", other: "{n} people" },
+    "remembered.title": "Remembered",
+    "remembered.cleared": "Cleared {people}.",
+    "remembered.status": "{people} of {cap}. Kept on this device only; friends and DMs are kept longest.",
+    "remembered.meter": "Space used",
+    "remembered.undo": "Undo",
+    "remembered.cancel": "Cancel",
+    "remembered.confirmClear": "Clear {people}?",
+    "remembered.export": "Export",
+    "remembered.import": "Import",
+    "remembered.clear": "Clear data",
+    "toast.restored": "Restored {people}",
+    "toast.imported": "Imported {people}",
+    "toast.nothingToImport": "Nothing to import in that file",
+    "toast.badFile": "That file isn't a Last Seen export",
+    "people.title": "People",
+    "people.searchPlaceholder": "Search by name or ID",
+    "people.searchLabel": "Search remembered people",
+    "people.nothingRecent": "Nothing recent",
+    "people.noMatch": "No one matches that.",
+    "people.empty": "No one yet. People show up here as Discord tells your client about them.",
+    "people.showing": "Showing {shown} of {total}. Search to find someone else."
+  },
+  de: {
+    "settings.showOnProfiles": "In Profilen",
+    "settings.showOnProfiles.description": "Eine Uhr neben den Abzeichen im Profil einer Person; fahre darüber, um die Zeiten zu sehen.",
+    "settings.showInMemberList": "In der Mitgliederliste",
+    "settings.showInMemberList.description": "Unter dem Namen von Offline-Mitgliedern.",
+    "settings.showInFriends": "In der Freundesliste",
+    "settings.showInFriends.description": "Unter dem Namen von Offline-Freunden.",
+    "settings.showInDms": "In Direktnachrichten",
+    "settings.showInDms.description": "Unter dem Namen von Offline-Personen in der DM-Liste.",
+    "settings.ignoreBots": "Bots ignorieren",
+    "settings.ignoreBots.description": "Bots und Apps nicht erfassen.",
+    "unit.y": "{n} J.",
+    "unit.mo": "{n} Mon.",
+    "unit.w": "{n} Wo.",
+    "unit.d": "{n} T.",
+    "unit.h": "{n} Std.",
+    "unit.m": "{n} Min.",
+    ago: "vor {span}",
+    justNow: "gerade eben",
+    seen: "Zuletzt online {when}",
+    seenIn: "Zuletzt online in den letzten {span}",
+    active: "Aktiv {when}",
+    online: "Jetzt online",
+    message: "Letzte Nachricht {when}",
+    messageIn: "Letzte Nachricht {when} in {where}",
+    "where.channel": "#{name}",
+    "where.dms": "deinen DMs",
+    "where.group": "der Gruppe {name}",
+    "where.groupUnnamed": "einer Gruppen-DM",
+    people: { one: "{n} Person", other: "{n} Personen" },
+    "remembered.title": "Gespeichert",
+    "remembered.cleared": "{people} gelöscht.",
+    "remembered.status": "{people} von {cap}. Nur auf diesem Gerät gespeichert; Freunde und DMs bleiben am längsten erhalten.",
+    "remembered.meter": "Belegter Speicher",
+    "remembered.undo": "Rückgängig",
+    "remembered.cancel": "Abbrechen",
+    "remembered.confirmClear": "{people} löschen?",
+    "remembered.export": "Exportieren",
+    "remembered.import": "Importieren",
+    "remembered.clear": "Daten löschen",
+    "toast.restored": "{people} wiederhergestellt",
+    "toast.imported": "{people} importiert",
+    "toast.nothingToImport": "In dieser Datei gibt es nichts zu importieren",
+    "toast.badFile": "Diese Datei ist kein Last-Seen-Export",
+    "people.title": "Personen",
+    "people.searchPlaceholder": "Nach Name oder ID suchen",
+    "people.searchLabel": "Gespeicherte Personen durchsuchen",
+    "people.nothingRecent": "Nichts Aktuelles",
+    "people.noMatch": "Dazu passt niemand.",
+    "people.empty": "Noch niemand. Personen erscheinen hier, sobald Discord deinem Client von ihnen berichtet.",
+    "people.showing": "{shown} von {total} werden angezeigt. Suche, um jemand anderen zu finden."
+  },
+  es: {
+    "settings.showOnProfiles": "En los perfiles",
+    "settings.showOnProfiles.description": "Un reloj junto a las insignias del perfil de alguien; pasa el cursor por encima para ver las horas.",
+    "settings.showInMemberList": "En la lista de miembros",
+    "settings.showInMemberList.description": "Debajo del nombre de los miembros desconectados.",
+    "settings.showInFriends": "En la lista de amigos",
+    "settings.showInFriends.description": "Debajo del nombre de los amigos desconectados.",
+    "settings.showInDms": "En mensajes directos",
+    "settings.showInDms.description": "Debajo del nombre de las personas desconectadas en la lista de MD.",
+    "settings.ignoreBots": "Ignorar bots",
+    "settings.ignoreBots.description": "No registrar bots ni aplicaciones.",
+    "unit.y": "{n} a",
+    "unit.mo": "{n} mes",
+    "unit.w": "{n} sem",
+    "unit.d": "{n} d",
+    "unit.h": "{n} h",
+    "unit.m": "{n} min",
+    ago: "hace {span}",
+    justNow: "ahora mismo",
+    seen: "Última conexión {when}",
+    seenIn: "Última conexión en las últimas {span}",
+    active: "Activo {when}",
+    online: "En línea ahora",
+    message: "Último mensaje {when}",
+    messageIn: "Último mensaje {when} en {where}",
+    "where.channel": "#{name}",
+    "where.dms": "tus MD",
+    "where.group": "el grupo {name}",
+    "where.groupUnnamed": "un MD de grupo",
+    people: { one: "{n} persona", other: "{n} personas" },
+    "remembered.title": "Guardadas",
+    "remembered.cleared": "Borrado: {people}.",
+    "remembered.status": "{people} de {cap}. Se guardan solo en este dispositivo; los amigos y los MD se conservan más tiempo.",
+    "remembered.meter": "Espacio usado",
+    "remembered.undo": "Deshacer",
+    "remembered.cancel": "Cancelar",
+    "remembered.confirmClear": "¿Borrar {people}?",
+    "remembered.export": "Exportar",
+    "remembered.import": "Importar",
+    "remembered.clear": "Borrar datos",
+    "toast.restored": "Restaurado: {people}",
+    "toast.imported": "Importado: {people}",
+    "toast.nothingToImport": "No hay nada que importar en ese archivo",
+    "toast.badFile": "Ese archivo no es una exportación de Last Seen",
+    "people.title": "Personas",
+    "people.searchPlaceholder": "Buscar por nombre o ID",
+    "people.searchLabel": "Buscar entre las personas guardadas",
+    "people.nothingRecent": "Nada reciente",
+    "people.noMatch": "No hay nadie que coincida.",
+    "people.empty": "Todavía nadie. Las personas aparecen aquí a medida que Discord informa de ellas a tu cliente.",
+    "people.showing": "Mostrando {shown} de {total}. Busca para encontrar a otra persona."
+  },
+  fr: {
+    "settings.showOnProfiles": "Sur les profils",
+    "settings.showOnProfiles.description": "Une horloge à côté des badges du profil d'une personne ; survole-la pour voir les heures.",
+    "settings.showInMemberList": "Dans la liste des membres",
+    "settings.showInMemberList.description": "Sous le nom des membres hors ligne.",
+    "settings.showInFriends": "Dans la liste d'amis",
+    "settings.showInFriends.description": "Sous le nom des amis hors ligne.",
+    "settings.showInDms": "Dans les messages privés",
+    "settings.showInDms.description": "Sous le nom des personnes hors ligne dans la liste des MP.",
+    "settings.ignoreBots": "Ignorer les bots",
+    "settings.ignoreBots.description": "Ne pas suivre les bots et les applications.",
+    "unit.y": "{n} a",
+    "unit.mo": "{n} mois",
+    "unit.w": "{n} sem.",
+    "unit.d": "{n} j",
+    "unit.h": "{n} h",
+    "unit.m": "{n} min",
+    ago: "il y a {span}",
+    justNow: "à l'instant",
+    seen: "Dernière connexion {when}",
+    seenIn: "Dernière connexion il y a moins de {span}",
+    active: "Actif {when}",
+    online: "En ligne",
+    message: "Dernier message {when}",
+    messageIn: "Dernier message {when} dans {where}",
+    "where.channel": "#{name}",
+    "where.dms": "tes MP",
+    "where.group": "le groupe {name}",
+    "where.groupUnnamed": "un MP de groupe",
+    people: { one: "{n} personne", other: "{n} personnes" },
+    "remembered.title": "Enregistrées",
+    "remembered.cleared": "Effacé : {people}.",
+    "remembered.status": "{people} sur {cap}. Conservées uniquement sur cet appareil ; les amis et les MP sont gardés le plus longtemps.",
+    "remembered.meter": "Espace utilisé",
+    "remembered.undo": "Annuler",
+    "remembered.cancel": "Annuler",
+    "remembered.confirmClear": "Effacer {people} ?",
+    "remembered.export": "Exporter",
+    "remembered.import": "Importer",
+    "remembered.clear": "Effacer les données",
+    "toast.restored": "Restauré : {people}",
+    "toast.imported": "Importé : {people}",
+    "toast.nothingToImport": "Rien à importer dans ce fichier",
+    "toast.badFile": "Ce fichier n'est pas un export de Last Seen",
+    "people.title": "Personnes",
+    "people.searchPlaceholder": "Rechercher par nom ou ID",
+    "people.searchLabel": "Rechercher parmi les personnes enregistrées",
+    "people.nothingRecent": "Rien de récent",
+    "people.noMatch": "Personne ne correspond.",
+    "people.empty": "Personne pour l'instant. Les personnes apparaissent ici quand Discord les signale à ton client.",
+    "people.showing": "{shown} affichées sur {total}. Utilise la recherche pour trouver quelqu'un d'autre."
+  },
+  ja: {
+    "settings.showOnProfiles": "プロフィールに表示",
+    "settings.showOnProfiles.description": "ユーザーのプロフィールのバッジの横に時計を表示します。ホバーすると時刻が見られます。",
+    "settings.showInMemberList": "メンバーリストに表示",
+    "settings.showInMemberList.description": "オフラインのメンバーの名前の下に表示します。",
+    "settings.showInFriends": "フレンドリストに表示",
+    "settings.showInFriends.description": "オフラインのフレンドの名前の下に表示します。",
+    "settings.showInDms": "ダイレクトメッセージに表示",
+    "settings.showInDms.description": "DMリストのオフラインのユーザーの名前の下に表示します。",
+    "settings.ignoreBots": "Botを無視",
+    "settings.ignoreBots.description": "Botやアプリは記録しません。",
+    "unit.y": "{n}年",
+    "unit.mo": "{n}か月",
+    "unit.w": "{n}週間",
+    "unit.d": "{n}日",
+    "unit.h": "{n}時間",
+    "unit.m": "{n}分",
+    ago: "{span}前",
+    justNow: "たった今",
+    seen: "最終オンライン: {when}",
+    seenIn: "最終オンライン: 過去{span}以内",
+    active: "アクティブ: {when}",
+    online: "オンライン中",
+    message: "最後のメッセージ: {when}",
+    messageIn: "最後のメッセージ: {when}({where})",
+    "where.channel": "#{name}",
+    "where.dms": "あなたのDM",
+    "where.group": "グループ「{name}」",
+    "where.groupUnnamed": "グループDM",
+    people: { other: "{n}人" },
+    "remembered.title": "記憶している人数",
+    "remembered.cleared": "{people}分を消去しました。",
+    "remembered.status": "{cap}人中{people}。このデバイスにのみ保存され、フレンドとDMの相手は最も長く保持されます。",
+    "remembered.meter": "使用中の容量",
+    "remembered.undo": "元に戻す",
+    "remembered.cancel": "キャンセル",
+    "remembered.confirmClear": "{people}分を消去しますか?",
+    "remembered.export": "エクスポート",
+    "remembered.import": "インポート",
+    "remembered.clear": "データを消去",
+    "toast.restored": "{people}分を復元しました",
+    "toast.imported": "{people}分をインポートしました",
+    "toast.nothingToImport": "このファイルにはインポートできるデータがありません",
+    "toast.badFile": "このファイルはLast Seenのエクスポートではありません",
+    "people.title": "ユーザー",
+    "people.searchPlaceholder": "名前またはIDで検索",
+    "people.searchLabel": "記憶しているユーザーを検索",
+    "people.nothingRecent": "最近の記録なし",
+    "people.noMatch": "一致するユーザーはいません。",
+    "people.empty": "まだ誰もいません。Discordがクライアントにユーザーの情報を伝えると、ここに表示されます。",
+    "people.showing": "{total}人中{shown}人を表示中。ほかのユーザーは検索で探してください。"
+  },
+  pl: {
+    "settings.showOnProfiles": "Na profilach",
+    "settings.showOnProfiles.description": "Zegar obok odznak na profilu użytkownika; najedź na niego, aby zobaczyć godziny.",
+    "settings.showInMemberList": "Na liście członków",
+    "settings.showInMemberList.description": "Pod nazwą członków offline.",
+    "settings.showInFriends": "Na liście znajomych",
+    "settings.showInFriends.description": "Pod nazwą znajomych offline.",
+    "settings.showInDms": "W wiadomościach prywatnych",
+    "settings.showInDms.description": "Pod nazwą osób offline na liście wiadomości prywatnych.",
+    "settings.ignoreBots": "Ignoruj boty",
+    "settings.ignoreBots.description": "Nie śledź botów i aplikacji.",
+    "unit.y": "{n} r.",
+    "unit.mo": "{n} mies.",
+    "unit.w": "{n} tyg.",
+    "unit.d": "{n} d.",
+    "unit.h": "{n} godz.",
+    "unit.m": "{n} min",
+    ago: "{span} temu",
+    justNow: "przed chwilą",
+    seen: "Ostatnio online {when}",
+    seenIn: "Ostatnio online w ciągu ostatnich {span}",
+    active: "Aktywny {when}",
+    online: "Teraz online",
+    message: "Ostatnia wiadomość {when}",
+    messageIn: "Ostatnia wiadomość {when} w {where}",
+    "where.channel": "#{name}",
+    "where.dms": "Twoich wiadomościach prywatnych",
+    "where.group": "grupie {name}",
+    "where.groupUnnamed": "grupowej wiadomości prywatnej",
+    people: { one: "{n} osoba", few: "{n} osoby", many: "{n} osób", other: "{n} osoby" },
+    "remembered.title": "Zapamiętane",
+    "remembered.cleared": "Wyczyszczono: {people}.",
+    "remembered.status": "{people} z {cap}. Przechowywane tylko na tym urządzeniu; znajomi i wiadomości prywatne są trzymane najdłużej.",
+    "remembered.meter": "Zajęte miejsce",
+    "remembered.undo": "Cofnij",
+    "remembered.cancel": "Anuluj",
+    "remembered.confirmClear": "Wyczyścić: {people}?",
+    "remembered.export": "Eksportuj",
+    "remembered.import": "Importuj",
+    "remembered.clear": "Wyczyść dane",
+    "toast.restored": "Przywrócono: {people}",
+    "toast.imported": "Zaimportowano: {people}",
+    "toast.nothingToImport": "W tym pliku nie ma nic do zaimportowania",
+    "toast.badFile": "Ten plik nie jest eksportem Last Seen",
+    "people.title": "Osoby",
+    "people.searchPlaceholder": "Szukaj po nazwie lub ID",
+    "people.searchLabel": "Szukaj wśród zapamiętanych osób",
+    "people.nothingRecent": "Nic nowego",
+    "people.noMatch": "Nikt nie pasuje.",
+    "people.empty": "Na razie nikogo. Osoby pojawiają się tutaj, gdy Discord przekaże Twojemu klientowi informacje o nich.",
+    "people.showing": "Wyświetlono {shown} z {total}. Użyj wyszukiwania, aby znaleźć kogoś innego."
+  },
+  "pt-BR": {
+    "settings.showOnProfiles": "Nos perfis",
+    "settings.showOnProfiles.description": "Um relógio ao lado das insígnias no perfil de alguém; passe o mouse para ver os horários.",
+    "settings.showInMemberList": "Na lista de membros",
+    "settings.showInMemberList.description": "Abaixo do nome dos membros offline.",
+    "settings.showInFriends": "Na lista de amigos",
+    "settings.showInFriends.description": "Abaixo do nome dos amigos offline.",
+    "settings.showInDms": "Nas mensagens diretas",
+    "settings.showInDms.description": "Abaixo do nome das pessoas offline na lista de DMs.",
+    "settings.ignoreBots": "Ignorar bots",
+    "settings.ignoreBots.description": "Não rastrear bots e apps.",
+    "unit.y": "{n} a",
+    "unit.mo": "{n} mes.",
+    "unit.w": "{n} sem",
+    "unit.d": "{n} d",
+    "unit.h": "{n} h",
+    "unit.m": "{n} min",
+    ago: "há {span}",
+    justNow: "agora mesmo",
+    seen: "Visto por último {when}",
+    seenIn: "Visto por último nas últimas {span}",
+    active: "Ativo {when}",
+    online: "Online agora",
+    message: "Última mensagem {when}",
+    messageIn: "Última mensagem {when} {where}",
+    "where.channel": "em #{name}",
+    "where.dms": "nas suas DMs",
+    "where.group": "no grupo {name}",
+    "where.groupUnnamed": "em uma DM em grupo",
+    people: { one: "{n} pessoa", other: "{n} pessoas" },
+    "remembered.title": "Lembradas",
+    "remembered.cleared": "Apagado: {people}.",
+    "remembered.status": "{people} de {cap}. Guardadas só neste dispositivo; amigos e DMs são mantidos por mais tempo.",
+    "remembered.meter": "Espaço usado",
+    "remembered.undo": "Desfazer",
+    "remembered.cancel": "Cancelar",
+    "remembered.confirmClear": "Apagar {people}?",
+    "remembered.export": "Exportar",
+    "remembered.import": "Importar",
+    "remembered.clear": "Apagar dados",
+    "toast.restored": "Restaurado: {people}",
+    "toast.imported": "Importado: {people}",
+    "toast.nothingToImport": "Não há nada para importar nesse arquivo",
+    "toast.badFile": "Esse arquivo não é uma exportação do Last Seen",
+    "people.title": "Pessoas",
+    "people.searchPlaceholder": "Buscar por nome ou ID",
+    "people.searchLabel": "Buscar entre as pessoas lembradas",
+    "people.nothingRecent": "Nada recente",
+    "people.noMatch": "Ninguém corresponde.",
+    "people.empty": "Ninguém ainda. As pessoas aparecem aqui conforme o Discord informa sobre elas ao seu cliente.",
+    "people.showing": "Mostrando {shown} de {total}. Use a busca para encontrar outra pessoa."
+  },
+  ru: {
+    "settings.showOnProfiles": "В профилях",
+    "settings.showOnProfiles.description": "Часы рядом со значками в профиле пользователя; наведите на них курсор, чтобы увидеть время.",
+    "settings.showInMemberList": "В списке участников",
+    "settings.showInMemberList.description": "Под именем участников, которые не в сети.",
+    "settings.showInFriends": "В списке друзей",
+    "settings.showInFriends.description": "Под именем друзей, которые не в сети.",
+    "settings.showInDms": "В личных сообщениях",
+    "settings.showInDms.description": "Под именем пользователей, которые не в сети, в списке ЛС.",
+    "settings.ignoreBots": "Игнорировать ботов",
+    "settings.ignoreBots.description": "Не отслеживать ботов и приложения.",
+    "unit.y": "{n} г.",
+    "unit.mo": "{n} мес.",
+    "unit.w": "{n} нед.",
+    "unit.d": "{n} дн.",
+    "unit.h": "{n} ч",
+    "unit.m": "{n} мин",
+    ago: "{span} назад",
+    justNow: "только что",
+    seen: "Последний раз в сети: {when}",
+    seenIn: "Последний раз в сети: за последние {span}",
+    active: "Активность: {when}",
+    online: "Сейчас в сети",
+    message: "Последнее сообщение: {when}",
+    messageIn: "Последнее сообщение: {when}, {where}",
+    "where.channel": "в #{name}",
+    "where.dms": "в личных сообщениях",
+    "where.group": "в группе {name}",
+    "where.groupUnnamed": "в групповом чате",
+    people: { one: "{n} человек", few: "{n} человека", many: "{n} человек", other: "{n} человека" },
+    "remembered.title": "Запомнено",
+    "remembered.cleared": "Удалено: {people}.",
+    "remembered.status": "{people} из {cap}. Хранится только на этом устройстве; друзья и собеседники из ЛС хранятся дольше всего.",
+    "remembered.meter": "Занятое место",
+    "remembered.undo": "Отменить",
+    "remembered.cancel": "Отмена",
+    "remembered.confirmClear": "Удалить: {people}?",
+    "remembered.export": "Экспорт",
+    "remembered.import": "Импорт",
+    "remembered.clear": "Удалить данные",
+    "toast.restored": "Восстановлено: {people}",
+    "toast.imported": "Импортировано: {people}",
+    "toast.nothingToImport": "В этом файле нечего импортировать",
+    "toast.badFile": "Этот файл не является экспортом Last Seen",
+    "people.title": "Люди",
+    "people.searchPlaceholder": "Поиск по имени или ID",
+    "people.searchLabel": "Поиск среди запомненных людей",
+    "people.nothingRecent": "Ничего свежего",
+    "people.noMatch": "Никто не подходит.",
+    "people.empty": "Пока никого. Люди появляются здесь, когда Discord сообщает о них клиенту.",
+    "people.showing": "Показано {shown} из {total}. Воспользуйтесь поиском, чтобы найти кого-то ещё."
+  },
+  tr: {
+    "settings.showOnProfiles": "Profillerde",
+    "settings.showOnProfiles.description": "Birinin profilinde rozetlerin yanında bir saat; zamanları görmek için üzerine gel.",
+    "settings.showInMemberList": "Üye listesinde",
+    "settings.showInMemberList.description": "Çevrimdışı üyelerin adının altında.",
+    "settings.showInFriends": "Arkadaş listesinde",
+    "settings.showInFriends.description": "Çevrimdışı arkadaşların adının altında.",
+    "settings.showInDms": "Doğrudan mesajlarda",
+    "settings.showInDms.description": "DM listesindeki çevrimdışı kişilerin adının altında.",
+    "settings.ignoreBots": "Botları yok say",
+    "settings.ignoreBots.description": "Botları ve uygulamaları takip etme.",
+    "unit.y": "{n} yıl",
+    "unit.mo": "{n} ay",
+    "unit.w": "{n} hf",
+    "unit.d": "{n} gn",
+    "unit.h": "{n} sa",
+    "unit.m": "{n} dk",
+    ago: "{span} önce",
+    justNow: "az önce",
+    seen: "Son görülme: {when}",
+    seenIn: "Son görülme: son {span} içinde",
+    active: "Aktif: {when}",
+    online: "Şu an çevrimiçi",
+    message: "Son mesaj: {when}",
+    messageIn: "Son mesaj: {when}, {where}",
+    "where.channel": "#{name} kanalında",
+    "where.dms": "DM'lerinde",
+    "where.group": "{name} grubunda",
+    "where.groupUnnamed": "bir grup DM'sinde",
+    people: { one: "{n} kişi", other: "{n} kişi" },
+    "remembered.title": "Hatırlananlar",
+    "remembered.cleared": "{people} silindi.",
+    "remembered.status": "{cap} kişiden {people}. Yalnızca bu cihazda tutulur; arkadaşlar ve DM'ler en uzun süre saklanır.",
+    "remembered.meter": "Kullanılan alan",
+    "remembered.undo": "Geri al",
+    "remembered.cancel": "İptal",
+    "remembered.confirmClear": "{people} silinsin mi?",
+    "remembered.export": "Dışa aktar",
+    "remembered.import": "İçe aktar",
+    "remembered.clear": "Verileri temizle",
+    "toast.restored": "{people} geri yüklendi",
+    "toast.imported": "{people} içe aktarıldı",
+    "toast.nothingToImport": "Bu dosyada içe aktarılacak bir şey yok",
+    "toast.badFile": "Bu dosya bir Last Seen dışa aktarımı değil",
+    "people.title": "Kişiler",
+    "people.searchPlaceholder": "Ada veya kimliğe göre ara",
+    "people.searchLabel": "Hatırlanan kişilerde ara",
+    "people.nothingRecent": "Yakın zamanda bir şey yok",
+    "people.noMatch": "Eşleşen kimse yok.",
+    "people.empty": "Henüz kimse yok. Discord istemcine kişileri bildirdikçe burada görünürler.",
+    "people.showing": "{total} kişiden {shown} tanesi gösteriliyor. Başka birini bulmak için ara."
+  }
+});
+var words = (key, vars) => t(key, vars);
+var people = (n) => t("people", { count: n, n: n.toLocaleString() });
+
 // plugins/last-seen/state.ts
 var settings = {
-  showOnProfiles: { type: "boolean", label: "On profiles", description: "A clock next to the badges on someone's profile; hover it for the times.", default: true },
-  showInMemberList: { type: "boolean", label: "In the member list", description: "Under the name of offline members.", default: true },
-  showInFriends: { type: "boolean", label: "In the friends list", description: "Under the name of offline friends.", default: true },
-  showInDms: { type: "boolean", label: "In direct messages", description: "Under the name of offline people in the DM list.", default: true },
-  ignoreBots: { type: "boolean", label: "Ignore bots", description: "Don't track bots and apps.", default: true }
+  showOnProfiles: {
+    type: "boolean",
+    get label() {
+      return t("settings.showOnProfiles");
+    },
+    get description() {
+      return t("settings.showOnProfiles.description");
+    },
+    default: true
+  },
+  showInMemberList: {
+    type: "boolean",
+    get label() {
+      return t("settings.showInMemberList");
+    },
+    get description() {
+      return t("settings.showInMemberList.description");
+    },
+    default: true
+  },
+  showInFriends: {
+    type: "boolean",
+    get label() {
+      return t("settings.showInFriends");
+    },
+    get description() {
+      return t("settings.showInFriends.description");
+    },
+    default: true
+  },
+  showInDms: {
+    type: "boolean",
+    get label() {
+      return t("settings.showInDms");
+    },
+    get description() {
+      return t("settings.showInDms.description");
+    },
+    default: true
+  },
+  ignoreBots: {
+    type: "boolean",
+    get label() {
+      return t("settings.ignoreBots");
+    },
+    get description() {
+      return t("settings.ignoreBots.description");
+    },
+    default: true
+  }
 };
 var state = {
   context: undefined,
@@ -326,7 +865,7 @@ var store = (name) => {
   if (found)
     return found;
   try {
-    found = import_api.getStore(name);
+    found = import_api2.getStore(name);
   } catch {
     return;
   }
@@ -380,15 +919,15 @@ function channelLabel(channelId) {
   if (!channel)
     return;
   if (channel.type === 1)
-    return "your DMs";
+    return t("where.dms");
   if (channel.type === 3)
-    return channel.name ? `the group ${channel.name}` : "a group DM";
-  return channel.name ? `#${channel.name}` : undefined;
+    return channel.name ? t("where.group", { name: channel.name }) : t("where.groupUnnamed");
+  return channel.name ? t("where.channel", { name: channel.name }) : undefined;
 }
 var entryOf = (id) => state.tracker.get(id);
 function fullText(id) {
   const entry = entryOf(id);
-  return describe(entry, isOnline(id), Date.now(), channelLabel(entry?.channelId));
+  return describe(entry, isOnline(id), Date.now(), channelLabel(entry?.channelId), words);
 }
 var userListeners = new Map;
 var panelListeners = new Set;
@@ -447,7 +986,7 @@ function changed(id) {
 }
 var versionOf = (id) => `${epoch}:${userVersions.get(id) ?? 0}`;
 function useVersion() {
-  return import_api.React.useSyncExternalStore((cb) => {
+  return import_api2.React.useSyncExternalStore((cb) => {
     panelListeners.add(cb);
     return () => void panelListeners.delete(cb);
   }, () => version);
@@ -464,13 +1003,13 @@ function subscribeUser(id, cb) {
   };
 }
 function useUser(userId, read) {
-  const subscribe = import_api.React.useCallback((cb) => subscribeUser(userId, cb), [userId]);
-  return import_api.React.useSyncExternalStore(subscribe, read);
+  const subscribe = import_api2.React.useCallback((cb) => subscribeUser(userId, cb), [userId]);
+  return import_api2.React.useSyncExternalStore(subscribe, read);
 }
 function lineOf(userId, setting) {
   if (!state.context?.settings.get(setting) || isOnline(userId))
     return "";
-  return lineText(entryOf(userId), clock) ?? "";
+  return lineText(entryOf(userId), clock, words) ?? "";
 }
 var DB_NAME = "evi-last-seen";
 var DB_STORE = "kv";
@@ -537,13 +1076,14 @@ var lineCss = `
 .evi-last-seen-sub > span { display: block; overflow: hidden; text-overflow: ellipsis; }
 `;
 var memoized;
-var lastSeenLine = () => memoized ??= import_api2.React.memo(LastSeenLine);
+var lastSeenLine = () => memoized ??= import_api3.React.memo(LastSeenLine);
 function LastSeenLine({ userId, setting, className }) {
+  import_api3.useLocale();
   const text = useUser(userId, () => lineOf(userId, setting));
-  const [hovered, setHovered] = import_api2.React.useState(false);
+  const [hovered, setHovered] = import_api3.React.useState(false);
   if (!text)
     return null;
-  const Tooltip = import_api2.Components.Tooltip;
+  const Tooltip = import_api3.Components.Tooltip;
   const full = hovered || !Tooltip ? fullText(userId) ?? text : text;
   const line = /* @__PURE__ */ jsx_runtime.jsx("span", {
     className: className ? `evi-last-seen-sub ${className}` : "evi-last-seen-sub",
@@ -594,7 +1134,7 @@ var dmMethods = {
 };
 
 // plugins/last-seen/friends.tsx
-var import_api3 = require("@evi/api");
+var import_api4 = require("@evi/api");
 var jsx_runtime3 = require("react/jsx-runtime");
 var friendsPatches = [
   {
@@ -606,6 +1146,7 @@ var friendsPatches = [
   }
 ];
 function FriendSubText({ original, userId }) {
+  import_api4.useLocale();
   const show = useUser(userId, () => !!lineOf(userId, "showInFriends"));
   const Line = lastSeenLine();
   return show ? /* @__PURE__ */ jsx_runtime3.jsx(Line, {
@@ -621,7 +1162,7 @@ var friendsMethods = {
     try {
       if (!state.context || !user?.id || isOnlineStatus(status) || original?.props?.userIgnored || ignored(user.id, user.bot))
         return original;
-      const SubText = memoized2 ??= import_api3.React.memo(FriendSubText);
+      const SubText = memoized2 ??= import_api4.React.memo(FriendSubText);
       return /* @__PURE__ */ jsx_runtime3.jsx(SubText, {
         original,
         userId: user.id
@@ -634,7 +1175,7 @@ var friendsMethods = {
 };
 
 // plugins/last-seen/panel.tsx
-var import_api4 = require("@evi/api");
+var import_api5 = require("@evi/api");
 var jsx_runtime4 = require("react/jsx-runtime");
 var SHOWN = 100;
 var UNDO_FOR = 1e4;
@@ -656,7 +1197,7 @@ var css = `
 .evi-ls-id { font-family: var(--dl-font-code, ui-monospace, Consolas, monospace); }
 `;
 function SmallButton({ children, onClick, disabled, danger, label }) {
-  const Button = import_api4.Components.Button;
+  const Button = import_api5.Components.Button;
   return Button ? /* @__PURE__ */ jsx_runtime4.jsx(Button, {
     color: danger ? Button.Colors?.RED : Button.Colors?.PRIMARY,
     size: Button.Sizes?.SMALL,
@@ -674,7 +1215,6 @@ function SmallButton({ children, onClick, disabled, danger, label }) {
     children
   });
 }
-var people = (n) => `${n.toLocaleString()} ${n === 1 ? "person" : "people"}`;
 var latest = (e) => Math.max(e.seen ?? 0, e.active ?? 0, e.message ?? 0);
 function nameOf(id) {
   const user = store("UserStore")?.getUser?.(id);
@@ -696,12 +1236,13 @@ function download(data) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function Remembered() {
+  import_api5.useLocale();
   useVersion();
   const count = state.tracker.size;
-  const [confirming, setConfirming] = import_api4.React.useState(false);
-  const [undo, setUndo] = import_api4.React.useState();
-  const fileRef = import_api4.React.useRef(null);
-  import_api4.React.useEffect(() => {
+  const [confirming, setConfirming] = import_api5.React.useState(false);
+  const [undo, setUndo] = import_api5.React.useState();
+  const fileRef = import_api5.React.useRef(null);
+  import_api5.React.useEffect(() => {
     if (!undo)
       return;
     const timer = setTimeout(() => setUndo(undefined), UNDO_FOR);
@@ -723,13 +1264,13 @@ function Remembered() {
     }
     setUndo(undefined);
     replaceAll(tracker);
-    state.context?.toast(`Restored ${people(tracker.size)}`, { type: "success" });
+    state.context?.toast(t("toast.restored", { people: people(tracker.size) }), { type: "success" });
   };
   const importFile = async (file) => {
     try {
       const imported = deserialize(JSON.parse(await file.text()), opts);
       if (!imported.size) {
-        state.context?.toast("Nothing to import in that file", { type: "failure" });
+        state.context?.toast(t("toast.nothingToImport"), { type: "failure" });
         return;
       }
       const tracker = new Map(state.tracker);
@@ -739,10 +1280,10 @@ function Remembered() {
         tracker.set(id, current ? merge(entry, current) : entry);
       }
       await replaceAll(tracker);
-      state.context?.toast(`Imported ${people(imported.size)}`, { type: "success" });
+      state.context?.toast(t("toast.imported", { people: people(imported.size) }), { type: "success" });
     } catch (e) {
       state.context?.logger.error("Couldn't import", e);
-      state.context?.toast("That file isn't a Last Seen export", { type: "failure" });
+      state.context?.toast(t("toast.badFile"), { type: "failure" });
     }
   };
   const ratio = Math.min(1, count / DEFAULT_CAP);
@@ -754,19 +1295,19 @@ function Remembered() {
         children: [
           /* @__PURE__ */ jsx_runtime4.jsx("div", {
             className: "dl-label",
-            children: "Remembered"
+            children: t("remembered.title")
           }),
           /* @__PURE__ */ jsx_runtime4.jsx("p", {
             className: "dl-hint",
             role: "status",
             style: { fontVariantNumeric: "tabular-nums" },
-            children: undo ? `Cleared ${people(undo.count)}.` : `${people(count)} of ${DEFAULT_CAP.toLocaleString()}. Kept on this device only; friends and DMs are kept longest.`
+            children: undo ? t("remembered.cleared", { people: people(undo.count) }) : t("remembered.status", { people: people(count), cap: DEFAULT_CAP.toLocaleString() })
           }),
           !undo && /* @__PURE__ */ jsx_runtime4.jsx("div", {
             className: "evi-ls-meter",
             "data-full": ratio >= 0.9 || undefined,
             role: "meter",
-            "aria-label": "Space used",
+            "aria-label": t("remembered.meter"),
             "aria-valuemin": 0,
             "aria-valuemax": DEFAULT_CAP,
             "aria-valuenow": count,
@@ -781,21 +1322,17 @@ function Remembered() {
         children: [
           undo ? /* @__PURE__ */ jsx_runtime4.jsx(SmallButton, {
             onClick: restore2,
-            children: "Undo"
+            children: t("remembered.undo")
           }) : confirming ? /* @__PURE__ */ jsx_runtime4.jsxs(jsx_runtime4.Fragment, {
             children: [
               /* @__PURE__ */ jsx_runtime4.jsx(SmallButton, {
                 onClick: () => setConfirming(false),
-                children: "Cancel"
+                children: t("remembered.cancel")
               }),
-              /* @__PURE__ */ jsx_runtime4.jsxs(SmallButton, {
+              /* @__PURE__ */ jsx_runtime4.jsx(SmallButton, {
                 danger: true,
                 onClick: clear,
-                children: [
-                  "Clear ",
-                  people(count),
-                  "?"
-                ]
+                children: t("remembered.confirmClear", { people: people(count) })
               })
             ]
           }) : /* @__PURE__ */ jsx_runtime4.jsxs(jsx_runtime4.Fragment, {
@@ -803,17 +1340,17 @@ function Remembered() {
               /* @__PURE__ */ jsx_runtime4.jsx(SmallButton, {
                 disabled: !count,
                 onClick: () => download(serialize(state.tracker, Date.now())),
-                children: "Export"
+                children: t("remembered.export")
               }),
               /* @__PURE__ */ jsx_runtime4.jsx(SmallButton, {
                 onClick: () => fileRef.current?.click(),
-                children: "Import"
+                children: t("remembered.import")
               }),
               /* @__PURE__ */ jsx_runtime4.jsx(SmallButton, {
                 danger: true,
                 disabled: !count,
                 onClick: () => setConfirming(true),
-                children: "Clear data"
+                children: t("remembered.clear")
               })
             ]
           }),
@@ -835,7 +1372,7 @@ function Remembered() {
   });
 }
 function Avatar({ user, name }) {
-  const [broken, setBroken] = import_api4.React.useState(false);
+  const [broken, setBroken] = import_api5.React.useState(false);
   let src;
   try {
     src = user?.getAvatarURL?.(undefined, 32);
@@ -856,10 +1393,11 @@ function Avatar({ user, name }) {
   });
 }
 function People() {
-  const [query, setQuery] = import_api4.React.useState("");
+  import_api5.useLocale();
+  const [query, setQuery] = import_api5.React.useState("");
   const q = query.trim().toLowerCase();
   const version2 = useVersion();
-  const sorted = import_api4.React.useMemo(() => [...state.tracker].sort((a, b) => latest(b[1]) - latest(a[1])).map(([id]) => id), [version2, state.tracker]);
+  const sorted = import_api5.React.useMemo(() => [...state.tracker].sort((a, b) => latest(b[1]) - latest(a[1])).map(([id]) => id), [version2, state.tracker]);
   const matches = [];
   let total = 0;
   for (const id of sorted) {
@@ -877,26 +1415,26 @@ function People() {
   }
   if (!q)
     total = sorted.length;
-  const TextField = import_api4.Components.TextField;
-  const label = "Search remembered people";
+  const TextField = import_api5.Components.TextField;
+  const label = t("people.searchLabel");
   return /* @__PURE__ */ jsx_runtime4.jsxs("div", {
     className: "dl-field",
     children: [
       /* @__PURE__ */ jsx_runtime4.jsx("div", {
         className: "dl-label",
-        children: "People"
+        children: t("people.title")
       }),
       TextField ? /* @__PURE__ */ jsx_runtime4.jsx(TextField, {
         value: query,
         onChange: (v) => setQuery(v),
-        placeholder: "Search by name or ID",
+        placeholder: t("people.searchPlaceholder"),
         "aria-label": label
       }) : /* @__PURE__ */ jsx_runtime4.jsx("input", {
         className: "dl-input",
         type: "search",
         autoComplete: "off",
         spellCheck: false,
-        placeholder: "Search by name or ID",
+        placeholder: t("people.searchPlaceholder"),
         "aria-label": label,
         value: query,
         onChange: (e) => setQuery(e.currentTarget.value)
@@ -919,7 +1457,7 @@ function People() {
                 }),
                 /* @__PURE__ */ jsx_runtime4.jsx("span", {
                   className: "evi-ls-times",
-                  children: fullText(id) ?? "Nothing recent"
+                  children: fullText(id) ?? t("people.nothingRecent")
                 })
               ]
             })
@@ -927,18 +1465,12 @@ function People() {
         }, id))
       }) : /* @__PURE__ */ jsx_runtime4.jsx("p", {
         className: "dl-hint",
-        children: state.tracker.size ? "No one matches that." : "No one yet. People show up here as Discord tells your client about them."
+        children: state.tracker.size ? t("people.noMatch") : t("people.empty")
       }),
-      total > matches.length && /* @__PURE__ */ jsx_runtime4.jsxs("p", {
+      total > matches.length && /* @__PURE__ */ jsx_runtime4.jsx("p", {
         className: "dl-hint",
         style: { fontVariantNumeric: "tabular-nums" },
-        children: [
-          "Showing ",
-          matches.length.toLocaleString(),
-          " of ",
-          total.toLocaleString(),
-          ". Search to find someone else."
-        ]
+        children: t("people.showing", { shown: matches.length.toLocaleString(), total: total.toLocaleString() })
       })
     ]
   });
@@ -1041,7 +1573,7 @@ function messageLink(userId) {
   return `https://discord.com/channels/${channel.guild_id ?? "@me"}/${entry.channelId}/${entry.messageId}`;
 }
 var css2 = lineCss;
-var last_seen_default = import_api5.definePlugin({
+var last_seen_default = import_api6.definePlugin({
   settings,
   patches: [
     {
@@ -1146,7 +1678,7 @@ var last_seen_default = import_api5.definePlugin({
       state.loaded = true;
       seed();
     });
-    ctx.setInterval(() => void save(), SAVE_EVERY);
+    ctx.setInterval(() => void (state.dirty && whenIdle(() => void save())), SAVE_EVERY);
     ctx.setInterval(tick, 60000);
     const onUnload = () => void save();
     window.addEventListener("beforeunload", onUnload);
