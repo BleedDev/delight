@@ -35,6 +35,20 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.1.2",
+        date: "2026-09-29",
+        sections: {
+            added: [
+                "**Share plugins in chat.** Copy a plugin's link from its store page and paste it in any Discord chat. Everyone with Evi gets a card to install it right there.",
+                "**Fake Deafen.** Appear deafened to everyone in voice while you still hear them. A thank-you for supporters.",
+                "**Voice Chat Utilities.** Right-click a voice channel to move, disconnect, mute or deafen everyone in it, when you're allowed to.",
+            ],
+            fixed: [
+                "Reordering your badges saves more reliably.",
+            ],
+        },
+    },
+    {
         version: "1.1.1",
         date: "2026-09-29",
         sections: {

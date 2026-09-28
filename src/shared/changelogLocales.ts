@@ -11,6 +11,16 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.1.2": {
+            added: [
+                "**Plugins im Chat teilen.** Kopiere den Link eines Plugins auf seiner Store-Seite und füge ihn in einen Discord-Chat ein. Alle mit Evi bekommen eine Karte, um es direkt dort zu installieren.",
+                "**Fake Deafen.** Wirke im Sprachkanal taub, während du alle weiter hörst. Ein Dankeschön an Unterstützer.",
+                "**Voice Chat Utilities.** Rechtsklick auf einen Sprachkanal, um alle darin zu verschieben, zu trennen, stummzuschalten oder taub zu stellen, wenn du darfst.",
+            ],
+            fixed: [
+                "Das Sortieren deiner Abzeichen wird zuverlässiger gespeichert.",
+            ],
+        },
         "1.1.1": {
             added: [
                 "**Bild bearbeiten, wie bei Discord.** Verschiebe, zoome und drehe deinen Hintergrund in einer Vorschau in der Form deines Fensters.",
@@ -211,6 +221,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.1.2": {
+            added: [
+                "**Comparte plugins en el chat.** Copia el enlace de un plugin desde su página en la tienda y pégalo en cualquier chat de Discord. Quien tenga Evi verá una tarjeta para instalarlo ahí mismo.",
+                "**Ensordecido falso.** Aparece ensordecido en voz mientras sigues oyendo a todos. Un agradecimiento para quienes apoyan.",
+                "**Voice Chat Utilities.** Haz clic derecho en un canal de voz para mover, desconectar, silenciar o ensordecer a todos, si tienes permiso.",
+            ],
+            fixed: [
+                "El orden de tus insignias se guarda de forma más fiable.",
+            ],
+        },
         "1.1.1": {
             added: [
                 "**Editar imagen, como en Discord.** Arrastra, haz zoom y gira tu fondo en una vista previa con la forma de tu ventana.",
@@ -411,6 +431,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.1.2": {
+            added: [
+                "**Partage des plugins dans le chat.** Copie le lien d’un plugin depuis sa page dans la boutique et colle-le dans n’importe quel chat Discord. Tous ceux qui ont Evi voient une carte pour l’installer sur place.",
+                "**Fausse sourdine.** Apparais en sourdine en vocal tout en entendant tout le monde. Un merci aux soutiens.",
+                "**Voice Chat Utilities.** Clic droit sur un salon vocal pour déplacer, déconnecter, rendre muet ou mettre en sourdine tout le monde, si tu en as le droit.",
+            ],
+            fixed: [
+                "L’ordre de tes badges s’enregistre de façon plus fiable.",
+            ],
+        },
         "1.1.1": {
             added: [
                 "**Modifier l'image, comme sur Discord.** Déplace, zoome et fais pivoter ton fond d'écran dans un aperçu à la forme de ta fenêtre.",
@@ -611,6 +641,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.1.2": {
+            added: [
+                "**チャットでプラグインを共有。** ストアのページでプラグインのリンクをコピーして、Discordのチャットに貼るだけ。Eviを使っている人にはその場でインストールできるカードが表示されます。",
+                "**フェイクスピーカーミュート。** 全員の声を聞きながら、ボイスではスピーカーミュート中に見せます。サポーターへのお礼です。",
+                "**Voice Chat Utilities。** ボイスチャンネルを右クリックして、権限があれば全員を移動、切断、ミュート、スピーカーミュートできます。",
+            ],
+            fixed: [
+                "バッジの並び順がより確実に保存されるようになりました。",
+            ],
+        },
         "1.1.1": {
             added: [
                 "**Discordと同じ「画像を編集」。** ウィンドウの形のプレビューで、壁紙をドラッグ、ズーム、回転できます。",
@@ -811,6 +851,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.1.2": {
+            added: [
+                "**Udostępniaj pluginy na czacie.** Skopiuj link pluginu z jego strony w sklepie i wklej go na dowolnym czacie Discorda. Każdy z Evi zobaczy kartę, żeby od razu go zainstalować.",
+                "**Udawane wyciszenie.** Wyglądaj na kanale głosowym na wyciszonego, nadal wszystkich słysząc. Podziękowanie dla wspierających.",
+                "**Voice Chat Utilities.** Kliknij prawym przyciskiem kanał głosowy, żeby przenieść, rozłączyć, wyciszyć lub ogłuszyć wszystkich, jeśli masz uprawnienia.",
+            ],
+            fixed: [
+                "Kolejność odznak zapisuje się pewniej.",
+            ],
+        },
         "1.1.1": {
             added: [
                 "**Edytuj obraz, jak w Discordzie.** Przesuwaj, przybliżaj i obracaj tapetę w podglądzie w kształcie twojego okna.",
@@ -1011,6 +1061,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.1.2": {
+            added: [
+                "**Compartilhe plugins no chat.** Copie o link de um plugin na página dele na loja e cole em qualquer chat do Discord. Quem tem Evi vê um cartão para instalar ali mesmo.",
+                "**Ensurdecer falso.** Apareça ensurdecido na voz enquanto continua ouvindo todos. Um agradecimento para apoiadores.",
+                "**Voice Chat Utilities.** Clique com o botão direito num canal de voz para mover, desconectar, silenciar ou ensurdecer todos, se tiver permissão.",
+            ],
+            fixed: [
+                "A ordem das suas insígnias é salva de forma mais confiável.",
+            ],
+        },
         "1.1.1": {
             added: [
                 "**Editar imagem, como no Discord.** Arraste, dê zoom e gire seu papel de parede numa prévia com o formato da sua janela.",
@@ -1211,6 +1271,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.1.2": {
+            added: [
+                "**Делитесь плагинами в чате.** Скопируйте ссылку на плагин на его странице в магазине и вставьте в любой чат Discord. У всех, у кого есть Evi, появится карточка, чтобы установить его прямо там.",
+                "**Фальшивое отключение звука.** Для всех в голосовом канале у вас выключен звук, а вы продолжаете всех слышать. Благодарность спонсорам.",
+                "**Voice Chat Utilities.** Правый клик по голосовому каналу, чтобы переместить, отключить, заглушить или лишить звука всех в нём, если у вас есть права.",
+            ],
+            fixed: [
+                "Порядок значков сохраняется надёжнее.",
+            ],
+        },
         "1.1.1": {
             added: [
                 "**Редактор изображения, как в Discord.** Перетаскивайте, масштабируйте и поворачивайте обои в превью в форме вашего окна.",
@@ -1411,6 +1481,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.1.2": {
+            added: [
+                "**Eklentileri sohbette paylaş.** Bir eklentinin bağlantısını mağaza sayfasından kopyala ve herhangi bir Discord sohbetine yapıştır. Evi kullanan herkes onu orada yükleyebileceği bir kart görür.",
+                "**Sahte Ses Kapatma.** Herkesi duymaya devam ederken seste sesin kapalı görünsün. Destekçilere bir teşekkür.",
+                "**Voice Chat Utilities.** Bir ses kanalına sağ tıklayıp izin varsa içindeki herkesi taşı, bağlantısını kes, sustur veya sağırlaştır.",
+            ],
+            fixed: [
+                "Rozet sıralaman daha güvenilir kaydediliyor.",
+            ],
+        },
         "1.1.1": {
             added: [
                 "**Discord'daki gibi Görseli Düzenle.** Duvar kâğıdını pencerenin şeklindeki önizlemede sürükle, yakınlaştır ve döndür.",

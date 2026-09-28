@@ -10,6 +10,7 @@ import { healthWarns, PluginHealth } from "@shared/health";
 import { entriesBetween } from "@shared/pluginChangelog";
 import type { PulledPlugin } from "@shared/pulls";
 import type { EviKey } from "@shared/locales";
+import { sharePluginUrl } from "@shared/share";
 import { ListingInfo, ListingSort, RegistryEntry, sortListings, ThemeEntry } from "@shared/store";
 
 import { I18n, t, timeAgo as ago, tNodes } from "../i18n";
@@ -18,7 +19,8 @@ import { Settings } from "../settings";
 import { Store, StoreKind, StoreOp, UpdateAllResult } from "../store";
 import { React } from "../webpack/common";
 import { Badge, Button, Collapse, Dialog, Dropdown, EmptyState, FilterChips, Icon, IconButton, List, Notice, Pagination, scrollToTop, SearchField, Status, SwitchRow, Text, Tooltip, usePages, useStore } from "./components";
-import { takeStoreTarget } from "./nav";
+import { SettingsUI } from "./index";
+import { openStore, takeStoreTarget } from "./nav";
 import { PluginChangelogSetting } from "./PluginChangelog";
 import { DeclaredPermissionsList, PermissionGrowthList, StorePluginPermissions } from "./PluginPermissions";
 import type { PluginPage } from "@shared/reviews";
@@ -925,7 +927,7 @@ function StoreDetail({ item, onBack, onAuthor, onOpen }: { item: Item; onBack():
                     <Text variant="text-sm/normal" color="text-subtle">{tNodes("store.byAuthors", { authors: <Authors entry={entry} onAuthor={onAuthor} /> })}</Text>
                     <span className="dl-store-status" role="status"><ItemStatus item={item} /></span>
                 </div>
-                <div className="dl-row-controls"><WishButton kind={kind} id={entry.id} name={entry.name} large /><StarButton item={item} large />{buttons}</div>
+                <div className="dl-row-controls"><WishButton kind={kind} id={entry.id} name={entry.name} large /><StarButton item={item} large />{kind === "plugin" && <CopyShareLink id={entry.id} />}{buttons}</div>
             </header>
             {item.locked && <p className="dl-store-trust" id={`dl-store-locked-${entry.id}`}><Icon name="heart" size={16} /><span>{t("community.supportersOnlyHint")}</span></p>}
             {!item.official && (
@@ -1084,4 +1086,69 @@ function AuthorView({ kind, profile, items, backLabel, onBack, onOpen, onAuthor 
             </section>
         </article>
     );
+}
+
+// ---- shared in chat ---------------------------------------------------------------------------
+
+/** A plugin shared in chat (evi.rest/p/<id>): the card Evi draws under the message, in place of Discord's embed */
+export function SharedPluginCard({ id }: { id: string; }) {
+    const state = useStoreState();
+    const item = itemsOf("plugin").find(i => i.entry.id === id);
+    if (!item) {
+        const loading = state.status === "idle" || state.status === "loading";
+        return (
+            <div className="dl-share-card" data-empty="">
+                <Glyph name="?" />
+                <Text variant="text-sm/normal" color="text-muted">{t(loading ? "share.loading" : "share.missing")}</Text>
+            </div>
+        );
+    }
+    return <SharedPluginItem item={item} />;
+}
+
+function SharedPluginItem({ item }: { item: Item; }) {
+    const { entry } = item;
+    const { buttons, confirm } = useItemActions(item);
+    const open = () => {
+        openStore("plugin", entry.id);
+        SettingsUI.open("plugins");
+    };
+    return (
+        <div className="dl-share-card" data-store-id={entry.id}>
+            <Text variant="text-xs/semibold" color="text-muted" className="dl-share-kicker">{t("share.kicker")}</Text>
+            <div className="dl-store-card-top">
+                <Glyph name={entry.name} />
+                <div className="dl-store-card-title">
+                    <Text tag="h3" variant="text-md/semibold" color="text-strong">
+                        <button type="button" className="dl-link-button" onClick={open}>{entry.name}</button>
+                    </Text>
+                    <Text variant="text-xs/normal" color="text-muted" tabular>v{entry.version} · {t("store.byAuthors", { authors: entry.authors.join(", ") })}</Text>
+                </div>
+            </div>
+            {entry.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-store-card-desc">{entry.description}</Text>}
+            {(item.native || !item.official || item.supportersOnly) && (
+                <div className="dl-store-card-tags">
+                    {item.supportersOnly && <Badge>{t("community.supportersOnly")}</Badge>}
+                    {!item.official && <CommunityLabel />}
+                    {item.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
+                </div>
+            )}
+            {item.locked && <p className="dl-store-trust" id={`dl-store-locked-${entry.id}`}><Icon name="heart" size={16} /><span>{t("community.supportersOnlyHint")}</span></p>}
+            <div className="dl-store-card-foot">
+                <span className="dl-store-status" role="status"><ItemStatus item={item} short /></span>
+                <div className="dl-row-controls"><Button onClick={open}>{t("share.view")}</Button>{buttons}</div>
+            </div>
+            {confirm}
+        </div>
+    );
+}
+
+/** Copies a plugin's share link: Evi users get an install card in chat, everyone else evi.rest's page */
+function CopyShareLink({ id }: { id: string; }) {
+    const [copied, setCopied] = React.useState(false);
+    const copy = () => void navigator.clipboard.writeText(sharePluginUrl(id)).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    });
+    return <Button icon="link" onClick={copy}>{t(copied ? "share.copied" : "share.copy")}</Button>;
 }

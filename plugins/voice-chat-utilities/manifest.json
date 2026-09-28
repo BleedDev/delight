@@ -1,0 +1,98 @@
+{
+    "id": "voice-chat-utilities",
+    "name": "Voice Chat Utilities",
+    "description": "Right-click a voice channel to disconnect, move, server mute or server deafen everyone in it. Only what you're allowed to do in that channel shows up.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "voice",
+        "servers"
+    ],
+    "permissions": {},
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "minEviVersion": "1.0.0",
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Sprachchat-Werkzeuge",
+            "description": "Rechtsklick auf einen Sprachkanal: alle trennen, verschieben, serverweit stummschalten oder den Ton ausschalten. Es erscheint nur, was du in dem Kanal darfst.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Utilidades de chat de voz",
+            "description": "Clic derecho en un canal de voz: desconecta, mueve, silencia o ensordece a todos en el servidor. Solo aparece lo que tienes permiso para hacer en ese canal.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Outils de salon vocal",
+            "description": "Clic droit sur un salon vocal : déconnecte, déplace, rends muet ou mets en sourdine tout le monde sur le serveur. Seul ce que tu as le droit de faire dans ce salon s'affiche.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "ボイスチャットツール",
+            "description": "ボイスチャンネルを右クリックして、全員を切断、移動、サーバーミュート、サーバースピーカーミュートできます。そのチャンネルで許可されている操作だけが表示されます。",
+            "changelog": {
+                "1.0.0": [
+                    "最初のリリースです。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Narzędzia czatu głosowego",
+            "description": "Kliknij prawym przyciskiem kanał głosowy: rozłącz, przenieś, wycisz lub wyłącz dźwięk wszystkim na serwerze. Widać tylko to, na co masz uprawnienia na tym kanale.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Utilitários de chat de voz",
+            "description": "Clique com o botão direito num canal de voz: desconecte, mova, silencie ou ensurdeça todos no servidor. Só aparece o que você tem permissão para fazer nesse canal.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Инструменты голосового чата",
+            "description": "Правый клик по голосовому каналу: отключить, переместить, заглушить или отключить звук всем на сервере. Показывается только то, на что у вас есть права в этом канале.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый релиз."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Sesli Sohbet Araçları",
+            "description": "Bir ses kanalına sağ tıkla: herkesin bağlantısını kes, herkesi taşı, sunucuda sustur ya da sesini kapat. Yalnızca o kanalda iznin olanlar görünür.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}

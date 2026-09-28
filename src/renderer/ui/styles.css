@@ -3797,3 +3797,33 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 
 .dl-credits-foot > .dl-store-source { margin-inline-start: auto; }
 .dl-credits-heart { display: grid; color: #eb459e; }
+
+/* ---- plugins shared in chat (pluginShare.tsx) ---- */
+.dl-share-cards {
+    display: grid;
+    gap: 8px;
+    max-inline-size: 432px;
+    margin-block: 4px;
+}
+
+.dl-share-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    border-inline-start: 4px solid var(--dl-text-brand);
+    background: var(--dl-bg-group);
+}
+
+.dl-share-card[data-empty] {
+    flex-direction: row;
+    align-items: center;
+}
+
+.dl-share-kicker {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}

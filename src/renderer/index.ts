@@ -29,6 +29,7 @@ import { installLayerStyles } from "./toolkit/layer";
 import { installHotkey, SettingsUI } from "./ui";
 import { whenAppReady } from "./ui/appReady";
 import { startBadges } from "./ui/badges";
+import { startPluginShare } from "./ui/pluginShare";
 import { startUpdateChecks } from "./ui/UpdatesTab";
 import { Inbox } from "./inbox";
 import { startPluginChangelogs } from "./ui/PluginChangelog";
@@ -110,6 +111,7 @@ function boot() {
         PluginManager.startAll().then(() => SafeMode.scheduleBootOk());
         // Part of Evi itself, not a plugin: on for everyone. Safe mode keeps even this off.
         if (!SafeMode.active) startBadges();
+        if (!SafeMode.active) startPluginShare();
         // Even in safe mode: a new version may be the fix
         startUpdateChecks();
         if (SafeMode.active) {

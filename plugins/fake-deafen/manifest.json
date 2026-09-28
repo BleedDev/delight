@@ -1,0 +1,99 @@
+{
+    "id": "fake-deafen",
+    "name": "Fake Deafen",
+    "description": "Appear deafened and muted to everyone in voice while you still hear them. A headphones button next to deafen, a keyboard shortcut, or /fakedeafen.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "voice",
+        "privacy"
+    ],
+    "permissions": {},
+    "supporters": true,
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "minEviVersion": "1.0.0",
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Fake Deafen",
+            "description": "Wirke im Sprachkanal taub und stummgeschaltet, während du alle weiter hörst. Ein Kopfhörer-Button neben Ton aus, ein Tastenkürzel oder /fakedeafen.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Ensordecido falso",
+            "description": "Aparece ensordecido y silenciado ante todos en voz mientras los sigues oyendo. Un botón de auriculares junto a ensordecer, un atajo de teclado o /fakedeafen.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Fausse sourdine",
+            "description": "Apparais en sourdine et muet pour tout le monde en vocal tout en les entendant. Un bouton casque à côté de sourdine, un raccourci clavier ou /fakedeafen.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "フェイクスピーカーミュート",
+            "description": "全員の声を聞きながら、ボイスチャンネルではスピーカーミュートとマイクミュート中に見せます。スピーカーミュートの横のヘッドホンボタン、キーボードショートカット、または /fakedeafen で操作できます。",
+            "changelog": {
+                "1.0.0": [
+                    "最初のリリースです。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Udawane wyciszenie",
+            "description": "Wyglądaj na kanale głosowym, jakbyś miał wyciszony dźwięk i mikrofon, nadal wszystkich słysząc. Przycisk słuchawek obok wyciszenia dźwięku, skrót klawiszowy albo /fakedeafen.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Ensurdecer falso",
+            "description": "Apareça ensurdecido e silenciado para todos na voz enquanto continua ouvindo. Um botão de fones ao lado de ensurdecer, um atalho de teclado ou /fakedeafen.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Фальшивое отключение звука",
+            "description": "Для всех в голосовом канале у вас выключены звук и микрофон, а вы продолжаете их слышать. Кнопка с наушниками рядом с выключением звука, сочетание клавиш или /fakedeafen.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый релиз."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Sahte Ses Kapatma",
+            "description": "Herkesi duymaya devam ederken seste sesin ve mikrofonun kapalı görünsün. Sesi kapatma düğmesinin yanında bir kulaklık düğmesi, klavye kısayolu ya da /fakedeafen.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}
