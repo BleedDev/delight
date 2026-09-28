@@ -82,6 +82,7 @@ const defs = {
         ],
     },
     // Evi's own too: a framed picture, for the wallpaper
+    rotate: { discord: "RotateIcon", paths: ["M18 10h-6a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3Z", "M11 1.5 14.5 5 11 8.5V6H9.5A4.5 4.5 0 0 0 5 10.5V13H3v-2.5A6.5 6.5 0 0 1 9.5 4H11V1.5Z"] },
     image: {
         discord: "(Evi's own)",
         evenOdd: true,

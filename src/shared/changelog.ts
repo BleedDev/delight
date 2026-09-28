@@ -35,6 +35,25 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.1.1",
+        date: "2026-09-29",
+        sections: {
+            added: [
+                "**Edit Image, like Discord's.** Drag, zoom and rotate your wallpaper in a preview shaped like your window.",
+                "**Your wallpaper on the login screen.** It shows behind Discord's login page, with the login box frosted over it.",
+                "**Delete themes you made.** Themes you made or added yourself have a delete button now.",
+            ],
+            improved: [
+                "**Simpler wallpaper settings.** Show it, dim it and choose how see-through Discord is. Everything else is under More options.",
+                "**A new supporter page.** Your level, when the next one comes and what you get, in Account. The credits in Updates show everyone's face.",
+                "Supporter badges keep their level's colour: custom badge colours are gone.",
+            ],
+            fixed: [
+                "**The wallpaper shows again.** Discord's own backdrop and the member list were covering it.",
+            ],
+        },
+    },
+    {
         version: "1.1.0",
         date: "2026-09-28",
         sections: {

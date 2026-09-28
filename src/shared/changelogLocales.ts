@@ -11,6 +11,21 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.1.1": {
+            added: [
+                "**Bild bearbeiten, wie bei Discord.** Verschiebe, zoome und drehe deinen Hintergrund in einer Vorschau in der Form deines Fensters.",
+                "**Dein Hintergrund auf dem Anmeldebildschirm.** Er erscheint hinter der Anmeldeseite von Discord, das Anmeldefeld milchig darüber.",
+                "**Eigene Designs löschen.** Designs, die du selbst erstellt oder hinzugefügt hast, haben jetzt einen Löschen-Button.",
+            ],
+            improved: [
+                "**Einfachere Hintergrund-Einstellungen.** Anzeigen, abdunkeln und festlegen, wie durchsichtig Discord ist. Alles andere steht unter Weitere Optionen.",
+                "**Eine neue Unterstützer-Seite.** Deine Stufe, wann die nächste kommt und was du bekommst, unter Konto. Die Credits unter Updates zeigen alle mit Gesicht.",
+                "Unterstützer-Abzeichen behalten die Farbe ihrer Stufe: Eigene Abzeichenfarben gibt es nicht mehr.",
+            ],
+            fixed: [
+                "**Der Hintergrund ist wieder zu sehen.** Der eigene Hintergrund von Discord und die Mitgliederliste haben ihn verdeckt.",
+            ],
+        },
         "1.1.0": {
             added: [
                 "**Evi spricht deine Sprache.** Evi, alle Plugins und der Store folgen der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch.",
@@ -195,6 +210,21 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.1.1": {
+            added: [
+                "**Editar imagen, como en Discord.** Arrastra, haz zoom y gira tu fondo en una vista previa con la forma de tu ventana.",
+                "**Tu fondo en la pantalla de inicio de sesión.** Aparece detrás de la página de inicio de sesión de Discord, con el cuadro esmerilado encima.",
+                "**Borra los temas que hiciste.** Los temas que creaste o añadiste tú tienen ahora un botón para borrarlos.",
+            ],
+            improved: [
+                "**Ajustes de fondo más sencillos.** Muéstralo, oscurécelo y elige qué tan transparente es Discord. Todo lo demás está en Más opciones.",
+                "**Una nueva página para colaboradores.** Tu nivel, cuándo llega el siguiente y lo que tienes, en Cuenta. Los créditos en Actualizaciones muestran la cara de todos.",
+                "Las insignias de colaborador mantienen el color de su nivel: ya no hay colores personalizados.",
+            ],
+            fixed: [
+                "**El fondo vuelve a verse.** El fondo propio de Discord y la lista de miembros lo tapaban.",
+            ],
+        },
         "1.1.0": {
             added: [
                 "**Evi habla tu idioma.** Evi, todos los plugins y la tienda siguen el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés.",
@@ -379,6 +409,21 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.1.1": {
+            added: [
+                "**Modifier l'image, comme sur Discord.** Déplace, zoome et fais pivoter ton fond d'écran dans un aperçu à la forme de ta fenêtre.",
+                "**Ton fond d'écran sur l'écran de connexion.** Il s'affiche derrière la page de connexion de Discord, avec la boîte de connexion dépolie par-dessus.",
+                "**Supprime les thèmes que tu as faits.** Les thèmes que tu as créés ou ajoutés toi-même ont maintenant un bouton pour les supprimer.",
+            ],
+            improved: [
+                "**Des réglages de fond d'écran plus simples.** Affiche-le, assombris-le et choisis à quel point Discord est transparent. Le reste est dans Plus d'options.",
+                "**Une nouvelle page pour les soutiens.** Ton niveau, quand arrive le suivant et ce que tu as, dans Compte. Les crédits dans Mises à jour montrent le visage de chacun.",
+                "Les badges de soutien gardent la couleur de leur niveau : les couleurs personnalisées ont disparu.",
+            ],
+            fixed: [
+                "**Le fond d'écran s'affiche de nouveau.** Le fond propre à Discord et la liste des membres le cachaient.",
+            ],
+        },
         "1.1.0": {
             added: [
                 "**Evi parle ta langue.** Evi, tous les plugins et la boutique suivent la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais.",
@@ -563,6 +608,21 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.1.1": {
+            added: [
+                "**Discordと同じ「画像を編集」。** ウィンドウの形のプレビューで、壁紙をドラッグ、ズーム、回転できます。",
+                "**ログイン画面にも壁紙を。** Discordのログインページの後ろに壁紙が表示され、ログインボックスはすりガラス風になります。",
+                "**自作テーマを削除できるように。** 自分で作った、または追加したテーマに削除ボタンが付きました。",
+            ],
+            improved: [
+                "**壁紙の設定をシンプルに。** 表示、暗さ、Discordの透け具合だけを設定できます。ほかの項目は「その他のオプション」にあります。",
+                "**新しいサポーターページ。** アカウントで、今のレベル、次のレベルになる日、特典を確認できます。アップデートのクレジットには全員の顔が並びます。",
+                "サポーターバッジはレベルの色のままになり、バッジの色の変更はなくなりました。",
+            ],
+            fixed: [
+                "**壁紙がまた表示されるようになりました。** Discord自体の背景とメンバーリストが壁紙を覆っていました。",
+            ],
+        },
         "1.1.0": {
             added: [
                 "**Eviがあなたの言語に対応。** Evi、すべてのプラグイン、ストアがDiscordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。",
@@ -747,6 +807,21 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.1.1": {
+            added: [
+                "**Edytuj obraz, jak w Discordzie.** Przesuwaj, przybliżaj i obracaj tapetę w podglądzie w kształcie twojego okna.",
+                "**Twoja tapeta na ekranie logowania.** Widać ją za stroną logowania Discorda, a okno logowania jest nad nią zmatowione.",
+                "**Usuwaj własne motywy.** Motywy, które zrobiłeś lub dodałeś sam, mają teraz przycisk usuwania.",
+            ],
+            improved: [
+                "**Prostsze ustawienia tapety.** Włącz ją, przyciemnij i wybierz, jak przezroczysty jest Discord. Reszta jest w Więcej opcji.",
+                "**Nowa strona wspierających.** Twój poziom, kiedy przyjdzie następny i co dostajesz, w Koncie. Podziękowania w Aktualizacjach pokazują wszystkich z twarzami.",
+                "Odznaki wspierających mają kolor swojego poziomu: własnych kolorów odznak już nie ma.",
+            ],
+            fixed: [
+                "**Tapeta znowu jest widoczna.** Zasłaniało ją własne tło Discorda i lista członków.",
+            ],
+        },
         "1.1.0": {
             added: [
                 "**Evi mówi w twoim języku.** Evi, wszystkie pluginy i sklep używają języka Discorda: niemieckiego, hiszpańskiego, francuskiego, japońskiego, polskiego, portugalskiego, rosyjskiego i tureckiego, oprócz angielskiego.",
@@ -931,6 +1006,21 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.1.1": {
+            added: [
+                "**Editar imagem, como no Discord.** Arraste, dê zoom e gire seu papel de parede numa prévia com o formato da sua janela.",
+                "**Seu papel de parede na tela de login.** Ele aparece atrás da página de login do Discord, com a caixa de login fosca por cima.",
+                "**Apague os temas que você fez.** Os temas que você criou ou adicionou agora têm um botão de apagar.",
+            ],
+            improved: [
+                "**Configurações de papel de parede mais simples.** Mostre, escureça e escolha o quanto o Discord fica transparente. O resto está em Mais opções.",
+                "**Uma nova página de apoiador.** Seu nível, quando chega o próximo e o que você ganha, em Conta. Os créditos em Atualizações mostram o rosto de todo mundo.",
+                "Os emblemas de apoiador ficam com a cor do nível: as cores personalizadas saíram.",
+            ],
+            fixed: [
+                "**O papel de parede aparece de novo.** O fundo do próprio Discord e a lista de membros estavam cobrindo ele.",
+            ],
+        },
         "1.1.0": {
             added: [
                 "**O Evi fala o seu idioma.** O Evi, todos os plugins e a loja seguem o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês.",
@@ -1115,6 +1205,21 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.1.1": {
+            added: [
+                "**Редактор изображения, как в Discord.** Перетаскивайте, масштабируйте и поворачивайте обои в превью в форме вашего окна.",
+                "**Обои на экране входа.** Они видны за страницей входа Discord, а окно входа поверх них — как матовое стекло.",
+                "**Удаляйте свои темы.** У тем, которые вы создали или добавили сами, теперь есть кнопка удаления.",
+            ],
+            improved: [
+                "**Настройки обоев стали проще.** Включите их, затемните и выберите, насколько прозрачен Discord. Всё остальное — в «Других настройках».",
+                "**Новая страница поддерживающих.** Ваш уровень, когда будет следующий и что вы получаете — в разделе «Аккаунт». В благодарностях в «Обновлениях» теперь видны все лица.",
+                "Значки поддерживающих сохраняют цвет своего уровня: свои цвета значков убраны.",
+            ],
+            fixed: [
+                "**Обои снова видны.** Их закрывали собственный фон Discord и список участников.",
+            ],
+        },
         "1.1.0": {
             added: [
                 "**Evi говорит на вашем языке.** Evi, все плагины и магазин следуют языку Discord: немецкому, испанскому, французскому, японскому, польскому, португальскому, русскому и турецкому, а также английскому.",
@@ -1299,6 +1404,21 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.1.1": {
+            added: [
+                "**Discord'daki gibi Görseli Düzenle.** Duvar kâğıdını pencerenin şeklindeki önizlemede sürükle, yakınlaştır ve döndür.",
+                "**Giriş ekranında duvar kâğıdın.** Discord'un giriş sayfasının arkasında görünür, giriş kutusu üstünde buzlu cam gibi durur.",
+                "**Yaptığın temaları sil.** Kendin yaptığın ya da eklediğin temaların artık bir silme düğmesi var.",
+            ],
+            improved: [
+                "**Daha sade duvar kâğıdı ayarları.** Göster, karart ve Discord'un ne kadar saydam olacağını seç. Gerisi Diğer seçenekler'de.",
+                "**Yeni bir destekçi sayfası.** Seviyen, bir sonrakinin ne zaman geleceği ve neler kazandığın Hesap'ta. Güncellemeler'deki teşekkür listesi herkesi yüzüyle gösteriyor.",
+                "Destekçi rozetleri seviyelerinin rengini koruyor: özel rozet renkleri kaldırıldı.",
+            ],
+            fixed: [
+                "**Duvar kâğıdı yeniden görünüyor.** Discord'un kendi arka planı ve üye listesi onu örtüyordu.",
+            ],
+        },
         "1.1.0": {
             added: [
                 "**Evi senin dilini konuşuyor.** Evi, tüm eklentiler ve mağaza Discord'un dilini kullanıyor: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe.",

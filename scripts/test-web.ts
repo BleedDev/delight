@@ -2572,21 +2572,26 @@ check("store themes show a Store badge in the Themes tab", themeRow.includes("Mi
         settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, behindSettings: false, behindPopouts: false, tint: "neutral", panels: { chat: 30 } }));
         await sleep(100);
         const neutral = read()[0];
-        settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, tint: "theme", panels: undefined, fit: "tile" }));
-        await sleep(100);
-        const tile = {
-            natural: document.getElementById("evi-wallpaper")?.style.getPropertyValue("--evi-wallpaper-natural-width"),
-            shown: getComputedStyle(document.querySelector("#evi-wallpaper .evi-wallpaper-tile")!).display,
-            img: getComputedStyle(document.querySelector("#evi-wallpaper .evi-wallpaper-media")!).display,
+        // The picture itself: covers the window, straight and turned
+        const cover = () => {
+            const r = document.querySelector("#evi-wallpaper .evi-wallpaper-media")!.getBoundingClientRect();
+            return { covers: r.left <= 0.5 && r.top <= 0.5 && r.right >= innerWidth - 0.5 && r.bottom >= innerHeight - 0.5, w: Math.round(r.width), h: Math.round(r.height) };
         };
-        settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, fit: "fill" }));
+        settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, tint: "theme", panels: undefined, zoom: 100, x: 50, y: 50, rotation: 0 }));
+        await sleep(100);
+        const straight = cover();
+        settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, rotation: 90, zoom: 150, x: 0 }));
+        await sleep(100);
+        const turned = cover();
+        settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, rotation: 0, zoom: 100, x: 50 }));
+        const tile = { straight, turned };
         for (const l of [base, settingsLayer, popout]) l.el.remove();
         return { byDefault, everywhere, neutral, tile, theme: document.documentElement.className.match(/theme-\w+/)?.[0], realBaseLayer: !!document.querySelector('[class*="baseLayer_"]') };
     });
     check("wallpaper: the main window goes see-through in the theme's colours, settings and popouts only when asked",
         / 12%, transparent\)$/.test(wp.byDefault[0]) && !wp.byDefault[1].includes("transparent") && !wp.byDefault[2].includes("transparent")
         && wp.everywhere.every(v => v.endsWith("transparent)")) && wp.everywhere[2].endsWith(" 85%, transparent)") && /rgb\((0 0 0|255 255 255) \/ 0\.3\)/.test(wp.neutral), wp);
-    check("wallpaper: tiling draws the image at its own width", wp.tile.natural === "640px" && wp.tile.shown === "block" && wp.tile.img === "none", wp.tile);
+    check("wallpaper: the picture covers the whole window, straight, turned and zoomed", wp.tile.straight.covers && wp.tile.turned.covers, wp.tile);
 
     // The login screen (this page is Discord's real one): the wallpaper shows there even with the in-app one off
     const readLogin = () => page.evaluate(() => {
@@ -2622,38 +2627,33 @@ check("store themes show a Store badge in the Themes tab", themeRow.includes("Mi
         loginOn.box && loginOn.art && loginOn.layer === "block" && loginOn.artDisplay === "none" && loginOn.boxAlpha > 0.5 && loginOn.boxAlpha < 0.7 && /blur\(12px\)/.test(loginOn.blur)
         && loginOff.artDisplay !== "none" && loginOff.layer === "none" && loginOff.boxAlpha === 1, { loginOff, loginOn });
 
-    // The tab: Discord in miniature, dragged and zoomed like Discord's image cropper
+    // The tab, and Edit Image like Discord's: drag, scroll to zoom, rotate, then Apply
     await openTab("themes", "wallpaper");
-    await page.waitForSelector(".dl-wp-stage", { timeout: 3000 });
-    await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, zoom: 200, x: 50, y: 50 })));
-    await page.waitForTimeout(200);
-    const stage = (await page.locator(".dl-wp-stage").boundingBox())!;
+    await page.waitForSelector(".dl-wp-thumb img", { timeout: 3000 });
+    await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, zoom: 200, x: 50, y: 50, rotation: 0 })));
+    const tab = await page.evaluate(() => document.querySelector(".dl-wallpaper")?.textContent ?? "");
+    await page.locator(".dl-wallpaper").screenshot({ path: join(OUT, "ui-wallpaper.png") });
+    await page.getByRole("button", { name: "Edit image", exact: true }).click();
+    await page.waitForSelector("#dl-wp-edit .dl-wp-edit-stage img", { timeout: 3000 });
+    await page.waitForTimeout(400);
+    const stage = (await page.locator(".dl-wp-edit-stage").boundingBox())!;
     await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
     await page.mouse.down();
     await page.mouse.move(stage.x + stage.width / 2 + 60, stage.y + stage.height / 2 + 30, { steps: 5 });
     await page.mouse.up();
-    const dragged = await page.evaluate(() => ({ ...(window as any).Evi.settings.data.wallpaper }));
-    await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
     await page.mouse.wheel(0, -100);
     await page.waitForTimeout(150);
-    const zoomed = await page.evaluate(() => (window as any).Evi.settings.data.wallpaper.zoom);
-    await page.locator(".dl-wp-stage").dblclick();
-    await page.waitForTimeout(150);
-    const centered = await page.evaluate(() => ({ ...(window as any).Evi.settings.data.wallpaper }));
-    const tab = await page.evaluate(() => ({
-        text: document.querySelector(".dl-wallpaper")?.textContent ?? "",
-        mock: document.querySelectorAll(".dl-wp-mock-sidebar").length,
-        media: (document.querySelector(".dl-wp-stage img.evi-wallpaper-media") as HTMLImageElement | null)?.naturalWidth,
-    }));
-    await page.locator(".dl-wallpaper").screenshot({ path: join(OUT, "ui-wallpaper.png") });
-    for (const section of ["look", "panels"]) {
-        await page.locator(`#dl-wallpaper-${section}`).scrollIntoViewIfNeeded();
-        await page.screenshot({ path: join(OUT, `ui-wallpaper-${section}.png`) });
-    }
-    check("wallpaper tab: dragging moves it, scrolling zooms, double-click centres it again",
-        dragged.x < 50 && dragged.y < 50 && zoomed === 210 && centered.x === 50 && centered.y === 50 && centered.zoom === 100, { dragged, zoomed, centered });
-    check("wallpaper tab: preview with Discord's layout, size choices and per-panel settings",
-        tab.mock === 2 && tab.media === 640 && ["Fill", "Fit", "Stretch", "Center", "Tile", "Chat", "Message box", "Show behind Discord’s settings", "Show behind popouts and menus", "Your theme’s colors"].every(s => tab.text.includes(s)), tab);
+    await page.locator("#dl-wp-edit").getByRole("button", { name: "Rotate" }).click();
+    await page.waitForTimeout(200);
+    const beforeApply = await page.evaluate(() => ({ ...(window as any).Evi.settings.data.wallpaper }));
+    await page.locator("#dl-wp-edit").screenshot({ path: join(OUT, "ui-wallpaper-edit.png") });
+    await page.locator("#dl-wp-edit").getByRole("button", { name: "Apply" }).click();
+    await page.waitForSelector("#dl-wp-edit", { state: "detached", timeout: 3000 }).catch(() => { });
+    const applied = await page.evaluate(() => ({ ...(window as any).Evi.settings.data.wallpaper }));
+    check("wallpaper: Edit Image moves, zooms and rotates the picture, and only Apply saves it",
+        beforeApply.zoom === 200 && beforeApply.rotation === 0 && applied.x < 50 && applied.y < 50 && applied.zoom === 210 && applied.rotation === 90, { beforeApply, applied });
+    check("wallpaper tab: simple by default, the rest under More options",
+        ["Edit image", "Show wallpaper", "Dim", "Panel opacity", "More options"].every(x => tab.includes(x)) && !tab.includes("Tile") && !tab.includes("Message box"), tab.slice(0, 400));
     await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, enabled: false })));
 }
 

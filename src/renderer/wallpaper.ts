@@ -9,7 +9,7 @@
  * Which of these Discord allows is checked by the lead in the web test (scripts/test-web.ts).
  */
 import type { WallpaperPickResult } from "@shared/ipc";
-import { buildWallpaperCss, NATURAL_WIDTH_VAR, normalizeWallpaper, WALLPAPER_LAYER_ID, WallpaperKind, wallpaperKind } from "@shared/wallpaper";
+import { buildWallpaperCss, normalizeWallpaper, WALLPAPER_LAYER_ID, WallpaperKind, wallpaperKind } from "@shared/wallpaper";
 
 import { t } from "./i18n";
 import { Logger } from "./logger";
@@ -30,8 +30,6 @@ export interface WallpaperState {
     onBattery: boolean;
     /** A video is loaded but held still: on battery, or reduced motion */
     paused: boolean;
-    /** The image's own width once it loaded, for the preview of a centred or tiled one */
-    naturalWidth?: number;
 }
 
 interface Loaded {
@@ -153,11 +151,7 @@ function mount(current: Loaded) {
         const img = document.createElement("img");
         img.alt = "";
         img.decoding = "async";
-        img.addEventListener("load", () => {
-            // Centred and tiled pictures are drawn at their own size
-            el.style.setProperty(NATURAL_WIDTH_VAR, `${img.naturalWidth}px`);
-            if (loaded === current) set({ status: "shown", error: undefined, naturalWidth: img.naturalWidth });
-        });
+        img.addEventListener("load", () => loaded === current && set({ status: "shown", error: undefined }));
         m = img;
     }
     m.className = "evi-wallpaper-media";
@@ -165,21 +159,13 @@ function mount(current: Loaded) {
     m.addEventListener("error", () => void onMediaError(current));
     m.src = current.url;
 
+    // The picture turns inside a box the window's size, which zooms (shared/wallpaper.ts buildMediaCss)
+    const zoom = document.createElement("div");
+    zoom.className = "evi-wallpaper-zoom";
+    zoom.append(m);
     const dim = document.createElement("div");
     dim.className = "evi-wallpaper-dim";
-    if (current.kind === "image") {
-        // Behind a fitted or centred picture: the same one, blurred, filling the window
-        const backdrop = document.createElement("img");
-        backdrop.alt = "";
-        backdrop.className = "evi-wallpaper-backdrop";
-        backdrop.src = current.url;
-        const tile = document.createElement("div");
-        tile.className = "evi-wallpaper-tile";
-        tile.style.backgroundImage = `url("${current.url}")`;
-        el.append(backdrop, m, tile, dim);
-    } else {
-        el.append(m, dim);
-    }
+    el.append(zoom, dim);
     layer = el;
     media = m;
     whenBody(() => layer === el && document.body.prepend(el));

@@ -11,12 +11,9 @@ export type WallpaperKind = "image" | "video";
 /** What the see-through panels are tinted with: the theme's own colours, or plain black (white on light) */
 export type WallpaperTint = "theme" | "neutral";
 
-/**
- * How the picture fills the window, like a desktop wallpaper: cropped to fill it, fit inside it,
- * stretched to it, at its own size in the middle, or repeated (images only).
- */
-export type WallpaperFit = "fill" | "fit" | "stretch" | "center" | "tile";
-export const WALLPAPER_FITS: readonly WallpaperFit[] = ["fill", "fit", "stretch", "center", "tile"];
+/** Quarter turns, clockwise */
+export type WallpaperRotation = 0 | 90 | 180 | 270;
+export const WALLPAPER_ROTATIONS: readonly WallpaperRotation[] = [0, 90, 180, 270];
 
 /** How solid each part of Discord stays over the wallpaper, in %: 0 is fully see-through */
 export interface WallpaperPanels {
@@ -50,12 +47,15 @@ export interface WallpaperSettings {
     /** File name inside <Evi data dir>/wallpaper, as main copied it there */
     file?: string;
     kind?: WallpaperKind;
-    fit: WallpaperFit;
-    /** %, 100 is the fit's own size */
+    /**
+     * Like Discord's Edit Image: the picture always covers the window, then zooms (%, 100 just
+     * covers it), sits at x/y (% of the room it has to move, 50/50 is centred) and turns.
+     */
     zoom: number;
     /** Where the picture sits, in % of the room it has to move: 50/50 is centred */
     x: number;
     y: number;
+    rotation: WallpaperRotation;
     /** How dark the layer over it is, in %, so text stays readable */
     dim: number;
     /** px */
@@ -87,11 +87,11 @@ export const PANEL_DEFAULTS: WallpaperPanels = { frame: 35, sidebars: 25, chat: 
 
 export const WALLPAPER_DEFAULTS: WallpaperSettings = {
     enabled: false,
-    fit: "fill",
     zoom: 100,
     x: 50,
     y: 50,
-    dim: 60,
+    rotation: 0,
+    dim: 40,
     blur: 0,
     panels: PANEL_DEFAULTS,
     behindSettings: false,
@@ -125,15 +125,11 @@ export const wallpaperMime = (name: string): string | undefined => MIME[extensio
 const clamp = (value: unknown, min: number, max: number, fallback: number) =>
     typeof value === "number" && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
 
-/** Centring and tiling draw an image at its own size; a video fills, fits or stretches */
-export const fitsFor = (kind: WallpaperKind | undefined): readonly WallpaperFit[] => kind === "video" ? WALLPAPER_FITS.filter(f => f !== "tile" && f !== "center") : WALLPAPER_FITS;
-
 /** Settings as saved (maybe missing, maybe hand-edited) with defaults filled in and numbers in range */
 export function normalizeWallpaper(raw: Partial<WallpaperSettings> | undefined): WallpaperSettings {
     const w = raw && typeof raw === "object" ? raw : {};
     const file = typeof w.file === "string" && wallpaperKind(w.file) ? w.file : undefined;
     const kind = file ? wallpaperKind(file) : undefined;
-    const fit = fitsFor(kind).includes(w.fit as WallpaperFit) ? w.fit as WallpaperFit : WALLPAPER_DEFAULTS.fit;
     const p = w.panels && typeof w.panels === "object" ? w.panels : {} as Partial<WallpaperPanels>;
     const panels = Object.fromEntries(WALLPAPER_PANELS.map(k => [k, clamp(p[k], PANEL_MIN, PANEL_MAX, PANEL_DEFAULTS[k])])) as unknown as WallpaperPanels;
     const l = w.login && typeof w.login === "object" ? w.login : {} as Partial<WallpaperLogin>;
@@ -147,10 +143,10 @@ export function normalizeWallpaper(raw: Partial<WallpaperSettings> | undefined):
         enabled: w.enabled === true,
         file,
         kind,
-        fit,
         zoom: clamp(w.zoom, ZOOM_MIN, ZOOM_MAX, WALLPAPER_DEFAULTS.zoom),
         x: clamp(w.x, 0, 100, WALLPAPER_DEFAULTS.x),
         y: clamp(w.y, 0, 100, WALLPAPER_DEFAULTS.y),
+        rotation: WALLPAPER_ROTATIONS.includes(w.rotation as WallpaperRotation) ? w.rotation as WallpaperRotation : 0,
         dim: clamp(w.dim, DIM_MIN, DIM_MAX, WALLPAPER_DEFAULTS.dim),
         blur: clamp(w.blur, BLUR_MIN, BLUR_MAX, WALLPAPER_DEFAULTS.blur),
         panels,
@@ -162,70 +158,70 @@ export function normalizeWallpaper(raw: Partial<WallpaperSettings> | undefined):
     };
 }
 
-/** Whether the picture can move: a stretched one always covers the window exactly */
-export const canMove = (w: Pick<WallpaperSettings, "fit" | "zoom">) => w.fit !== "stretch" || w.zoom > ZOOM_MIN;
-
 export const WALLPAPER_LAYER_ID = "evi-wallpaper";
-/** Set by the renderer on the layer: the image's own width, for tiling */
-export const NATURAL_WIDTH_VAR = "--evi-wallpaper-natural-width";
 
-type Look = Pick<WallpaperSettings, "fit" | "zoom" | "x" | "y" | "blur">;
+type Look = Pick<WallpaperSettings, "zoom" | "x" | "y" | "rotation">;
 
 /**
- * The picture's rules under `scope` (a selector for its box): the window's layer, or the tab's
- * preview. `scale` is the preview's size over the window's, so blur, a centred picture's own size
- * and tiles read the same in both.
+ * Where the picture lands in a `width` × `height` window, as the box it covers once turned: it
+ * covers the window, grows by the zoom around its x/y point, and its edge sits x% of the way across
+ * the room it has to move. The editor draws it from this; buildMediaCss gets the same with CSS.
  */
-export function buildMediaCss(scope: string, look: Look, scale = 1) {
+export function imageRect(width: number, height: number, naturalWidth: number, naturalHeight: number, look: Look) {
+    const turned = look.rotation % 180 !== 0;
+    const nw = turned ? naturalHeight : naturalWidth;
+    const nh = turned ? naturalWidth : naturalHeight;
+    const cover = Math.max(width / nw, height / nh);
+    const zoom = clamp(look.zoom, ZOOM_MIN, ZOOM_MAX, 100) / 100;
+    const w = nw * cover * zoom, h = nh * cover * zoom;
+    return { left: (look.x / 100) * (width - w), top: (look.y / 100) * (height - h), width: w, height: h };
+}
+
+/** Where x/y land along the picture's own axes once it's turned: object-position works before the turn */
+function ownAxes({ x, y, rotation }: Look): [number, number] {
+    if (rotation === 90) return [y, 100 - x];
+    if (rotation === 180) return [100 - x, 100 - y];
+    if (rotation === 270) return [100 - y, x];
+    return [x, y];
+}
+
+/**
+ * The picture's rules under `scope` (a selector for its box, the window's layer): a zoom box the
+ * size of the window, and in it the picture covering it, turned about its middle. `scale` is a
+ * preview's size over the window's, so blur reads the same in both.
+ */
+export function buildMediaCss(scope: string, look: Look & Pick<WallpaperSettings, "blur">, scale = 1) {
     const zoom = clamp(look.zoom, ZOOM_MIN, ZOOM_MAX, 100) / 100;
     const x = clamp(look.x, 0, 100, 50);
     const y = clamp(look.y, 0, 100, 50);
+    const rotation = WALLPAPER_ROTATIONS.includes(look.rotation) ? look.rotation : 0;
     const blur = clamp(look.blur, BLUR_MIN, BLUR_MAX, 0) * scale;
     // Blur pulls in transparent edges: bleed past them
     const bleed = blur * 2;
-    const fit = look.fit;
-    const box = `    position: absolute;
+    const turned = rotation % 180 !== 0;
+    const [ox, oy] = ownAxes({ x, y, zoom: look.zoom, rotation });
+    return `${scope} > .evi-wallpaper-zoom {
+    position: absolute;
     inset-block-start: ${-bleed}px;
     inset-inline-start: ${-bleed}px;
     inline-size: calc(100% + ${bleed * 2}px);
     block-size: calc(100% + ${bleed * 2}px);
-    filter: ${blur ? `blur(${blur}px)` : "none"};`;
-    // Letterboxed or smaller than the window: a soft, blurred copy fills the rest
-    const backdrop = `${scope} > .evi-wallpaper-backdrop {
-    display: ${fit === "fit" || fit === "center" ? "block" : "none"};
-    position: absolute;
-    inset: -10%;
-    inline-size: 120%;
-    block-size: 120%;
-    object-fit: cover;
-    filter: blur(${Math.round(40 * scale)}px) saturate(1.2);
-    opacity: .6;
-}`;
-
-    // Its own pixels, once or repeated: a background on its own element, sized from the image's
-    // width (which the preview scales down with itself)
-    if (fit === "tile" || fit === "center") {
-        return `${scope} > .evi-wallpaper-media { display: none; }
-${scope} > .evi-wallpaper-tile {
-${box}
-    display: block;
-    background-repeat: ${fit === "tile" ? "repeat" : "no-repeat"};
-    background-size: calc(var(${NATURAL_WIDTH_VAR}, 512px) * ${+(zoom * scale).toFixed(4)}) auto;
-    background-position: ${x}% ${y}%;
-}
-${backdrop}
-`;
-    }
-    const objectFit = { fill: "cover", fit: "contain", stretch: "fill" }[fit];
-    return `${scope} > .evi-wallpaper-tile { display: none; }
-${scope} > .evi-wallpaper-media {
-${box}
-    object-fit: ${objectFit};
-    object-position: ${x}% ${y}%;
+    container-type: size;
     transform: scale(${zoom});
     transform-origin: ${x}% ${y}%;
+    filter: ${blur ? `blur(${blur}px)` : "none"};
 }
-${backdrop}
+/* Centred and turned, which is physical, so left and top rather than logical insets */
+${scope} > .evi-wallpaper-zoom > .evi-wallpaper-media {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    inline-size: ${turned ? "100cqh" : "100cqw"};
+    block-size: ${turned ? "100cqw" : "100cqh"};
+    object-fit: cover;
+    object-position: ${ox}% ${oy}%;
+    transform: translate(-50%, -50%) rotate(${rotation}deg);
+}
 `;
 }
 
@@ -268,7 +264,8 @@ html ${LOGIN_ART} {
 /** Discord's colours for each part of its window */
 const PANEL_VARS: Record<Exclude<WallpaperPanel, "popouts">, string[]> = {
     frame: ["--background-base-lowest", "--app-frame-background", "--background-tertiary", "--background-secondary-alt"],
-    sidebars: ["--background-base-low", "--background-secondary"],
+    // The member list paints with its own variable
+    sidebars: ["--background-base-low", "--background-secondary", "--custom-channel-members-bg"],
     chat: ["--background-base-lower", "--background-primary", "--chat-background"],
     // The message box has to stand out from the chat behind it
     input: ["--chat-background-default", "--channeltextarea-background"],
@@ -318,7 +315,8 @@ const TRANSPARENT = [
     '#app-mount [class*="notAppAsidePanel_"]',
     '#app-mount :is([class^="app_"], [class*=" app_"])',
     '#app-mount [class*="layers_"]',
-    '#app-mount [class*="layers_"] > [class*="bg_"]',
+    // Discord's backdrop behind every layer: a sibling of them, with its own theme class
+    '#app-mount :is([class^="app_"], [class*=" app_"]) > :is([class^="bg_"], [class*=" bg_"])',
     BASE_LAYER,
 ];
 

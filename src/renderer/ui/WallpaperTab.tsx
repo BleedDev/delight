@@ -1,7 +1,7 @@
 import type { EviKey } from "@shared/locales";
 import {
-    BLUR_MAX, BLUR_MIN, buildMediaCss, canMove, DIM_MAX, DIM_MIN, fitsFor, LOGIN_BLUR_MAX, NATURAL_WIDTH_VAR, normalizeWallpaper, PANEL_DEFAULTS, PANEL_MAX, PANEL_MIN,
-    WALLPAPER_DEFAULTS, WallpaperFit, WallpaperPanel, WallpaperSettings, WallpaperTint, ZOOM_MAX, ZOOM_MIN,
+    BLUR_MAX, BLUR_MIN, DIM_MAX, DIM_MIN, imageRect, LOGIN_BLUR_MAX, normalizeWallpaper, PANEL_MAX, PANEL_MIN, WALLPAPER_DEFAULTS,
+    WallpaperPanel, WallpaperRotation, WallpaperSettings, WallpaperTint, ZOOM_MAX, ZOOM_MIN,
 } from "@shared/wallpaper";
 
 import { t } from "../i18n";
@@ -9,7 +9,7 @@ import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
 import { Wallpaper } from "../wallpaper";
 import { React } from "../webpack/common";
-import { Button, Dropdown, EmptyState, FilterChips, Notice, Section, Status, SwitchRow, Text, useStore } from "./components";
+import { Button, Collapse, Dialog, Dropdown, EmptyState, IconButton, Notice, Section, Status, SwitchRow, Text, useStore } from "./components";
 import { DiscordUI } from "./discord";
 import { Icon } from "./icons";
 
@@ -27,9 +27,18 @@ const changeLogin = (patch: Partial<WallpaperSettings["login"]>) => Settings.upd
     d.wallpaper = { ...w, login: { ...w.login, ...patch } };
 });
 
+/**
+ * One slider for every panel: the channel list at `v`, the frame a little more solid, the chat a
+ * little less, the message box more so it's easy to find. The defaults come out at 25.
+ */
+const panelsFor = (v: number) => ({ frame: Math.min(100, v + 10), sidebars: v, chat: Math.round(v / 2), input: Math.min(100, v + 25) });
+
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
-/** The window's shape, so the preview is Discord in miniature */
+type Look = Pick<WallpaperSettings, "zoom" | "x" | "y" | "rotation">;
+interface Natural { width: number; height: number; }
+
+/** The window's shape, so the frame is Discord's */
 function useWindowAspect() {
     const read = () => Math.min(2.4, Math.max(1.2, window.innerWidth / Math.max(1, window.innerHeight)));
     const [aspect, setAspect] = React.useState(read);
@@ -39,6 +48,22 @@ function useWindowAspect() {
         return () => window.removeEventListener("resize", onResize);
     }, []);
     return aspect;
+}
+
+/** An element's size, kept up to date */
+function useSize<T extends HTMLElement>() {
+    const ref = React.useRef<T>(null);
+    const [size, setSize] = React.useState({ width: 0, height: 0 });
+    React.useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const read = () => setSize({ width: el.clientWidth, height: el.clientHeight });
+        const observer = new ResizeObserver(read);
+        observer.observe(el);
+        read();
+        return () => observer.disconnect();
+    }, []);
+    return [ref, size] as const;
 }
 
 /**
@@ -88,88 +113,65 @@ function RangeField({ id, label, description, value, min, max, step = 1, unit = 
     );
 }
 
-// ---- The editor: Discord in miniature, with the wallpaper behind it ------------------------------
-
-/** Discord's widths, px: the server list, the channel list and the member list */
-const RAIL = 72;
-const SIDEBAR = 240;
-const TITLE = 32;
-
-/** A panel colour as the wallpaper paints it: the saved theme colour (or black/white) at `percent` */
-function panelColor(v: string, percent: number, tint: WallpaperTint) {
-    if (tint === "neutral") return `rgb(var(--dl-wp-neutral) / ${percent / 100})`;
-    return `color-mix(in srgb, var(--evi-wp${v.slice(1)}, var(${v})) ${percent}%, transparent)`;
+/** The picture as `look` places it in a box: an element sized and turned from imageRect */
+function Placed({ url, kind, natural, look, box, offset = { left: 0, top: 0 }, onNatural }: {
+    url: string;
+    kind: "image" | "video";
+    natural?: Natural;
+    look: Look;
+    box: { width: number; height: number; };
+    offset?: { left: number; top: number; };
+    onNatural?(natural: Natural): void;
+}) {
+    const rect = natural && box.width ? imageRect(box.width, box.height, natural.width, natural.height, look) : undefined;
+    const turned = look.rotation % 180 !== 0;
+    const style: React.CSSProperties = rect ? {
+        left: offset.left + rect.left + rect.width / 2,
+        top: offset.top + rect.top + rect.height / 2,
+        width: turned ? rect.height : rect.width,
+        height: turned ? rect.width : rect.height,
+        transform: `translate(-50%, -50%) rotate(${look.rotation}deg)`,
+    } : { visibility: "hidden" };
+    return kind === "video"
+        ? <video className="dl-wp-placed" src={url} muted loop autoPlay={!matchMedia("(prefers-reduced-motion: reduce)").matches} playsInline style={style} onLoadedMetadata={e => onNatural?.({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })} />
+        : <img className="dl-wp-placed" src={url} alt="" draggable={false} style={style} onLoad={e => onNatural?.({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} />;
 }
 
-interface Natural { width: number; height: number; }
+// ---- Edit Image, like Discord's ---------------------------------------------------------------------
 
-/**
- * How far the picture moves per pixel dragged, in % of x or y. Its left edge sits at
- * x% × (box − zoom × content): dragging by d moves x by d / (box − zoom × content).
- */
-function dragRatio(w: WallpaperSettings, box: { width: number; height: number; }, natural: Natural | undefined, scale: number) {
-    const zoom = w.zoom / 100;
-    const nw = natural?.width || box.width;
-    const nh = natural?.height || box.height;
-    let cw: number, ch: number, z = zoom;
-    if (w.fit === "tile" || w.fit === "center") {
-        cw = nw * zoom * scale;
-        ch = nh * zoom * scale;
-        z = 1;
-    } else if (w.fit === "stretch") {
-        cw = box.width;
-        ch = box.height;
-    } else {
-        const s = (w.fit === "fill" ? Math.max : Math.min)(box.width / nw, box.height / nh);
-        cw = nw * s;
-        ch = nh * s;
-    }
-    const room = (b: number, c: number) => {
-        const r = b - z * c;
-        return Math.abs(r) < 1 ? 0 : 100 / r;
-    };
-    return { x: room(box.width, cw), y: room(box.height, ch) };
-}
+/** Room around the frame inside the editor, px */
+const EDGE = 24;
 
-function Editor({ w, url, kind, naturalWidth, resetKey }: { w: WallpaperSettings; url: string; kind: "image" | "video"; naturalWidth?: number; resetKey: number; }) {
+function EditImage({ url, kind, initial, onApply, onClose }: { url: string; kind: "image" | "video"; initial: Look; onApply(look: Look): void; onClose(): void; }) {
     const aspect = useWindowAspect();
-    const boxRef = React.useRef<HTMLDivElement>(null);
-    const [boxWidth, setBoxWidth] = React.useState(0);
+    const [stageRef, stage] = useSize<HTMLDivElement>();
     const [natural, setNatural] = React.useState<Natural>();
+    const [look, setLook] = React.useState<Look>(initial);
+    const latest = React.useRef(look);
+    latest.current = look;
+    const drag = React.useRef<{ id: number; x: number; y: number; start: Look; } | null>(null);
     const [dragging, setDragging] = React.useState(false);
-    const drag = React.useRef<{ id: number; x: number; y: number; start: WallpaperSettings; } | null>(null);
-    // The latest settings for the wheel listener, which is attached once
-    const latest = React.useRef(w);
-    latest.current = w;
-    // Zoom changed from outside the slider (wheel, keys, double-click): the slider starts over at it
-    const [zoomKey, setZoomKey] = React.useState(0);
-    const zoomTo = (zoom: number, extra: Partial<WallpaperSettings> = {}) => {
-        change({ zoom: clamp(zoom, ZOOM_MIN, ZOOM_MAX), ...extra });
-        setZoomKey(k => k + 1);
+
+    const frameWidth = Math.max(1, Math.min(stage.width - EDGE * 2, (stage.height - EDGE * 2) * aspect));
+    const frame = { width: frameWidth, height: frameWidth / aspect };
+    const offset = { left: (stage.width - frame.width) / 2, top: (stage.height - frame.height) / 2 };
+
+    /** % of x/y per pixel moved: the picture's edge is x% of (frame − picture) across */
+    const perPixel = (l: Look) => {
+        if (!natural) return { x: 0, y: 0 };
+        const rect = imageRect(frame.width, frame.height, natural.width, natural.height, l);
+        const room = (b: number, c: number) => Math.abs(b - c) < 1 ? 0 : 100 / (b - c);
+        return { x: room(frame.width, rect.width), y: room(frame.height, rect.height) };
     };
-    const zoomRef = React.useRef(zoomTo);
-    zoomRef.current = zoomTo;
+    const zoomTo = (zoom: number) => setLook(l => ({ ...l, zoom: clamp(Math.round(zoom), ZOOM_MIN, ZOOM_MAX) }));
 
-    React.useLayoutEffect(() => {
-        const el = boxRef.current;
-        if (!el) return;
-        const observer = new ResizeObserver(() => setBoxWidth(el.clientWidth));
-        observer.observe(el);
-        setBoxWidth(el.clientWidth);
-        return () => observer.disconnect();
-    }, []);
-
-    const scale = boxWidth ? boxWidth / window.innerWidth : 0.25;
-    const box = { width: boxWidth || 1, height: (boxWidth || 1) / aspect };
-    const movable = canMove(w);
-
-    // Scrolling zooms, like Discord's image cropper
+    // Scrolling zooms, like Discord's
     React.useEffect(() => {
-        const el = boxRef.current;
+        const el = stageRef.current;
         if (!el) return;
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
-            zoomRef.current(latest.current.zoom + (e.deltaY < 0 ? 10 : -10));
+            zoomTo(latest.current.zoom + (e.deltaY < 0 ? 10 : -10));
         };
         el.addEventListener("wheel", onWheel, { passive: false });
         return () => el.removeEventListener("wheel", onWheel);
@@ -178,17 +180,18 @@ function Editor({ w, url, kind, naturalWidth, resetKey }: { w: WallpaperSettings
     const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
         if (e.button !== 0) return;
         e.currentTarget.setPointerCapture(e.pointerId);
-        drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, start: w };
+        drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, start: look };
         setDragging(true);
     };
     const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
         const d = drag.current;
         if (!d || d.id !== e.pointerId) return;
-        const ratio = dragRatio(d.start, box, natural, scale);
-        change({
-            x: clamp(Math.round(d.start.x + (e.clientX - d.x) * ratio.x), 0, 100),
-            y: clamp(Math.round(d.start.y + (e.clientY - d.y) * ratio.y), 0, 100),
-        });
+        const per = perPixel(d.start);
+        setLook(l => ({
+            ...l,
+            x: clamp(Math.round(d.start.x + (e.clientX - d.x) * per.x), 0, 100),
+            y: clamp(Math.round(d.start.y + (e.clientY - d.y) * per.y), 0, 100),
+        }));
     };
     const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
         if (drag.current?.id !== e.pointerId) return;
@@ -196,22 +199,20 @@ function Editor({ w, url, kind, naturalWidth, resetKey }: { w: WallpaperSettings
         setDragging(false);
     };
     const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-        const step = e.shiftKey ? 10 : 2;
+        const per = perPixel(look);
         // Arrows move the picture the way it looks like it moves
-        const ratio = dragRatio(w, box, natural, scale);
         const nudge = (axis: "x" | "y", dir: number) => {
-            const sign = Math.sign(ratio[axis]) || 1;
-            change({ [axis]: clamp(w[axis] + dir * step * sign, 0, 100) });
+            const sign = Math.sign(per[axis]) || 0;
+            setLook(l => ({ ...l, [axis]: clamp(l[axis] + dir * (e.shiftKey ? 10 : 2) * sign, 0, 100) }));
         };
         const keys: Record<string, () => void> = {
             ArrowLeft: () => nudge("x", -1),
             ArrowRight: () => nudge("x", 1),
             ArrowUp: () => nudge("y", -1),
             ArrowDown: () => nudge("y", 1),
-            "+": () => zoomTo(w.zoom + 10),
-            "=": () => zoomTo(w.zoom + 10),
-            "-": () => zoomTo(w.zoom - 10),
-            "0": () => zoomTo(100, { x: 50, y: 50 }),
+            "+": () => zoomTo(look.zoom + 10),
+            "=": () => zoomTo(look.zoom + 10),
+            "-": () => zoomTo(look.zoom - 10),
         };
         const run = keys[e.key];
         if (!run) return;
@@ -219,88 +220,79 @@ function Editor({ w, url, kind, naturalWidth, resetKey }: { w: WallpaperSettings
         run();
     };
 
-    const scope = ".dl-wp-stage";
-    const css = buildMediaCss(scope, w, scale);
-    const pct = (px: number) => `${(px / window.innerWidth) * 100}%`;
-    const panel = (p: WallpaperPanel, v: string) => ({ background: panelColor(v, w.panels[p], w.tint) });
-
     return (
-        <div className="dl-wp-editor">
-            <style>{css}</style>
-            <div
-                ref={boxRef}
-                className="dl-wp-stage"
-                data-dragging={dragging || undefined}
-                data-movable={movable || undefined}
-                style={{ aspectRatio: String(aspect), [NATURAL_WIDTH_VAR as string]: `${naturalWidth ?? natural?.width ?? 512}px` }}
-                tabIndex={0}
-                role="group"
-                aria-label={t("wallpaper.editorLabel")}
-                aria-describedby="dl-wp-editor-hint"
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
-                onDoubleClick={() => zoomTo(100, { x: 50, y: 50 })}
-                onKeyDown={onKeyDown}
-            >
-                {kind === "image" && <img className="evi-wallpaper-backdrop" src={url} alt="" draggable={false} />}
-                {kind === "video"
-                    ? <video className="evi-wallpaper-media" src={url} muted loop autoPlay playsInline onLoadedMetadata={e => setNatural({ width: e.currentTarget.videoWidth, height: e.currentTarget.videoHeight })} />
-                    : <img className="evi-wallpaper-media" src={url} alt="" draggable={false} onLoad={e => setNatural({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} />}
-                {kind === "image" && <div className="evi-wallpaper-tile" style={{ backgroundImage: `url("${url}")` }} />}
-                <div className="dl-wp-stage-dim" style={{ opacity: w.dim / 100 }} />
-                {/* Discord's layout at the panel settings: what stays readable, and where the wallpaper shows */}
-                <div className="dl-wp-mock" aria-hidden="true">
-                    <div className="dl-wp-mock-title" style={{ blockSize: `${(TITLE / (window.innerWidth / aspect)) * 100}%`, ...panel("frame", "--app-frame-background") }} />
-                    <div className="dl-wp-mock-body">
-                        <div className="dl-wp-mock-rail" style={{ inlineSize: pct(RAIL), ...panel("frame", "--background-base-lowest") }}>
-                            {[0, 1, 2, 3].map(i => <span key={i} />)}
-                        </div>
-                        <div className="dl-wp-mock-sidebar" style={{ inlineSize: pct(SIDEBAR), ...panel("sidebars", "--background-base-low") }}>
-                            {[70, 55, 62, 48, 58].map((width, i) => <span key={i} style={{ inlineSize: `${width}%` }} />)}
-                        </div>
-                        <div className="dl-wp-mock-chat" style={panel("chat", "--background-base-lower")}>
-                            <div className="dl-wp-mock-messages">
-                                {[62, 40, 75, 52].map((width, i) => <span key={i} style={{ inlineSize: `${width}%` }} />)}
-                            </div>
-                            <div className="dl-wp-mock-input" style={panel("input", "--channeltextarea-background")} />
-                        </div>
-                        <div className="dl-wp-mock-sidebar" style={{ inlineSize: pct(SIDEBAR), ...panel("sidebars", "--background-base-low") }}>
-                            {[50, 64, 44].map((width, i) => <span key={i} style={{ inlineSize: `${width}%` }} />)}
-                        </div>
+        <Dialog id="dl-wp-edit" title={t("wallpaper.editTitle")} onClose={onClose}>
+            {close => (
+                <div className="dl-wp-edit">
+                    <div
+                        ref={stageRef}
+                        className="dl-wp-edit-stage"
+                        data-dragging={dragging || undefined}
+                        tabIndex={0}
+                        role="group"
+                        aria-label={t("wallpaper.editorLabel")}
+                        aria-describedby="dl-wp-edit-hint"
+                        onPointerDown={onPointerDown}
+                        onPointerMove={onPointerMove}
+                        onPointerUp={endDrag}
+                        onPointerCancel={endDrag}
+                        onKeyDown={onKeyDown}
+                    >
+                        <Placed url={url} kind={kind} natural={natural} look={look} box={frame} offset={offset} onNatural={setNatural} />
+                        {/* What shows in the window: everything outside it dimmed */}
+                        <div className="dl-wp-edit-frame" style={{ left: offset.left, top: offset.top, width: frame.width, height: frame.height }} />
                     </div>
+                    <Text tag="p" variant="text-xs/normal" color="text-muted" id="dl-wp-edit-hint">{t("wallpaper.editorHint")}</Text>
+                    <div className="dl-wp-edit-controls">
+                        <span className="dl-wp-edit-zoom">
+                            <Icon name="image" size={14} />
+                            <input
+                                type="range"
+                                aria-label={t("wallpaper.zoom")}
+                                min={ZOOM_MIN}
+                                max={ZOOM_MAX}
+                                step={1}
+                                value={look.zoom}
+                                style={{ "--dl-wp-fill": `${((look.zoom - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN)) * 100}%` } as React.CSSProperties}
+                                onChange={e => zoomTo(Number(e.currentTarget.value))}
+                            />
+                            <Icon name="image" size={22} />
+                        </span>
+                        <IconButton icon="rotate" label={t("wallpaper.rotate")} onClick={() => setLook(l => ({ ...l, rotation: ((l.rotation + 90) % 360) as WallpaperRotation }))} />
+                    </div>
+                    <footer className="dl-wp-edit-foot">
+                        <button type="button" className="dl-wp-edit-reset" onClick={() => setLook({ zoom: 100, x: 50, y: 50, rotation: 0 })}>{t("wallpaper.editReset")}</button>
+                        <span className="dl-grow" />
+                        <Button onClick={close}>{t("common.cancel")}</Button>
+                        <Button variant="accent" onClick={() => { onApply(look); close(); }}>{t("wallpaper.editApply")}</Button>
+                    </footer>
                 </div>
-            </div>
-            <Text tag="p" variant="text-xs/normal" color="text-muted" id="dl-wp-editor-hint">
-                {t(movable ? "wallpaper.editorHint" : "wallpaper.editorHintZoom")}
-            </Text>
-            <div className="dl-wp-zoom">
-                <span className="dl-wp-zoom-icon" aria-hidden="true"><Icon name="image" size={16} /></span>
-                <div className="dl-grow">
-                    <RangeField id="dl-wp-zoom" label={t("wallpaper.zoom")} value={w.zoom} min={ZOOM_MIN} max={ZOOM_MAX} step={5} resetKey={`${zoomKey}-${resetKey}`} onChange={zoom => change({ zoom })} />
-                </div>
-                <span className="dl-wp-zoom-icon" aria-hidden="true"><Icon name="image" size={24} /></span>
-            </div>
+            )}
+        </Dialog>
+    );
+}
+
+/** The wallpaper as the window shows it, small: the crop, and the dim over it */
+function Thumb({ w, url, kind, onEdit }: { w: WallpaperSettings; url: string; kind: "image" | "video"; onEdit(): void; }) {
+    const aspect = useWindowAspect();
+    const [ref, box] = useSize<HTMLDivElement>();
+    const [natural, setNatural] = React.useState<Natural>();
+    // A click shortcut: the Edit image button next to it is the one keyboards and screen readers use
+    return (
+        <div ref={ref} className="dl-wp-thumb" style={{ aspectRatio: String(aspect) }} onClick={onEdit}>
+            <Placed url={url} kind={kind} natural={natural} look={w} box={box} onNatural={setNatural} />
+            <span className="dl-wp-thumb-dim" style={{ opacity: w.dim / 100 }} />
         </div>
     );
 }
 
 // ---- The tab --------------------------------------------------------------------------------------
 
-const FIT_LABELS: Record<WallpaperFit, EviKey> = {
-    fill: "wallpaper.fit.fill",
-    fit: "wallpaper.fit.fit",
-    stretch: "wallpaper.fit.stretch",
-    center: "wallpaper.fit.center",
-    tile: "wallpaper.fit.tile",
-};
-
-const PANEL_ROWS: [WallpaperPanel, EviKey, EviKey][] = [
-    ["frame", "wallpaper.panel.frame", "wallpaper.panel.frameHint"],
-    ["sidebars", "wallpaper.panel.sidebars", "wallpaper.panel.sidebarsHint"],
-    ["chat", "wallpaper.panel.chat", "wallpaper.panel.chatHint"],
-    ["input", "wallpaper.panel.input", "wallpaper.panel.inputHint"],
+const PANEL_ROWS: [WallpaperPanel, EviKey][] = [
+    ["frame", "wallpaper.panel.frame"],
+    ["sidebars", "wallpaper.panel.sidebars"],
+    ["chat", "wallpaper.panel.chat"],
+    ["input", "wallpaper.panel.input"],
 ];
 
 export function WallpaperTab() {
@@ -308,7 +300,9 @@ export function WallpaperTab() {
     const state = useStore(Wallpaper.subscribe, Wallpaper.getSnapshot);
     const [busy, setBusy] = React.useState(false);
     const [error, setError] = React.useState<string>();
-    // Bumped by the reset buttons: Discord's sliders only read their value when they mount
+    const [editing, setEditing] = React.useState(false);
+    const [more, setMore] = React.useState(false);
+    // Bumped by the reset button: Discord's sliders only read their value when they mount
     const [resets, setResets] = React.useState(0);
 
     // Keeps the file loaded for the preview while the wallpaper itself is off
@@ -332,13 +326,9 @@ export function WallpaperTab() {
         if (!result.ok && !result.canceled) setError(result.error);
     });
     const remove = run(() => Wallpaper.remove());
-
-    const resetLook = () => {
-        change({ fit: WALLPAPER_DEFAULTS.fit, zoom: 100, x: 50, y: 50, dim: WALLPAPER_DEFAULTS.dim, blur: WALLPAPER_DEFAULTS.blur });
-        setResets(n => n + 1);
-    };
-    const resetPanels = () => {
-        change({ panels: PANEL_DEFAULTS, tint: WALLPAPER_DEFAULTS.tint, behindSettings: false, behindPopouts: false });
+    const resetAll = () => {
+        const { enabled, file, kind, login } = w;
+        change({ ...WALLPAPER_DEFAULTS, enabled, file, kind, login: { ...WALLPAPER_DEFAULTS.login, show: login.show } });
         setResets(n => n + 1);
     };
 
@@ -362,18 +352,19 @@ export function WallpaperTab() {
                 {w.file && w.kind ? (
                     <article className="dl-card" aria-labelledby="dl-wallpaper-current">
                         <div className="dl-card-body dl-wp-card">
-                            <div className="dl-wp-card-head">
-                                <div className="dl-grow dl-row-text">
-                                    <Text tag="h3" variant="text-md/semibold" color="text-strong" id="dl-wallpaper-current">
-                                        {t(w.kind === "video" ? "wallpaper.currentVideo" : "wallpaper.currentImage")}
-                                    </Text>
-                                    <span role="status">{status}</span>
-                                </div>
-                                <Button variant="danger" icon="trash" onClick={remove} disabled={busy}>{t("wallpaper.remove")}</Button>
-                            </div>
                             {state.url && state.kind
-                                ? <Editor w={w} url={state.url} kind={state.kind} naturalWidth={state.naturalWidth} resetKey={resets} />
-                                : <div className="dl-wp-stage dl-wp-stage-empty" />}
+                                ? <Thumb w={w} url={state.url} kind={state.kind} onEdit={() => setEditing(true)} />
+                                : <span className="dl-wp-thumb" />}
+                            <div className="dl-grow dl-row-text">
+                                <Text tag="h3" variant="text-md/semibold" color="text-strong" id="dl-wallpaper-current">
+                                    {t(w.kind === "video" ? "wallpaper.currentVideo" : "wallpaper.currentImage")}
+                                </Text>
+                                <span role="status">{status}</span>
+                                <div className="dl-toolbar">
+                                    <Button icon="pencil" onClick={() => setEditing(true)} disabled={!state.url}>{t("wallpaper.edit")}</Button>
+                                    <Button variant="danger" icon="trash" onClick={remove} disabled={busy}>{t("wallpaper.remove")}</Button>
+                                </div>
+                            </div>
                         </div>
                     </article>
                 ) : (
@@ -381,121 +372,66 @@ export function WallpaperTab() {
                 )}
             </Section>
 
+            {editing && state.url && state.kind && (
+                <EditImage
+                    url={state.url}
+                    kind={state.kind}
+                    initial={{ zoom: w.zoom, x: w.x, y: w.y, rotation: w.rotation }}
+                    onApply={look => change(look)}
+                    onClose={() => setEditing(false)}
+                />
+            )}
+
             {w.file && (
-                <>
-                    <Section>
-                        <SwitchRow id="dl-wallpaper-enabled" label={t("wallpaper.show")} description={t("wallpaper.showHint")} checked={w.enabled} onChange={enabled => change({ enabled })} />
-                        {w.kind === "video" && (
-                            <SwitchRow
-                                id="dl-wallpaper-battery"
-                                label={t("wallpaper.pauseOnBattery")}
-                                description={t("wallpaper.pauseOnBatteryHint")}
-                                checked={w.pauseOnBattery}
-                                onChange={pauseOnBattery => change({ pauseOnBattery })}
-                            />
-                        )}
-                    </Section>
+                <Section>
+                    <SwitchRow id="dl-wallpaper-enabled" label={t("wallpaper.show")} description={t("wallpaper.showHint")} checked={w.enabled} onChange={enabled => change({ enabled })} />
+                    <RangeField id="dl-wallpaper-dim" label={t("wallpaper.dim")} description={t("wallpaper.dimHint")} value={w.dim} min={DIM_MIN} max={DIM_MAX} step={5} markers={[0, 15, 30, 45, 60, 75, 90]} resetKey={resets} onChange={dim => change({ dim })} />
+                    <RangeField id="dl-wallpaper-panels" label={t("wallpaper.panelsSimple")} description={t("wallpaper.panelsSimpleHint")} value={w.panels.sidebars} min={PANEL_MIN} max={PANEL_MAX} step={5} resetKey={resets} onChange={v => changePanels(panelsFor(v))} />
+                    <SwitchRow id="dl-wallpaper-login-show" label={t("wallpaper.login.show")} description={t("wallpaper.login.showHint")} checked={w.login.show} onChange={show => changeLogin({ show })} />
+                    {w.kind === "video" && (
+                        <SwitchRow id="dl-wallpaper-battery" label={t("wallpaper.pauseOnBattery")} description={t("wallpaper.pauseOnBatteryHint")} checked={w.pauseOnBattery} onChange={pauseOnBattery => change({ pauseOnBattery })} />
+                    )}
 
-                    <Section
-                        id="dl-wallpaper-look"
-                        title={t("wallpaper.lookTitle")}
-                        description={t("wallpaper.lookHint")}
-                        action={<Button icon="refresh" onClick={resetLook}>{t("wallpaper.resetLook")}</Button>}
-                    >
-                        <div className="dl-field">
-                            <Text variant="text-md/medium" color="text-strong">{t("wallpaper.fit")}</Text>
-                            <Text tag="p" variant="text-sm/normal" color="text-subtle">{t(w.kind === "video" ? "wallpaper.fitHintVideo" : "wallpaper.fitHint")}</Text>
-                            <FilterChips
-                                label={t("wallpaper.fit")}
-                                options={fitsFor(w.kind).map(id => ({ id, label: t(FIT_LABELS[id]) }))}
-                                value={w.fit}
-                                onChange={fit => change({ fit })}
-                            />
-                        </div>
-                        <RangeField id="dl-wallpaper-dim" label={t("wallpaper.dim")} description={t("wallpaper.dimHint")} value={w.dim} min={DIM_MIN} max={DIM_MAX} step={5} markers={[0, 15, 30, 45, 60, 75, 90]} resetKey={resets} onChange={dim => change({ dim })} />
-                        <RangeField id="dl-wallpaper-blur" label={t("wallpaper.blur")} description={t("wallpaper.blurHint")} value={w.blur} min={BLUR_MIN} max={BLUR_MAX} unit="px" resetKey={resets} onChange={blur => change({ blur })} />
-                    </Section>
-
-                    <Section
-                        id="dl-wallpaper-panels"
-                        title={t("wallpaper.panelsTitle")}
-                        description={t("wallpaper.panelsHint")}
-                        action={<Button icon="refresh" onClick={resetPanels}>{t("wallpaper.resetPanels")}</Button>}
-                    >
-                        {PANEL_ROWS.map(([panel, label, hint]) => (
-                            <RangeField
-                                key={panel}
-                                id={`dl-wallpaper-panel-${panel}`}
-                                label={t(label)}
-                                description={t(hint)}
-                                value={w.panels[panel]}
-                                min={PANEL_MIN}
-                                max={PANEL_MAX}
-                                step={5}
-                                resetKey={resets}
-                                onChange={value => changePanels({ [panel]: value })}
-                            />
-                        ))}
-                        <div className="dl-field">
-                            <Text variant="text-md/medium" color="text-strong" id="dl-wallpaper-tint-label">{t("wallpaper.tint")}</Text>
-                            <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("wallpaper.tintHint")}</Text>
-                            <Dropdown<WallpaperTint>
-                                id="dl-wallpaper-tint"
-                                labelledBy="dl-wallpaper-tint-label"
-                                label={t("wallpaper.tint")}
-                                options={[{ value: "theme", label: t("wallpaper.tint.theme") }, { value: "neutral", label: t("wallpaper.tint.neutral") }]}
-                                value={w.tint}
-                                onChange={tint => change({ tint })}
-                            />
-                        </div>
-                        <SwitchRow id="dl-wallpaper-settings" label={t("wallpaper.behindSettings")} description={t("wallpaper.behindSettingsHint")} checked={w.behindSettings} onChange={behindSettings => change({ behindSettings })} />
-                        <SwitchRow id="dl-wallpaper-popouts" label={t("wallpaper.behindPopouts")} description={t("wallpaper.behindPopoutsHint")} checked={w.behindPopouts} onChange={behindPopouts => change({ behindPopouts })} />
-                        {w.behindPopouts && (
-                            <RangeField
-                                id="dl-wallpaper-panel-popouts"
-                                label={t("wallpaper.panel.popouts")}
-                                description={t("wallpaper.panel.popoutsHint")}
-                                value={w.panels.popouts}
-                                min={PANEL_MIN}
-                                max={PANEL_MAX}
-                                step={5}
-                                resetKey={resets}
-                                onChange={popouts => changePanels({ popouts })}
-                            />
-                        )}
-                    </Section>
-
-                    <Section id="dl-wallpaper-login" title={t("wallpaper.login.title")} description={t("wallpaper.login.hint")}>
-                        <SwitchRow id="dl-wallpaper-login-show" label={t("wallpaper.login.show")} description={t("wallpaper.login.showHint")} checked={w.login.show} onChange={show => changeLogin({ show })} />
-                        {w.login.show && (
-                            <>
-                                <RangeField
-                                    id="dl-wallpaper-login-opacity"
-                                    label={t("wallpaper.login.boxOpacity")}
-                                    description={t("wallpaper.login.boxOpacityHint")}
-                                    value={w.login.boxOpacity}
-                                    min={PANEL_MIN}
-                                    max={PANEL_MAX}
-                                    step={5}
-                                    resetKey={resets}
-                                    onChange={boxOpacity => changeLogin({ boxOpacity })}
+                    <button type="button" className="dl-disclosure" aria-expanded={more} aria-controls="dl-wallpaper-more" onClick={() => setMore(!more)}>
+                        <Icon name="chevronRight" size={16} />
+                        <Text tag="span" variant="text-sm/semibold" color="text-subtle">{t("wallpaper.more")}</Text>
+                    </button>
+                    <Collapse open={more} id="dl-wallpaper-more">
+                        <div className="dl-stack">
+                            <RangeField id="dl-wallpaper-blur" label={t("wallpaper.blur")} description={t("wallpaper.blurHint")} value={w.blur} min={BLUR_MIN} max={BLUR_MAX} unit="px" resetKey={resets} onChange={blur => change({ blur })} />
+                            {PANEL_ROWS.map(([panel, label]) => (
+                                <RangeField key={panel} id={`dl-wallpaper-panel-${panel}`} label={t(label)} value={w.panels[panel]} min={PANEL_MIN} max={PANEL_MAX} step={5} resetKey={`${resets}-${w.panels.sidebars}`} onChange={value => changePanels({ [panel]: value })} />
+                            ))}
+                            <div className="dl-field">
+                                <Text variant="text-md/medium" color="text-strong" id="dl-wallpaper-tint-label">{t("wallpaper.tint")}</Text>
+                                <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("wallpaper.tintHint")}</Text>
+                                <Dropdown<WallpaperTint>
+                                    id="dl-wallpaper-tint"
+                                    labelledBy="dl-wallpaper-tint-label"
+                                    label={t("wallpaper.tint")}
+                                    options={[{ value: "theme", label: t("wallpaper.tint.theme") }, { value: "neutral", label: t("wallpaper.tint.neutral") }]}
+                                    value={w.tint}
+                                    onChange={tint => change({ tint })}
                                 />
-                                <RangeField
-                                    id="dl-wallpaper-login-blur"
-                                    label={t("wallpaper.login.blur")}
-                                    description={t("wallpaper.login.blurHint")}
-                                    value={w.login.blur}
-                                    min={0}
-                                    max={LOGIN_BLUR_MAX}
-                                    unit="px"
-                                    resetKey={resets}
-                                    onChange={blur => changeLogin({ blur })}
-                                />
-                                <SwitchRow id="dl-wallpaper-login-art" label={t("wallpaper.login.hideArt")} description={t("wallpaper.login.hideArtHint")} checked={w.login.hideArt} onChange={hideArt => changeLogin({ hideArt })} />
-                            </>
-                        )}
-                    </Section>
-                </>
+                            </div>
+                            <SwitchRow id="dl-wallpaper-settings" label={t("wallpaper.behindSettings")} description={t("wallpaper.behindSettingsHint")} checked={w.behindSettings} onChange={behindSettings => change({ behindSettings })} />
+                            <SwitchRow id="dl-wallpaper-popouts" label={t("wallpaper.behindPopouts")} description={t("wallpaper.behindPopoutsHint")} checked={w.behindPopouts} onChange={behindPopouts => change({ behindPopouts })} />
+                            {w.behindPopouts && (
+                                <RangeField id="dl-wallpaper-panel-popouts" label={t("wallpaper.panel.popouts")} value={w.panels.popouts} min={PANEL_MIN} max={PANEL_MAX} step={5} resetKey={resets} onChange={popouts => changePanels({ popouts })} />
+                            )}
+                            {w.login.show && (
+                                <>
+                                    <RangeField id="dl-wallpaper-login-opacity" label={t("wallpaper.login.boxOpacity")} value={w.login.boxOpacity} min={PANEL_MIN} max={PANEL_MAX} step={5} resetKey={resets} onChange={boxOpacity => changeLogin({ boxOpacity })} />
+                                    <RangeField id="dl-wallpaper-login-blur" label={t("wallpaper.login.blur")} value={w.login.blur} min={0} max={LOGIN_BLUR_MAX} unit="px" resetKey={resets} onChange={blur => changeLogin({ blur })} />
+                                    <SwitchRow id="dl-wallpaper-login-art" label={t("wallpaper.login.hideArt")} description={t("wallpaper.login.hideArtHint")} checked={w.login.hideArt} onChange={hideArt => changeLogin({ hideArt })} />
+                                </>
+                            )}
+                            <div className="dl-toolbar">
+                                <Button icon="refresh" onClick={resetAll}>{t("wallpaper.resetAll")}</Button>
+                            </div>
+                        </div>
+                    </Collapse>
+                </Section>
             )}
         </div>
     );

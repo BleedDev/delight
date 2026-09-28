@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-    BASE_LAYER, buildMediaCss, LOGIN_ART, LOGIN_BOX, buildWallpaperCss, fitsFor, MAX_WALLPAPER_BYTES, NATURAL_WIDTH_VAR, normalizeWallpaper, PANEL_DEFAULTS, POPOUT_LAYER, SETTINGS_LAYER,
+    BASE_LAYER, buildMediaCss, imageRect, LOGIN_ART, LOGIN_BOX, buildWallpaperCss, MAX_WALLPAPER_BYTES, normalizeWallpaper, PANEL_DEFAULTS, POPOUT_LAYER, SETTINGS_LAYER,
     WALLPAPER_DEFAULTS, WALLPAPER_EXTENSIONS, wallpaperKind, wallpaperMime,
 } from "../src/shared/wallpaper";
 
@@ -27,13 +27,13 @@ describe("which files are wallpapers", () => {
 describe("settings", () => {
     test("missing settings are off, with the defaults", () => {
         expect(normalizeWallpaper(undefined)).toEqual({ ...WALLPAPER_DEFAULTS, file: undefined, kind: undefined });
-        expect(WALLPAPER_DEFAULTS).toMatchObject({ dim: 60, blur: 0, pauseOnBattery: true, enabled: false });
+        expect(WALLPAPER_DEFAULTS).toMatchObject({ dim: 40, blur: 0, pauseOnBattery: true, enabled: false });
     });
 
     test("numbers are kept in range and rounded", () => {
         expect(normalizeWallpaper({ dim: 150, blur: -3 } as any)).toMatchObject({ dim: 90, blur: 0 });
         expect(normalizeWallpaper({ dim: 42.6, blur: 7.2 } as any)).toMatchObject({ dim: 43, blur: 7 });
-        expect(normalizeWallpaper({ dim: NaN, blur: "5" } as any)).toMatchObject({ dim: 60, blur: 0 });
+        expect(normalizeWallpaper({ dim: NaN, blur: "5" } as any)).toMatchObject({ dim: 40, blur: 0 });
     });
 
     test("the kind always follows the file, and a file Evi can't show is dropped", () => {
@@ -91,6 +91,12 @@ describe("the stylesheet", () => {
         expect(css).not.toContain("--evi-wp-");
     });
 
+    test("Discord's backdrop behind every layer goes clear too, and the member list is tinted", () => {
+        const css = buildWallpaperCss({});
+        expect(css).toContain(':is([class^="app_"], [class*=" app_"]) > :is([class^="bg_"], [class*=" bg_"])');
+        expect(css).toContain("--custom-channel-members-bg: color-mix(");
+    });
+
     test("settings and popouts only when asked, popouts at their own amount", () => {
         const css = buildWallpaperCss({ tint: "neutral", behindSettings: true, behindPopouts: true, panels: { popouts: 70 } as any });
         expect(css).toContain(`${SETTINGS_LAYER}:is(`);
@@ -139,38 +145,44 @@ describe("the login screen", () => {
     });
 });
 
-describe("size and position", () => {
-    test("fill, fit and stretch move and zoom the picture around its focal point", () => {
-        const css = buildMediaCss("#w", { fit: "fill", zoom: 150, x: 20, y: 80, blur: 0 });
-        expect(css).toContain("object-fit: cover;");
-        expect(css).toContain("object-position: 20% 80%;");
+describe("Edit Image: zoom, position and rotation", () => {
+    test("the picture covers the window, then zooms and moves across the room it has", () => {
+        // 1000×500 picture in a 1000×1000 window: covered at 2x, 2000 wide, 1000 of room left and right
+        expect(imageRect(1000, 1000, 1000, 500, { zoom: 100, x: 50, y: 50, rotation: 0 })).toEqual({ left: -500, top: 0, width: 2000, height: 1000 });
+        expect(imageRect(1000, 1000, 1000, 500, { zoom: 100, x: 0, y: 50, rotation: 0 }).left).toBeCloseTo(0);
+        expect(imageRect(1000, 1000, 1000, 500, { zoom: 100, x: 100, y: 50, rotation: 0 }).left).toBe(-1000);
+        expect(imageRect(1000, 1000, 1000, 500, { zoom: 200, x: 50, y: 50, rotation: 0 })).toEqual({ left: -1500, top: -500, width: 4000, height: 2000 });
+    });
+
+    test("a quarter turn covers with the picture's sides swapped", () => {
+        // Turned, the 1000×500 picture is 500×1000: a 1000×1000 window covers it at 2x, 1000×2000
+        expect(imageRect(1000, 1000, 1000, 500, { zoom: 100, x: 50, y: 50, rotation: 90 })).toEqual({ left: 0, top: -500, width: 1000, height: 2000 });
+    });
+
+    test("the CSS zooms around the point and turns the picture, its position along its own axes", () => {
+        const css = buildMediaCss("#w", { zoom: 150, x: 20, y: 80, rotation: 0, blur: 0 });
         expect(css).toContain("transform: scale(1.5);");
         expect(css).toContain("transform-origin: 20% 80%;");
-        expect(css).toContain("#w > .evi-wallpaper-tile { display: none; }");
-        expect(buildMediaCss("#w", { fit: "fit", zoom: 100, x: 50, y: 50, blur: 0 })).toContain("object-fit: contain;");
-        expect(buildMediaCss("#w", { fit: "stretch", zoom: 100, x: 50, y: 50, blur: 0 })).toContain("object-fit: fill;");
+        expect(css).toContain("object-fit: cover;");
+        expect(css).toContain("object-position: 20% 80%;");
+        expect(css).toContain("inline-size: 100cqw;");
+        expect(css).toContain("rotate(0deg)");
+        const turned = buildMediaCss("#w", { zoom: 100, x: 20, y: 80, rotation: 90, blur: 0 });
+        expect(turned).toContain("inline-size: 100cqh;");
+        expect(turned).toContain("block-size: 100cqw;");
+        expect(turned).toContain("rotate(90deg)");
+        expect(turned).toContain("object-position: 80% 80%;");
+        expect(buildMediaCss("#w", { zoom: 100, x: 20, y: 80, rotation: 180, blur: 0 })).toContain("object-position: 80% 20%;");
+        expect(buildMediaCss("#w", { zoom: 100, x: 20, y: 80, rotation: 270, blur: 0 })).toContain("object-position: 20% 20%;");
     });
 
-    test("center and tile keep the image's own pixels, scaled down with a preview", () => {
-        const tile = buildMediaCss("#w", { fit: "tile", zoom: 200, x: 0, y: 0, blur: 0 }, 0.25);
-        expect(tile).toContain("#w > .evi-wallpaper-media { display: none; }");
-        expect(tile).toContain("background-repeat: repeat;");
-        expect(tile).toContain(`background-size: calc(var(${NATURAL_WIDTH_VAR}, 512px) * 0.5) auto;`);
-        expect(buildMediaCss("#w", { fit: "center", zoom: 100, x: 50, y: 50, blur: 0 })).toContain("background-repeat: no-repeat;");
-    });
-
-    test("a fitted or centred picture gets the blurred copy behind it", () => {
-        expect(buildMediaCss("#w", { fit: "fit", zoom: 100, x: 50, y: 50, blur: 0 })).toMatch(/\.evi-wallpaper-backdrop \{\n {4}display: block;/);
-        expect(buildMediaCss("#w", { fit: "fill", zoom: 100, x: 50, y: 50, blur: 0 })).toMatch(/\.evi-wallpaper-backdrop \{\n {4}display: none;/);
-    });
-
-    test("settings are kept in range, and a video can't tile or centre", () => {
-        const w = normalizeWallpaper({ file: "a.png", fit: "tile", zoom: 9000, x: -5, y: 250, panels: { chat: 140, frame: "x" } } as any);
-        expect(w).toMatchObject({ fit: "tile", zoom: 400, x: 0, y: 100, behindSettings: false, behindPopouts: false, tint: "theme" });
+    test("settings are kept in range, and only quarter turns", () => {
+        const w = normalizeWallpaper({ file: "a.png", zoom: 9000, x: -5, y: 250, rotation: 45, panels: { chat: 140, frame: "x" } } as any);
+        expect(w).toMatchObject({ zoom: 400, x: 0, y: 100, rotation: 0, behindSettings: false, behindPopouts: false, tint: "theme" });
         expect(w.panels).toEqual({ ...PANEL_DEFAULTS, chat: 100 });
-        expect(normalizeWallpaper({ file: "a.mp4", fit: "tile" } as any).fit).toBe("fill");
-        expect(normalizeWallpaper({ file: "a.mp4", fit: "center" } as any).fit).toBe("fill");
-        expect(fitsFor("video")).toEqual(["fill", "fit", "stretch"]);
-        expect(normalizeWallpaper({ fit: "sideways" } as any).fit).toBe("fill");
+        expect(normalizeWallpaper({ rotation: 270 } as any).rotation).toBe(270);
+        // Settings from before Edit Image load as they were, minus the size choice
+        expect(normalizeWallpaper({ file: "a.png", fit: "tile", zoom: 150 } as any)).not.toHaveProperty("fit");
     });
 });
+

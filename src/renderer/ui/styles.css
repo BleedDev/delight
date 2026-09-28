@@ -2970,160 +2970,138 @@
 
 /* ---- wallpaper ----------------------------------------------------------------------------- */
 
-/* The card: what's showing, then the editor under it */
+/* The card: the wallpaper as the window shows it, then what to do with it */
 .dl-wp-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-}
-
-.dl-wp-card-head {
-    display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 16px;
 }
 
-.dl-wp-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Discord in miniature: the wallpaper as the window shows it, the layout painted over it */
-.dl-wp-stage {
+.dl-wp-thumb {
     position: relative;
-    inline-size: 100%;
+    flex: none;
+    inline-size: 192px;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
-    isolation: isolate;
+    padding: 0;
+    border: 0;
     /* Inside the card's padding: a control's corner */
     border-radius: var(--dl-radius-control);
     background: #000;
     outline: 1px solid rgb(255 255 255 / 0.08);
     outline-offset: -1px;
-    touch-action: none;
-    user-select: none;
+    cursor: pointer;
 }
 
-.dl-wp-stage-empty { aspect-ratio: 16 / 9; }
-.dl-wp-stage[data-movable] { cursor: grab; }
-.dl-wp-stage[data-dragging] { cursor: grabbing; }
+.dl-wp-thumb:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 2px; }
+.theme-light .dl-wp-thumb { background: #fff; outline-color: rgb(0 0 0 / 0.08); }
 
-.dl-wp-stage:focus-visible {
-    outline: 2px solid var(--dl-focus-ring);
-    outline-offset: 2px;
-}
-
-.theme-light .dl-wp-stage {
-    background: #fff;
-    outline-color: rgb(0 0 0 / 0.08);
-}
-
-.dl-wp-stage > img,
-.dl-wp-stage > video,
-.dl-wp-stage > .evi-wallpaper-tile {
-    pointer-events: none;
-    -webkit-user-drag: none;
-}
-
-.dl-wp-stage-dim {
+.dl-wp-thumb-dim {
     position: absolute;
     inset: 0;
     background: #000;
     pointer-events: none;
 }
 
-.theme-light .dl-wp-stage-dim { background: #fff; }
+.theme-light .dl-wp-thumb-dim { background: #fff; }
 
-.dl-wp-mock {
-    --dl-wp-neutral: 0 0 0;
-    --dl-wp-skeleton: rgb(255 255 255 / 0.14);
+/* Placed from imageRect: centred on its box, turned about its middle */
+.dl-wp-placed {
     position: absolute;
-    inset: 0;
+    max-inline-size: none;
+    object-fit: fill;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* Edit Image, like Discord's */
+.dl-wp-edit {
     display: flex;
     flex-direction: column;
+    gap: 12px;
+}
+
+.dl-wp-edit-stage {
+    position: relative;
+    block-size: 320px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: var(--dl-bg-emphasis);
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+}
+
+.dl-wp-edit-stage[data-dragging] { cursor: grabbing; }
+.dl-wp-edit-stage:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 2px; }
+
+/* The window: bright inside, the rest of the picture dimmed around it */
+.dl-wp-edit-frame {
+    position: absolute;
+    box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.6);
+    outline: 2px solid #fff;
     pointer-events: none;
 }
 
-.theme-light .dl-wp-mock {
-    --dl-wp-neutral: 255 255 255;
-    --dl-wp-skeleton: rgb(0 0 0 / 0.12);
-}
-
-.dl-wp-mock-title { flex: none; }
-
-.dl-wp-mock-body {
+.dl-wp-edit-controls {
     display: flex;
-    flex: 1;
-    min-block-size: 0;
-}
-
-.dl-wp-mock-rail {
-    display: flex;
-    flex: none;
-    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding-block: 8px;
+    justify-content: center;
+    gap: 16px;
 }
 
-.dl-wp-mock-rail > span {
-    inline-size: 56%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: var(--dl-wp-skeleton);
-}
-
-.dl-wp-mock-sidebar {
+.dl-wp-edit-zoom {
     display: flex;
-    flex: none;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 8px;
+    align-items: center;
+    gap: 12px;
+    color: var(--dl-interactive);
 }
 
-.dl-wp-mock-sidebar > span,
-.dl-wp-mock-messages > span {
-    display: block;
-    block-size: 5px;
+.dl-wp-edit-zoom > input {
+    --dl-wp-fill: 0%;
+    inline-size: 180px;
+    block-size: 6px;
     border-radius: 3px;
-    background: var(--dl-wp-skeleton);
+    background: linear-gradient(90deg, var(--dl-brand) var(--dl-wp-fill), var(--dl-bg-emphasis) var(--dl-wp-fill));
+    appearance: none;
+    cursor: pointer;
 }
 
-.dl-wp-mock-chat {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 12px;
-    min-inline-size: 0;
-    padding: 10px;
-}
-
-.dl-wp-mock-messages {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.dl-wp-mock-input {
-    flex: none;
+.dl-wp-edit-zoom > input::-webkit-slider-thumb {
+    inline-size: 16px;
     block-size: 16px;
-    border-radius: 5px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
+    appearance: none;
 }
 
-.dl-wp-zoom {
+.dl-wp-edit-zoom > input:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 4px; }
+
+.dl-wp-edit-foot {
     display: flex;
-    align-items: flex-end;
-    gap: 12px;
+    align-items: center;
+    gap: 8px;
+    margin-block-start: 8px;
 }
 
-/* On the slider's line, under its label */
-.dl-wp-zoom-icon {
-    display: grid;
-    place-items: center;
-    block-size: 40px;
-    color: var(--dl-text-muted);
+.dl-wp-edit-reset {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text-link, #00a8fc);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
 }
+
+@media (hover: hover) {
+    .dl-wp-edit-reset:hover { text-decoration: underline; }
+}
+
+.dl-wp-edit-reset:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 2px; border-radius: 4px; }
 
 .dl-wp-native-range {
     inline-size: 100%;
