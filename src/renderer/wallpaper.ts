@@ -206,7 +206,8 @@ async function load(file: string) {
 
 function apply(force = false) {
     const w = normalizeWallpaper(Settings.data.wallpaper);
-    const show = w.enabled && !!w.file && !SafeMode.active;
+    // The login screen can show it while the wallpaper in Discord's app is off
+    const show = (w.enabled || w.login.show) && !!w.file && !SafeMode.active;
     const wanted = !SafeMode.active && w.file && (show || previews > 0) ? w.file : undefined;
     const key = JSON.stringify([w, show, wanted]);
     if (!force && key === lastKey) return;
@@ -235,7 +236,7 @@ function apply(force = false) {
     }
     // Stays down until something changes the file: the tab shows why
     if (state.status === "error") return;
-    const css = buildWallpaperCss(w);
+    const css = buildWallpaperCss(w, { inApp: w.enabled });
     // Before Quick CSS, which should still win
     if (style) style.update(css);
     else style = createStyle(css, "evi-wallpaper-style", QUICK_CSS_ID);

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { crashRate, validateCheckin } from "../src/shared/analytics";
 import { parseAuthors } from "../src/shared/authors";
-import { isBadgeColor, parseBadges, parseCredits } from "../src/shared/badges";
+import { parseBadges, parseCredits } from "../src/shared/badges";
 import { mergeNotifications, parseNotification, parseNotifications, unreadCount } from "../src/shared/notifications";
 import { parsePluginPage, parseRatings, ratingScore, summarize, validateReview } from "../src/shared/reviews";
 import { betaOf, parseRegistry, previewType, sortListings, validateEntry } from "../src/shared/store";
@@ -165,12 +165,9 @@ describe("authors and supporters", () => {
         expect(parseAuthors({ authors: [{ ...base, banner: "https://evil.example/x.png" }] }).alice.banner).toBeNull();
     });
 
-    test("a badge colour is kept only for supporters; credits are checked", () => {
-        expect(isBadgeColor("#AbCdEf")).toBe(true);
-        expect(isBadgeColor("red")).toBe(false);
-        const doc = parseBadges({ badges: { x: { name: "X", description: "", icon: "https://evi.rest/badges/x.png" } }, users: { "111111111111111111": ["x"], "222222222222222222": ["x"] }, supporters: { "111111111111111111": 1 }, prefs: { "111111111111111111": { order: [], hidden: [], color: "#FF00AA" }, "222222222222222222": { order: [], hidden: [], color: "#ff00aa" } } });
-        expect(doc?.prefs["111111111111111111"]?.color).toBe("#ff00aa");
-        expect(doc?.prefs["222222222222222222"]).toBeUndefined();
+    test("a badge colour from an older evi.rest is dropped; credits are checked", () => {
+        const doc = parseBadges({ badges: { x: { name: "X", description: "", icon: "https://evi.rest/badges/x.png" } }, users: { "111111111111111111": ["x"] }, supporters: { "111111111111111111": 1 }, prefs: { "111111111111111111": { order: ["x"], hidden: [], color: "#FF00AA" } } });
+        expect(doc?.prefs["111111111111111111"]).toEqual({ order: ["x"], hidden: [] });
         expect(parseCredits({ supporters: [{ name: "Bob", avatar: null, userId: "111111111111111111", since: 1, level: "gold" }, { name: 1 }] }).supporters).toHaveLength(1);
     });
 });

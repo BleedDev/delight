@@ -7,6 +7,10 @@ export const MAX_THEME_BYTES = 2 * 1024 * 1024;
 
 export const isThemeFile = (file: string) => /\.css$/i.test(file);
 
+/** A plain file name of a theme: no folders, no "..", no hidden files, ends in .css */
+export const isPlainThemeFileName = (file: unknown): file is string =>
+    typeof file === "string" && isThemeFile(file) && file.length > 4 && !/[\\/:*?"<>|\x00-\x1f]/.test(file) && !file.startsWith(".") && !file.includes("..") && file === file.trim();
+
 /**
  * Reads a BetterDiscord-style header, the first comment of the file:
  *

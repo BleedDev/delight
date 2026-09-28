@@ -9,7 +9,7 @@
  * Admin actions (the /badge command) need evi-admin.json in the data folder, { "token": "…" }. The
  * token stays in main: the page can only ask for one of a few fixed actions.
  */
-import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, hasHotfixesEvent, hasNotificationsEvent, hasPullsEvent, isBadgeColor, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
+import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, hasHotfixesEvent, hasNotificationsEvent, hasPullsEvent, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
 import { imageDataUrl, imageType } from "@shared/images";
 import { IPC } from "@shared/ipc";
 import { isPluginId } from "@shared/store";
@@ -325,14 +325,12 @@ async function admin(input: BadgeAdminAction, sender: WebContents): Promise<Badg
 }
 
 /** Your own arrangement, from Discord's badge settings; evi.rest checks this install is linked to that account */
-async function setPrefs(userId: unknown, prefs: (Omit<Partial<BadgePrefs>, "color"> & { color?: string | null; }) | undefined): Promise<BadgePrefsResult> {
+async function setPrefs(userId: unknown, prefs: Partial<BadgePrefs> | undefined): Promise<BadgePrefsResult> {
     if (!isDiscordId(userId) || !prefs || typeof prefs !== "object") return { ok: false, error: "Nothing to save" };
     const body = {
         userId,
         ...(Array.isArray(prefs.order) && { order: prefs.order }),
         ...(Array.isArray(prefs.hidden) && { hidden: prefs.hidden }),
-        // A supporter's badge colour, or null to go back to their level's
-        ...((prefs.color === null || isBadgeColor(prefs.color)) && { color: prefs.color }),
     };
     try {
         await apiRequest("PUT", "/me/badges", { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });

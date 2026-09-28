@@ -1,6 +1,6 @@
 import type { EviKey } from "@shared/locales";
 import {
-    BLUR_MAX, BLUR_MIN, buildMediaCss, canMove, DIM_MAX, DIM_MIN, fitsFor, NATURAL_WIDTH_VAR, normalizeWallpaper, PANEL_DEFAULTS, PANEL_MAX, PANEL_MIN,
+    BLUR_MAX, BLUR_MIN, buildMediaCss, canMove, DIM_MAX, DIM_MIN, fitsFor, LOGIN_BLUR_MAX, NATURAL_WIDTH_VAR, normalizeWallpaper, PANEL_DEFAULTS, PANEL_MAX, PANEL_MIN,
     WALLPAPER_DEFAULTS, WallpaperFit, WallpaperPanel, WallpaperSettings, WallpaperTint, ZOOM_MAX, ZOOM_MIN,
 } from "@shared/wallpaper";
 
@@ -20,6 +20,11 @@ const change = (patch: Partial<WallpaperSettings>) => Settings.update(d => {
 const changePanels = (patch: Partial<WallpaperSettings["panels"]>) => Settings.update(d => {
     const w = normalizeWallpaper(d.wallpaper);
     d.wallpaper = { ...w, panels: { ...w.panels, ...patch } };
+});
+
+const changeLogin = (patch: Partial<WallpaperSettings["login"]>) => Settings.update(d => {
+    const w = normalizeWallpaper(d.wallpaper);
+    d.wallpaper = { ...w, login: { ...w.login, ...patch } };
 });
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
@@ -457,6 +462,37 @@ export function WallpaperTab() {
                                 resetKey={resets}
                                 onChange={popouts => changePanels({ popouts })}
                             />
+                        )}
+                    </Section>
+
+                    <Section id="dl-wallpaper-login" title={t("wallpaper.login.title")} description={t("wallpaper.login.hint")}>
+                        <SwitchRow id="dl-wallpaper-login-show" label={t("wallpaper.login.show")} description={t("wallpaper.login.showHint")} checked={w.login.show} onChange={show => changeLogin({ show })} />
+                        {w.login.show && (
+                            <>
+                                <RangeField
+                                    id="dl-wallpaper-login-opacity"
+                                    label={t("wallpaper.login.boxOpacity")}
+                                    description={t("wallpaper.login.boxOpacityHint")}
+                                    value={w.login.boxOpacity}
+                                    min={PANEL_MIN}
+                                    max={PANEL_MAX}
+                                    step={5}
+                                    resetKey={resets}
+                                    onChange={boxOpacity => changeLogin({ boxOpacity })}
+                                />
+                                <RangeField
+                                    id="dl-wallpaper-login-blur"
+                                    label={t("wallpaper.login.blur")}
+                                    description={t("wallpaper.login.blurHint")}
+                                    value={w.login.blur}
+                                    min={0}
+                                    max={LOGIN_BLUR_MAX}
+                                    unit="px"
+                                    resetKey={resets}
+                                    onChange={blur => changeLogin({ blur })}
+                                />
+                                <SwitchRow id="dl-wallpaper-login-art" label={t("wallpaper.login.hideArt")} description={t("wallpaper.login.hideArtHint")} checked={w.login.hideArt} onChange={hideArt => changeLogin({ hideArt })} />
+                            </>
                         )}
                     </Section>
                 </>

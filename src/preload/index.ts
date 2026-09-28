@@ -36,6 +36,7 @@ const EviNative = {
         ipcRenderer.on(IPC.THEME_CHANGED, (_, change) => cb(change));
     },
     addThemeFromUrl: (url: string): Promise<AddThemeResult> => ipcRenderer.invoke(IPC.THEME_ADD_URL, url),
+    deleteTheme: (file: string): Promise<{ ok: true; } | { ok: false; error: string; }> => ipcRenderer.invoke(IPC.THEME_DELETE, file),
     saveTheme: (input: ThemeSaveInput): Promise<ThemeSaveResult> => ipcRenderer.invoke(IPC.THEME_SAVE, input),
     submitTheme: (input: ThemeSubmissionInput): Promise<ThemeSubmitResult> => ipcRenderer.invoke(IPC.THEME_SUBMIT, input),
     reportTheme: (id: string, input: PluginReportInput): Promise<PluginReportResult> => ipcRenderer.invoke(IPC.THEME_REPORT, id, input),
@@ -68,7 +69,7 @@ const EviNative = {
     openDashboard: (): Promise<void> => ipcRenderer.invoke(IPC.ACCOUNT_DASHBOARD),
     badgeAdminAvailable: (): Promise<boolean> => ipcRenderer.invoke(IPC.BADGES_ADMIN_AVAILABLE),
     badgeAdmin: (input: BadgeAdminAction): Promise<BadgeAdminResult> => ipcRenderer.invoke(IPC.BADGES_ADMIN, input),
-    setBadgePrefs: (userId: string, prefs: Omit<Partial<BadgePrefs>, "color"> & { color?: string | null; }): Promise<BadgePrefsResult> => ipcRenderer.invoke(IPC.BADGES_SET_PREFS, userId, prefs),
+    setBadgePrefs: (userId: string, prefs: Partial<BadgePrefs>): Promise<BadgePrefsResult> => ipcRenderer.invoke(IPC.BADGES_SET_PREFS, userId, prefs),
     checkForUpdate: (force = false): Promise<UpdateStatus> => ipcRenderer.invoke(IPC.UPDATE_CHECK, force),
     installUpdate: (): Promise<UpdateInstallResult> => ipcRenderer.invoke(IPC.UPDATE_INSTALL),
     onUpdateProgress(cb: (progress: UpdateProgress) => void) {

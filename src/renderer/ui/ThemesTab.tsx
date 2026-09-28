@@ -9,7 +9,7 @@ import { Store } from "../store";
 import { ThemeEditor } from "../themeEditor";
 import { Themes } from "../themes";
 import { React } from "../webpack/common";
-import { Badge, Button, EmptyState, IconButton, List, Notice, Status, Switch, Text, TextField, useStore } from "./components";
+import { Badge, Button, Dialog, EmptyState, IconButton, List, Notice, Status, Switch, Text, TextField, useStore } from "./components";
 import { showTab } from "./nav";
 import { SafeModeHint } from "./SafeModeNotice";
 import { useStoreState } from "./Store";
@@ -28,6 +28,8 @@ function ThemeRow({ theme: source }: { theme: ThemePayload; }) {
     const update = storeId && Store.themeAction(storeId) === "update";
     const op = storeId ? store.themeOps[storeId] : undefined;
     const busy = op?.type === "busy";
+    const [confirming, setConfirming] = React.useState(false);
+    const [deleteError, setDeleteError] = React.useState<string>();
 
     return (
         <li className="dl-row" aria-labelledby={titleId}>
@@ -64,9 +66,33 @@ function ThemeRow({ theme: source }: { theme: ThemePayload; }) {
                     />
                     {update && <Button variant="accent" icon="download" disabled={busy} onClick={() => Store.installTheme(storeId)}>{t("common.update")}</Button>}
                     {storeId && <IconButton icon="trash" label={t("common.uninstallName", { name: theme.name })} onClick={() => !busy && Store.uninstallTheme(storeId)} />}
+                    {!storeId && <IconButton icon="trash" label={t("themes.deleteName", { name: theme.name })} onClick={() => setConfirming(true)} />}
                     <Switch checked={Themes.isEnabled(theme.file)} labelledBy={titleId} onChange={v => Themes.setEnabled(theme.file, v)} />
                 </div>
             </div>
+            {deleteError && <Status tone="danger">{deleteError}</Status>}
+            {confirming && (
+                <Dialog id={`${titleId}-delete`} title={t("themes.deleteTitle", { name: theme.name })} onClose={() => setConfirming(false)}>
+                    {close => (
+                        <div className="dl-stack">
+                            <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("themes.deleteBody", { file: theme.file })}</Text>
+                            <div className="dl-toolbar">
+                                <Button
+                                    variant="danger"
+                                    onClick={async () => {
+                                        close();
+                                        const result = await Themes.remove(theme.file);
+                                        setDeleteError(result.ok ? undefined : result.error);
+                                    }}
+                                >
+                                    {t("themes.deleteConfirm")}
+                                </Button>
+                                <Button onClick={close}>{t("common.cancel")}</Button>
+                            </div>
+                        </div>
+                    )}
+                </Dialog>
+            )}
         </li>
     );
 }

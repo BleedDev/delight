@@ -2588,6 +2588,40 @@ check("store themes show a Store badge in the Themes tab", themeRow.includes("Mi
         && wp.everywhere.every(v => v.endsWith("transparent)")) && wp.everywhere[2].endsWith(" 85%, transparent)") && /rgb\((0 0 0|255 255 255) \/ 0\.3\)/.test(wp.neutral), wp);
     check("wallpaper: tiling draws the image at its own width", wp.tile.natural === "640px" && wp.tile.shown === "block" && wp.tile.img === "none", wp.tile);
 
+    // The login screen (this page is Discord's real one): the wallpaper shows there even with the in-app one off
+    const readLogin = () => page.evaluate(() => {
+        const box = document.querySelector('[class*="authBox_"]');
+        const art = document.querySelector('[class*="characterBackground_"] > [class*="artwork_"]');
+        const layer = document.getElementById("evi-wallpaper");
+        const alpha = (c: string) => c.startsWith("rgba") ? +c.split(",")[3] : /\/\s*([\d.]+)\)/.exec(c)?.[1] ?? 1;
+        return {
+            box: !!box, art: !!art,
+            boxBg: box ? getComputedStyle(box).backgroundColor : "",
+            boxAlpha: box ? +alpha(getComputedStyle(box).backgroundColor) : 1,
+            blur: box ? getComputedStyle(box).backdropFilter : "",
+            artDisplay: art ? getComputedStyle(art).display : "",
+            layer: layer ? getComputedStyle(layer).display : "none",
+            bodyBg: getComputedStyle(document.body).backgroundColor,
+        };
+    });
+    await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, enabled: false, login: undefined })));
+    await page.waitForTimeout(200);
+    const loginOff = await readLogin();
+    await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, enabled: false, login: { show: true, boxOpacity: 60, blur: 12 } })));
+    await page.waitForTimeout(400);
+    const loginOn = await readLogin();
+    // Evi's panel is open over the page: closed for the picture (the tab part opens it again)
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(OUT, "ui-login-wallpaper.png"), fullPage: true });
+    await page.keyboard.press("Control+Shift+D");
+    await page.waitForSelector(".dl-panel", { timeout: 5000 });
+    await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, enabled: true, login: { show: false } })));
+    await page.waitForTimeout(200);
+    check("wallpaper: the login screen shows your wallpaper behind a translucent, blurred box and hides Discord's artwork, even with the in-app wallpaper off",
+        loginOn.box && loginOn.art && loginOn.layer === "block" && loginOn.artDisplay === "none" && loginOn.boxAlpha > 0.5 && loginOn.boxAlpha < 0.7 && /blur\(12px\)/.test(loginOn.blur)
+        && loginOff.artDisplay !== "none" && loginOff.layer === "none" && loginOff.boxAlpha === 1, { loginOff, loginOn });
+
     // The tab: Discord in miniature, dragged and zoomed like Discord's image cropper
     await openTab("themes", "wallpaper");
     await page.waitForSelector(".dl-wp-stage", { timeout: 3000 });

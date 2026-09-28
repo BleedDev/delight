@@ -3714,41 +3714,100 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 
 /* ---- supporter perks ------------------------------------------------------------------------- */
 
-.dl-swatches {
+/* Your level, how far to the next, and what you get */
+.dl-perks .dl-card-body + .dl-card-body { border-block-start: 1px solid var(--dl-border-divider); }
+
+.dl-perks-head {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+}
+
+.dl-perks-badge {
+    flex: none;
+    inline-size: 48px;
+    block-size: 48px;
+    object-fit: contain;
+}
+
+.dl-perks-progress { gap: 8px; }
+
+.dl-perks-bar {
+    block-size: 8px;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--dl-bg-emphasis);
+}
+
+.dl-perks-bar > span {
+    display: block;
+    block-size: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--dl-brand), #eb459e);
+}
+
+.dl-perks-list {
+    display: grid;
+    gap: 8px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dl-perks-list > li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.dl-perks-check {
+    display: grid;
+    flex: none;
+    place-items: center;
+    block-size: 20px;
+    color: var(--dl-text-positive);
+}
+
+/* The credits in Updates: faces, names and levels */
+.dl-credits-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 12px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dl-credits-person {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-inline-size: 0;
+}
+
+.dl-credits-person > img {
+    flex: none;
+    inline-size: 32px;
+    block-size: 32px;
+    border-radius: 50%;
+    outline: 1px solid rgb(255 255 255 / 0.08);
+    outline-offset: -1px;
+}
+
+.theme-light .dl-credits-person > img { outline-color: rgb(0 0 0 / 0.08); }
+
+.dl-credits-person .dl-row-text { min-inline-size: 0; }
+.dl-credits-person .dl-row-text > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dl-credits-foot {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
+    margin-block-start: 16px;
+    padding-block-start: 16px;
+    border-block-start: 1px solid var(--dl-border-divider);
 }
 
-.dl-swatch {
-    inline-size: 32px;
-    block-size: 32px;
-    padding: 0;
-    border-radius: 50%;
-    border: 2px solid var(--dl-border-control);
-    cursor: pointer;
-    transition: scale var(--dl-duration-base) ease-out;
-}
-
-.dl-swatch:active { scale: 0.92; }
-.dl-swatch[aria-checked="true"] { box-shadow: 0 0 0 2px var(--dl-bg-panel), 0 0 0 4px var(--dl-text-strong); }
-.dl-swatch:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 4px; }
-
-/* The level's own colour: a split swatch */
-.dl-swatch-default { background: conic-gradient(#c0c0c0 0 25%, #f0b232 0 50%, #43b581 0 75%, #9b59b6 0); }
-
-.dl-swatch-custom > input {
-    inline-size: 32px;
-    block-size: 32px;
-    padding: 0;
-    border: 2px solid var(--dl-border-control);
-    border-radius: 50%;
-    background: none;
-    cursor: pointer;
-}
-
-.dl-swatch-custom > input::-webkit-color-swatch-wrapper { padding: 0; }
-.dl-swatch-custom > input::-webkit-color-swatch { border: 0; border-radius: 50%; }
-
-.dl-credits { margin: 0; line-height: 1.6; text-wrap: pretty; }
+.dl-credits-foot > .dl-store-source { margin-inline-start: auto; }
+.dl-credits-heart { display: grid; color: #eb459e; }

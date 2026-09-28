@@ -34,12 +34,7 @@ export interface BadgesDocument {
 export interface BadgePrefs {
     order: (number | string)[];
     hidden: string[];
-    /** A supporter's own colour for their supporter badge, "#rrggbb"; missing keeps its level's */
-    color?: string;
 }
-
-/** A badge colour someone can pick: a plain #rrggbb */
-export const isBadgeColor = (v: unknown): v is string => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v);
 
 /** GET /v1/credits: supporters who chose to be named, longest supporting first */
 export interface CreditsDocument {
@@ -129,9 +124,7 @@ export function parseBadges(json: unknown): BadgesDocument | undefined {
             if (!clean.users[user] || !p || typeof p !== "object") continue;
             const order = Array.isArray(p.order) ? p.order.filter((v: unknown) => (typeof v === "number" && Number.isSafeInteger(v)) || (typeof v === "string" && isPluginId(v))).slice(0, 64) : [];
             const hidden = Array.isArray(p.hidden) ? p.hidden.filter((v: unknown): v is string => typeof v === "string" && isPluginId(v)).slice(0, 64) : [];
-            // A supporter's colour, only while they're supporting (the server drops it otherwise too)
-            const color = isBadgeColor(p.color) && clean.supporters[user] ? p.color.toLowerCase() : undefined;
-            if (order.length || hidden.length || color) clean.prefs[user] = { order, hidden, ...(color && { color }) };
+            if (order.length || hidden.length) clean.prefs[user] = { order, hidden };
         }
     }
     return clean;

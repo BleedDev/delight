@@ -1,8 +1,8 @@
 import { AddThemeResult, IPC, ThemeChange, ThemePayload, ThemeSaveResult } from "@shared/ipc";
 import { isEditorTheme, themeSlug } from "@shared/themeEditor";
-import { isThemeFile, MAX_THEME_BYTES, parseThemeMeta, themeFileName, whyNotCss } from "@shared/themes";
+import { isPlainThemeFileName, isThemeFile, MAX_THEME_BYTES, parseThemeMeta, themeFileName, whyNotCss } from "@shared/themes";
 import { ipcMain, webContents } from "electron";
-import { existsSync, FSWatcher, mkdirSync, readdirSync, readFileSync, renameSync, watch, writeFileSync } from "fs";
+import { existsSync, FSWatcher, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, watch, writeFileSync } from "fs";
 import { basename, join } from "path";
 
 import { downloadHttps } from "./download";
@@ -166,6 +166,27 @@ export function saveTheme(input: unknown): ThemeSaveResult {
     return { ok: true, file: target };
 }
 
+/** Deletes one theme file from the themes folder; store themes go through the store's uninstall */
+export function deleteTheme(file: unknown): { ok: true; } | { ok: false; error: string; } {
+    if (!isPlainThemeFileName(file)) return { ok: false, error: "That isn't a theme file name" };
+    const path = join(THEMES_DIR, file);
+    try {
+        if (!statSync(path).isFile()) return { ok: false, error: "That isn't a theme file" };
+    } catch {
+        return { ok: false, error: "That theme is already gone" };
+    }
+    if (storeThemeFiles().has(file)) return { ok: false, error: "That theme belongs to the store, uninstall it there" };
+    try {
+        rmSync(path);
+    } catch (err) {
+        return { ok: false, error: String((err as Error)?.message ?? err) };
+    }
+    // Don't wait for the watcher: broadcasts the removal like it would
+    reloadTheme(file);
+    console.log(`[Evi] Deleted theme ${file}`);
+    return { ok: true };
+}
+
 export function getThemePayloads() {
     return [...themes.values()];
 }
@@ -178,5 +199,6 @@ export function initThemes() {
     watchThemes();
 
     ipcMain.handle(IPC.THEME_ADD_URL, (_, url: string) => addThemeFromUrl(String(url)));
+    ipcMain.handle(IPC.THEME_DELETE, (_, file: unknown) => deleteTheme(file));
     ipcMain.handle(IPC.THEME_SAVE, (_, input: unknown) => saveTheme(input));
 }

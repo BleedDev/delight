@@ -33,6 +33,18 @@ export interface WallpaperPanels {
 export type WallpaperPanel = keyof WallpaperPanels;
 export const WALLPAPER_PANELS: readonly WallpaperPanel[] = ["frame", "sidebars", "chat", "input", "popouts"];
 
+/** The logged-out screen (login, register, switching accounts) */
+export interface WallpaperLogin {
+    /** Your wallpaper behind it instead of Discord's artwork, even while the in-app wallpaper is off */
+    show: boolean;
+    /** How solid the login box stays, in % */
+    boxOpacity: number;
+    /** Frosted-glass blur behind the login box, px */
+    blur: number;
+    /** Discord's illustrations are hidden */
+    hideArt: boolean;
+}
+
 export interface WallpaperSettings {
     enabled: boolean;
     /** File name inside <Evi data dir>/wallpaper, as main copied it there */
@@ -55,6 +67,7 @@ export interface WallpaperSettings {
     behindPopouts: boolean;
     tint: WallpaperTint;
     pauseOnBattery: boolean;
+    login: WallpaperLogin;
 }
 
 export const DIM_MIN = 0;
@@ -66,6 +79,9 @@ export const ZOOM_MIN = 100;
 export const ZOOM_MAX = 400;
 export const PANEL_MIN = 0;
 export const PANEL_MAX = 100;
+
+export const LOGIN_BLUR_MAX = 20;
+export const LOGIN_DEFAULTS: WallpaperLogin = { show: false, boxOpacity: 85, blur: 12, hideArt: true };
 
 export const PANEL_DEFAULTS: WallpaperPanels = { frame: 35, sidebars: 25, chat: 12, input: 50, popouts: 85 };
 
@@ -82,6 +98,7 @@ export const WALLPAPER_DEFAULTS: WallpaperSettings = {
     behindPopouts: false,
     tint: "theme",
     pauseOnBattery: true,
+    login: LOGIN_DEFAULTS,
 };
 
 const MIME: Record<string, { kind: WallpaperKind; mime: string; }> = {
@@ -119,6 +136,13 @@ export function normalizeWallpaper(raw: Partial<WallpaperSettings> | undefined):
     const fit = fitsFor(kind).includes(w.fit as WallpaperFit) ? w.fit as WallpaperFit : WALLPAPER_DEFAULTS.fit;
     const p = w.panels && typeof w.panels === "object" ? w.panels : {} as Partial<WallpaperPanels>;
     const panels = Object.fromEntries(WALLPAPER_PANELS.map(k => [k, clamp(p[k], PANEL_MIN, PANEL_MAX, PANEL_DEFAULTS[k])])) as unknown as WallpaperPanels;
+    const l = w.login && typeof w.login === "object" ? w.login : {} as Partial<WallpaperLogin>;
+    const login: WallpaperLogin = {
+        show: l.show === true,
+        boxOpacity: clamp(l.boxOpacity, PANEL_MIN, PANEL_MAX, LOGIN_DEFAULTS.boxOpacity),
+        blur: clamp(l.blur, 0, LOGIN_BLUR_MAX, LOGIN_DEFAULTS.blur),
+        hideArt: l.hideArt !== false,
+    };
     return {
         enabled: w.enabled === true,
         file,
@@ -134,6 +158,7 @@ export function normalizeWallpaper(raw: Partial<WallpaperSettings> | undefined):
         behindPopouts: w.behindPopouts === true,
         tint: w.tint === "neutral" ? "neutral" : "theme",
         pauseOnBattery: w.pauseOnBattery !== false,
+        login,
     };
 }
 
@@ -217,6 +242,29 @@ export const BASE_LAYER = '[class*="baseLayer_"]';
 export const SETTINGS_LAYER = '[class*="layers_"] > [class*="layer_"]:not([class*="baseLayer_"])';
 export const POPOUT_LAYER = '[class*="layerContainer_"]';
 
+/** The login box, and Discord's illustrations behind it. The box's class is on the logged-out screen only */
+export const LOGIN_BOX = '[class*="authBox_"]';
+export const LOGIN_ART = '[class*="characterBackground_"] > [class*="artwork_"]';
+/** True on the logged-out screen (login, register, account switching) */
+const ON_LOGIN = `html:has(${LOGIN_BOX})`;
+
+/** The login box over the wallpaper: translucent, with the backdrop blurred, and Discord's artwork out of the way */
+function loginCss(w: WallpaperSettings) {
+    const { boxOpacity, blur, hideArt } = w.login;
+    const box = `color-mix(in srgb, var(--modal-background, rgb(49 51 56)) ${boxOpacity}%, transparent)`;
+    return `
+html ${LOGIN_BOX} {
+    background: ${box} !important;
+    -webkit-backdrop-filter: ${blur ? `blur(${blur}px)` : "none"};
+    backdrop-filter: ${blur ? `blur(${blur}px)` : "none"};
+}
+${hideArt ? `
+html ${LOGIN_ART} {
+    display: none !important;
+}
+` : ""}`;
+}
+
 /** Discord's colours for each part of its window */
 const PANEL_VARS: Record<Exclude<WallpaperPanel, "popouts">, string[]> = {
     frame: ["--background-base-lowest", "--app-frame-background", "--background-tertiary", "--background-secondary-alt"],
@@ -263,30 +311,21 @@ function popoutVars(dark: boolean, w: WallpaperSettings) {
 const themed = (scope: string, theme: string) => `${scope}:is(${theme} *)${WIN},
 ${scope} ${theme}${WIN}`;
 
-/**
- * The stylesheet while a wallpaper shows: the layer's own look, and Discord's background colours
- * swapped for see-through tints (black on dark appearances, white on light) in the parts the user
- * chose, so the wallpaper shows through wherever Discord would paint them. Everything between the
- * page and the main window goes transparent; the layer sits under #app-mount.
- */
-export function buildWallpaperCss(settings: Partial<WallpaperSettings>) {
-    const w = normalizeWallpaper({ ...settings, file: undefined });
+/** What sits between the page and the main window (or the login screen), painted by Discord */
+const TRANSPARENT = [
+    "html", "body", "#app-mount",
+    '#app-mount [class*="appAsidePanelWrapper_"]',
+    '#app-mount [class*="notAppAsidePanel_"]',
+    '#app-mount :is([class^="app_"], [class*=" app_"])',
+    '#app-mount [class*="layers_"]',
+    '#app-mount [class*="layers_"] > [class*="bg_"]',
+    BASE_LAYER,
+];
+
+/** The wallpaper layer's own look: the picture, and the dim over it */
+function layerCss(w: WallpaperSettings) {
     const dim = w.dim / 100;
-    const scopes = [BASE_LAYER, ...w.behindSettings ? [SETTINGS_LAYER] : []];
-    const windows = (theme: string) => scopes.map(s => themed(s, theme)).join(",\n");
-    const popouts = (theme: string) => themed(POPOUT_LAYER, theme);
-
-    return `html, body, #app-mount,
-#app-mount [class*="appAsidePanelWrapper_"],
-#app-mount [class*="notAppAsidePanel_"],
-#app-mount :is([class^="app_"], [class*=" app_"]),
-#app-mount [class*="layers_"],
-#app-mount [class*="layers_"] > [class*="bg_"],
-${BASE_LAYER} {
-    background: transparent !important;
-}
-
-#${WALLPAPER_LAYER_ID} {
+    return `#${WALLPAPER_LAYER_ID} {
     position: fixed;
     inset: 0;
     z-index: -1;
@@ -309,7 +348,41 @@ html${LIGHT} #${WALLPAPER_LAYER_ID} {
 html${LIGHT} #${WALLPAPER_LAYER_ID} > .evi-wallpaper-dim {
     background: rgb(255 255 255 / ${dim});
 }
+`;
+}
 
+/**
+ * The stylesheet while a wallpaper shows: the layer's own look, and Discord's background colours
+ * swapped for see-through tints (black on dark appearances, white on light) in the parts the user
+ * chose, so the wallpaper shows through wherever Discord would paint them. Everything between the
+ * page and the main window goes transparent; the layer sits under #app-mount.
+ */
+export function buildWallpaperCss(settings: Partial<WallpaperSettings>, { inApp = true }: { inApp?: boolean; } = {}) {
+    const w = normalizeWallpaper({ ...settings, file: undefined });
+    const login = w.login.show && normalizeWallpaper(settings).file ? loginCss(w) : "";
+    // Only the login screen shows the wallpaper: the app itself keeps every colour it has
+    if (!inApp) return `${TRANSPARENT.map(s => s === "html" ? ON_LOGIN : `${ON_LOGIN} ${s}`).join(",\n")} {
+    background: transparent !important;
+}
+
+#${WALLPAPER_LAYER_ID} {
+    display: none;
+}
+
+${ON_LOGIN} #${WALLPAPER_LAYER_ID} {
+    display: block;
+}
+
+${layerCss(w)}${login}`;
+    const scopes = [BASE_LAYER, ...w.behindSettings ? [SETTINGS_LAYER] : []];
+    const windows = (theme: string) => scopes.map(s => themed(s, theme)).join(",\n");
+    const popouts = (theme: string) => themed(POPOUT_LAYER, theme);
+
+    return `${TRANSPARENT.join(", ")} {
+    background: transparent !important;
+}
+
+${layerCss(w)}
 ${w.tint === "theme" ? `html${WIN} {
 ${SAVED_VARS.map(v => `    ${saved(v)}: var(${v});`).join("\n")}
 }
@@ -340,5 +413,5 @@ ${popoutVars(false, w)}
 :is(${[...scopes, ...w.behindPopouts ? [POPOUT_LAYER] : []].join(", ")}) :is(${DARK}, ${LIGHT}, .custom-theme-background)${WIN} {
 ${GRADIENTS.map(g => `    ${g}: initial;`).join("\n")}
 }
-`;
+${login}`;
 }

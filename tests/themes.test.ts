@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseThemeMeta, themeFileName, whyNotCss } from "../src/shared/themes";
+import { isPlainThemeFileName, parseThemeMeta, themeFileName, whyNotCss } from "../src/shared/themes";
 
 describe("theme metadata", () => {
     test("reads a BetterDiscord header", () => {
@@ -77,5 +77,18 @@ body{}`;
             expect(Object.keys(meta.locales ?? {}).sort()).toEqual(["de", "es", "fr", "ja", "pl", "pt-BR", "ru", "tr"]);
             for (const l of Object.values(meta.locales!)) expect(l.name && l.description).toBeTruthy();
         }
+    });
+});
+
+describe("theme file names for deleting", () => {
+    test("accepts plain .css names", () => {
+        for (const file of ["midnight.css", "My Theme.CSS", "a-b_c.1.css"]) expect(isPlainThemeFileName(file)).toBe(true);
+    });
+
+    test("refuses anything that isn't a plain file name", () => {
+        for (const file of ["../x.css", "..\\x.css", "a/b.css", "a\\b.css", "..css", ".hidden.css", "x.css.evi-tmp", "x.txt", ".css", "", "C:x.css", "a\0b.css", " x.css"]) {
+            expect(isPlainThemeFileName(file)).toBe(false);
+        }
+        for (const file of [undefined, null, 5, {}, ["a.css"]]) expect(isPlainThemeFileName(file)).toBe(false);
     });
 });

@@ -36,6 +36,7 @@ export const IPC = {
     THEME_ADD_URL: "evi:theme-add-url",
     /** write a theme from the theme editor into the themes folder, see ThemeSaveInput */
     THEME_SAVE: "evi:theme-save",
+    THEME_DELETE: "evi:theme-delete",
     /** send a theme to evi.rest for review, as the account this install is linked to (shared/themeSubmissions.ts) */
     THEME_SUBMIT: "evi:theme-submit",
     /** report a store theme to Evi's team */
@@ -152,6 +153,8 @@ export interface PluginManifest {
     changelog?: { version: string; notes: string[]; }[];
     /** Name, description and changelog in other languages (shared/pluginLocales.ts), published to the store registry */
     locales?: PluginLocales;
+    /** A thank-you for people supporting Evi: the store lists it for everyone, only supporters can install it. Official plugins only */
+    supporters?: boolean;
     /** Oldest Evi the plugin works with, published to the store registry */
     minEviVersion?: string;
     /** Renderer entry, relative to the plugin folder. Defaults to index.js */

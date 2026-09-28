@@ -76,6 +76,13 @@ export const Themes = {
         return result;
     },
 
+    /** Deletes a theme file and turns it off; the list updates from main's change event */
+    async remove(file: string) {
+        const result = await Native.deleteTheme(file);
+        if (result.ok) Themes.setEnabled(file, false);
+        return result;
+    },
+
     getSnapshot: () => snapshot,
 
     subscribe(listener: () => void) {

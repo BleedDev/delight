@@ -58,7 +58,7 @@ export function AccountTab() {
     };
 
     return (
-        <>
+        <div className="dl-tab">
         <Section
             title={t("account.title")}
             description={t("account.description")}
@@ -115,6 +115,6 @@ export function AccountTab() {
         </Section>
         {/* Perks follow the account: evi.rest only takes them from a linked Evi */}
         {state.kind === "linked" && <SupporterPerks />}
-        </>
+        </div>
     );
 }

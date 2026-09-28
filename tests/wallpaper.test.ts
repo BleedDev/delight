@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-    BASE_LAYER, buildMediaCss, buildWallpaperCss, fitsFor, MAX_WALLPAPER_BYTES, NATURAL_WIDTH_VAR, normalizeWallpaper, PANEL_DEFAULTS, POPOUT_LAYER, SETTINGS_LAYER,
+    BASE_LAYER, buildMediaCss, LOGIN_ART, LOGIN_BOX, buildWallpaperCss, fitsFor, MAX_WALLPAPER_BYTES, NATURAL_WIDTH_VAR, normalizeWallpaper, PANEL_DEFAULTS, POPOUT_LAYER, SETTINGS_LAYER,
     WALLPAPER_DEFAULTS, WALLPAPER_EXTENSIONS, wallpaperKind, wallpaperMime,
 } from "../src/shared/wallpaper";
 
@@ -97,6 +97,45 @@ describe("the stylesheet", () => {
         expect(css).toContain(`${POPOUT_LAYER}:is(`);
         expect(css).toContain("--background-surface-high: rgb(0 0 0 / 0.7);");
         expect(css).toContain("--modal-background: rgb(0 0 0 / 0.7);");
+    });
+});
+
+describe("the login screen", () => {
+    test("is off by default, and old settings without it still load", () => {
+        expect(normalizeWallpaper(undefined).login).toEqual({ show: false, boxOpacity: 85, blur: 12, hideArt: true });
+        expect(normalizeWallpaper({ enabled: true, file: "a.png" }).login.show).toBe(false);
+        expect(normalizeWallpaper({ login: { show: true } } as any).login).toEqual({ show: true, boxOpacity: 85, blur: 12, hideArt: true });
+    });
+
+    test("clamps and ignores junk", () => {
+        expect(normalizeWallpaper({ login: { show: true, boxOpacity: 900, blur: -4, hideArt: false } } as any).login).toEqual({ show: true, boxOpacity: 100, blur: 0, hideArt: false });
+        expect(normalizeWallpaper({ login: { show: "yes", boxOpacity: "x", blur: NaN } } as any).login).toEqual({ show: false, boxOpacity: 85, blur: 12, hideArt: true });
+        expect(normalizeWallpaper({ login: 5 } as any).login.blur).toBe(12);
+    });
+
+    test("no login rules unless it's on and there's a file", () => {
+        expect(buildWallpaperCss({ file: "a.png" })).not.toContain("backdrop-filter");
+        expect(buildWallpaperCss({ login: { show: true } as any })).not.toContain("backdrop-filter");
+        expect(buildWallpaperCss({ file: "a.png", login: { show: false } as any }, { inApp: false })).not.toContain("backdrop-filter");
+    });
+
+    test("a translucent, blurred box, and Discord's artwork hidden", () => {
+        const css = buildWallpaperCss({ file: "a.png", login: { show: true, boxOpacity: 60, blur: 8, hideArt: true } });
+        expect(css).toContain(`html ${LOGIN_BOX} {`);
+        expect(css).toContain("var(--modal-background, rgb(49 51 56)) 60%, transparent)");
+        expect(css).toContain("backdrop-filter: blur(8px);");
+        expect(css).toContain(`html ${LOGIN_ART} {
+    display: none !important;`);
+        expect(buildWallpaperCss({ file: "a.png", login: { show: true, hideArt: false } as any })).not.toContain(LOGIN_ART);
+        expect(buildWallpaperCss({ file: "a.png", login: { show: true, blur: 0 } as any })).toContain("backdrop-filter: none;");
+    });
+
+    test("with the in-app wallpaper off, only the login screen goes see-through", () => {
+        const css = buildWallpaperCss({ file: "a.png", login: { show: true } as any }, { inApp: false });
+        expect(css).toContain("html:has([class*=\"authBox_\"]) body");
+        expect(css).toContain("#evi-wallpaper {\n    display: none;");
+        expect(css).not.toContain(BASE_LAYER + ":is(");
+        expect(css).not.toContain("--background-base-lower:");
     });
 });
 
