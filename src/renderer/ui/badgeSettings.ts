@@ -196,6 +196,18 @@ export function installBadgeSettings(ctx: PluginContext) {
         });
     };
 
+    // The profile save through Discord's request helper, where its screens still use it
+    ctx.waitFor(filters.byProps("get", "post", "put", "patch", "del"), (http: any) => {
+        ctx.hook.before(http, "patch", ({ args }) => {
+            const request = args[0];
+            if (!request || typeof request !== "object" || typeof request.url !== "string" || !request.url.endsWith(SETTINGS_URL)) return;
+            if (!request.body || typeof request.body !== "object") return;
+            const { body, prefs } = splitSettings(request.body);
+            args[0] = { ...request, body };
+            saveOurs(prefs);
+        });
+    });
+
     /**
      * The profile save, as it leaves the page: Discord's request helpers change, the request itself
      * doesn't. Ours come out of the JSON body (Discord refuses ids that aren't its numbers, and the
@@ -210,6 +222,8 @@ export function installBadgeSettings(ctx: PluginContext) {
             return;
         }
         if (!json || typeof json !== "object" || Array.isArray(json)) return;
+        // Already taken out on the way (the request helper below), or never ours
+        if (!body.includes(`"${EVI_PREFIX}`)) return;
         const split = splitSettings(json as Record<string, unknown>);
         saveOurs(split.prefs);
         return JSON.stringify(split.body);
