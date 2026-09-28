@@ -42,7 +42,7 @@ export const PATCHES = {
         find: "handleOpenSettingsContextMenu",
         replace: {
             match: /children:\[(?=\(0,\i\.jsx\)\(\i,\{accountContainerRef:)/,
-            with: "children:[$self?.renderButton?.(),",
+            with: "children:[$self?.renderButton?.(arguments[0]),",
         },
     },
 } satisfies Record<string, SourcePatch>;

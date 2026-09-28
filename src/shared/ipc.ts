@@ -90,6 +90,7 @@ export const IPC = {
     ACCOUNT_STATUS: "evi:account-status",
     ACCOUNT_LINK: "evi:account-link",
     ACCOUNT_DASHBOARD: "evi:account-dashboard",
+    ACCOUNT_SYNC_PROFILE: "evi:account-sync-profile",
     /** main -> renderer: download / install progress of a store operation */
     STORE_PROGRESS: "evi:store-progress",
     OPEN_PATH: "evi:open-path",

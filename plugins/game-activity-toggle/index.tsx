@@ -1,4 +1,4 @@
-import { Components, definePlugin, find, findStore, React } from "@evi/api";
+import { Components, definePlugin, filters, find, findStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
 import { t } from "./strings";
@@ -100,12 +100,34 @@ function GamepadIcon({ off }: { off: boolean; }) {
     );
 }
 
-function GameActivityButton() {
+interface IconProps { width?: number; height?: number; }
+
+/** Hidden: crossed out and red, like Discord's own mute and deafen icons */
+const GamepadOff = (_: IconProps) => <span className="dl-game-activity-off"><GamepadIcon off /></span>;
+const GamepadOn = (_: IconProps) => <GamepadIcon off={false} />;
+
+/** Discord's user panel button (the one mute and deafen use), handed over by waitFor */
+let PanelButton: React.ComponentType<any> | undefined;
+
+function GameActivityButton({ nameplate }: { nameplate?: unknown; }) {
     const { showButton } = context!.settings.use();
     const shown = useShown();
     if (!showButton) return null;
 
     const label = t(shown ? "button.hide" : "button.show");
+    if (PanelButton) {
+        return (
+            <PanelButton
+                tooltipText={label}
+                icon={shown ? GamepadOn : GamepadOff}
+                role="switch"
+                aria-checked={!shown}
+                redGlow={!shown}
+                plated={nameplate != null}
+                onClick={toggle}
+            />
+        );
+    }
     const button = (
         <button
             type="button"
@@ -134,10 +156,10 @@ export default definePlugin({
         }
     },
 
-    /** Called by the patched user panel, first in its button row */
-    renderButton() {
+    /** Called by the patched user panel, first in its button row, with the panel's props */
+    renderButton(props?: { nameplate?: unknown; }) {
         if (!context) return null;
-        return <GameActivityButton key="evi-game-activity" />;
+        return <GameActivityButton key="evi-game-activity" nameplate={props?.nameplate} />;
     },
 
     toggle,
@@ -152,13 +174,15 @@ export default definePlugin({
             color: var(--interactive-hover, var(--interactive-icon-hover)); }
         .dl-game-activity-button:active { background: var(--background-modifier-active, var(--interactive-background-active));
             color: var(--interactive-active, var(--interactive-icon-active)); }
-        .dl-game-activity-button[data-hidden] { color: var(--status-danger, #da373c); }
+        .dl-game-activity-button[data-hidden], .dl-game-activity-off { color: var(--status-danger, #da373c); }
+        .dl-game-activity-off { display: contents; }
         .dl-game-activity-button:focus-visible { outline: 2px solid var(--focus-primary, #5865f2); outline-offset: -2px; }
         @media (prefers-reduced-motion: reduce) { .dl-game-activity-button { transition: none; } }
     `,
 
     start(ctx) {
         context = ctx;
+        if (!PanelButton) ctx.waitFor(filters.byCode(".GREEN,positionKeyStemOverride:"), c => void (PanelButton = c as React.ComponentType<any>));
         ctx.onDispose(() => void (context = undefined));
 
         ctx.keybind("shortcut", () => void toggle());

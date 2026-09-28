@@ -201,7 +201,8 @@ async function reportHealth(input: unknown): Promise<HealthReportResult> {
     if ("error" in checked) return { ok: false, error: checked.error };
     if (!installedFromStore(checked.report.plugin, checked.report.version)) return { ok: false, error: NOT_FROM_STORE };
     try {
-        await apiRequest("POST", "/health/reports", { headers: { "Content-Type": "application/json" }, body: JSON.stringify(checked.report) });
+        // The version lets evi.rest set aside patch reports from Evis that counted optional patches (see health.ts there)
+        await apiRequest("POST", "/health/reports", { headers: { "Content-Type": "application/json", "X-Evi-Version": EVI_VERSION }, body: JSON.stringify(checked.report) });
         return { ok: true };
     } catch (err) {
         return { ok: false, error: (err as Error).message };

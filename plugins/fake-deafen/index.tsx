@@ -93,29 +93,46 @@ function subscribe(onChange: () => void) {
 
 const useEnabled = () => React.useSyncExternalStore(subscribe, () => enabled);
 
-function HeadphonesIcon({ on }: { on: boolean; }) {
+interface IconProps { width?: number; height?: number; }
+
+/** A ghost: you "appear" deafened. Its own shape, so it isn't mistaken for Discord's deafen button */
+const GHOST = "M12 2.5a8 8 0 0 0-8 8V21a.75.75 0 0 0 1.28.53L7.25 19.56l2.22 2.22a.75.75 0 0 0 1.06 0L12 20.31l1.47 1.47a.75.75 0 0 0 1.06 0l2.22-2.22 1.97 1.97A.75.75 0 0 0 20 21V10.5a8 8 0 0 0-8-8ZM9 9a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z";
+
+function GhostIcon({ width = 20, height = 20 }: IconProps) {
     return (
-        <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            {/* Crossed out: the slash gets a transparent gap around it, whatever the background */}
-            <mask id="dl-fake-deafen-slash">
-                <rect width="24" height="24" fill="white" />
-                <path d="M3 3 21 21" stroke="black" strokeWidth={5} />
-            </mask>
-            <path
-                mask={on ? "url(#dl-fake-deafen-slash)" : undefined}
-                d="M12 3a9 9 0 0 0-9 9v6.5A2.5 2.5 0 0 0 5.5 21H7a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5v-1a7 7 0 0 1 14 0v1h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h1.5a2.5 2.5 0 0 0 2.5-2.5V12a9 9 0 0 0-9-9Z"
-            />
-            {on && <path d="M3 3 21 21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeDasharray="3 2.2" />}
+        <svg width={width} height={height} viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" fillRule="evenodd" d={GHOST} />
         </svg>
     );
 }
 
-function FakeDeafenButton() {
+/** On: red like Discord's own deafen icon when you're deafened */
+function GhostIconOn(props: IconProps) {
+    return <span className="dl-fake-deafen-on"><GhostIcon {...props} /></span>;
+}
+
+/** Discord's user panel button (the one mute and deafen use), handed over by waitFor */
+let PanelButton: React.ComponentType<any> | undefined;
+
+function FakeDeafenButton({ nameplate }: { nameplate?: unknown; }) {
     const { showButton } = context!.settings.use();
     const on = useEnabled();
     if (!showButton) return null;
 
     const label = t(on ? "button.off" : "button.on");
+    if (PanelButton) {
+        return (
+            <PanelButton
+                tooltipText={label}
+                icon={on ? GhostIconOn : GhostIcon}
+                role="switch"
+                aria-checked={on}
+                redGlow={on}
+                plated={nameplate != null}
+                onClick={toggle}
+            />
+        );
+    }
     const button = (
         <button
             type="button"
@@ -125,7 +142,7 @@ function FakeDeafenButton() {
             aria-label={label}
             aria-pressed={on}
         >
-            <HeadphonesIcon on={on} />
+            <GhostIcon />
         </button>
     );
     const Tooltip = Components.Tooltip;
@@ -142,10 +159,10 @@ export default definePlugin({
         if (value && typeof (value as any).forceUpdate === "function") committer = value as VoiceCommitter;
     },
 
-    /** Called by the patched user panel, right after the deafen button */
-    renderButton() {
+    /** Called by the patched user panel, right after the deafen button, with the panel's props */
+    renderButton(props?: { nameplate?: unknown; }) {
         if (!context) return null;
-        return <FakeDeafenButton key="evi-fake-deafen" />;
+        return <FakeDeafenButton key="evi-fake-deafen" nameplate={props?.nameplate} />;
     },
 
     toggle,
@@ -160,13 +177,15 @@ export default definePlugin({
             color: var(--interactive-hover, var(--interactive-icon-hover)); }
         .dl-fake-deafen-button:active { background: var(--background-modifier-active, var(--interactive-background-active));
             color: var(--interactive-active, var(--interactive-icon-active)); }
-        .dl-fake-deafen-button[data-on] { color: var(--status-danger, #da373c); }
+        .dl-fake-deafen-button[data-on], .dl-fake-deafen-on { color: var(--status-danger, #da373c); }
+        .dl-fake-deafen-on { display: contents; }
         .dl-fake-deafen-button:focus-visible { outline: 2px solid var(--focus-primary, #5865f2); outline-offset: -2px; }
         @media (prefers-reduced-motion: reduce) { .dl-fake-deafen-button { transition: none; } }
     `,
 
     start(ctx) {
         context = ctx;
+        if (!PanelButton) ctx.waitFor(filters.byCode(".GREEN,positionKeyStemOverride:"), c => void (PanelButton = c as React.ComponentType<any>));
 
         ctx.waitFor<{ getSocket(): GatewaySocket | undefined; }>(filters.byStoreName("GatewayConnectionStore"), store => {
             const found = store.getSocket?.();

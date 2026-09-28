@@ -61,7 +61,7 @@ describe("patches", () => {
 
     test("user panel: button goes right after deafen", () => {
         const out = apply(PATCHES.userPanel, SOURCES.userPanel);
-        expect(out).toContain('dismissTooltips:b}),S?.renderButton?.(),T()]})}');
+        expect(out).toContain('dismissTooltips:b}),S?.renderButton?.(arguments[0]),T()]})}');
         expect(() => new Function(out)).not.toThrow();
     });
 
@@ -69,7 +69,7 @@ describe("patches", () => {
         const both = apply(PATCHES.userPanel, apply(GAME_ACTIVITY_PATCHES.userPanel, SOURCES.userPanel, "G"));
         const reversed = apply(GAME_ACTIVITY_PATCHES.userPanel, apply(PATCHES.userPanel, SOURCES.userPanel), "G");
         expect(both).toBe(reversed);
-        expect(both).toContain("children:[G?.renderButton?.(),(0,i.jsx)(ls,");
-        expect(both).toContain("dismissTooltips:b}),S?.renderButton?.(),T()]");
+        expect(both).toContain("children:[G?.renderButton?.(arguments[0]),(0,i.jsx)(ls,");
+        expect(both).toContain("dismissTooltips:b}),S?.renderButton?.(arguments[0]),T()]");
     });
 });

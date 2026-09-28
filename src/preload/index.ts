@@ -1,6 +1,6 @@
 import type { ImportMode } from "@shared/backup";
 import { AddThemeResult, AuthorsResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, CommunityResult, CrashReportResult, EviSettings, HealthReportResult, HealthResult, IPC, OpenPathTarget, PluginChange, PluginReportResult, PreviewMediaResult, SettingsSaveResult, ThemeChange, ThemeSaveInput, ThemeSaveResult, ThemeSubmitResult, WallpaperPickResult, WallpaperReadResult } from "@shared/ipc";
-import type { AccountLinkResult, AccountStatus } from "@shared/account";
+import type { AccountLinkResult, AccountStatus, AccountUser } from "@shared/account";
 import type { Breadcrumb, CrashRecord } from "@shared/crashDetective";
 import type { CrashReportInput } from "@shared/crashReports";
 import type { HealthReportInput } from "@shared/health";
@@ -67,6 +67,8 @@ const EviNative = {
     accountStatus: (): Promise<AccountStatus> => ipcRenderer.invoke(IPC.ACCOUNT_STATUS),
     linkAccount: (): Promise<AccountLinkResult> => ipcRenderer.invoke(IPC.ACCOUNT_LINK),
     openDashboard: (): Promise<void> => ipcRenderer.invoke(IPC.ACCOUNT_DASHBOARD),
+    /** Tells evi.rest the linked account's current Discord name and avatar; quietly does nothing when not linked */
+    syncProfile: (profile: AccountUser): Promise<void> => ipcRenderer.invoke(IPC.ACCOUNT_SYNC_PROFILE, profile),
     badgeAdminAvailable: (): Promise<boolean> => ipcRenderer.invoke(IPC.BADGES_ADMIN_AVAILABLE),
     badgeAdmin: (input: BadgeAdminAction): Promise<BadgeAdminResult> => ipcRenderer.invoke(IPC.BADGES_ADMIN, input),
     setBadgePrefs: (userId: string, prefs: Partial<BadgePrefs>): Promise<BadgePrefsResult> => ipcRenderer.invoke(IPC.BADGES_SET_PREFS, userId, prefs),

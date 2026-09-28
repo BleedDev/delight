@@ -54,7 +54,10 @@ export function diagnosePatches(): PatchDiagnosis[] {
 export function hasPatchProblems(plugin: string): boolean {
     const records = getPatchRecords(plugin);
     if (records.some(r => r.state === "failed" || r.state === "partial")) return true;
-    const pending = records.filter(r => r.state === "pending");
+    // An optional patch finding nothing isn't a problem: often its module is in a chunk Discord loads
+    // on demand (the image viewer), which isn't registered until it's first used. Once it loads, a
+    // patch that doesn't fit still shows up above as failed or partial.
+    const pending = records.filter(r => r.state === "pending" && !r.patch.optional);
     if (!pending.length) return false;
     const sources = moduleSources();
     return pending.some(r => !sources.some(([, src]) => matchesFind(src, r.patch.find)));

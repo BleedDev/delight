@@ -90,22 +90,24 @@ export function WishButton({ kind, id, name, large }: { kind: StoreKind; id: str
 
 interface Tile {
     id: string;
-    entry: { name: string; description: string; version: string; };
+    entry: { name: string; description: string; version: string; supporters?: boolean; };
 }
 
 function HomeTile({ kind, tile, onOpen, large }: { kind: StoreKind; tile: Tile; onOpen(id: string): void; large?: boolean; }) {
     const state = useStore(Store.subscribe, Store.getSnapshot);
     const installed = kind === "plugin" ? !!Store.installedPlugin(tile.id) : !!state.installedThemes[tile.id];
+    const rating = Store.rating(kind, tile.id);
     return (
-        <li className="dl-home-tile" data-size={large ? "lg" : undefined}>
+        <li className="dl-home-tile" data-size={large ? "lg" : undefined} data-supporters={tile.entry.supporters || undefined}>
             <button type="button" className="dl-home-tile-button" onClick={() => onOpen(tile.id)}>
                 <span className="dl-store-glyph" aria-hidden="true">{tile.entry.name.charAt(0)}</span>
                 <span className="dl-home-tile-text">
-                    <Text tag="span" variant="text-sm/semibold" color="text-strong" className="dl-home-tile-name">{tile.entry.name}</Text>
-                    <span className="dl-home-tile-meta">
-                        <RatingMini rating={Store.rating(kind, tile.id)} />
-                        {installed && <Status tone="success" quiet>{t("store.installed")}</Status>}
+                    <span className="dl-home-tile-title">
+                        <Text tag="span" variant="text-sm/semibold" color="text-strong" className="dl-home-tile-name">{tile.entry.name}</Text>
+                        {/* Installed: a check by the name, rather than a line of its own */}
+                        {installed && <span className="dl-home-tile-installed" role="img" aria-label={t("store.installed")} title={t("store.installed")}><Icon name="circleCheck" size={14} /></span>}
                     </span>
+                    {rating && rating.count > 0 && <span className="dl-home-tile-meta"><RatingMini rating={rating} /></span>}
                     {tile.entry.description && <Text tag="span" variant="text-xs/normal" color="text-subtle" className="dl-home-tile-desc">{tile.entry.description}</Text>}
                 </span>
             </button>
@@ -131,7 +133,7 @@ function HomeRow({ id, title, description, kind, tiles, onOpen, hero }: { id: st
 
 /**
  * The store's front page, above everything else when you haven't searched or filtered: staff picks,
- * what's trending, what's new this week, and Evi's collections. Only this store's kind of items.
+ * what's trending and Evi's collections. Only this store's kind of items.
  */
 export function StoreHome({ kind, onOpen }: { kind: StoreKind; onOpen(id: string): void; }) {
     const state = useStore(Store.subscribe, Store.getSnapshot);
@@ -149,7 +151,6 @@ export function StoreHome({ kind, onOpen }: { kind: StoreKind; onOpen(id: string
     const rows = [
         picks && <HomeRow key="picks" id="picks" hero title={picks.title || t("community.staffPicks")} description={picks.description} kind={kind} tiles={tiles(picks.items, 4)} onOpen={onOpen} />,
         <HomeRow key="trending" id="trending" title={t("community.trending")} kind={kind} tiles={tiles(home.trending)} onOpen={onOpen} />,
-        <HomeRow key="new" id="new" title={t("community.newThisWeek")} kind={kind} tiles={tiles(home.fresh)} onOpen={onOpen} />,
         ...home.collections.filter(c => c.id !== STAFF_PICKS).map(c => (
             <HomeRow key={c.id} id={c.id} title={c.title} description={c.description} kind={kind} tiles={tiles(c.items)} onOpen={onOpen} />
         )),

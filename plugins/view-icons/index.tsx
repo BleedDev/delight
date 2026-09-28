@@ -35,6 +35,9 @@ const PATCHES = {
     viewer: {
         find: ".SAVE_MEDIA_PRESSED)",
         group: true,
+        // The viewer is in a chunk Discord loads when it first opens: until then nothing matches, and
+        // that isn't broken. If it doesn't fit once loaded, it still counts as failed.
+        optional: true,
         replace: [
             {
                 match: /function (\i)\((\i)\)\{let\{tooltipText:\i,\.\.\.\i\}=\2;/,

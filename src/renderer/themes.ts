@@ -35,6 +35,8 @@ function onChange(change: ThemeChange) {
 export const Themes = {
     init(initial: ThemePayload[] = []) {
         for (const theme of initial) themes.set(theme.file, theme);
+        // One theme at a time: from before that rule, the one turned on last stays
+        if (Settings.data.enabledThemes.length > 1) Settings.update(d => void (d.enabledThemes = d.enabledThemes.slice(-1)));
         // Before Quick CSS is created, so enabled themes land ahead of it with no unstyled frame
         Themes.apply();
         notify();
@@ -60,10 +62,10 @@ export const Themes = {
         }
     },
 
+    /** One theme at a time: turning one on turns the others off */
     setEnabled(file: string, enabled: boolean) {
         Settings.update(d => {
-            const rest = d.enabledThemes.filter(f => f !== file);
-            d.enabledThemes = enabled ? [...rest, file] : rest;
+            d.enabledThemes = enabled ? [file] : d.enabledThemes.filter(f => f !== file);
         });
         Themes.apply();
         notify();

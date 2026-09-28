@@ -2,7 +2,7 @@
     "id": "emoji-stealer",
     "name": "Emoji Stealer",
     "description": "Right-click a custom emoji, reaction or sticker to add it to one of your servers, with a name check and the slots each server has left. Also copies emoji links and IDs.",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "authors": [
         "Evi"
     ],
@@ -17,6 +17,12 @@
         ]
     },
     "changelog": [
+        {
+            "version": "1.1.1",
+            "notes": [
+                "If Discord moves its emoji and sticker creators again, the fallback now really uploads instead of quietly doing nothing."
+            ]
+        },
         {
             "version": "1.1.0",
             "notes": [
@@ -48,6 +54,9 @@
             "name": "Emoji Stealer",
             "description": "Klicke ein benutzerdefiniertes Emoji, eine Reaktion oder einen Sticker mit der rechten Maustaste an, um es zu einem deiner Server hinzuzufügen, mit Namensprüfung und den freien Plätzen jedes Servers. Kopiert auch Emoji-Links und IDs.",
             "changelog": {
+                "1.1.1": [
+                    "Falls Discord seine Emoji- und Sticker-Funktionen wieder verschiebt, lädt der Ersatzweg jetzt wirklich hoch, statt still nichts zu tun."
+                ],
                 "1.1.0": [
                     "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
                 ],
@@ -66,6 +75,9 @@
             "name": "Emoji Stealer",
             "description": "Haz clic derecho en un emoji personalizado, una reacción o un sticker para añadirlo a uno de tus servidores, con comprobación del nombre y los espacios que le quedan a cada servidor. También copia enlaces e ID de emojis.",
             "changelog": {
+                "1.1.1": [
+                    "Si Discord vuelve a mover sus creadores de emojis y stickers, la alternativa ahora sí los sube en vez de no hacer nada."
+                ],
                 "1.1.0": [
                     "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
                 ],
@@ -84,6 +96,9 @@
             "name": "Emoji Stealer",
             "description": "Fais un clic droit sur un émoji personnalisé, une réaction ou un sticker pour l'ajouter à l'un de tes serveurs, avec vérification du nom et des emplacements restants sur chaque serveur. Copie aussi les liens et les ID d'émojis.",
             "changelog": {
+                "1.1.1": [
+                    "Si Discord déplace encore ses créateurs d’emojis et d’autocollants, la solution de secours les envoie vraiment au lieu de ne rien faire."
+                ],
                 "1.1.0": [
                     "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
                 ],
@@ -102,6 +117,9 @@
             "name": "Emoji Stealer",
             "description": "カスタム絵文字、リアクション、ステッカーを右クリックして、自分のサーバーに追加できます。名前のチェックと、各サーバーの空き枠の表示つき。絵文字のリンクやIDのコピーにも対応しています。",
             "changelog": {
+                "1.1.1": [
+                    "Discord が絵文字とスタンプの作成機能を再び移動しても、代替手段で何もせずに終わることなく、実際にアップロードされるようになりました。"
+                ],
                 "1.1.0": [
                     "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
                 ],
@@ -120,6 +138,9 @@
             "name": "Emoji Stealer",
             "description": "Kliknij prawym przyciskiem myszy niestandardowe emoji, reakcję lub naklejkę, aby dodać je do jednego ze swoich serwerów, ze sprawdzaniem nazwy i liczbą wolnych miejsc na każdym serwerze. Kopiuje też linki i ID emoji.",
             "changelog": {
+                "1.1.1": [
+                    "Jeśli Discord znów przeniesie tworzenie emoji i naklejek, zapasowa ścieżka naprawdę je wyśle, zamiast po cichu nic nie robić."
+                ],
                 "1.1.0": [
                     "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
                 ],
@@ -138,6 +159,9 @@
             "name": "Emoji Stealer",
             "description": "Clique com o botão direito em um emoji personalizado, reação ou figurinha para adicioná-lo a um dos seus servidores, com verificação de nome e as vagas que cada servidor ainda tem. Também copia links e IDs de emojis.",
             "changelog": {
+                "1.1.1": [
+                    "Se o Discord mudar de novo onde cria emojis e figurinhas, o caminho alternativo agora envia de verdade em vez de não fazer nada."
+                ],
                 "1.1.0": [
                     "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
                 ],
@@ -156,6 +180,9 @@
             "name": "Emoji Stealer",
             "description": "Нажмите правой кнопкой мыши на кастомное эмодзи, реакцию или стикер, чтобы добавить их на один из ваших серверов, с проверкой названия и количества свободных слотов на каждом сервере. Также копирует ссылки и ID эмодзи.",
             "changelog": {
+                "1.1.1": [
+                    "Если Discord снова перенесёт создание эмодзи и стикеров, запасной путь теперь действительно загрузит их, а не молча ничего не сделает."
+                ],
                 "1.1.0": [
                     "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
                 ],
@@ -174,6 +201,9 @@
             "name": "Emoji Stealer",
             "description": "Özel bir emojiye, tepkiye veya çıkartmaya sağ tıklayıp sunucularından birine ekle; ad denetimi ve her sunucuda kalan yuvalarla birlikte. Emoji bağlantılarını ve kimliklerini de kopyalar.",
             "changelog": {
+                "1.1.1": [
+                    "Discord emoji ve çıkartma oluşturucularını yine taşırsa, yedek yol artık sessizce hiçbir şey yapmamak yerine gerçekten yüklüyor."
+                ],
                 "1.1.0": [
                     "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
                 ],

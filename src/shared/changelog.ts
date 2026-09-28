@@ -35,6 +35,27 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.2.0",
+        date: "2026-09-29",
+        sections: {
+            added: [
+                "**Supporter plugins stand out.** They're gold in the store, and their page thanks you, or shows how to become a supporter.",
+            ],
+            improved: [
+                "**One theme at a time.** Turning a theme on turns the others off, so they don't fight over colours.",
+                "**Profiles stay current.** Change your Discord name or avatar and evi.rest, the credits and author pages follow on their own.",
+                "**Buttons that look like Discord's.** Fake Deafen and Game Activity Toggle use Discord's own panel buttons, and Fake Deafen has a ghost so it isn't mistaken for deafen.",
+                "**A calmer store front page.** New this week is gone, and installed plugins get a check by their name.",
+            ],
+            fixed: [
+                "**Voice Chat Utilities really works.** It said it moved, muted or disconnected people, but its requests never reached Discord.",
+                "**No more false \"broken\" labels.** View Icons was marked broken because part of it waits for the image viewer to open.",
+                "**Video Controls+ works in chat.** Its controls show on videos in chat, not only in fullscreen.",
+                "**Plugins don't restyle each other.** Link Safety's styles were leaking into Last Seen's settings.",
+            ],
+        },
+    },
+    {
         version: "1.1.2",
         date: "2026-09-29",
         sections: {

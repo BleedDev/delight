@@ -11,6 +11,23 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.2.0": {
+            added: [
+                "**Unterstützer-Plugins fallen auf.** Sie sind im Store golden, und ihre Seite bedankt sich bei dir oder zeigt, wie du Unterstützer wirst.",
+            ],
+            improved: [
+                "**Ein Design auf einmal.** Schaltest du ein Design ein, gehen die anderen aus, damit sie sich nicht um Farben streiten.",
+                "**Profile bleiben aktuell.** Änderst du deinen Discord-Namen oder dein Avatar, ziehen evi.rest, die Credits und Autorenseiten von selbst nach.",
+                "**Buttons wie bei Discord.** Fake Deafen und Game Activity Toggle nutzen Discords eigene Buttons, und Fake Deafen hat einen Geist, damit man ihn nicht mit Ton aus verwechselt.",
+                "**Eine ruhigere Store-Startseite.** Neu diese Woche ist weg, und installierte Plugins haben einen Haken neben dem Namen.",
+            ],
+            fixed: [
+                "**Voice Chat Utilities funktioniert wirklich.** Es meldete, Leute verschoben, stummgeschaltet oder getrennt zu haben, aber seine Anfragen kamen nie bei Discord an.",
+                "**Keine falschen „kaputt“-Hinweise mehr.** View Icons galt als kaputt, weil ein Teil davon auf den Bildbetrachter wartet.",
+                "**Video Controls+ funktioniert im Chat.** Die Steuerung erscheint bei Videos im Chat, nicht nur im Vollbild.",
+                "**Plugins stylen sich nicht mehr gegenseitig.** Die Stile von Link Safety wirkten sich auf die Einstellungen von Last Seen aus.",
+            ],
+        },
         "1.1.2": {
             added: [
                 "**Plugins im Chat teilen.** Kopiere den Link eines Plugins auf seiner Store-Seite und füge ihn in einen Discord-Chat ein. Alle mit Evi bekommen eine Karte, um es direkt dort zu installieren.",
@@ -221,6 +238,23 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.2.0": {
+            added: [
+                "**Los plugins para quienes apoyan destacan.** Son dorados en la tienda, y su página te da las gracias o te muestra cómo apoyar.",
+            ],
+            improved: [
+                "**Un tema a la vez.** Al activar un tema se desactivan los demás, así no se pelean por los colores.",
+                "**Los perfiles se mantienen al día.** Cambia tu nombre o avatar de Discord y evi.rest, los créditos y las páginas de autor se actualizan solos.",
+                "**Botones como los de Discord.** Fake Deafen y Game Activity Toggle usan los botones propios de Discord, y Fake Deafen tiene un fantasma para no confundirlo con ensordecer.",
+                "**Una portada de la tienda más tranquila.** Ya no está Novedades de la semana, y los plugins instalados llevan una marca junto al nombre.",
+            ],
+            fixed: [
+                "**Voice Chat Utilities funciona de verdad.** Decía que movía, silenciaba o desconectaba a la gente, pero sus peticiones nunca llegaban a Discord.",
+                "**Se acabaron los avisos falsos de «roto».** View Icons aparecía roto porque una parte espera a que se abra el visor de imágenes.",
+                "**Video Controls+ funciona en el chat.** Sus controles aparecen en los vídeos del chat, no solo en pantalla completa.",
+                "**Los plugins ya no se cambian el estilo entre sí.** Los estilos de Link Safety se colaban en los ajustes de Last Seen.",
+            ],
+        },
         "1.1.2": {
             added: [
                 "**Comparte plugins en el chat.** Copia el enlace de un plugin desde su página en la tienda y pégalo en cualquier chat de Discord. Quien tenga Evi verá una tarjeta para instalarlo ahí mismo.",
@@ -431,6 +465,23 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.2.0": {
+            added: [
+                "**Les plugins pour les soutiens se démarquent.** Ils sont dorés dans la boutique, et leur page te remercie ou te montre comment devenir soutien.",
+            ],
+            improved: [
+                "**Un thème à la fois.** Activer un thème désactive les autres, pour qu’ils ne se disputent plus les couleurs.",
+                "**Les profils restent à jour.** Change ton nom ou ton avatar Discord et evi.rest, les crédits et les pages d’auteur suivent tout seuls.",
+                "**Des boutons comme ceux de Discord.** Fake Deafen et Game Activity Toggle utilisent les boutons de Discord, et Fake Deafen a un fantôme pour ne pas le confondre avec sourdine.",
+                "**Une page d’accueil de la boutique plus calme.** Nouveautés de la semaine a disparu, et les plugins installés ont une coche à côté de leur nom.",
+            ],
+            fixed: [
+                "**Voice Chat Utilities marche vraiment.** Il disait avoir déplacé, rendu muets ou déconnecté les gens, mais ses requêtes n’arrivaient jamais à Discord.",
+                "**Fini les fausses alertes « cassé ».** View Icons était marqué cassé car une partie attend l’ouverture de la visionneuse d’images.",
+                "**Video Controls+ marche dans le chat.** Ses contrôles s’affichent sur les vidéos du chat, pas seulement en plein écran.",
+                "**Les plugins ne se restylent plus entre eux.** Les styles de Link Safety débordaient sur les paramètres de Last Seen.",
+            ],
+        },
         "1.1.2": {
             added: [
                 "**Partage des plugins dans le chat.** Copie le lien d’un plugin depuis sa page dans la boutique et colle-le dans n’importe quel chat Discord. Tous ceux qui ont Evi voient une carte pour l’installer sur place.",
@@ -641,6 +692,23 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.2.0": {
+            added: [
+                "**サポーター向けプラグインが目立つように。** ストアでは金色で表示され、ページではお礼か、サポーターになる方法が表示されます。",
+            ],
+            improved: [
+                "**テーマは一度にひとつ。** テーマをオンにすると他はオフになり、色がぶつかりません。",
+                "**プロフィールが常に最新に。** Discord の名前やアバターを変えると、evi.rest、クレジット、作者ページも自動で更新されます。",
+                "**Discord と同じボタン。** Fake Deafen と Game Activity Toggle は Discord 本来のボタンを使い、Fake Deafen はスピーカーミュートと間違えないようおばけのアイコンになりました。",
+                "**すっきりしたストアのトップページ。** 「今週の新着」をなくし、インストール済みのプラグインは名前の横にチェックが付きます。",
+            ],
+            fixed: [
+                "**Voice Chat Utilities が本当に動作するように。** 移動・ミュート・切断したと表示されていましたが、リクエストが Discord に届いていませんでした。",
+                "**誤った「壊れています」表示がなくなりました。** View Icons は、一部が画像ビューアを開くまで待つため壊れていると判定されていました。",
+                "**Video Controls+ がチャットで動作。** 全画面だけでなく、チャットの動画にもコントロールが表示されます。",
+                "**プラグイン同士でスタイルが干渉しなくなりました。** Link Safety のスタイルが Last Seen の設定画面に影響していました。",
+            ],
+        },
         "1.1.2": {
             added: [
                 "**チャットでプラグインを共有。** ストアのページでプラグインのリンクをコピーして、Discordのチャットに貼るだけ。Eviを使っている人にはその場でインストールできるカードが表示されます。",
@@ -851,6 +919,23 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.2.0": {
+            added: [
+                "**Pluginy dla wspierających się wyróżniają.** W sklepie są złote, a ich strona dziękuje ci albo pokazuje, jak zostać wspierającym.",
+            ],
+            improved: [
+                "**Jeden motyw naraz.** Włączenie motywu wyłącza pozostałe, żeby nie walczyły o kolory.",
+                "**Profile są aktualne.** Zmień nazwę lub awatar na Discordzie, a evi.rest, podziękowania i strony autorów zaktualizują się same.",
+                "**Przyciski jak w Discordzie.** Fake Deafen i Game Activity Toggle używają przycisków Discorda, a Fake Deafen ma ducha, żeby nie mylić go z wyciszeniem.",
+                "**Spokojniejsza strona główna sklepu.** Nie ma już sekcji Nowe w tym tygodniu, a zainstalowane pluginy mają znaczek obok nazwy.",
+            ],
+            fixed: [
+                "**Voice Chat Utilities naprawdę działa.** Zgłaszał, że przeniósł, wyciszył lub rozłączył ludzi, ale jego żądania nigdy nie docierały do Discorda.",
+                "**Koniec fałszywych oznaczeń „zepsuty”.** View Icons był oznaczony jako zepsuty, bo część czeka na otwarcie przeglądarki obrazów.",
+                "**Video Controls+ działa na czacie.** Sterowanie pojawia się na filmach na czacie, nie tylko na pełnym ekranie.",
+                "**Pluginy nie zmieniają już sobie nawzajem wyglądu.** Style Link Safety przenikały do ustawień Last Seen.",
+            ],
+        },
         "1.1.2": {
             added: [
                 "**Udostępniaj pluginy na czacie.** Skopiuj link pluginu z jego strony w sklepie i wklej go na dowolnym czacie Discorda. Każdy z Evi zobaczy kartę, żeby od razu go zainstalować.",
@@ -1061,6 +1146,23 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.2.0": {
+            added: [
+                "**Plugins para apoiadores se destacam.** Eles são dourados na loja, e a página agradece ou mostra como virar apoiador.",
+            ],
+            improved: [
+                "**Um tema por vez.** Ligar um tema desliga os outros, para não brigarem pelas cores.",
+                "**Perfis sempre atualizados.** Mude seu nome ou avatar no Discord e o evi.rest, os créditos e as páginas de autor acompanham sozinhos.",
+                "**Botões como os do Discord.** Fake Deafen e Game Activity Toggle usam os botões do próprio Discord, e o Fake Deafen tem um fantasma para não confundir com ensurdecer.",
+                "**Uma página inicial da loja mais tranquila.** Novidades da semana saiu, e plugins instalados ganham um visto ao lado do nome.",
+            ],
+            fixed: [
+                "**Voice Chat Utilities funciona de verdade.** Dizia que tinha movido, silenciado ou desconectado as pessoas, mas as requisições nunca chegavam ao Discord.",
+                "**Chega de avisos falsos de “quebrado”.** O View Icons aparecia quebrado porque uma parte espera o visualizador de imagens abrir.",
+                "**Video Controls+ funciona no chat.** Os controles aparecem nos vídeos do chat, não só em tela cheia.",
+                "**Plugins não mudam mais o estilo um do outro.** Os estilos do Link Safety vazavam para as configurações do Last Seen.",
+            ],
+        },
         "1.1.2": {
             added: [
                 "**Compartilhe plugins no chat.** Copie o link de um plugin na página dele na loja e cole em qualquer chat do Discord. Quem tem Evi vê um cartão para instalar ali mesmo.",
@@ -1271,6 +1373,23 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.2.0": {
+            added: [
+                "**Плагины для спонсоров выделяются.** В магазине они золотые, а их страница благодарит вас или показывает, как стать спонсором.",
+            ],
+            improved: [
+                "**Одна тема за раз.** Включение темы выключает остальные, чтобы они не спорили за цвета.",
+                "**Профили всегда актуальны.** Смените имя или аватар в Discord — evi.rest, титры и страницы авторов обновятся сами.",
+                "**Кнопки как в Discord.** Fake Deafen и Game Activity Toggle используют кнопки самого Discord, а у Fake Deafen призрак, чтобы не путать с отключением звука.",
+                "**Спокойная главная страница магазина.** Раздела «Новое за неделю» больше нет, а у установленных плагинов галочка рядом с названием.",
+            ],
+            fixed: [
+                "**Voice Chat Utilities действительно работает.** Он сообщал, что переместил, заглушил или отключил людей, но его запросы не доходили до Discord.",
+                "**Больше никаких ложных пометок «сломан».** View Icons считался сломанным, потому что часть его ждёт открытия просмотра изображений.",
+                "**Video Controls+ работает в чате.** Управление появляется на видео в чате, а не только в полноэкранном режиме.",
+                "**Плагины больше не меняют стили друг друга.** Стили Link Safety проникали в настройки Last Seen.",
+            ],
+        },
         "1.1.2": {
             added: [
                 "**Делитесь плагинами в чате.** Скопируйте ссылку на плагин на его странице в магазине и вставьте в любой чат Discord. У всех, у кого есть Evi, появится карточка, чтобы установить его прямо там.",
@@ -1481,6 +1600,23 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.2.0": {
+            added: [
+                "**Destekçi eklentileri öne çıkıyor.** Mağazada altın renginde görünüyorlar, sayfaları sana teşekkür ediyor ya da nasıl destekçi olacağını gösteriyor.",
+            ],
+            improved: [
+                "**Aynı anda tek tema.** Bir temayı açmak diğerlerini kapatır, böylece renkler için çekişmezler.",
+                "**Profiller hep güncel.** Discord adını veya avatarını değiştir, evi.rest, jenerik ve yazar sayfaları kendiliğinden takip eder.",
+                "**Discord'unkiler gibi düğmeler.** Fake Deafen ve Game Activity Toggle Discord'un kendi düğmelerini kullanıyor; Fake Deafen ses kapatmayla karışmasın diye hayalet simgeli.",
+                "**Daha sade bir mağaza ana sayfası.** Bu haftanın yenileri kaldırıldı, yüklü eklentilerin adının yanında bir onay işareti var.",
+            ],
+            fixed: [
+                "**Voice Chat Utilities gerçekten çalışıyor.** İnsanları taşıdığını, susturduğunu veya bağlantılarını kestiğini söylüyordu ama istekleri Discord'a hiç ulaşmıyordu.",
+                "**Artık sahte \"bozuk\" etiketleri yok.** View Icons, bir kısmı resim görüntüleyicinin açılmasını beklediği için bozuk görünüyordu.",
+                "**Video Controls+ sohbette çalışıyor.** Kontroller yalnızca tam ekranda değil, sohbetteki videolarda da görünüyor.",
+                "**Eklentiler artık birbirinin stilini bozmuyor.** Link Safety'nin stilleri Last Seen'in ayarlarına taşıyordu.",
+            ],
+        },
         "1.1.2": {
             added: [
                 "**Eklentileri sohbette paylaş.** Bir eklentinin bağlantısını mağaza sayfasından kopyala ve herhangi bir Discord sohbetine yapıştır. Evi kullanan herkes onu orada yükleyebileceği bir kart görür.",

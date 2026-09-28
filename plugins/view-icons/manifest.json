@@ -2,7 +2,7 @@
     "id": "view-icons",
     "name": "View Icons",
     "description": "Download avatars and banners from someone's profile. Click their avatar or banner to open it full size, then Download sits next to zoom.",
-    "version": "2.1.0",
+    "version": "2.1.1",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
         "utility"
     ],
     "changelog": [
+        {
+            "version": "2.1.1",
+            "notes": [
+                "No longer shows as broken after a Discord update when it works: the image viewer loads only when you first open it, and that was counted as a problem."
+            ]
+        },
         {
             "version": "2.1.0",
             "notes": [
@@ -45,6 +51,9 @@
             "name": "Profilbilder ansehen",
             "description": "Lade Avatare und Banner aus dem Profil anderer herunter. Klicke auf einen Avatar oder ein Banner, um es in voller Größe zu öffnen, und neben dem Zoom findest du „Herunterladen“.",
             "changelog": {
+                "2.1.1": [
+                    "Wird nach einem Discord-Update nicht mehr als defekt angezeigt, obwohl es funktioniert: Der Bildbetrachter lädt erst, wenn du ihn zum ersten Mal öffnest, und das wurde als Problem gezählt."
+                ],
                 "2.1.0": [
                     "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
                 ],
@@ -62,6 +71,9 @@
             "name": "Ver iconos",
             "description": "Descarga avatares y banners del perfil de cualquier persona. Haz clic en su avatar o banner para abrirlo a tamaño completo y verás Descargar junto al zoom.",
             "changelog": {
+                "2.1.1": [
+                    "Ya no aparece como roto tras una actualización de Discord cuando funciona: el visor de imágenes se carga solo al abrirlo por primera vez, y eso contaba como un problema."
+                ],
                 "2.1.0": [
                     "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
                 ],
@@ -79,6 +91,9 @@
             "name": "Voir les icônes",
             "description": "Télécharge les avatars et les bannières du profil de quelqu'un. Clique sur son avatar ou sa bannière pour l'ouvrir en taille réelle, et Télécharger apparaît à côté du zoom.",
             "changelog": {
+                "2.1.1": [
+                    "N’apparaît plus comme cassé après une mise à jour de Discord alors qu’il marche : la visionneuse d’images ne se charge qu’à sa première ouverture, et ça comptait comme un problème."
+                ],
                 "2.1.0": [
                     "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
                 ],
@@ -96,6 +111,9 @@
             "name": "アイコンを表示",
             "description": "相手のプロフィールからアバターやバナーをダウンロードできます。アバターやバナーをクリックして原寸で開くと、ズームの隣にダウンロードが表示されます。",
             "changelog": {
+                "2.1.1": [
+                    "動作しているのに、Discord のアップデート後に不具合ありと表示されることがなくなりました。画像ビューアーは最初に開いたときに読み込まれるため、それが問題として数えられていました。"
+                ],
                 "2.1.0": [
                     "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
                 ],
@@ -113,6 +131,9 @@
             "name": "Podgląd ikon",
             "description": "Pobieraj awatary i banery z profilu innych osób. Kliknij awatar lub baner, aby otworzyć go w pełnym rozmiarze, a obok powiększenia znajdziesz przycisk Pobierz.",
             "changelog": {
+                "2.1.1": [
+                    "Nie jest już oznaczany jako zepsuty po aktualizacji Discorda, gdy działa: przeglądarka obrazów ładuje się dopiero przy pierwszym otwarciu, a to liczyło się jako problem."
+                ],
                 "2.1.0": [
                     "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
                 ],
@@ -130,6 +151,9 @@
             "name": "Ver ícones",
             "description": "Baixe avatares e banners do perfil de qualquer pessoa. Clique no avatar ou no banner para abrir em tamanho real e o botão Baixar aparece ao lado do zoom.",
             "changelog": {
+                "2.1.1": [
+                    "Não aparece mais como quebrado depois de uma atualização do Discord quando está funcionando: o visualizador de imagens só carrega quando você o abre pela primeira vez, e isso contava como problema."
+                ],
                 "2.1.0": [
                     "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
                 ],
@@ -147,6 +171,9 @@
             "name": "Просмотр значков",
             "description": "Скачивайте аватары и баннеры из чужих профилей. Щёлкните по аватару или баннеру, чтобы открыть его в полном размере, и рядом с увеличением появится кнопка «Скачать».",
             "changelog": {
+                "2.1.1": [
+                    "Больше не отмечается как сломанный после обновления Discord, когда он работает: просмотрщик изображений загружается только при первом открытии, и это считалось проблемой."
+                ],
                 "2.1.0": [
                     "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
                 ],
@@ -164,6 +191,9 @@
             "name": "Simgeleri Görüntüle",
             "description": "Birinin profilindeki avatarları ve banner'ları indir. Avatarına veya banner'ına tıklayıp tam boyutta aç, İndir düğmesi yakınlaştırmanın yanında olacak.",
             "changelog": {
+                "2.1.1": [
+                    "Çalıştığı hâlde Discord güncellemesinden sonra bozuk görünmüyor: resim görüntüleyici yalnızca ilk açtığında yükleniyor ve bu bir sorun olarak sayılıyordu."
+                ],
                 "2.1.0": [
                     "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
                 ],

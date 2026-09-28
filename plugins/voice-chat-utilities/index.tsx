@@ -1,4 +1,4 @@
-import { definePlugin, filters, find, getStore, Menu, openLayer, React } from "@evi/api";
+import { definePlugin, filters, find, findMenuGroup, getStore, Menu, openLayer, React } from "@evi/api";
 import type { CloseLayer, PluginContext } from "@evi/api";
 
 import { t } from "./strings";
@@ -23,7 +23,13 @@ let context: PluginContext | undefined;
 let busy = false;
 
 type HttpClient = { patch(opts: any): Promise<any>; };
-const http = (): HttpClient | undefined => find(filters.byProps("get", "post", "put", "patch", "del"));
+/**
+ * Discord's API client: exactly { get, post, put, patch, del }. The HTTP library under it (superagent)
+ * has those too, plus Request and getXHR: given Discord's options object it "succeeds" without ever
+ * reaching the API, so it's skipped.
+ */
+const http = (): HttpClient | undefined => find(v => typeof v?.patch === "function" && typeof v?.del === "function"
+    && typeof v?.post === "function" && !("getXHR" in v) && !("Request" in v));
 
 const store = (name: string) => getStore(name) as any;
 const can = (perm: bigint, channel: any) => {
@@ -213,9 +219,10 @@ export default definePlugin({
         });
         ctx.addStyle(css);
 
+        // With Discord's own voice items (Open Chat, Hide Names), not at the bottom of the menu
         ctx.contextMenu("channel-context", (children, props) => {
             const item = menuFor(props.channel);
-            if (item) children.push(item);
+            if (item) (findMenuGroup(children, "hide-voice-names") ?? findMenuGroup(children, "open-chat") ?? children).push(item);
         });
     },
 });

@@ -548,6 +548,8 @@ function show(video: HTMLVideoElement) {
     }
     sync();
     armIdle();
+    // armIdle only redraws when idle changes; in chat nothing else would (fullscreen has its own event)
+    update();
 }
 
 function setHovered(video: HTMLVideoElement | null) {

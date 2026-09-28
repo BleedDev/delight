@@ -20,7 +20,7 @@ import { Store, StoreKind, StoreOp, UpdateAllResult } from "../store";
 import { React } from "../webpack/common";
 import { Badge, Button, Collapse, Dialog, Dropdown, EmptyState, FilterChips, Icon, IconButton, List, Notice, Pagination, scrollToTop, SearchField, Status, SwitchRow, Text, Tooltip, usePages, useStore } from "./components";
 import { SettingsUI } from "./index";
-import { openStore, takeStoreTarget } from "./nav";
+import { openStore, showTab, takeStoreTarget } from "./nav";
 import { PluginChangelogSetting } from "./PluginChangelog";
 import { DeclaredPermissionsList, PermissionGrowthList, StorePluginPermissions } from "./PluginPermissions";
 import type { PluginPage } from "@shared/reviews";
@@ -432,7 +432,7 @@ function StoreCard({ item, onOpen, onAuthor, pinned }: { item: Item; onOpen(): v
     // The whole card opens the detail page (the title's button stretches over it); the star and the
     // action buttons sit above that layer
     return (
-        <li className="dl-store-card" aria-labelledby={titleId} data-store-id={entry.id}>
+        <li className="dl-store-card" aria-labelledby={titleId} data-store-id={entry.id} data-supporters={item.supportersOnly || undefined}>
             <div className="dl-store-card-top">
                 <Glyph name={entry.name} />
                 <div className="dl-store-card-title">
@@ -454,7 +454,7 @@ function StoreCard({ item, onOpen, onAuthor, pinned }: { item: Item; onOpen(): v
                     {item.health && <HealthPill health={item.health} />}
                     {pinned && <Badge>{t("community.pinned")}</Badge>}
                     {item.beta && <Badge>{t("community.beta")}</Badge>}
-                    {item.supportersOnly && <Badge>{t("community.supportersOnly")}</Badge>}
+                    {item.supportersOnly && <SupportersPill />}
                     {!item.official && <CommunityLabel />}
                     {item.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
                     {!item.declares && <Badge>{t("declared.undeclared")}</Badge>}
@@ -910,7 +910,7 @@ function StoreDetail({ item, onBack, onAuthor, onOpen }: { item: Item; onBack():
     const code = item.official ? undefined : kind === "plugin" ? (entry as RegistryEntry).files["index.js"]?.url : (entry as ThemeEntry).file?.url;
 
     return (
-        <article className="dl-tab dl-store-detail" aria-labelledby={headingId} data-store-detail={entry.id}>
+        <article className="dl-tab dl-store-detail" aria-labelledby={headingId} data-store-detail={entry.id} data-supporters={item.supportersOnly || undefined}>
             <div>
                 <Button icon="chevronLeft" onClick={onBack}>{storeName(kind)}</Button>
             </div>
@@ -920,6 +920,7 @@ function StoreDetail({ item, onBack, onAuthor, onOpen }: { item: Item; onBack():
                 <div className="dl-store-detail-title">
                     <div className="dl-row-title">
                         <Text tag="h2" variant="heading-xl/bold" color="text-strong" id={headingId}>{entry.name}</Text>
+                        {item.supportersOnly && <SupportersPill />}
                         {!item.official && <CommunityLabel />}
                         {item.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
                         {!item.declares && <Badge>{t("declared.undeclared")}</Badge>}
@@ -929,7 +930,7 @@ function StoreDetail({ item, onBack, onAuthor, onOpen }: { item: Item; onBack():
                 </div>
                 <div className="dl-row-controls"><WishButton kind={kind} id={entry.id} name={entry.name} large /><StarButton item={item} large />{kind === "plugin" && <CopyShareLink id={entry.id} />}{buttons}</div>
             </header>
-            {item.locked && <p className="dl-store-trust" id={`dl-store-locked-${entry.id}`}><Icon name="heart" size={16} /><span>{t("community.supportersOnlyHint")}</span></p>}
+            {item.supportersOnly && <SupportersBanner locked={item.locked} id={entry.id} />}
             {!item.official && (
                 <p className="dl-store-trust"><Icon name="info" size={16} /><span>{trustNote(entry)}</span></p>
             )}
@@ -1114,7 +1115,7 @@ function SharedPluginItem({ item }: { item: Item; }) {
         SettingsUI.open("plugins");
     };
     return (
-        <div className="dl-share-card" data-store-id={entry.id}>
+        <div className="dl-share-card" data-store-id={entry.id} data-supporters={item.supportersOnly || undefined}>
             <Text variant="text-xs/semibold" color="text-muted" className="dl-share-kicker">{t("share.kicker")}</Text>
             <div className="dl-store-card-top">
                 <Glyph name={entry.name} />
@@ -1128,7 +1129,7 @@ function SharedPluginItem({ item }: { item: Item; }) {
             {entry.description && <Text tag="p" variant="text-sm/normal" color="text-subtle" className="dl-store-card-desc">{entry.description}</Text>}
             {(item.native || !item.official || item.supportersOnly) && (
                 <div className="dl-store-card-tags">
-                    {item.supportersOnly && <Badge>{t("community.supportersOnly")}</Badge>}
+                    {item.supportersOnly && <SupportersPill />}
                     {!item.official && <CommunityLabel />}
                     {item.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
                 </div>
@@ -1151,4 +1152,25 @@ function CopyShareLink({ id }: { id: string; }) {
         setTimeout(() => setCopied(false), 2000);
     });
     return <Button icon="link" onClick={copy}>{t(copied ? "share.copied" : "share.copy")}</Button>;
+}
+
+// ---- supporters ------------------------------------------------------------------------------
+
+/** "Supporters", in the gold of the supporter trophies */
+function SupportersPill() {
+    return <span className="dl-supporters-pill"><Icon name="heart" size={12} />{t("community.supportersOnly")}</span>;
+}
+
+/** A supporter plugin's page: a thank-you when you support Evi, the way in when you don't */
+function SupportersBanner({ locked, id }: { locked: boolean; id: string; }) {
+    return (
+        <section className="dl-supporters-banner" data-locked={locked || undefined} aria-labelledby={`dl-supporters-${id}`}>
+            <span className="dl-supporters-banner-icon" aria-hidden="true"><Icon name="heart" size={20} /></span>
+            <div className="dl-supporters-banner-text">
+                <Text tag="h3" variant="text-md/semibold" color="text-strong" id={`dl-supporters-${id}`}>{t(locked ? "supporters.bannerLockedTitle" : "supporters.bannerTitle")}</Text>
+                <Text tag="p" variant="text-sm/normal" color="text-subtle" id={locked ? `dl-store-locked-${id}` : undefined}>{t(locked ? "community.supportersOnlyHint" : "supporters.bannerThanks")}</Text>
+            </div>
+            {locked && <Button variant="accent" onClick={() => { showTab("general", "account"); SettingsUI.open("general"); }}>{t("supporters.become")}</Button>}
+        </section>
+    );
 }

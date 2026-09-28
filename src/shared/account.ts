@@ -28,3 +28,19 @@ export function parseAccountUser(json: unknown): AccountUser | null {
         avatar: typeof u.avatar === "string" && /^(a_)?[0-9a-f]{32}$/.test(u.avatar) ? u.avatar : null,
     };
 }
+
+/**
+ * PUT /v1/me/profile: the linked account's Discord name and avatar, as Evi sees them in Discord right
+ * now, so evi.rest (credits, author pages, reviews) doesn't keep the ones from the last login. Only
+ * well-formed values: a snowflake id, a Discord username, a display name, an avatar hash or none.
+ */
+export function cleanProfile(json: unknown): AccountUser | null {
+    const p = json as Record<string, unknown> | null;
+    if (!p || typeof p !== "object") return null;
+    const { id, username, globalName, avatar } = p;
+    if (typeof id !== "string" || !/^\d{17,20}$/.test(id)) return null;
+    if (typeof username !== "string" || !/^[\w.]{2,32}$/.test(username)) return null;
+    if (globalName !== null && globalName !== undefined && (typeof globalName !== "string" || !globalName.trim() || globalName.length > 32 || /[\u0000-\u001f\u007f]/.test(globalName))) return null;
+    if (avatar !== null && avatar !== undefined && (typeof avatar !== "string" || !/^(a_)?[0-9a-f]{32}$/.test(avatar))) return null;
+    return { id, username, globalName: typeof globalName === "string" ? globalName : null, avatar: typeof avatar === "string" ? avatar : null };
+}

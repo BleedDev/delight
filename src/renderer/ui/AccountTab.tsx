@@ -10,6 +10,7 @@ import { Native } from "../native";
 import { React } from "../webpack/common";
 import { Button, Section, Status, Text } from "./components";
 import { SupporterPerks } from "./SupporterPerks";
+import { syncProfileNow } from "../accountSync";
 
 const POLL_MS = 3000;
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -46,7 +47,11 @@ export function AccountTab() {
                 return;
             }
             const res = await Native.accountStatus();
-            if (res.ok && res.user) setState({ kind: "linked", user: res.user });
+            if (res.ok && res.user) {
+                setState({ kind: "linked", user: res.user });
+                // Just linked: the account takes this Discord's current name and avatar
+                syncProfileNow();
+            }
         }, POLL_MS);
         return () => clearInterval(timer);
     }, [state]);

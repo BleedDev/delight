@@ -62,7 +62,7 @@ describe("patches", () => {
 
     test("user panel: button goes first in the button row", () => {
         const out = apply("userPanel");
-        expect(out).toContain('children:[S?.renderButton?.(),(0,i.jsx)(ls,{accountContainerRef:_');
+        expect(out).toContain('children:[S?.renderButton?.(arguments[0]),(0,i.jsx)(ls,{accountContainerRef:_');
         expect(() => new Function(out)).not.toThrow();
     });
 

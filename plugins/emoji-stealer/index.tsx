@@ -93,7 +93,13 @@ function sourceGuildId(expression: Expression): string | undefined {
 }
 
 type HttpClient = { get(opts: any): Promise<any>; post(opts: any): Promise<any>; };
-const http = (): HttpClient | undefined => find(filters.byProps("get", "post", "put", "patch", "del"));
+/**
+ * Discord's API client: exactly { get, post, put, patch, del }. The HTTP library under it (superagent)
+ * has those too, plus Request and getXHR: given Discord's options object it "succeeds" without ever
+ * reaching the API, so it's skipped.
+ */
+const http = (): HttpClient | undefined => find(v => typeof v?.patch === "function" && typeof v?.del === "function"
+    && typeof v?.post === "function" && !("getXHR" in v) && !("Request" in v));
 
 async function fetchBlob(url: string, maxBytes: number): Promise<Blob> {
     const res = await fetch(url);

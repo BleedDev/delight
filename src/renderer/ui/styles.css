@@ -3394,7 +3394,7 @@
 
 .dl-home-tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 8px;
     margin: 0;
     padding: 0;
@@ -3402,6 +3402,14 @@
 }
 
 .dl-home-tiles[data-hero] { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+
+/* Supporter plugins: gold here too */
+.dl-home-tile[data-supporters] .dl-home-tile-button { border-color: color-mix(in srgb, var(--dl-supporter-gold) 40%, transparent); }
+.dl-home-tile[data-supporters] .dl-store-glyph {
+    background: linear-gradient(180deg, #ffd36b, var(--dl-supporter-gold) 55%, var(--dl-supporter-gold-deep));
+    color: #3d2600;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
+}
 
 .dl-home-tile { min-inline-size: 0; }
 
@@ -3443,8 +3451,10 @@
     min-inline-size: 0;
 }
 
+.dl-home-tile-title { display: flex; align-items: center; gap: 6px; min-inline-size: 0; }
 .dl-home-tile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dl-home-tile-meta { display: flex; align-items: center; gap: 8px; min-block-size: 16px; }
+.dl-home-tile-installed { display: inline-flex; flex: none; color: var(--dl-text-positive); }
+.dl-home-tile-meta { display: flex; align-items: center; gap: 8px; }
 
 .dl-home-tile-desc {
     display: -webkit-box;
@@ -3827,3 +3837,81 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
     text-transform: uppercase;
     letter-spacing: 0.02em;
 }
+
+/* ---- supporter plugins: the gold of the supporter trophies ---- */
+.dl-root {
+    --dl-supporter-gold: #f0b232;
+    --dl-supporter-gold-deep: #c27c0e;
+}
+
+.dl-supporters-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px 2px 6px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffd36b, var(--dl-supporter-gold) 55%, var(--dl-supporter-gold-deep));
+    color: #3d2600;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
+.dl-store-card[data-supporters] {
+    border-color: color-mix(in srgb, var(--dl-supporter-gold) 45%, transparent);
+    background:
+        radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--dl-supporter-gold) 12%, transparent), transparent 60%),
+        var(--dl-bg-group);
+}
+
+@media (hover: hover) {
+    .dl-store-card[data-supporters]:hover {
+        border-color: color-mix(in srgb, var(--dl-supporter-gold) 70%, transparent);
+        background:
+            radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--dl-supporter-gold) 18%, transparent), transparent 60%),
+            var(--dl-bg-emphasis);
+    }
+}
+
+:is(.dl-store-card, .dl-store-detail, .dl-share-card)[data-supporters] .dl-store-glyph {
+    background: linear-gradient(180deg, #ffd36b, var(--dl-supporter-gold) 55%, var(--dl-supporter-gold-deep));
+    color: #3d2600;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
+}
+
+.dl-supporters-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid color-mix(in srgb, var(--dl-supporter-gold) 45%, transparent);
+    background:
+        radial-gradient(90% 140% at 0% 50%, color-mix(in srgb, var(--dl-supporter-gold) 20%, transparent), transparent 70%),
+        var(--dl-bg-group);
+}
+
+.dl-supporters-banner-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    inline-size: 40px;
+    block-size: 40px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #ffd36b, var(--dl-supporter-gold) 55%, var(--dl-supporter-gold-deep));
+    color: #3d2600;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
+}
+
+.dl-supporters-banner-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+
+.dl-supporters-banner-text > * { margin: 0; }

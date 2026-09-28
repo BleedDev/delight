@@ -264,7 +264,7 @@ export function planImport(current: BackupSource, backup: EviBackup, mode: Impor
     let settings: EviSettings;
     if (mode === "replace") {
         // Keys a backup doesn't carry (auto-update, the last seen version) are this device's own and stay
-        settings = { ...structuredClone(current.settings), ...structuredClone(incoming), enabledThemes: [...new Set(enabledFromBackup)] };
+        settings = { ...structuredClone(current.settings), ...structuredClone(incoming), enabledThemes: [...new Set(enabledFromBackup)].slice(-1) };
     } else {
         const plugins = structuredClone(current.settings.plugins);
         for (const [id, entry] of Object.entries(incoming.plugins)) {
@@ -278,7 +278,8 @@ export function planImport(current: BackupSource, backup: EviBackup, mode: Impor
             ...structuredClone(current.settings),
             plugins,
             quickCss: incoming.quickCss,
-            enabledThemes: [...new Set([...current.settings.enabledThemes, ...enabledFromBackup])],
+            // One theme at a time: the backup's wins
+            enabledThemes: [...new Set([...current.settings.enabledThemes, ...enabledFromBackup])].slice(-1),
         };
     }
 

@@ -187,7 +187,8 @@ describe("import planning", () => {
         expect(plan.settings.plugins).toEqual(other().settings.plugins);
         expect(plan.settings.quickCss).toBe(false);
         // Mapped onto the existing file's case
-        expect(plan.settings.enabledThemes).toEqual(["light.css", "new.css"]);
+        // One theme at a time: the backup's last one
+        expect(plan.settings.enabledThemes).toEqual(["new.css"]);
         expect(plan.quickCss).toBe("a { color: blue; }");
         expect(plan.themes).toEqual([{ file: "light.css", css: ":root { --x: LIGHT; }" }, { file: "new.css", css: ":root { --x: new; }" }]);
 
@@ -198,7 +199,7 @@ describe("import planning", () => {
         expect(p.missingPlugins.map(m => m.id)).toEqual(["remote", "devonly"]);
         expect(p.themesAdded).toEqual(["new.css"]);
         expect(p.themesOverwritten).toEqual(["light.css"]);
-        expect(p.themesEnabled).toEqual(["light.css", "new.css"]);
+        expect(p.themesEnabled).toEqual(["new.css"]);
         expect(p.themesDisabled).toEqual(["dark.css"]);
         expect(p.quickCss).toBe("replaced");
         expect(p.quickCssToggle).toBe(false);
@@ -222,11 +223,13 @@ describe("import planning", () => {
         expect(plan.settings.plugins.alpha).toEqual({ enabled: false, settings: { volume: 7, mode: "a" } });
         expect(plan.settings.plugins.mine).toEqual({ enabled: true, settings: { keep: 1 } });
         expect(plan.settings.plugins.remote).toEqual({ enabled: true, settings: { token: "x" } });
-        expect(plan.settings.enabledThemes).toEqual(["dark.css", "light.css", "new.css"]);
+        // One theme at a time: the backup's last one wins
+        expect(plan.settings.enabledThemes).toEqual(["new.css"]);
         // Existing quick css isn't thrown away when merging
         expect(plan.quickCss).toBeNull();
         expect(plan.preview.quickCss).toBe("kept");
-        expect(plan.preview.themesDisabled).toEqual([]);
+        // The backup's theme replaces the one that was on
+        expect(plan.preview.themesDisabled).toEqual(["dark.css"]);
         expect(plan.preview.pluginSettingsChanged).toEqual(["Alpha", "Beta", "Remote"]);
     });
 

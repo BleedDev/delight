@@ -25,3 +25,4 @@ tests/site.test.ts
 tests/releases.test.ts
 tests/themeSubmissions.test.ts
 tests/serverStore.test.ts
+tests/healthReports.test.ts
