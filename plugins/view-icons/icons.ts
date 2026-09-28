@@ -1,6 +1,6 @@
 /**
- * Pure pieces of View Icons: the full-size CDN links for avatars, banners and server images, and
- * the file names they download as. No Discord or DOM access, so tests can run them.
+ * Pure pieces of View Icons: which avatar, banner or icon a CDN link is, its full-size link, and
+ * the file name it downloads as. No Discord or DOM access, so tests can run them.
  *
  * Every link asks the CDN for its largest size (4096; it sends the original when that's smaller).
  * Animated images (hashes starting with "a_") come as GIF so they animate in the viewer and download
@@ -14,7 +14,7 @@ export type PictureKind = "avatar" | "server-avatar" | "banner" | "server-banner
 
 export interface Picture {
     kind: PictureKind;
-    /** What it is, as the menu and viewer call it: "Avatar", "Server Banner"... */
+    /** What it is: "Avatar", "Server Banner"... */
     label: string;
     url: string;
     animated: boolean;
@@ -60,17 +60,6 @@ export function cdnUrl(path: string, hash: unknown, allowAnimated = true): strin
 /** The file extension of a CDN link: "gif" or "png" */
 export const extensionOf = (url: string) => /\.gif(\?|$)/.test(url) ? "gif" : "png";
 
-/** Discord's default avatar for someone without one: by id for new usernames, by discriminator for old ones */
-export function defaultAvatarUrl(userId: string, discriminator?: string | null): string {
-    let index = 0;
-    try {
-        index = discriminator && discriminator !== "0"
-            ? Number(discriminator) % 5
-            : Number((BigInt(userId) >> 22n) % 6n);
-    } catch { /* not a snowflake */ }
-    return `${CDN}/embed/avatars/${Number.isFinite(index) ? index : 0}.png`;
-}
-
 /** A name safe for a file on every system: no path characters, no trailing dots, at most 80 characters */
 export function safeFileName(name: string): string {
     const clean = name
@@ -99,71 +88,68 @@ function picture(kind: PictureKind, url: string | null, owner: string, aspect = 
     };
 }
 
-const present = (list: (Picture | null)[]) => list.filter((p): p is Picture => !!p);
-
-export interface UserImages {
-    id: string;
-    name: string;
-    avatar?: string | null;
-    discriminator?: string | null;
-    banner?: string | null;
-    /** The server the menu was opened in, for server avatars and banners */
-    guildId?: string | null;
-    memberAvatar?: string | null;
-    memberBanner?: string | null;
-}
-
-/** Someone's avatars: the server one first when there is one, since that's what the server shows */
-export function userAvatars(u: UserImages): Picture[] {
-    if (!SNOWFLAKE.test(u.id)) return [];
-    const inGuild = u.guildId && SNOWFLAKE.test(u.guildId) ? u.guildId : null;
-    return present([
-        inGuild ? picture("server-avatar", cdnUrl(`guilds/${inGuild}/users/${u.id}/avatars`, u.memberAvatar), u.name) : null,
-        picture("avatar", cdnUrl(`avatars/${u.id}`, u.avatar) ?? defaultAvatarUrl(u.id, u.discriminator), u.name),
-    ]);
-}
-
-export function userBanners(u: UserImages): Picture[] {
-    if (!SNOWFLAKE.test(u.id)) return [];
-    const inGuild = u.guildId && SNOWFLAKE.test(u.guildId) ? u.guildId : null;
-    return present([
-        inGuild ? picture("server-banner", cdnUrl(`guilds/${inGuild}/users/${u.id}/banners`, u.memberBanner), u.name) : null,
-        picture("banner", cdnUrl(`banners/${u.id}`, u.banner), u.name),
-    ]);
-}
-
-export interface GuildImages {
-    id: string;
-    name: string;
-    icon?: string | null;
-    banner?: string | null;
-    splash?: string | null;
-    discoverySplash?: string | null;
-}
-
-export function guildIcons(g: GuildImages): Picture[] {
-    if (!SNOWFLAKE.test(g.id)) return [];
-    return present([picture("icon", cdnUrl(`icons/${g.id}`, g.icon), g.name)]);
-}
-
-/** A server's banner and its invite and Discovery backgrounds (never animated) */
-export function guildBanners(g: GuildImages): Picture[] {
-    if (!SNOWFLAKE.test(g.id)) return [];
-    return present([
-        picture("banner", cdnUrl(`banners/${g.id}`, g.banner), g.name, 16 / 9),
-        picture("splash", cdnUrl(`splashes/${g.id}`, g.splash, false), g.name),
-        picture("discovery-splash", cdnUrl(`discovery-splashes/${g.id}`, g.discoverySplash, false), g.name),
-    ]);
-}
-
-/** A group DM's icon */
-export function groupDmIcons(channelId: string, name: string, icon: string | null | undefined): Picture[] {
-    if (!SNOWFLAKE.test(channelId)) return [];
-    return present([picture("icon", cdnUrl(`channel-icons/${channelId}`, icon, false), name)]);
-}
-
 /** A picture's size in the viewer: as large as fits `maxWidth` x `maxHeight`, keeping its aspect */
 export function fitSize(aspect: number, maxWidth: number, maxHeight: number): { width: number; height: number; } {
     const width = Math.max(1, Math.round(Math.min(maxWidth, maxHeight * aspect)));
     return { width, height: Math.max(1, Math.round(width / aspect)) };
+}
+
+/** What a CDN link in the image viewer shows, and whose it is */
+export interface LinkedPicture {
+    kind: PictureKind;
+    /** The user, server or group DM it belongs to; null for Discord's default avatars */
+    ownerId: string | null;
+    /** The same picture at full size */
+    url: string;
+}
+
+const CDN_HOSTS = new Set(["cdn.discordapp.com", "media.discordapp.net"]);
+const HASH_FILE = /^((?:a_)?[0-9a-f]{32})\.(?:png|jpe?g|webp|gif|avif)$/;
+
+/**
+ * The avatar, banner or icon a Discord CDN link points at, as its full-size link. Null for anything
+ * else (attachments, emojis, stickers), so the viewer only offers Download for profile pictures.
+ */
+export function pictureFromUrl(link: unknown): LinkedPicture | null {
+    if (typeof link !== "string") return null;
+    let url: URL;
+    try {
+        url = new URL(link);
+    } catch {
+        return null;
+    }
+    if (url.protocol !== "https:" || !CDN_HOSTS.has(url.hostname)) return null;
+    const parts = url.pathname.split("/").filter(Boolean);
+
+    const defaultAvatar = /^embed\/avatars\/(\d)\.png$/.exec(parts.join("/"));
+    if (defaultAvatar) return { kind: "avatar", ownerId: null, url: `${CDN}/embed/avatars/${defaultAvatar[1]}.png` };
+
+    const file = HASH_FILE.exec(parts[parts.length - 1] ?? "");
+    if (!file) return null;
+    const dir = parts.slice(0, -1);
+    const make = (kind: PictureKind, ownerId: string, path: string, allowAnimated = true): LinkedPicture | null => {
+        const full = cdnUrl(path, file[1], allowAnimated);
+        return full ? { kind, ownerId, url: full } : null;
+    };
+
+    if (dir.length === 2 && SNOWFLAKE.test(dir[1])) {
+        const [type, id] = dir;
+        if (type === "avatars") return make("avatar", id, `avatars/${id}`);
+        if (type === "banners") return make("banner", id, `banners/${id}`);
+        if (type === "icons") return make("icon", id, `icons/${id}`);
+        if (type === "channel-icons") return make("icon", id, `channel-icons/${id}`, false);
+        if (type === "splashes") return make("splash", id, `splashes/${id}`, false);
+        if (type === "discovery-splashes") return make("discovery-splash", id, `discovery-splashes/${id}`, false);
+    }
+    // guilds/<guild>/users/<user>/avatars|banners/<hash>
+    if (dir.length === 5 && dir[0] === "guilds" && dir[2] === "users" && SNOWFLAKE.test(dir[1]) && SNOWFLAKE.test(dir[3])) {
+        if (dir[4] === "avatars") return make("server-avatar", dir[3], dir.join("/"));
+        if (dir[4] === "banners") return make("server-banner", dir[3], dir.join("/"));
+    }
+    return null;
+}
+
+/** A linked picture as a downloadable one, named after its owner */
+export function linkedPicture(linked: LinkedPicture, owner: string): Picture {
+    return picture(linked.kind, linked.url, owner)!;
 }

@@ -86,7 +86,7 @@ Evi comes with these, all off until you turn them on. There are more in the stor
 - **Timezones**: see someone's local time next to their name
 - **Platform Indicators**: desktop, mobile, web or console
 - **DM Categories**: sort your DMs into folders
-- **View Icons**: avatars, banners and server icons at full size
+- **View Icons**: open someone's avatar or banner full size and download it
 
 **Privacy**
 - **Streamer Mode+**: blur your DMs, servers and images while you stream

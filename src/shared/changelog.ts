@@ -59,6 +59,7 @@ export const RELEASES: Release[] = [
                 "Streamer Mode+ keeps the shortcut you typed in, now as a recorded one.",
                 "Plugin authors see how many use their plugins: once a day Evi tells evi.rest which store plugins it has, anonymously. Turn it off in the store's settings.",
                 "Quick Actions is no longer part of Evi, and is removed when Evi updates.",
+                "**View Icons moved into profiles.** Click someone's banner to open it full size like their avatar, and Download sits next to zoom. The right-click menu items are gone.",
             ],
             fixed: [
                 "**Message Logger keeps deleted pictures, videos and files.** Discord deletes them from its servers with the message, so they used to show broken. Edits that remove an attachment keep it with the old version too.",

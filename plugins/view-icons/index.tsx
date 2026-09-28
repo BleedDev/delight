@@ -1,60 +1,68 @@
 /**
- * View Icons: see avatars, banners, server icons and group DM icons at full size, and download them.
+ * View Icons: download profile pictures from Discord's image viewer, and open banners in it.
  *
- * Right-click menus get "View Avatar", "View Banner" (users), "View Icon", "View Banner" (servers)
- * and "View Icon" (group DMs). Clicking one opens Discord's own media viewer (openMediaViewer, the
- * function Better Image Viewer also hooks) with its media options on, so zooming, saving, copying
- * and opening in the browser are Discord's. A person's avatars and banners open as one gallery,
- * so the arrows go from one to the next. Hovering an item shows Download and Copy Link for each
- * picture, which save the original file through the desktop app's save dialog.
+ * Clicking someone's avatar in their profile already opens Discord's image viewer, with only a
+ * zoom button. Source patches add:
+ *  - a Download button next to zoom, for avatars, banners and server icons (any Discord CDN link
+ *    icons.ts recognises), saving the original through the desktop app's save dialog;
+ *  - a click on a profile banner (popout and full profile) that opens it in the same viewer.
  *
- * Banners come from someone's profile, which Discord only loads when it needs it. View Avatar loads
- * it first when it's missing (what opening their profile does), so their banner is in the gallery.
- * The links are built in icons.ts.
+ * The viewer's own button component is captured when its module loads, so Download looks and
+ * behaves like zoom. If Discord renames it, a plain button with the same icon stands in.
  */
-import { definePlugin, filters, find, getStore, Menu } from "@evi/api";
-import type { PluginContext } from "@evi/api";
-import type { ReactNode } from "react";
+import { Components, definePlugin, filters, find, getStore, React } from "@evi/api";
+import type { PluginContext, SourcePatch } from "@evi/api";
+import type { MouseEvent, ReactNode } from "react";
 
-import { fileName, fitSize, groupDmIcons, guildBanners, guildIcons, Picture, userAvatars, userBanners, UserImages } from "./icons";
+import { fileName, fitSize, LinkedPicture, linkedPicture, Picture, pictureFromUrl } from "./icons";
 
-const GROUP_DM = 3;
-/** How long View Avatar waits for a profile to load before opening without its banner */
-const PROFILE_WAIT_MS = 2500;
 /** How long to wait for a picture's real size before going by its usual shape */
 const MEASURE_WAIT_MS = 1500;
 
 let ctx: PluginContext | undefined;
+/** The image viewer's top bar button: ({ tooltipText, icon, onClick, loading }) */
+let ViewerButton: ((props: any) => ReactNode) | undefined;
 
 const openExternal = (url: string) => void window.open(url, "_blank", "noopener,noreferrer");
-const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
-// ---- Pictures from Discord's stores -------------------------------------------------------------
+const PATCHES = {
+    /**
+     * The image viewer's top bar: [zoom (images only), then forward, save, open and more unless
+     * media options are hidden]. Profile pictures open with them hidden, so only zoom shows.
+     * Download goes right after zoom.
+     */
+    viewer: {
+        find: ".SAVE_MEDIA_PRESSED)",
+        group: true,
+        replace: [
+            {
+                match: /function (\i)\((\i)\)\{let\{tooltipText:\i,\.\.\.\i\}=\2;/,
+                with: "$self?.captureButton?.($1);$&",
+            },
+            {
+                match: /"IMAGE"===(\i)\.type&&\(0,\i\.jsx\)\(\i,\{\}\),(?=!(\i)&&)/,
+                with: "$&$self?.renderDownload?.($1,$2),",
+            },
+        ],
+    },
+    /** A profile banner: <Banner bannerSrc overlay …/>. Ours sits under the overlay, filling the banner */
+    banner: {
+        find: /pendingAccentColor:\w+,animateOnHoverOrFocusOnly:/,
+        replace: {
+            match: /(?<=\{user:(\i),displayProfile:[^]{0,1500}?)bannerSrc:(\i),([^]{0,300}?)overlay:(\i),(?=onInteractionStart:)/,
+            with: "bannerSrc:$2,$3overlay:$self?.renderBanner?.($1,$2,$4)??$4,",
+        },
+    },
+} satisfies Record<string, SourcePatch>;
 
-function userImages(user: any, guildId: string | null | undefined): UserImages {
-    const profiles = getStore("UserProfileStore");
-    const member = guildId ? getStore("GuildMemberStore")?.getMember?.(guildId, user.id) : null;
-    const memberProfile = guildId ? profiles?.getGuildMemberProfile?.(user.id, guildId) : null;
-    return {
-        id: user.id,
-        name: user.username || user.globalName || user.id,
-        avatar: user.avatar,
-        discriminator: user.discriminator,
-        banner: profiles?.getUserProfile?.(user.id)?.banner ?? user.banner,
-        guildId,
-        memberAvatar: member?.avatar,
-        memberBanner: memberProfile?.banner ?? member?.banner,
-    };
-}
+// ---- Whose picture it is ------------------------------------------------------------------------
 
-/** Loads someone's profile when Discord doesn't have it yet, for their banners. Never waits long */
-async function loadProfile(userId: string, guildId: string | null | undefined) {
-    if (getStore("UserProfileStore")?.getUserProfile?.(userId)) return;
-    const fetchProfile = find(filters.byCode("USER_PROFILE_FETCH_START", "withMutualFriendsCount"));
-    if (typeof fetchProfile !== "function") return;
-    try {
-        await Promise.race([Promise.resolve(fetchProfile(userId, { guildId: guildId ?? undefined })).catch(() => { }), sleep(PROFILE_WAIT_MS)]);
-    } catch { /* opens without the banner */ }
+function ownerName(linked: LinkedPicture): string {
+    const id = linked.ownerId;
+    if (!id) return "discord";
+    const user = getStore("UserStore")?.getUser?.(id);
+    if (user) return user.username || user.globalName || id;
+    return getStore("GuildStore")?.getGuild?.(id)?.name || getStore("ChannelStore")?.getChannel?.(id)?.name || id;
 }
 
 // ---- The viewer ---------------------------------------------------------------------------------
@@ -79,38 +87,35 @@ function measure(url: string): Promise<number | null> {
 /** Discord's openMediaViewer({ items, startingIndex, location, shouldHideMediaOptions }) */
 const findViewer = (): ((options: any) => void) | undefined => find(filters.byCode("markSessionStarted", "hasMediaOptions:!"));
 
-async function openViewer(pictures: Picture[], start = 0) {
-    if (!pictures.length) return;
+/** Opens a picture the way Discord opens an avatar: media options hidden, so zoom and our Download show */
+async function openViewer(picture: Picture) {
     const open = findViewer();
     if (typeof open !== "function") {
         ctx?.logger.warn("Discord's image viewer wasn't found, opening in the browser");
-        return openExternal(pictures[start].url);
+        return openExternal(picture.url);
     }
-    const aspects = await Promise.all(pictures.map(p => measure(p.url)));
-    const items = pictures.map((p, i) => {
-        const { width, height } = fitSize(aspects[i] ?? p.aspect, window.innerWidth * 0.8, window.innerHeight * 0.75);
-        return {
-            type: "IMAGE",
-            url: p.url,
-            original: p.url,
-            proxyUrl: p.url,
-            width,
-            height,
-            alt: p.label,
-            animated: p.animated,
-            srcIsAnimated: p.animated,
-            contentType: p.animated ? "image/gif" : "image/png",
-        };
-    });
+    const { width, height } = fitSize((await measure(picture.url)) ?? picture.aspect, window.innerWidth * 0.8, window.innerHeight * 0.75);
+    const item = {
+        type: "IMAGE",
+        url: picture.url,
+        original: picture.url,
+        proxyUrl: picture.url,
+        width,
+        height,
+        alt: picture.label,
+        animated: picture.animated,
+        srcIsAnimated: picture.animated,
+        contentType: picture.animated ? "image/gif" : "image/png",
+    };
     try {
-        open({ items, startingIndex: Math.min(start, items.length - 1), location: "View Icons", shouldHideMediaOptions: false });
+        open({ items: [item], startingIndex: 0, location: "View Icons", shouldHideMediaOptions: true });
     } catch (err) {
         ctx?.logger.error("Couldn't open Discord's image viewer", err);
-        openExternal(pictures[start].url);
+        openExternal(picture.url);
     }
 }
 
-// ---- Download and copy --------------------------------------------------------------------------
+// ---- Download -----------------------------------------------------------------------------------
 
 /** Saves bytes with the desktop app's save dialog, or else a browser download */
 async function save(data: Uint8Array, name: string, type: string): Promise<void> {
@@ -143,99 +148,107 @@ async function download(picture: Picture) {
     }
 }
 
-async function copyLink(picture: Picture) {
-    try {
-        const native = (window as any).DiscordNative?.clipboard;
-        if (native?.copy) native.copy(picture.url);
-        else await navigator.clipboard.writeText(picture.url);
-        ctx?.toast("Link copied", { type: "success" });
-    } catch {
-        ctx?.toast("Couldn't copy to the clipboard", { type: "failure" });
-    }
-}
-
-// ---- Menus --------------------------------------------------------------------------------------
-
-/** "View X": clicking opens the viewer, hovering lists Download and Copy Link for each picture */
-function viewItem(id: string, label: string, pictures: Picture[], open: () => void): ReactNode {
-    const single = pictures.length === 1;
+/** Discord's download arrow when it has one, else the same shape */
+function DownloadIcon(props: { size?: string; color?: string; className?: string; }) {
+    const Native = find(filters.byProps("DownloadIcon"))?.DownloadIcon;
+    if (Native) return <Native {...props} />;
     return (
-        <Menu.Item key={id} id={id} label={label} action={open}>
-            <Menu.Group>
-                {pictures.map(p => (
-                    <Menu.Item key={p.kind} id={`${id}-download-${p.kind}`} label={single ? "Download" : `Download ${p.label}`} action={() => void download(p)} />
-                ))}
-            </Menu.Group>
-            <Menu.Group>
-                {pictures.map(p => (
-                    <Menu.Item key={p.kind} id={`${id}-copy-${p.kind}`} label={single ? "Copy Link" : `Copy ${p.label} Link`} action={() => void copyLink(p)} />
-                ))}
-            </Menu.Group>
-        </Menu.Item>
+        <svg className={props.className} width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M12 2a1 1 0 0 1 1 1v10.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V3a1 1 0 0 1 1-1ZM3 20a1 1 0 1 0 0 2h18a1 1 0 1 0 0-2H3Z" />
+        </svg>
     );
 }
 
-function userItems(user: any, guildId: string | null | undefined): ReactNode[] {
-    const images = userImages(user, guildId);
-    const avatars = userAvatars(images);
-    const banners = userBanners(images);
-    const items: ReactNode[] = [];
-    if (avatars.length) {
-        items.push(viewItem("evi-vi-avatar", "View Avatar", avatars, async () => {
-            await loadProfile(user.id, guildId);
-            const fresh = userImages(user, guildId);
-            void openViewer([...userAvatars(fresh), ...userBanners(fresh)], 0);
-        }));
-    }
-    if (banners.length) {
-        items.push(viewItem("evi-vi-banner", "View Banner", banners, () => void openViewer([...avatars, ...banners], avatars.length)));
-    }
-    return items;
+function DownloadButton({ picture }: { picture: Picture; }) {
+    const [saving, setSaving] = React.useState(false);
+    const onClick = () => {
+        if (saving) return;
+        setSaving(true);
+        void download(picture).finally(() => setSaving(false));
+    };
+    if (ViewerButton) return <ViewerButton tooltipText="Download" icon={DownloadIcon} loading={saving} onClick={onClick} />;
+
+    const button = (
+        <button type="button" className="evi-vi-download" aria-label="Download" aria-busy={saving || undefined} onClick={onClick}>
+            <DownloadIcon />
+        </button>
+    );
+    const Tooltip = Components.Tooltip;
+    return Tooltip ? <Tooltip text="Download" position="bottom">{button}</Tooltip> : button;
 }
 
-function guildItems(guild: any): ReactNode[] {
-    const images = {
-        id: guild.id,
-        name: guild.name || guild.id,
-        icon: guild.icon,
-        banner: guild.banner,
-        splash: guild.splash,
-        discoverySplash: guild.discoverySplash ?? guild.discovery_splash,
-    };
-    const icons = guildIcons(images);
-    const banners = guildBanners(images);
-    const all = [...icons, ...banners];
-    const items: ReactNode[] = [];
-    if (icons.length) items.push(viewItem("evi-vi-icon", "View Icon", icons, () => void openViewer(all, 0)));
-    if (banners.length) items.push(viewItem("evi-vi-server-banner", banners[0].kind === "banner" ? "View Banner" : "View Backgrounds", banners, () => void openViewer(all, icons.length)));
-    return items;
+/** The button fills the banner, so the banner has to be what it's positioned against */
+function fillParent(button: HTMLButtonElement | null) {
+    const banner = button?.parentElement;
+    if (banner && getComputedStyle(banner).position === "static") banner.style.position = "relative";
 }
+
+const css = `
+.evi-vi-download {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--interactive-normal);
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+.evi-vi-download:hover { background: var(--background-modifier-hover); color: var(--interactive-hover); }
+.evi-vi-download:focus-visible { outline: 2px solid var(--focus-primary); }
+.evi-vi-download[aria-busy] { opacity: .6; cursor: progress; }
+.evi-vi-banner {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+}
+.evi-vi-banner:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: -2px; }
+`;
 
 export default definePlugin({
+    patches: [PATCHES.viewer, PATCHES.banner],
+
     start(context) {
         ctx = context;
         context.onDispose(() => void (ctx = undefined));
+        context.addStyle(css);
+    },
 
-        context.contextMenu("user-context", (children, props) => {
-            const user = props?.user;
-            if (!user?.id) return;
-            const guildId: string | undefined = props.guildId ?? props.guild?.id ?? props.channel?.guild_id;
-            const items = userItems(user, guildId);
-            if (items.length) children.push(<Menu.Group key="evi-view-icons">{items}</Menu.Group>);
-        });
+    /** Called by the viewer's module with its top bar button component */
+    captureButton(component: unknown) {
+        if (typeof component === "function") ViewerButton = component as (props: any) => ReactNode;
+    },
 
-        context.contextMenu("guild-context", (children, props) => {
-            const guild = props?.guild;
-            if (!guild?.id) return;
-            const items = guildItems(guild);
-            if (items.length) children.push(<Menu.Group key="evi-view-icons">{items}</Menu.Group>);
-        });
+    /** Called by the viewer's top bar, right after zoom */
+    renderDownload(item: any, hideMediaOptions: boolean) {
+        // With media options on, Discord's own save button is there
+        if (!ctx || !hideMediaOptions || item?.type !== "IMAGE") return null;
+        const linked = pictureFromUrl(item.original ?? item.url);
+        if (!linked) return null;
+        return <DownloadButton key="evi-vi-download" picture={linkedPicture(linked, ownerName(linked))} />;
+    },
 
-        context.contextMenu("gdm-context", (children, props) => {
-            const channel = props?.channel;
-            if (!channel?.id || channel.type !== GROUP_DM || !channel.icon) return;
-            const icons = groupDmIcons(channel.id, channel.name || "Group DM", channel.icon);
-            if (icons.length) children.push(<Menu.Group key="evi-view-icons">{viewItem("evi-vi-gdm-icon", "View Icon", icons, () => void openViewer(icons))}</Menu.Group>);
-        });
+    /** Called by a profile banner with what it shows; returns its overlay with our button under it */
+    renderBanner(user: any, src: string | null, overlay: ReactNode) {
+        const linked = ctx && pictureFromUrl(src);
+        if (!linked) return overlay;
+        const picture = linkedPicture(linked, user?.username || user?.globalName || ownerName(linked));
+        const open = (e: MouseEvent) => {
+            e.stopPropagation();
+            void openViewer(picture);
+        };
+        return (
+            <>
+                <button type="button" className="evi-vi-banner" aria-label="View Banner" onClick={open} ref={fillParent} />
+                {overlay}
+            </>
+        );
     },
 });

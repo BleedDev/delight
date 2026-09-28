@@ -1809,10 +1809,78 @@ await page.waitForSelector("#dl-plugin-view-icons-info", { timeout: 2000 });
 await page.waitForTimeout(300);
 const pluginDetails = await page.evaluate(() => document.querySelector("#dl-plugin-view-icons-info")?.textContent ?? "");
 await page.screenshot({ path: join(OUT, "ui-plugin-details.png") });
-const detailsWanted = ["Permissions", "Medium risk", "Adds menu items", "Copies to your clipboard", "What’s new", "First release."];
+const detailsWanted = ["Permissions", "What’s new", "Lives in profiles now", "First release."];
 check("Plugin details list its permissions with risk levels and its changelog", detailsWanted.every(t => pluginDetails.includes(t)), { missing: detailsWanted.filter(t => !pluginDetails.includes(t)), text: pluginDetails.slice(0, 200) });
 await page.keyboard.press("Escape");
 await page.waitForTimeout(200);
+
+// ---- view-icons: Download in the image viewer, and banners that open in it ------------------------
+
+const viewIcons = await page.evaluate(async () => {
+    const { api, plugins, diagnosePatches } = (window as any).Evi;
+    const { sleep } = (window as any).__qa;
+    const HASH = "0123456789abcdef0123456789abcdef";
+    await plugins.setEnabled("view-icons", true);
+    const self = (window as any).Evi.$("view-icons");
+    const open = api.find(api.filters.byCode("markSessionStarted", "hasMediaOptions:!"));
+    const row = () => document.querySelector('[aria-label="Zoom In"]')?.closest("div")?.parentElement?.parentElement;
+    const bar = () => [...(row()?.querySelectorAll("[aria-label]") ?? [])].map(e => e.getAttribute("aria-label"));
+    const close = async () => {
+        (row()?.querySelector('[aria-label="Close"]') as HTMLElement | null)?.click();
+        for (let i = 0; i < 30 && document.querySelector('[aria-label="Zoom In"]'); i++) await sleep(100);
+        await sleep(300);
+    };
+    const item = (url: string) => ({ type: "IMAGE", url, original: url, proxyUrl: url, width: 256, height: 256, contentType: "image/png" });
+
+    // An avatar, opened the way a profile opens it: zoom, then ours
+    open?.({ items: [item("https://cdn.discordapp.com/embed/avatars/1.png")], startingIndex: 0, location: "test", shouldHideMediaOptions: true });
+    await sleep(1500);
+    const avatarBar = bar();
+    const ours = document.querySelector('[aria-label="Download"]');
+    const discordStyled = !!ours && !ours.classList.contains("evi-vi-download");
+    await close();
+    // Not a profile picture: nothing added
+    open?.({ items: [item("https://cdn.discordapp.com/attachments/1/2/cat.png")], startingIndex: 0, location: "test", shouldHideMediaOptions: true });
+    await sleep(1200);
+    const attachmentBar = bar();
+    await close();
+
+    // The banner patch, and the button it adds: fills the banner and opens it in the viewer
+    for (const id of api.findModuleIds("pendingAccentColor", "animateOnHoverOrFocusOnly")) api.requireModule(id);
+    const patches = diagnosePatches().filter((d: any) => d.plugin === "view-icons").map((d: any) => d.state);
+    const root = document.createElement("div");
+    root.style.cssText = "position:fixed;left:0;top:0;width:340px;height:120px;";
+    const fill = document.createElement("div");
+    // Left static, like it may be in Discord: the plugin positions it
+    fill.style.cssText = "width:100%;height:100%;";
+    root.appendChild(fill);
+    document.body.appendChild(root);
+    const reactRoot = api.createRoot(fill);
+    const bannerUrl = `https://cdn.discordapp.com/embed/avatars/2.png`;
+    reactRoot.render(self.renderBanner({ username: "alice" }, bannerUrl, api.React.createElement("span", { id: "evi-vi-overlay" })));
+    await sleep(200);
+    const button = fill.querySelector(".evi-vi-banner") as HTMLElement | null;
+    const rect = button?.getBoundingClientRect();
+    const fills = !!rect && Math.round(rect.width) === 340 && Math.round(rect.height) === 120;
+    const keepsOverlay = !!fill.querySelector("#evi-vi-overlay");
+    const noButtonForPending = self.renderBanner({ username: "alice" }, "data:image/png;base64,AA", null) === null;
+    button?.click();
+    await sleep(2500);
+    const bannerBar = bar();
+    const bannerShown = !!document.querySelector(`img[src^="${bannerUrl}"]`);
+    await close();
+    reactRoot.unmount();
+    root.remove();
+    const hashLink = self.renderDownload({ type: "IMAGE", url: `https://cdn.discordapp.com/avatars/10/${HASH}.webp?size=80` }, true) !== null
+        && self.renderDownload({ type: "IMAGE", url: `https://cdn.discordapp.com/avatars/10/${HASH}.webp?size=80` }, false) === null;
+    await plugins.setEnabled("view-icons", false);
+    return { avatarBar, discordStyled, attachmentBar, patches, fills, keepsOverlay, noButtonForPending, bannerBar, bannerShown, hashLink };
+});
+check("view-icons: Download sits right after zoom in the viewer for profile pictures, in Discord's own button style, and not for attachments",
+    viewIcons.avatarBar[0] === "Zoom In" && viewIcons.avatarBar[1] === "Download" && viewIcons.discordStyled && !viewIcons.attachmentBar.includes("Download") && viewIcons.hashLink, viewIcons);
+check("view-icons: both patches apply, and a banner gets a button filling it that opens it in the viewer with Download",
+    viewIcons.patches.length === 2 && viewIcons.patches.every((s: string) => s === "applied") && viewIcons.fills && viewIcons.keepsOverlay && viewIcons.noButtonForPending
+    && viewIcons.bannerBar.includes("Download") && viewIcons.bannerShown, viewIcons);
 
 // A plugin's details: what it actually did, grouped by host, a host its code doesn't name flagged, no query strings
 await findPlugin("net-user");

@@ -1,8 +1,8 @@
 {
     "id": "view-icons",
     "name": "View Icons",
-    "description": "See avatars, banners, server icons and group DM icons at full size in Discord's image viewer, from their right-click menu. A person's avatars and banners open together, so the arrows go through all of them. Hover the menu item to download the original or copy its link.",
-    "version": "1.0.0",
+    "description": "Download avatars and banners from someone's profile. Click their avatar or banner to open it full size, then Download sits next to zoom.",
+    "version": "2.0.0",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,14 @@
         "utility"
     ],
     "changelog": [
+        {
+            "version": "2.0.0",
+            "notes": [
+                "Lives in profiles now: clicking a profile banner opens it full size, like avatars.",
+                "Download sits next to zoom in the image viewer, for avatars, banners and server icons.",
+                "The right-click menu items are gone."
+            ]
+        },
         {
             "version": "1.0.0",
             "notes": [
@@ -21,8 +29,9 @@
     "permissions": {
         "network": [
             "cdn.discordapp.com",
-            "discord.com"
+            "media.discordapp.net"
         ]
     },
+    "minEviVersion": "1.0.0",
     "enabledByDefault": false
 }

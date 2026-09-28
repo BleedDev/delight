@@ -2012,34 +2012,42 @@
         {
             "id": "view-icons",
             "name": "View Icons",
-            "description": "See avatars, banners, server icons and group DM icons at full size in Discord's image viewer, from their right-click menu. A person's avatars and banners open together, so the arrows go through all of them. Hover the menu item to download the original or copy its link.",
+            "description": "Download avatars and banners from someone's profile. Click their avatar or banner to open it full size, then Download sits next to zoom.",
             "authors": [
                 "Evi"
             ],
             "authorIds": [
                 "evi"
             ],
-            "version": "1.0.0",
+            "version": "2.0.0",
             "tags": [
                 "social",
                 "utility"
             ],
             "native": false,
-            "minEviVersion": "0.7.0",
+            "minEviVersion": "1.0.0",
             "files": {
                 "manifest.json": {
-                    "url": "https://evi.rest/store/plugins/view-icons/manifest.json?v=56f4d5804afd",
-                    "sha256": "56f4d5804afd577c730d80344a8fffc497ccf8feda149da6768f6d9bb2eead78"
+                    "url": "https://evi.rest/store/plugins/view-icons/manifest.json?v=9a7b567932ff",
+                    "sha256": "9a7b567932ff5c68bde48a727506b319aeb84c1967aafde94b3c4e422fbd6ee6"
                 },
                 "index.js": {
-                    "url": "https://evi.rest/store/plugins/view-icons/index.js?v=07114dbf1ad9",
-                    "sha256": "07114dbf1ad97209d0007494e2211f400bc91debb59654c5c5deb3256423db0f"
+                    "url": "https://evi.rest/store/plugins/view-icons/index.js?v=9445b8c88e9a",
+                    "sha256": "9445b8c88e9ade4f1e73e2657159b6ef0cc9a31d9609c3a5f0f418a99c35673c"
                 }
             },
-            "updatedAt": "2026-09-27",
+            "updatedAt": "2026-09-28",
             "source": "https://github.com/BleedDev/evi/tree/main/plugins/view-icons",
             "screenshots": [],
             "changelog": [
+                {
+                    "version": "2.0.0",
+                    "notes": [
+                        "Lives in profiles now: clicking a profile banner opens it full size, like avatars.",
+                        "Download sits next to zoom in the image viewer, for avatars, banners and server icons.",
+                        "The right-click menu items are gone."
+                    ]
+                },
                 {
                     "version": "1.0.0",
                     "notes": [
@@ -2050,7 +2058,7 @@
             "permissions": {
                 "network": [
                     "cdn.discordapp.com",
-                    "discord.com"
+                    "media.discordapp.net"
                 ],
                 "readMessages": false,
                 "sendMessages": false,
