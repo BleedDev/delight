@@ -7,6 +7,7 @@ import { pullFor } from "@shared/pulls";
 
 import { Backup } from "./backup";
 import { CrashDetective } from "./crashDetective";
+import { I18n } from "./i18n";
 import { startHealthReports } from "./health";
 import { Logger } from "./logger";
 import { Native } from "./native";
@@ -81,6 +82,9 @@ function boot() {
     interceptWebpack();
 
     const data = Native.boot();
+    // Main words its own dialogs and errors in Discord's language too
+    Native.setLocale?.(I18n.locale);
+    I18n.subscribe(() => Native.setLocale?.(I18n.locale));
     // Before anything that applies plugins or CSS, they all check it
     SafeMode.init(data.safeMode);
     Settings.init(data.settings);

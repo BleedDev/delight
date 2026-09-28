@@ -7,5 +7,103 @@
     "tags": ["messages", "utility"],
     "permissions": { "network": ["cdn.discordapp.com", "media.discordapp.net"] },
     "changelog": [{ "version": "1.0.1", "notes": ["Says what it needs (contacting cdn.discordapp.com and media.discordapp.net), and Evi holds it to that."] }, { "version": "1.0.0", "notes": ["First release."] }],
+    "locales": {
+        "de": {
+            "name": "Sprachnachrichten-Download",
+            "description": "Fügt dem Nachrichtenmenü von Sprachnachrichten „Sprachnachricht herunterladen“ hinzu und speichert die Aufnahme als .ogg-Datei.",
+            "changelog": {
+                "1.0.1": [
+                    "Sagt jetzt, was es braucht (Verbindungen zu cdn.discordapp.com und media.discordapp.net), und Evi hält es dazu an."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Descarga de mensajes de voz",
+            "description": "Añade Descargar mensaje de voz al menú de los mensajes de voz y guarda la grabación como archivo .ogg.",
+            "changelog": {
+                "1.0.1": [
+                    "Ahora dice qué necesita (conectarse a cdn.discordapp.com y media.discordapp.net), y Evi se lo exige."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Téléchargement de messages vocaux",
+            "description": "Ajoute Télécharger le message vocal au menu des messages vocaux et enregistre l'enregistrement dans un fichier .ogg.",
+            "changelog": {
+                "1.0.1": [
+                    "Indique désormais ce dont il a besoin (contacter cdn.discordapp.com et media.discordapp.net), et Evi le lui fait respecter."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "ボイスメッセージのダウンロード",
+            "description": "ボイスメッセージのメニューに「ボイスメッセージをダウンロード」を追加し、録音を .ogg ファイルとして保存します。",
+            "changelog": {
+                "1.0.1": [
+                    "必要とするもの(cdn.discordapp.com と media.discordapp.net への接続)を明示するようになりました。Eviがそれを守らせます。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Pobieranie wiadomości głosowych",
+            "description": "Dodaje Pobierz wiadomość głosową do menu wiadomości głosowych i zapisuje nagranie jako plik .ogg.",
+            "changelog": {
+                "1.0.1": [
+                    "Podaje teraz, czego potrzebuje (łączenia z cdn.discordapp.com i media.discordapp.net), a Evi tego pilnuje."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Download de mensagem de voz",
+            "description": "Adiciona Baixar mensagem de voz ao menu das mensagens de voz e salva a gravação como arquivo .ogg.",
+            "changelog": {
+                "1.0.1": [
+                    "Agora diz do que precisa (se conectar a cdn.discordapp.com e media.discordapp.net), e o Evi garante isso."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Скачивание голосовых сообщений",
+            "description": "Добавляет пункт «Скачать голосовое сообщение» в меню голосовых сообщений и сохраняет запись в файл .ogg.",
+            "changelog": {
+                "1.0.1": [
+                    "Теперь указывает, что ему нужно (обращение к cdn.discordapp.com и media.discordapp.net), и Evi следит за этим."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Sesli Mesaj İndirme",
+            "description": "Sesli mesajların mesaj menüsüne Sesli mesajı indir seçeneğini ekler ve kaydı .ogg dosyası olarak kaydeder.",
+            "changelog": {
+                "1.0.1": [
+                    "Neye ihtiyaç duyduğunu artık belirtiyor (cdn.discordapp.com ve media.discordapp.net ile bağlantı kurmak) ve Evi buna uymasını sağlıyor."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    },
     "enabledByDefault": false
 }

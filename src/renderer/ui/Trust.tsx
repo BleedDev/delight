@@ -86,7 +86,7 @@ function ReportForm({ id, kind, version, onSent, onCancel }: { id: string; kind:
     const submit = async () => {
         if (sending) return;
         if (!reason) return fail({ field: "reason", message: t("report.pickReason") });
-        const checked = validatePluginReport(id, { reason, details, ...(isVersion(version) && { version }) });
+        const checked = validatePluginReport(id, { reason, details, ...(isVersion(version) && { version }) }, t);
         if ("error" in checked) return fail({ field: "details", message: checked.error });
 
         setSending(true);

@@ -10,7 +10,8 @@ import { definePlugin, openLayer, React } from "@evi/api";
 import type { CloseLayer } from "@evi/api";
 import type { ReactNode } from "react";
 
-import { Analysis, analyzeLink, meetsThreshold, parseAllowlist, PATCH, RiskLevel } from "./analyze";
+import { Analysis, analyzeLink, Finding, meetsThreshold, parseAllowlist, PATCH, RiskLevel } from "./analyze";
+import { t } from "./strings";
 
 let running = false;
 let threshold: RiskLevel = "caution";
@@ -30,6 +31,11 @@ function linkText(event: any, props: any): string {
     const fromDom = event?.currentTarget?.textContent ?? event?.target?.closest?.("a")?.textContent;
     if (typeof fromDom === "string" && fromDom.trim()) return fromDom;
     return textOf(props?.children);
+}
+
+/** A finding's wording in Discord's language; English from analyze.ts when it has no vars to fill in */
+function say(f: Finding): string {
+    return f.vars ? t(`finding.${f.key ?? f.code}` as Parameters<typeof t>[0], f.vars) : f.code === "unreadable" || f.code === "http" ? t(`finding.${f.code}`) : f.message;
 }
 
 // ---- The dialog ---------------------------------------------------------------------------------
@@ -95,24 +101,24 @@ function Warning({ analysis, onOpen, onBack }: { analysis: Analysis; onOpen(): v
                         <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3 2 20h20L12 3Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /><path d="M12 10v4.5M12 17.5v.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                     </span>
                     <div>
-                        <h2 id="evi-ls-title">{danger ? "This link looks dangerous" : "This link might not be safe"}</h2>
-                        <p>{danger ? "It has signs of a scam or phishing link." : "Something about it is unusual. Check where it goes before you open it."}</p>
+                        <h2 id="evi-ls-title">{t(danger ? "title.danger" : "title.caution")}</h2>
+                        <p>{t(danger ? "subtitle.danger" : "subtitle.caution")}</p>
                     </div>
                 </header>
                 <div className="evi-ls-body">
                     <ul className="evi-ls-reasons" id="evi-ls-reasons">
-                        {reasons.map(f => <li key={f.code} data-level={f.level}>{f.message}</li>)}
-                        {notes.map(f => <li key={f.code} data-level="info">{f.message}</li>)}
+                        {reasons.map(f => <li key={f.code} data-level={f.level}>{say(f)}</li>)}
+                        {notes.map(f => <li key={f.code} data-level="info">{say(f)}</li>)}
                     </ul>
-                    <div className="evi-ls-label">Where it really goes</div>
+                    <div className="evi-ls-label">{t("label.destination")}</div>
                     <div className="evi-ls-url">{address}</div>
                     {analysis.displayHostname !== analysis.hostname && analysis.hostname && (
-                        <div className="evi-ls-hint">Written as {analysis.hostname}</div>
+                        <div className="evi-ls-hint">{t("hint.written", { host: analysis.hostname })}</div>
                     )}
                 </div>
                 <footer className="evi-ls-actions">
-                    <button className="evi-ls-open" onClick={onOpen}>Open anyway</button>
-                    <button className="evi-ls-back" ref={backRef} onClick={onBack}>Go back</button>
+                    <button className="evi-ls-open" onClick={onOpen}>{t("button.open")}</button>
+                    <button className="evi-ls-back" ref={backRef} onClick={onBack}>{t("button.back")}</button>
                 </footer>
             </div>
         </div>
@@ -158,19 +164,19 @@ export default definePlugin({
     settings: {
         threshold: {
             type: "select",
-            label: "Warn me about",
-            description: "Which links get a warning before they open.",
+            get label() { return t("settings.threshold"); },
+            get description() { return t("settings.threshold.description"); },
             default: "caution",
             options: [
-                { label: "Suspicious and dangerous links", value: "caution" },
-                { label: "Only dangerous links", value: "danger" },
+                { get label() { return t("settings.threshold.caution"); }, value: "caution" },
+                { get label() { return t("settings.threshold.danger"); }, value: "danger" },
             ],
         },
         allowlist: {
             type: "string",
-            label: "Trusted domains",
-            description: "Links to these domains and their subdomains never get a warning. Separate them with commas or new lines.",
-            placeholder: "example.com, mysite.dev",
+            get label() { return t("settings.allowlist"); },
+            get description() { return t("settings.allowlist.description"); },
+            get placeholder() { return t("settings.allowlist.placeholder"); },
             default: "",
             multiline: true,
         },

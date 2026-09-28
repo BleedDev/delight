@@ -1,8 +1,9 @@
 import { Components, definePlugin, Dispatcher, findStore, Menu, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
-import { chunk, collectUnread, collectUnreadSteps, countGuilds, summary, toAck } from "./collect";
+import { chunk, collectUnread, collectUnreadSteps, countGuilds, toAck } from "./collect";
 import type { ReadStores, UnreadChannel } from "./collect";
+import { t } from "./strings";
 
 /**
  * Marking read is Discord's own BULK_ACK action, the one "Mark as read" on a folder dispatches:
@@ -21,9 +22,24 @@ import type { ReadStores, UnreadChannel } from "./collect";
 
 type Settings = typeof settings;
 const settings = {
-    includeDms: { type: "boolean", label: "Include DMs", description: "Also mark direct messages and group DMs as read.", default: false },
-    showButton: { type: "boolean", label: "Server list button", description: "A button above your servers, shown while anything is unread.", default: true },
-    contextMenu: { type: "boolean", label: "Server menu item", description: "\"Mark All Servers as Read\" when you right-click a server.", default: true },
+    includeDms: {
+        type: "boolean",
+        get label() { return t("settings.includeDms"); },
+        get description() { return t("settings.includeDms.description"); },
+        default: false,
+    },
+    showButton: {
+        type: "boolean",
+        get label() { return t("settings.showButton"); },
+        get description() { return t("settings.showButton.description"); },
+        default: true,
+    },
+    contextMenu: {
+        type: "boolean",
+        get label() { return t("settings.contextMenu"); },
+        get description() { return t("settings.contextMenu.description"); },
+        default: true,
+    },
 } as const;
 
 let context: PluginContext<Settings> | undefined;
@@ -47,16 +63,23 @@ function stores(): ReadStores | undefined {
     };
 }
 
+/** "Marked 12 channels in 3 servers as read", in Discord's language */
+function summarize(count: number, guilds: number) {
+    if (count === 0) return t("summary.none");
+    const channels = t("summary.channels", { count });
+    return guilds > 0 ? t("summary.doneInServers", { channels, servers: t("summary.servers", { count: guilds }) }) : t("summary.done", { channels });
+}
+
 /** Marks everything read and returns what to tell the user */
 async function readAll(): Promise<{ message: string; ok: boolean; }> {
     const s = stores();
-    if (!s) return { message: "Couldn't find Discord's read state stores", ok: false };
+    if (!s) return { message: t("error.stores"), ok: false };
 
     const unread = collectUnread(s, { includeDms: context?.settings.get("includeDms") ?? false });
     for (const batch of chunk(unread.map(toAck))) {
         await Dispatcher.dispatch({ type: "BULK_ACK", context: "APP", channels: batch });
     }
-    return { message: summary(unread.length, countGuilds(unread)), ok: true };
+    return { message: summarize(unread.length, countGuilds(unread)), ok: true };
 }
 
 let busy = false;
@@ -68,7 +91,7 @@ async function readAllWithToast() {
         context?.toast(message, { type: ok ? "success" : "failure" });
     } catch (err) {
         context?.logger.error("Marking all as read failed", err);
-        context?.toast("Couldn't mark everything as read", { type: "failure" });
+        context?.toast(t("error.failed"), { type: "failure" });
     } finally {
         busy = false;
     }
@@ -173,7 +196,7 @@ function ReadAllButton() {
     const count = useButtonCount();
     if (count === 0) return null;
 
-    const label = `Mark ${count} ${count === 1 ? "channel" : "channels"} as read`;
+    const label = t("button.label", { count });
     const button = (
         <button type="button" className="dl-read-all-button" onClick={readAllWithToast} aria-label={label}>
             <CheckIcon />
@@ -254,7 +277,7 @@ export default definePlugin({
 
         ctx.command({
             name: "readall",
-            description: "Mark every server as read",
+            get description() { return t("command.description"); },
             async execute() {
                 const { message } = await readAll();
                 return { ephemeral: message };
@@ -265,7 +288,7 @@ export default definePlugin({
             if (!ctx.settings.get("contextMenu") || !props.guild?.id || unreadCount === 0) return;
             children.push(
                 <Menu.Group key="dl-read-all">
-                    <Menu.Item id="dl-read-all" label="Mark All Servers as Read" action={readAllWithToast} />
+                    <Menu.Item id="dl-read-all" label={t("menu.markAll")} action={readAllWithToast} />
                 </Menu.Group>,
             );
         });

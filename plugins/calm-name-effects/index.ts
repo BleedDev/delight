@@ -1,5 +1,7 @@
 import { definePlugin, Filter } from "@evi/api";
 
+import { t } from "./strings";
+
 /**
  * Nitro display name styles (Prism, Neon, Toon, Pop, Gummy) are CSS animations Discord starts every
  * time a name mounts: opening a chat plays them in the header, on every message and in the profile
@@ -20,8 +22,8 @@ import { definePlugin, Filter } from "@evi/api";
 const settings = {
     animateOnHover: {
         type: "boolean",
-        label: "Animate on hover",
-        description: "Play a name's effect while your pointer is on it. Off keeps every name still.",
+        get label() { return t("settings.animateOnHover"); },
+        get description() { return t("settings.animateOnHover.description"); },
         default: true,
     },
 } as const;

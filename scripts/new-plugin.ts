@@ -1,6 +1,6 @@
 /**
- * Starts a new plugin: a folder with a manifest, a working index.tsx, a pure logic file and its test,
- * laid out the way docs/plugins.md describes. It builds, runs and passes its test as it is.
+ * Starts a new plugin: a folder with a manifest, a working index.tsx, its strings (English, ready for
+ * other languages), a pure logic file and its test, laid out the way docs/plugins.md describes. It builds, runs and passes its test as it is.
  *
  *   bun run new-plugin my-plugin [--name "My Plugin"] [--author "You"] [--official]
  *
@@ -64,6 +64,15 @@ const manifest = {
     tags: ["social"],
     permissions: {},
     changelog: [{ version: "1.0.0", notes: ["First release."] }],
+    // Name, description and changelog in other languages, shown when Discord is set to one of them.
+    // English stays in the fields above. Add a language per block ("de", "pt-BR"...): docs/plugins.md, "Translations"
+    locales: {
+        es: {
+            name,
+            description: "Di qué obtiene alguien con él, en una o dos frases.",
+            changelog: { "1.0.0": ["Primera versión."] },
+        },
+    },
     minEviVersion: pkg.version,
     enabledByDefault: false,
 };
@@ -72,6 +81,7 @@ const index = `import { definePlugin } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
 import { greet } from "./greeting";
+import { t } from "./strings";
 
 /**
  * ${name}: what it does, and how it hooks into Discord. Say which patches and hooks it uses and why,
@@ -80,8 +90,20 @@ import { greet } from "./greeting";
 
 type Settings = typeof settings;
 const settings = {
-    greeting: { type: "string", label: "Greeting", description: "What /${command} and the shortcut say.", default: "Hello", placeholder: "Hello" },
-    shortcut: { type: "keybind", label: "Shortcut", description: "Says the greeting as a toast, anywhere in Discord.", default: "" },
+    // Settings are read when they're drawn, so their text is a getter: it follows Discord's language
+    greeting: {
+        type: "string",
+        get label() { return t("settings.greeting"); },
+        get description() { return t("settings.greeting.description"); },
+        default: "Hello",
+        placeholder: "Hello",
+    },
+    shortcut: {
+        type: "keybind",
+        get label() { return t("settings.shortcut"); },
+        get description() { return t("settings.shortcut.description"); },
+        default: "",
+    },
 } as const;
 
 /** Set while the plugin runs: patches and components live outside start */
@@ -96,12 +118,40 @@ export default definePlugin({
 
         ctx.command({
             name: "${command}",
-            description: "Say the greeting",
-            options: [{ name: "name", description: "Who to greet", type: "string" }],
+            description: t("command.description"),
+            options: [{ name: "name", description: t("command.nameOption"), type: "string" }],
             execute: args => ({ ephemeral: greet(ctx.settings.get("greeting"), args.name) }),
         });
 
         ctx.keybind("shortcut", () => ctx.toast(greet(ctx.settings.get("greeting"))));
+    },
+});
+`;
+
+const strings = `import { defineStrings } from "@evi/api";
+
+/**
+ * Everything ${name} shows, by Discord language. English is required, it's the source of the keys and
+ * the fallback for anything another language leaves out. Add a language as a block of its own
+ * ("de", "es", "pt-BR"...); a plural is { one: "{count} thing", other: "{count} things" }.
+ * See docs/plugins.md, "Translations". Use it as t("key", { name: "value" }).
+ */
+export const t = defineStrings({
+    en: {
+        "settings.greeting": "Greeting",
+        "settings.greeting.description": "What /${command} and the shortcut say.",
+        "settings.shortcut": "Shortcut",
+        "settings.shortcut.description": "Says the greeting as a toast, anywhere in Discord.",
+        "command.description": "Say the greeting",
+        "command.nameOption": "Who to greet",
+    },
+    es: {
+        "settings.greeting": "Saludo",
+        "settings.greeting.description": "Lo que dicen /${command} y el atajo.",
+        "settings.shortcut": "Atajo",
+        "settings.shortcut.description": "Dice el saludo como aviso, en cualquier parte de Discord.",
+        "command.description": "Decir el saludo",
+        "command.nameOption": "A quién saludar",
     },
 });
 `;
@@ -134,14 +184,16 @@ test("greets everyone without one, and says hello without a greeting", () => {
 mkdirSync(dir, { recursive: true });
 writeFileSync(join(dir, "manifest.json"), JSON.stringify(manifest, null, 4) + "\n");
 writeFileSync(join(dir, "index.tsx"), index);
+writeFileSync(join(dir, "strings.ts"), strings);
 writeFileSync(join(dir, "greeting.ts"), logic);
 writeFileSync(testFile, test);
 
 const rel = (p: string) => relative(ROOT, p).replaceAll("\\", "/");
 console.log(`✓ ${name} is in ${rel(dir)}/`);
 console.log(`
-  ${rel(join(dir, "manifest.json"))}   name, description, what it needs ("permissions")
+  ${rel(join(dir, "manifest.json"))}   name, description, what it needs ("permissions"), "locales" for other languages
   ${rel(join(dir, "index.tsx"))}       what it does in Discord
+  ${rel(join(dir, "strings.ts"))}      its text by language (English, and an example in Spanish)
   ${rel(join(dir, "greeting.ts"))}     logic without Discord, tested by ${rel(testFile)}
 
 Next:

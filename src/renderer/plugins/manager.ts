@@ -1,8 +1,10 @@
 import * as api from "@evi/api";
 import { EviSettings, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
 import { applyPatchFixes, Hotfix, hotfixFor, hotfixTag } from "@shared/hotfixes";
+import { localizePlugin } from "@shared/pluginLocales";
 import { PulledPlugin, PulledPlugins, pullFor } from "@shared/pulls";
 
+import { I18n } from "../i18n";
 import { Logger } from "../logger";
 import { Native } from "../native";
 import { loadedModulesMatching, replaceLive } from "../patching/live";
@@ -53,6 +55,24 @@ let snapshot: PluginState[] = [];
 let ready = false;
 let pulls: PulledPlugins = {};
 let hotfixes: Hotfix[] = [];
+
+/** Manifests as they came: `manifest` is in Discord's language, which can change after they load */
+const rawManifests = new WeakMap<PluginState, PluginManifest>();
+let followingLocale = false;
+
+function setManifest(state: PluginState, manifest: PluginManifest) {
+    rawManifests.set(state, manifest);
+    state.manifest = localizePlugin(manifest, I18n.discordLocale);
+    if (followingLocale) return;
+    followingLocale = true;
+    I18n.subscribe(() => {
+        for (const p of plugins.values()) {
+            const raw = rawManifests.get(p);
+            if (raw) p.manifest = localizePlugin(raw, I18n.discordLocale);
+        }
+        emit();
+    });
+}
 
 function emit() {
     snapshot = [...plugins.values()].sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
@@ -226,6 +246,7 @@ function load(payload: PluginPayload): PluginState {
         needsReload: false,
         patchesRegistered: false,
     };
+    setManifest(state, payload.manifest);
     state.pulled = pullOf(state);
 
     // Safe mode lists plugins so they can be turned off, but never runs their code, not even top-level
@@ -254,7 +275,10 @@ function upsert(payload: PluginPayload) {
     const enabled = isPluginEnabled(Settings.data, payload.manifest) && !pulled;
 
     if (SafeMode.active) {
-        if (previous) Object.assign(previous, { manifest: payload.manifest, code: payload.code, pulled });
+        if (previous) {
+            Object.assign(previous, { code: payload.code, pulled });
+            setManifest(previous, payload.manifest);
+        }
         else load(payload);
         return emit();
     }
@@ -278,7 +302,7 @@ function upsert(payload: PluginPayload) {
         return emit();
     }
 
-    previous.manifest = payload.manifest;
+    setManifest(previous, payload.manifest);
     previous.code = payload.code;
     previous.definition = definition;
     previous.error = undefined;

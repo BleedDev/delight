@@ -5,7 +5,7 @@
  * after Evi updates itself, and on demand from the Evi panel. Plugin changelogs (PluginChangelog.tsx)
  * use the same shell. It renders in Evi's own layer: Discord's modal layer sits under Evi's panel.
  */
-import { latestRelease, mergeReleases, Release, RELEASES_URL, releasesSince, SECTION_KINDS, SectionKind } from "@shared/changelog";
+import { latestRelease, localizedRelease, mergeReleases, Release, RELEASES_URL, releasesSince, SECTION_KINDS, SectionKind } from "@shared/changelog";
 import { versionCover } from "@shared/versionCover";
 import type { ReactNode } from "react";
 
@@ -108,7 +108,7 @@ function VersionHero({ version }: { version: string; }) {
 }
 
 export function WhatsNewModal({ releases, onClose }: { releases: Release[]; onClose(): void; }) {
-    const notes = mergeReleases(releases);
+    const notes = mergeReleases(releases.map(r => localizedRelease(r, I18n.discordLocale)));
     const cover = coverUrl(notes.cover);
     const date = new Intl.DateTimeFormat(I18n.discordLocale, { dateStyle: "long" }).format(new Date(`${notes.date}T00:00:00`));
 

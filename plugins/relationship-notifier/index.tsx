@@ -1,6 +1,7 @@
 import { Components, definePlugin, Dispatcher, filters, findStore, React } from "@evi/api";
 import type { FluxAction, HookContext, PluginContext } from "@evi/api";
 
+import { t } from "./strings";
 import { decide, NotificationKind, NotificationLog, RelationshipNotification, storeLookup, Tracker } from "./events";
 
 /**
@@ -15,11 +16,11 @@ import { decide, NotificationKind, NotificationLog, RelationshipNotification, st
  */
 
 const settings = {
-    friendRemoved: { type: "boolean", label: "Friend removals", description: "Someone removes you from their friends.", default: true },
-    requestCancelled: { type: "boolean", label: "Declined friend requests", description: "A friend request you sent is declined or cancelled.", default: true },
-    groupRemoved: { type: "boolean", label: "Group DM removals", description: "Someone removes you from a group DM. Leaving yourself isn't reported.", default: true },
-    serverRemoved: { type: "boolean", label: "Server removals", description: "You're kicked or banned from a server, or it's deleted. Leaving yourself isn't reported.", default: true },
-    showToasts: { type: "boolean", label: "Show toasts", description: "Pop up a toast. When off, it's only logged here and in /relationships.", default: true },
+    friendRemoved: { type: "boolean", get label() { return t("settings.friendRemoved"); }, get description() { return t("settings.friendRemoved.description"); }, default: true },
+    requestCancelled: { type: "boolean", get label() { return t("settings.requestCancelled"); }, get description() { return t("settings.requestCancelled.description"); }, default: true },
+    groupRemoved: { type: "boolean", get label() { return t("settings.groupRemoved"); }, get description() { return t("settings.groupRemoved.description"); }, default: true },
+    serverRemoved: { type: "boolean", get label() { return t("settings.serverRemoved"); }, get description() { return t("settings.serverRemoved.description"); }, default: true },
+    showToasts: { type: "boolean", get label() { return t("settings.showToasts"); }, get description() { return t("settings.showToasts.description"); }, default: true },
 } as const satisfies Record<NotificationKind | "showToasts", unknown>;
 
 type Ctx = PluginContext<typeof settings>;
@@ -49,6 +50,9 @@ function markOwn(ctx: Ctx, tracker: Tracker, props: string[], methods: string[],
     });
 }
 
+/** What the toast and log say, in Discord's language (the entry keeps its English text) */
+const textOf = (entry: RelationshipNotification) => t(`text.${entry.kind}`, { name: entry.name });
+
 function formatTime(ms: number) {
     const date = new Date(ms);
     return date.toDateString() === new Date().toDateString()
@@ -59,14 +63,14 @@ function formatTime(ms: number) {
 function LogPanel({ log }: { log: NotificationLog; }) {
     const entries = React.useSyncExternalStore(log.subscribe, () => log.entries);
     const Button = Components.Button as any;
-    const label = "Clear log";
+    const label = t("log.clear");
     return (
         <div>
             <div className="dl-field-row">
                 <div className="dl-field-text">
-                    <div className="dl-label">Recent</div>
+                    <div className="dl-label">{t("log.recent")}</div>
                     <p className="dl-hint" role="status">
-                        {entries.length ? `${entries.length} since Discord started. Kept in memory only.` : "Nothing yet. Kept in memory only."}
+                        {entries.length ? t("log.count", { count: entries.length }) : t("log.empty")}
                     </p>
                 </div>
                 {Button
@@ -80,7 +84,7 @@ function LogPanel({ log }: { log: NotificationLog; }) {
                             <time dateTime={new Date(entry.at).toISOString()} style={{ fontVariantNumeric: "tabular-nums", marginInlineEnd: "0.5rem" }}>
                                 {formatTime(entry.at)}
                             </time>
-                            {entry.text}
+                            {textOf(entry)}
                         </li>
                     ))}
                 </ul>
@@ -109,7 +113,7 @@ export default definePlugin({
         const report = (entry: RelationshipNotification) => {
             if (!ctx.settings.get(entry.kind)) return;
             log.add(entry);
-            if (ctx.settings.get("showToasts")) ctx.toast(entry.text, { type: "info", duration: 6000 });
+            if (ctx.settings.get("showToasts")) ctx.toast(textOf(entry), { type: "info", duration: 6000 });
         };
 
         // Before any store applies the action, so names are still there
@@ -126,11 +130,11 @@ export default definePlugin({
 
         ctx.command({
             name: "relationships",
-            description: "Friend, group DM and server removals since Discord started",
+            get description() { return t("command.description"); },
             execute() {
                 const entries = log.entries;
-                if (!entries.length) return { ephemeral: "Nothing yet: no removals since Discord started." };
-                return { ephemeral: entries.slice(0, 20).map(e => `${formatTime(e.at)}  ${e.text}`).join("\n") };
+                if (!entries.length) return { ephemeral: t("command.empty") };
+                return { ephemeral: entries.slice(0, 20).map(e => `${formatTime(e.at)}  ${textOf(e)}`).join("\n") };
             },
         });
     },

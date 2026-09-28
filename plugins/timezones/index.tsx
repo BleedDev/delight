@@ -19,7 +19,8 @@ import {
     allZones, cityOf, describeTime, formatOffset, formatTime, isValidZone, localeUses12h, localZone, offsetMinutes, parseZones, regionOf,
     sameZone, searchZones, tooltipText, withoutZone, withZone,
 } from "./tz";
-import type { Describe, HourCycle, ZoneMap } from "./tz";
+import type { Describe, HourCycle, Tr, ZoneMap } from "./tz";
+import { t } from "./strings";
 
 /** Discord's `(displayProfile, hideLegacyUsername?) => ProfileBadge[]` */
 const profileBadgesFilter = filters.byCode("getBadges()??[]", "hidePersonalInformation");
@@ -35,28 +36,43 @@ const STORAGE_KEY = "zones";
 const settings = {
     timeFormat: {
         type: "select",
-        label: "Time format",
-        description: "Auto follows Discord's language.",
+        get label() { return t("settings.timeFormat"); },
+        get description() { return t("settings.timeFormat.description"); },
         default: "auto",
         options: [
-            { label: "Auto", value: "auto" },
-            { label: "12-hour (3:42 PM)", value: "12h" },
-            { label: "24-hour (15:42)", value: "24h" },
+            { get label() { return t("settings.timeFormat.auto"); }, value: "auto" },
+            { get label() { return t("settings.timeFormat.12h"); }, value: "12h" },
+            { get label() { return t("settings.timeFormat.24h"); }, value: "24h" },
         ],
     },
     chatTime: {
         type: "select",
-        label: "Time in chat",
-        description: "Their time right now, or what their clock said when they sent the message.",
+        get label() { return t("settings.chatTime"); },
+        get description() { return t("settings.chatTime.description"); },
         default: "current",
         options: [
-            { label: "Current time", value: "current" },
-            { label: "When the message was sent", value: "sent" },
+            { get label() { return t("settings.chatTime.current"); }, value: "current" },
+            { get label() { return t("settings.chatTime.sent"); }, value: "sent" },
         ],
     },
-    showInChat: { type: "boolean", label: "In chat", description: "After the name on each message.", default: true },
-    showOnProfiles: { type: "boolean", label: "On profiles", description: "A clock next to the badges; hover it for their time.", default: true },
-    showInMemberList: { type: "boolean", label: "In the member list", description: "After each name in the member list.", default: false },
+    showInChat: {
+        type: "boolean",
+        get label() { return t("settings.inChat"); },
+        get description() { return t("settings.inChat.description"); },
+        default: true,
+    },
+    showOnProfiles: {
+        type: "boolean",
+        get label() { return t("settings.onProfiles"); },
+        get description() { return t("settings.onProfiles.description"); },
+        default: true,
+    },
+    showInMemberList: {
+        type: "boolean",
+        get label() { return t("settings.inMemberList"); },
+        get description() { return t("settings.inMemberList.description"); },
+        default: false,
+    },
 } as const;
 
 let context: PluginContext<typeof settings> | undefined;
@@ -112,7 +128,10 @@ function cycle(): HourCycle {
     return f === "12h" || f === "24h" ? f : localeUses12h(locale()) ? "12h" : "24h";
 }
 
-const describeAt = (zone: string, at: Date): Describe => describeTime(at, zone, yourZone, { cycle: cycle(), locale: locale() });
+/** The time difference words in Discord's language */
+const tr: Tr = (key, vars) => t(key, vars);
+
+const describeAt = (zone: string, at: Date): Describe => describeTime(at, zone, yourZone, { cycle: cycle(), locale: locale() }, tr);
 
 function zoneOf(userId: string | undefined) {
     return userId ? zones[userId] : undefined;
@@ -127,7 +146,7 @@ function toDate(timestamp: unknown): Date | undefined {
 
 function userName(userId: string) {
     const user = store("UserStore")?.getUser?.(userId);
-    return user?.globalName || user?.username || "them";
+    return user?.globalName || user?.username || t("user.them");
 }
 
 // ---- Inline times -------------------------------------------------------------------------------
@@ -143,7 +162,7 @@ function ChatTime({ userId, sentAt }: { userId: string; sentAt?: Date; }) {
     if (!zone || !context?.settings.get("showInChat")) return null;
     const sent = context.settings.get("chatTime") === "sent" && sentAt;
     const d = describeAt(zone, sent ? sentAt : new Date());
-    const text = sent ? tooltipText(d, "Their time when sent") : tooltipText(d);
+    const text = sent ? tooltipText(d, t("tooltip.sent")) : tooltipText(d, t("tooltip.theirs"));
     return (
         <WithTooltip text={text}>
             <span className="evi-tz-time" data-where="chat" aria-label={text}>{d.short}</span>
@@ -156,7 +175,7 @@ function MemberTime({ userId }: { userId: string; }) {
     const zone = zoneOf(userId);
     if (!zone || !context?.settings.get("showInMemberList")) return null;
     const d = describeAt(zone, new Date());
-    const text = tooltipText(d);
+    const text = tooltipText(d, t("tooltip.theirs"));
     return (
         <WithTooltip text={text}>
             <span className="evi-tz-time" data-where="members" aria-label={text}>{d.short}</span>
@@ -226,7 +245,7 @@ function Picker({ userId, onClose }: { userId: string; onClose(): void; }) {
 
     const choose = (zone: string) => {
         commit(withZone(zones, userId, zone));
-        context?.toast(`Timezone set for ${name}: ${cityOf(zone)}`, { type: "success" });
+        context?.toast(t("toast.set", { name, city: cityOf(zone) }), { type: "success" });
         onClose();
     };
 
@@ -250,14 +269,14 @@ function Picker({ userId, onClose }: { userId: string; onClose(): void; }) {
             <div className="evi-tz-modal evi-modal" role="dialog" aria-modal="true" aria-labelledby="evi-tz-title">
                 <header className="evi-tz-head">
                     <div>
-                        <h2 id="evi-tz-title">Set timezone for {name}</h2>
+                        <h2 id="evi-tz-title">{t("picker.title", { name })}</h2>
                         <p>
                             {current
-                                ? <>Now {cityOf(current)}, {formatTime(now, current, { cycle: cyc, locale: loc, weekday: true })} there.</>
-                                : <>Search a city, a region, an abbreviation like EST, or an offset like UTC+3.</>}
+                                ? <>{t("picker.now", { city: cityOf(current), time: formatTime(now, current, { cycle: cyc, locale: loc, weekday: true }) })}</>
+                                : <>{t("picker.hint")}</>}
                         </p>
                     </div>
-                    <button type="button" className="evi-tz-close" aria-label="Close" onClick={onClose}>
+                    <button type="button" className="evi-tz-close" aria-label={t("picker.close")} onClick={onClose}>
                         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                     </button>
                 </header>
@@ -269,8 +288,8 @@ function Picker({ userId, onClose }: { userId: string; onClose(): void; }) {
                         aria-expanded="true"
                         aria-controls={listId}
                         aria-activedescendant={results[active] ? `evi-tz-opt-${active}` : undefined}
-                        aria-label="Search timezones"
-                        placeholder="Istanbul, PST, UTC+3…"
+                        aria-label={t("picker.search")}
+                        placeholder={t("picker.placeholder")}
                         spellCheck={false}
                         autoComplete="off"
                         value={query}
@@ -278,8 +297,8 @@ function Picker({ userId, onClose }: { userId: string; onClose(): void; }) {
                         onKeyDown={onKeyDown}
                     />
                 </div>
-                <div className="evi-tz-list" id={listId} role="listbox" aria-label="Timezones" ref={listRef}>
-                    {results.length === 0 && <p className="evi-tz-empty" role="status">No timezone matches “{query}”.</p>}
+                <div className="evi-tz-list" id={listId} role="listbox" aria-label={t("picker.list")} ref={listRef}>
+                    {results.length === 0 && <p className="evi-tz-empty" role="status">{t("picker.empty", { query })}</p>}
                     {results.map((zone, i) => {
                         const offset = offsetMinutes(zone, now);
                         const region = regionOf(zone);
@@ -296,7 +315,7 @@ function Picker({ userId, onClose }: { userId: string; onClose(): void; }) {
                                 onClick={() => choose(zone)}
                             >
                                 <span className="evi-tz-place">
-                                    <span className="evi-tz-city">{cityOf(zone)}{sameZone(zone, yourZone) && <span className="evi-tz-tag">You</span>}</span>
+                                    <span className="evi-tz-city">{cityOf(zone)}{sameZone(zone, yourZone) && <span className="evi-tz-tag">{t("picker.you")}</span>}</span>
                                     {region && <span className="evi-tz-region">{region}</span>}
                                 </span>
                                 <span className="evi-tz-offset">{formatOffset(offset)}</span>
@@ -318,17 +337,17 @@ function SavedPanel() {
     const now = new Date();
     return (
         <div className="evi-tz-saved">
-            <div className="dl-label">People</div>
+            <div className="dl-label">{t("saved.people")}</div>
             {entries.length === 0
-                ? <p className="dl-hint">Nobody yet. Right-click someone and choose Set Timezone.</p>
+                ? <p className="dl-hint">{t("saved.nobody")}</p>
                 : (
                     <ul>
                         {entries.map(([id, zone]) => (
                             <li key={id}>
                                 <span className="evi-tz-saved-name">{userName(id)}</span>
                                 <span className="evi-tz-saved-zone">{cityOf(zone)} · {formatTime(now, zone, { cycle: cycle(), locale: locale() })}</span>
-                                <button type="button" className="evi-tz-link" onClick={() => openPicker(id)}>Change</button>
-                                <button type="button" className="evi-tz-link" data-danger="true" onClick={() => commit(withoutZone(zones, id))}>Remove</button>
+                                <button type="button" className="evi-tz-link" onClick={() => openPicker(id)}>{t("saved.change")}</button>
+                                <button type="button" className="evi-tz-link" data-danger="true" onClick={() => commit(withoutZone(zones, id))}>{t("saved.remove")}</button>
                             </li>
                         ))}
                     </ul>
@@ -399,11 +418,11 @@ export default definePlugin({
                 <Menu.Group key="evi-tz-group">
                     <Menu.Item
                         id="evi-tz-set"
-                        label="Set Timezone"
+                        label={t("menu.set")}
                         subtext={zone ? `${cityOf(zone)} · ${formatTime(new Date(), zone, { cycle: cycle(), locale: locale() })}` : undefined}
                         action={() => openPicker(userId)}
                     />
-                    {zone && <Menu.Item id="evi-tz-remove" label="Remove Timezone" color="danger" action={() => commit(withoutZone(zones, userId))} />}
+                    {zone && <Menu.Item id="evi-tz-remove" label={t("menu.remove")} color="danger" action={() => commit(withoutZone(zones, userId))} />}
                 </Menu.Group>,
             );
         });
@@ -417,7 +436,7 @@ export default definePlugin({
             const zone = zoneOf(userId);
             if (!userId || !zone || !isValidZone(zone)) return;
             const now = new Date();
-            const description = tooltipText(describeAt(zone, now));
+            const description = tooltipText(describeAt(zone, now), t("tooltip.theirs"));
             const iconSrc = clockIcon(zone, now);
             const cached = badgeLists.get(userId);
             if (cached && cached.result === result && cached.description === description && cached.iconSrc === iconSrc) return cached.list;

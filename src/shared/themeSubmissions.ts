@@ -12,6 +12,7 @@
  */
 import { isPluginId, isVersion } from "./store";
 import { whyNotCss } from "./themes";
+import { englishTr, Tr } from "./tr";
 
 /** The most a reviewer is asked to read, and the most a community theme can be */
 export const MAX_COMMUNITY_THEME_BYTES = 512 * 1024;
@@ -99,41 +100,41 @@ export function scanThemeCss(css: string): ThemeScan {
 }
 
 /** Why CSS can't be a community theme, or undefined when it can */
-export function whyNotCommunityCss(css: string): string | undefined {
+export function whyNotCommunityCss(css: string, tr: Tr = englishTr): string | undefined {
     const bytes = new TextEncoder().encode(css).length;
-    if (bytes > MAX_COMMUNITY_THEME_BYTES) return `The theme is ${Math.ceil(bytes / 1024)} KB; community themes can be at most ${MAX_COMMUNITY_THEME_BYTES / 1024} KB`;
-    const notCss = whyNotCss(css, "text/css");
+    if (bytes > MAX_COMMUNITY_THEME_BYTES) return tr("check.css.tooBig", { kb: Math.ceil(bytes / 1024), max: MAX_COMMUNITY_THEME_BYTES / 1024 });
+    const notCss = whyNotCss(css, "text/css", tr);
     if (notCss) return notCss;
     const scan = scanThemeCss(css);
-    if (scan.imports) return "Themes can't use @import: it loads a stylesheet from somewhere else every time Discord starts. Put the CSS in the theme itself";
+    if (scan.imports) return tr("check.css.import");
     const remote = scan.hosts.find(h => !h.allowed);
-    if (remote) return `Themes can't load anything from ${remote.host}: it would learn who uses the theme, and when. Embed images and fonts as data: URLs, or host images on Discord`;
+    if (remote) return tr("check.css.remote", { host: remote.host });
 }
 
 const text = (value: unknown, max: number): value is string => typeof value === "string" && value.length <= max && !/[\0-\x08\x0e-\x1f]/.test(value);
 
 /** An upload, cleaned, or why it can't be sent. The CSS rules are checked separately (whyNotCommunityCss). */
-export function validateThemeSubmission(raw: unknown): { input: ThemeSubmissionInput; } | { error: string; } {
+export function validateThemeSubmission(raw: unknown, tr: Tr = englishTr): { input: ThemeSubmissionInput; } | { error: string; } {
     const e = (raw ?? {}) as Record<string, unknown>;
-    if (!isPluginId(e.id)) return { error: "The id must be lowercase letters, digits and dashes, like ocean-night" };
-    if (!text(e.name, 80) || !e.name.trim()) return { error: "The name must be 1-80 characters" };
-    if (e.description !== undefined && !text(e.description, 300)) return { error: "The description must be at most 300 characters" };
-    if (!isVersion(e.version)) return { error: "The version must look like 1.0.0" };
+    if (!isPluginId(e.id)) return { error: tr("check.theme.id") };
+    if (!text(e.name, 80) || !e.name.trim()) return { error: tr("check.theme.name") };
+    if (e.description !== undefined && !text(e.description, 300)) return { error: tr("check.theme.description") };
+    if (!isVersion(e.version)) return { error: tr("check.theme.version") };
     const tags = e.tags ?? [];
     if (!Array.isArray(tags) || tags.length > MAX_THEME_TAGS || !tags.every(t => typeof t === "string" && /^[a-z0-9-]{1,24}$/.test(t))) {
-        return { error: `Tags: at most ${MAX_THEME_TAGS}, each lowercase letters, digits and dashes` };
+        return { error: tr("check.theme.tags", { max: MAX_THEME_TAGS }) };
     }
     const notes = e.notes ?? [];
     if (!Array.isArray(notes) || notes.length > MAX_THEME_NOTES || !notes.every(n => text(n, 300) && n.trim())) {
-        return { error: `What changed: at most ${MAX_THEME_NOTES} lines of 300 characters` };
+        return { error: tr("check.theme.notes", { max: MAX_THEME_NOTES }) };
     }
-    if (typeof e.css !== "string" || !e.css.trim()) return { error: "The theme's CSS is missing" };
+    if (typeof e.css !== "string" || !e.css.trim()) return { error: tr("check.theme.cssMissing") };
     let screenshot: ThemeSubmissionInput["screenshot"];
     if (e.screenshot !== undefined && e.screenshot !== null) {
         const s = e.screenshot as Record<string, unknown>;
-        if (!(typeof s.type === "string" && s.type in SCREENSHOT_EXTENSIONS)) return { error: "The screenshot must be a PNG, JPEG or WebP image" };
+        if (!(typeof s.type === "string" && s.type in SCREENSHOT_EXTENSIONS)) return { error: tr("check.theme.shotType") };
         if (typeof s.data !== "string" || !/^[A-Za-z0-9+/]*={0,2}$/.test(s.data)) return { error: "The screenshot must be base64" };
-        if (s.data.length > Math.ceil(MAX_THEME_SCREENSHOT_BYTES / 3) * 4) return { error: `The screenshot can be at most ${MAX_THEME_SCREENSHOT_BYTES / 1024 / 1024} MB` };
+        if (s.data.length > Math.ceil(MAX_THEME_SCREENSHOT_BYTES / 3) * 4) return { error: tr("check.theme.shotSize", { mb: MAX_THEME_SCREENSHOT_BYTES / 1024 / 1024 }) };
         screenshot = { type: s.type as ScreenshotType, data: s.data };
     }
     return {

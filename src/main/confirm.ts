@@ -11,6 +11,8 @@
  */
 import { BrowserWindow, dialog, WebContents } from "electron";
 
+import { mt } from "./locale";
+
 const TEST_ANSWER = process.env.EVI_TEST_CONFIRM;
 
 export interface ConfirmOptions {
@@ -35,7 +37,7 @@ export async function confirmWithUser(sender: WebContents | undefined, options: 
         title: "Evi",
         message: options.message,
         detail: options.detail,
-        buttons: [options.confirm, "Cancel"],
+        buttons: [options.confirm, mt("common.cancel")],
         defaultId: 1,
         cancelId: 1,
         noLink: true,

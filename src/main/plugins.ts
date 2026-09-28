@@ -7,6 +7,7 @@ import { existsSync, FSWatcher, readdirSync, readFileSync, renameSync, rmSync, w
 import { join, resolve, sep } from "path";
 
 import { confirmWithUser } from "./confirm";
+import { mt } from "./locale";
 import { DATA_DIR, PLUGINS_DIR } from "./paths";
 import { currentPulls, onPullsChange } from "./reports";
 import { addRequestFilter } from "./requests";
@@ -307,14 +308,14 @@ export function askToEnable(manifest: PluginManifest, sender: WebContents | unde
     const { name } = manifest;
     const switches = Object.keys(manifest.chromiumSwitches ?? {}).map(s => `--${s}`).join(", ");
     const answer = confirmWithUser(sender, manifest.native ? {
-        message: `Turn on ${name}? It runs with full access to your computer.`,
-        detail: `${name} runs outside Discord's page. It can read and change files and run programs, like any app you install. Only turn it on if you trust it.`,
-        confirm: "Turn on",
+        message: mt("main.enable.native.message", { name }),
+        detail: mt("main.enable.native.detail", { name }),
+        confirm: mt("main.enable.confirm"),
         pageSaid: true,
     } : {
-        message: `Turn on ${name}? It changes how Discord starts.`,
-        detail: `${name} starts Discord with ${switches}, from the next start on. Only turn it on if you trust it.`,
-        confirm: "Turn on",
+        message: mt("main.enable.switches.message", { name }),
+        detail: mt("main.enable.switches.detail", { name, switches }),
+        confirm: mt("main.enable.confirm"),
         pageSaid: true,
     }).catch(err => {
         console.error(`[Evi] Couldn't ask about turning on ${manifest.id}`, err);

@@ -1,5 +1,6 @@
 import { definePlugin, findMenuGroup, Menu } from "@evi/api";
 
+import { t } from "./strings";
 import { audioExtension, voiceAttachment, voiceFilename } from "./voice";
 
 /** Opens in the user's browser: Discord's desktop app sends window.open of web links there */
@@ -38,7 +39,7 @@ export default definePlugin({
                 await save(data, filename, attachment.content_type ?? res.headers.get("content-type") ?? "audio/ogg");
             } catch (e) {
                 ctx.logger.error("Voice message download failed", e);
-                ctx.toast("Couldn't download the voice message, opening it in the browser", { type: "failure" });
+                ctx.toast(t("toast.failed"), { type: "failure" });
                 openExternal(url);
             }
         }
@@ -47,7 +48,7 @@ export default definePlugin({
             const { message } = props;
             if (!voiceAttachment(message)) return;
             const item = (
-                <Menu.Item key="dl-vmd-download" id="dl-vmd-download" label="Download Voice Message" action={() => void download(message)} />
+                <Menu.Item key="dl-vmd-download" id="dl-vmd-download" label={t("menu.download")} action={() => void download(message)} />
             );
             const group = findMenuGroup(children, "copy-text");
             if (group) group.push(item);

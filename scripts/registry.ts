@@ -144,6 +144,7 @@ for (const name of themeFiles) {
         screenshots: [],
         changelog: [],
         ...supporters && { supporters: true },
+        ...meta.locales && { locales: meta.locales },
         minEviVersion: pkg.version,
         file: { url: versioned(`${themesBase}/${storeThemeFile(id)}`, await sha256Hex(raw)), sha256: await sha256Hex(raw) },
     });

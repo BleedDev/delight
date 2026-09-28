@@ -16,14 +16,14 @@ const ICONS = {
 function describe(install) {
     switch (install.state) {
         case "evi":
-            if (install.devBuild) return "Evi dev build installed";
-            return install.eviVersion ? `Evi ${install.eviVersion} installed` : "Evi installed";
+            if (install.devBuild) return t("devBuild");
+            return install.eviVersion ? t("installedVersion", { version: install.eviVersion }) : t("installed");
         case "clean":
-            return "Evi not installed";
+            return t("notInstalled");
         case "other-mod":
-            return "Another client mod is installed";
+            return t("otherMod");
         default:
-            return "Not found on this computer";
+            return t("notFound");
     }
 }
 
@@ -84,8 +84,8 @@ function renderInstalls(animate) {
 
     const found = state.scan.installs.some(i => i.state !== "missing");
     $("hint").textContent = found
-        ? "Discord closes and opens again while Evi installs."
-        : "Install Discord first, then open Evi Setup again.";
+        ? t("hint")
+        : t("hintMissing");
     updateButtons();
 }
 
@@ -148,8 +148,8 @@ async function run(action, latest = false) {
     updateButtons();
     listOutcomes([]);
     $("status-actions").hidden = true;
-    const verb = action === "install" ? "Installing Evi" : "Removing Evi";
-    setStatus("busy", verb, action === "install" ? "Getting ready…" : "");
+    const verb = action === "install" ? t("installing") : t("removing");
+    setStatus("busy", verb, action === "install" ? t("gettingReady") : "");
     show("working");
 
     let report;
@@ -162,18 +162,18 @@ async function run(action, latest = false) {
     updateButtons();
 
     if (report.error) {
-        setStatus("failed", action === "install" ? "Evi couldn’t be installed" : "Evi couldn’t be removed", report.error);
+        setStatus("failed", action === "install" ? t("installFailed") : t("removeFailed"), report.error);
     } else if (report.ok) {
         const restarting = report.restarted.length > 0;
-        const title = restarting ? "Done — Discord is restarting" : action === "install" ? "Done — Evi is installed" : "Done — Evi is removed";
+        const title = restarting ? t("doneRestarting") : action === "install" ? t("doneInstalled") : t("doneRemoved");
         let text = action === "install"
-            ? `Evi ${report.version} is installed.${restarting ? " Discord opens with it in a moment." : ""}`
-            : "Discord is back to how it was.";
-        if (report.startByHand.length) text += ` Open Discord ${report.startByHand.join(" and ")} yourself.`;
+            ? t("isInstalled", { version: report.version }) + (restarting ? t("opensShortly") : "")
+            : t("backToNormal");
+        if (report.startByHand.length) text += t("openYourself", { list: joinList(report.startByHand) });
         setStatus("done", title, text);
         if (report.outcomes.length > 1) listOutcomes(report.outcomes);
     } else {
-        setStatus("failed", "Some installs didn’t work", "What happened with each:");
+        setStatus("failed", t("someFailed"), t("whatHappened"));
         listOutcomes(report.outcomes);
     }
     if (latest && report.ok) state.latest = null;
@@ -188,8 +188,8 @@ async function checkForUpdate() {
         const check = await invoke("check_update");
         if (!check.available) return;
         state.latest = check.latest;
-        $("banner-text").textContent = `Evi ${check.latest} is available`;
-        $("banner-install").textContent = `Install ${check.latest}`;
+        $("banner-text").textContent = t("updateAvailable", { version: check.latest });
+        $("banner-install").textContent = t("installVersion", { version: check.latest });
         $("banner").hidden = $("choose").hidden;
     } catch { }
 }
@@ -214,7 +214,8 @@ document.addEventListener("keydown", e => {
     if (e.key === "F5" || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r")) e.preventDefault();
 });
 
+translatePage();
 scan(true).catch(err => {
-    $("installs").textContent = `Couldn’t look for Discord: ${err}`;
+    $("installs").textContent = t("scanFailed", { error: err });
 });
 checkForUpdate();

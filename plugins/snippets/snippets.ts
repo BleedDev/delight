@@ -1,5 +1,26 @@
 import type { SourcePatch } from "@evi/api";
 
+/** The wording of the messages this file returns. English here; index.tsx passes its translations in (strings.ts) */
+export type SayKey =
+    | "err.nameEmpty" | "err.nameLong" | "err.nameTaken" | "err.textEmpty" | "err.textLong"
+    | "err.none" | "err.which" | "err.more" | "err.noneCalledClose" | "err.noneCalled";
+export type Say = (key: SayKey, vars?: Record<string, string | number>) => string;
+
+const ENGLISH: Record<SayKey, string> = {
+    "err.nameEmpty": "Give it a name.",
+    "err.nameLong": "Names can be up to {max} characters.",
+    "err.nameTaken": "There's already a snippet called \"{name}\".",
+    "err.textEmpty": "Write the text to insert.",
+    "err.textLong": "Snippets can be up to {max} characters (this one is {length}).",
+    "err.none": "You have no snippets yet. Add one from the snippets button in the chat bar, or right-click a message and pick Save as Snippet.",
+    "err.which": "Which snippet? You have: {list}",
+    "err.more": ", and {n} more",
+    "err.noneCalledClose": "No snippet is called \"{value}\". Did you mean: {list}?",
+    "err.noneCalled": "No snippet is called \"{value}\". You have: {list}",
+};
+
+const english: Say = (key, vars) => ENGLISH[key].replace(/\{(\w+)\}/g, (whole, name: string) => vars && name in vars ? String(vars[name]) : whole);
+
 /**
  * Pure pieces of Snippets: the saved replies, every change to them, placeholder expansion and
  * search. No Discord or Evi runtime imports, so tests can run all of it. Every change returns a new
@@ -55,19 +76,19 @@ export function cleanText(text: unknown) {
 const key = (name: string) => cleanName(name).toLocaleLowerCase();
 
 /** Why this name can't be used, or null. `exceptId` is the snippet being renamed. */
-export function nameError(state: SnippetState, name: unknown, exceptId?: string): string | null {
-    if (typeof name !== "string" || !cleanName(name)) return "Give it a name.";
-    if (name.replace(/\s+/g, " ").trim().length > MAX_NAME_LENGTH) return `Names can be up to ${MAX_NAME_LENGTH} characters.`;
+export function nameError(state: SnippetState, name: unknown, exceptId?: string, say: Say = english): string | null {
+    if (typeof name !== "string" || !cleanName(name)) return say("err.nameEmpty");
+    if (name.replace(/\s+/g, " ").trim().length > MAX_NAME_LENGTH) return say("err.nameLong", { max: MAX_NAME_LENGTH });
     const k = key(name);
     const taken = state.snippets.find(s => s.id !== exceptId && key(s.name) === k);
-    return taken ? `There's already a snippet called "${taken.name}".` : null;
+    return taken ? say("err.nameTaken", { name: taken.name }) : null;
 }
 
 /** Why this text can't be saved, or null */
-export function textError(text: unknown): string | null {
+export function textError(text: unknown, say: Say = english): string | null {
     const clean = cleanText(text);
-    if (!clean.trim()) return "Write the text to insert.";
-    if (clean.length > MAX_TEXT_LENGTH) return `Snippets can be up to ${MAX_TEXT_LENGTH} characters (this one is ${clean.length}).`;
+    if (!clean.trim()) return say("err.textEmpty");
+    if (clean.length > MAX_TEXT_LENGTH) return say("err.textLong", { max: MAX_TEXT_LENGTH, length: clean.length });
     return null;
 }
 
@@ -283,11 +304,11 @@ export type Resolved = { snippet: Snippet; } | { error: string; };
  * The snippet a /snip argument means: an id (a picked choice), an exact name, or the only good
  * match. Otherwise an error that lists what the user may have meant.
  */
-export function resolveSnippet(state: SnippetState, input: unknown): Resolved {
-    if (!state.snippets.length) return { error: "You have no snippets yet. Add one from the snippets button in the chat bar, or right-click a message and pick Save as Snippet." };
+export function resolveSnippet(state: SnippetState, input: unknown, say: Say = english): Resolved {
+    if (!state.snippets.length) return { error: say("err.none") };
     const value = typeof input === "string" ? input.trim() : "";
-    const list = (items: Snippet[]) => items.slice(0, 10).map(s => `\`${s.name}\``).join(", ") + (items.length > 10 ? `, and ${items.length - 10} more` : "");
-    if (!value) return { error: `Which snippet? You have: ${list([...state.snippets].sort(compareByName))}` };
+    const list = (items: Snippet[]) => items.slice(0, 10).map(s => `\`${s.name}\``).join(", ") + (items.length > 10 ? say("err.more", { n: items.length - 10 }) : "");
+    if (!value) return { error: say("err.which", { list: list([...state.snippets].sort(compareByName)) }) };
 
     const exact = getSnippet(state, value) ?? findByName(state, value);
     if (exact) return { snippet: exact };
@@ -300,8 +321,8 @@ export function resolveSnippet(state: SnippetState, input: unknown): Resolved {
     if (matches.length === 1 || (matches.length > 1 && matches[0].score >= 800 && matches[1].score < 800)) return { snippet: matches[0].snippet };
 
     const close = matches.length ? matches.map(m => m.snippet) : searchSnippets(state, value);
-    if (close.length) return { error: `No snippet is called "${value}". Did you mean: ${list(close)}?` };
-    return { error: `No snippet is called "${value}". You have: ${list([...state.snippets].sort(compareByName))}` };
+    if (close.length) return { error: say("err.noneCalledClose", { value, list: list(close) }) };
+    return { error: say("err.noneCalled", { value, list: list([...state.snippets].sort(compareByName)) }) };
 }
 
 /**

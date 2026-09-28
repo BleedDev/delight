@@ -122,6 +122,9 @@ function fakeNative(bootData: BootData) {
         reportBootOk: () => void (window as any).__test.bootOk++,
         exitSafeMode: async () => void (window as any).__test.exitedSafeMode++,
         onQuickCssChange: () => { },
+        // The wallpaper main copied in: the test hands it the bytes when it turns one on
+        readWallpaper: async () => (window as any).__test.wallpaper ?? { ok: false, error: "No wallpaper" },
+        removeWallpaper: async () => { },
         onPluginChange: (cb: (c: unknown) => void) => void pluginListeners.push(cb),
         onThemeChange: (cb: (c: unknown) => void) => void themeListeners.push(cb),
         // Like main: refuse non-https, otherwise "download" a theme and announce it before resolving
@@ -161,7 +164,10 @@ function fakeNative(bootData: BootData) {
                     entry("store-theme-sync", "Theme Sync", "Follows your system's light and dark mode.", "2.1.0"),
                     entry("store-lookup", "Store Lookup", "Waits for a part of Discord that isn't there.", "1.0.0", false, ["messages"], { authorIds: ["evi"] }),
                     // Community plugins: one to install, one Evi pulled at 1.0.0 with a fixed 1.0.1, one pulled for good
-                    entry("store-community", "Emoji Tray", "Keeps your most used emoji one click away.", "1.2.0", false, ["messages"], { authors: ["Mira"], authorIds: ["mira"] }),
+                    // A port: its own link points at the plugin it came from
+                    entry("store-community", "Emoji Tray", "Keeps your most used emoji one click away.", "1.2.0", false, ["messages"], {
+                        authors: ["Mira"], authorIds: ["mira"], source: "https://github.com/Vendicated/Vencord/tree/main/src/plugins/emojiTray",
+                    }),
                     entry("store-pulled", "Link Preview Plus", "Bigger link previews in the page's own colors.", "1.0.1", false, ["messages"], {
                         authors: ["Mira"], authorIds: ["mira"],
                         changelog: [{ version: "1.0.1", notes: ["Previews no longer go through a server"] }],
@@ -2228,6 +2234,24 @@ await page.screenshot({ path: join(OUT, "ui-store-detail.png") });
 await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
 await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 2000 });
 
+// View source: Evi's own go to the repository; a community plugin's to the exact code it installs,
+// with whatever its author linked (a port's original) kept apart
+{
+    const links = () => page.evaluate(() => [...document.querySelectorAll("[data-store-detail] a.dl-store-source")].map(a => [a.textContent, (a as HTMLAnchorElement).href]));
+    await page.locator('[data-store-id="store-clock"] .dl-store-card-link').click();
+    await page.waitForSelector('[data-store-detail="store-clock"]', { timeout: 2000 });
+    const official = await links();
+    await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
+    await page.locator('[data-store-id="store-community"] .dl-store-card-link').click();
+    await page.waitForSelector('[data-store-detail="store-community"]', { timeout: 2000 });
+    const community = await links();
+    await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
+    await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 2000 });
+    check("View source opens a community plugin's published code, its author's link kept as Project link",
+        JSON.stringify(official) === JSON.stringify([["View source", "https://github.com/BleedDev/evi"]])
+        && JSON.stringify(community) === JSON.stringify([["View source", "https://example.com/store-community/index.js"], ["Project link", "https://github.com/Vendicated/Vencord/tree/main/src/plugins/emojiTray"]]), { official, community });
+}
+
 await page.fill("#dl-plugin-store-search", "privacy");
 await page.waitForTimeout(150);
 const searched = await page.evaluate(() => [...document.querySelectorAll("[data-store-id]")].map(e => e.getAttribute("data-store-id")));
@@ -2502,6 +2526,101 @@ check("store themes show a Store badge in the Themes tab", themeRow.includes("Mi
         return { img: imgResult, violations };
     });
     check("Discord's CSP lets blob: images and media load (wallpaper, store previews)", blobs.img === "load" && !blobs.violations.some(v => /blob/.test(v)), blobs);
+
+    // Wallpaper: only Discord's main window turns see-through; its settings and popouts stay solid
+    // unless asked. Stand-ins carry Discord's own layer class names.
+    const wp = await page.evaluate(async () => {
+        const { settings } = (window as any).Evi;
+        const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+        const canvas = document.createElement("canvas");
+        canvas.width = 640;
+        canvas.height = 360;
+        const g = canvas.getContext("2d")!;
+        const gradient = g.createLinearGradient(0, 0, 640, 360);
+        gradient.addColorStop(0, "#5865f2");
+        gradient.addColorStop(1, "#eb459e");
+        g.fillStyle = gradient;
+        g.fillRect(0, 0, 640, 360);
+        const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), "image/png"));
+        (window as any).__test.wallpaper = { ok: true, file: "wallpaper-1.png", mime: "image/png", bytes: new Uint8Array(await blob.arrayBuffer()) };
+        settings.update((d: any) => void (d.wallpaper = { enabled: true, file: "wallpaper-1.png" }));
+        for (let i = 0; i < 40 && !(document.querySelector("#evi-wallpaper img.evi-wallpaper-media") as HTMLImageElement | null)?.naturalWidth; i++) await sleep(100);
+
+        const layer = (outer: string, inner?: string) => {
+            const el = document.createElement("div");
+            el.className = outer;
+            let host = el;
+            if (inner) {
+                host = document.createElement("div");
+                host.className = inner;
+                el.append(host);
+            }
+            const child = document.createElement("div");
+            host.append(child);
+            document.body.append(el);
+            return { el, child };
+        };
+        const base = layer("layers__960e4", "layer__960e4 baseLayer__960e4");
+        const settingsLayer = layer("layers__960e4", "layer__960e4");
+        const popout = layer("layerContainer__59d0d");
+        const read = () => [base, settingsLayer, popout].map(l => getComputedStyle(l.child).getPropertyValue("--background-base-lower").trim());
+        await sleep(50);
+        const byDefault = read();
+        settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, behindSettings: true, behindPopouts: true }));
+        await sleep(100);
+        const everywhere = read();
+        settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, behindSettings: false, behindPopouts: false, tint: "neutral", panels: { chat: 30 } }));
+        await sleep(100);
+        const neutral = read()[0];
+        settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, tint: "theme", panels: undefined, fit: "tile" }));
+        await sleep(100);
+        const tile = {
+            natural: document.getElementById("evi-wallpaper")?.style.getPropertyValue("--evi-wallpaper-natural-width"),
+            shown: getComputedStyle(document.querySelector("#evi-wallpaper .evi-wallpaper-tile")!).display,
+            img: getComputedStyle(document.querySelector("#evi-wallpaper .evi-wallpaper-media")!).display,
+        };
+        settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, fit: "fill" }));
+        for (const l of [base, settingsLayer, popout]) l.el.remove();
+        return { byDefault, everywhere, neutral, tile, theme: document.documentElement.className.match(/theme-\w+/)?.[0], realBaseLayer: !!document.querySelector('[class*="baseLayer_"]') };
+    });
+    check("wallpaper: the main window goes see-through in the theme's colours, settings and popouts only when asked",
+        / 12%, transparent\)$/.test(wp.byDefault[0]) && !wp.byDefault[1].includes("transparent") && !wp.byDefault[2].includes("transparent")
+        && wp.everywhere.every(v => v.endsWith("transparent)")) && wp.everywhere[2].endsWith(" 85%, transparent)") && /rgb\((0 0 0|255 255 255) \/ 0\.3\)/.test(wp.neutral), wp);
+    check("wallpaper: tiling draws the image at its own width", wp.tile.natural === "640px" && wp.tile.shown === "block" && wp.tile.img === "none", wp.tile);
+
+    // The tab: Discord in miniature, dragged and zoomed like Discord's image cropper
+    await openTab("themes", "wallpaper");
+    await page.waitForSelector(".dl-wp-stage", { timeout: 3000 });
+    await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, zoom: 200, x: 50, y: 50 })));
+    await page.waitForTimeout(200);
+    const stage = (await page.locator(".dl-wp-stage").boundingBox())!;
+    await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(stage.x + stage.width / 2 + 60, stage.y + stage.height / 2 + 30, { steps: 5 });
+    await page.mouse.up();
+    const dragged = await page.evaluate(() => ({ ...(window as any).Evi.settings.data.wallpaper }));
+    await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+    await page.mouse.wheel(0, -100);
+    await page.waitForTimeout(150);
+    const zoomed = await page.evaluate(() => (window as any).Evi.settings.data.wallpaper.zoom);
+    await page.locator(".dl-wp-stage").dblclick();
+    await page.waitForTimeout(150);
+    const centered = await page.evaluate(() => ({ ...(window as any).Evi.settings.data.wallpaper }));
+    const tab = await page.evaluate(() => ({
+        text: document.querySelector(".dl-wallpaper")?.textContent ?? "",
+        mock: document.querySelectorAll(".dl-wp-mock-sidebar").length,
+        media: (document.querySelector(".dl-wp-stage img.evi-wallpaper-media") as HTMLImageElement | null)?.naturalWidth,
+    }));
+    await page.locator(".dl-wallpaper").screenshot({ path: join(OUT, "ui-wallpaper.png") });
+    for (const section of ["look", "panels"]) {
+        await page.locator(`#dl-wallpaper-${section}`).scrollIntoViewIfNeeded();
+        await page.screenshot({ path: join(OUT, `ui-wallpaper-${section}.png`) });
+    }
+    check("wallpaper tab: dragging moves it, scrolling zooms, double-click centres it again",
+        dragged.x < 50 && dragged.y < 50 && zoomed === 210 && centered.x === 50 && centered.y === 50 && centered.zoom === 100, { dragged, zoomed, centered });
+    check("wallpaper tab: preview with Discord's layout, size choices and per-panel settings",
+        tab.mock === 2 && tab.media === 640 && ["Fill", "Fit", "Stretch", "Center", "Tile", "Chat", "Message box", "Show behind Discord’s settings", "Show behind popouts and menus", "Your theme’s colors"].every(s => tab.text.includes(s)), tab);
+    await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.wallpaper = { ...d.wallpaper, enabled: false })));
 }
 
 await page.keyboard.press("Escape");

@@ -72,6 +72,7 @@ export async function buildEntry(files: Partial<Record<StoreFileName, Uint8Array
         screenshots: manifest.screenshots ?? [],
         ...manifest.preview && { preview: manifest.preview },
         changelog: manifest.changelog ?? [],
+        ...manifest.locales && { locales: manifest.locales },
         // Checked strictly below (whyNotManifest): an entry never shows a declaration its manifest doesn't make
         ...manifest.permissions !== undefined && { permissions: readPermissions(manifest.permissions) },
     } as RegistryEntry;

@@ -22,6 +22,7 @@ import {
     assign, Category, CategoryState, categoryOf, createCategory, deleteCategory, EMPTY, getCategory, LaidOutCategory, layout, Layout, LIST_PATCH,
     MAX_NAME_LENGTH, moveCategory, nameError, parseState, PLAIN, renameCategory, rowIndex, rowOffset, sectionCategory, sectionSizes, setCollapsed,
 } from "./categories";
+import { t } from "./strings";
 
 const STORAGE_KEY = "categories";
 /** A category header's height, which the list needs to know up front */
@@ -33,17 +34,17 @@ type Settings = typeof settings;
 const settings = {
     order: {
         type: "select",
-        label: "Order inside categories",
+        get label() { return t("settings.order"); },
         default: "recent",
         options: [
-            { label: "Latest message first, like Direct Messages", value: "recent" },
-            { label: "By name", value: "name" },
+            { get label() { return t("settings.order.recent"); }, value: "recent" },
+            { get label() { return t("settings.order.name"); }, value: "name" },
         ],
     },
     showCounts: {
         type: "boolean",
-        label: "Show counts",
-        description: "How many DMs each category holds, next to its name.",
+        get label() { return t("settings.showCounts"); },
+        get description() { return t("settings.showCounts.description"); },
         default: true,
     },
 } as const;
@@ -168,24 +169,24 @@ function openHeaderMenu(event: ReactMouseEvent, category: Category) {
     if (!open || !Root) return;
     const index = state.categories.findIndex(c => c.id === category.id);
     open(event, () => (
-        <Root navId="evi-dm-category" onClose={closeContextMenu} aria-label={`${category.name} category`} onSelect={undefined}>
+        <Root navId="evi-dm-category" onClose={closeContextMenu} aria-label={t("header.aria", { name: category.name })} onSelect={undefined}>
             <Menu.Group>
-                <Menu.Item id="evi-dmc-rename" label="Rename Category" action={() => openNameDialog({ category })} />
-                <Menu.Item id="evi-dmc-up" label="Move Up" disabled={index <= 0} action={() => commit(moveCategory(state, category.id, -1))} />
+                <Menu.Item id="evi-dmc-rename" label={t("menu.rename")} action={() => openNameDialog({ category })} />
+                <Menu.Item id="evi-dmc-up" label={t("menu.moveUp")} disabled={index <= 0} action={() => commit(moveCategory(state, category.id, -1))} />
                 <Menu.Item
                     id="evi-dmc-down"
-                    label="Move Down"
+                    label={t("menu.moveDown")}
                     disabled={index < 0 || index >= state.categories.length - 1}
                     action={() => commit(moveCategory(state, category.id, 1))}
                 />
             </Menu.Group>
             <Menu.Group>
-                <Menu.Item id="evi-dmc-new-empty" label="New Category" action={() => openNameDialog({})} />
+                <Menu.Item id="evi-dmc-new-empty" label={t("menu.new")} action={() => openNameDialog({})} />
                 <Menu.Item
                     id="evi-dmc-delete"
-                    label="Delete Category"
+                    label={t("menu.delete")}
                     color="danger"
-                    subtext={category.channels.length ? "Its DMs go back to Direct Messages" : undefined}
+                    subtext={category.channels.length ? t("menu.delete.subtext") : undefined}
                     action={() => commit(deleteCategory(state, category.id))}
                 />
             </Menu.Group>
@@ -220,7 +221,7 @@ function CategoryHeader({ entry }: { entry: LaidOutCategory; }) {
                 onContextMenu={e => openHeaderMenu(e, category)}
             >
                 <span className="evi-dmc-name">{category.name}</span>
-                {showCounts && <span className="evi-dmc-count" aria-label={`${entry.size} DMs`}>{entry.size}</span>}
+                {showCounts && <span className="evi-dmc-count" aria-label={t("header.count", { count: entry.size })}>{entry.size}</span>}
                 <svg className="evi-dmc-chevron" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
                     <path d="M5.3 9.3a1 1 0 0 1 1.4 0L12 14.58l5.3-5.3a1 1 0 1 1 1.4 1.42l-6 6a1 1 0 0 1-1.4 0l-6-6a1 1 0 0 1 0-1.42Z" fill="currentColor" />
                 </svg>
@@ -269,7 +270,7 @@ function NameDialog({ category, channelId, onClose }: { category?: Category; cha
         e.preventDefault();
         const problem = nameError(state, name, category?.id);
         if (problem) {
-            setError(problem);
+            setError(t(problem === "empty" ? "error.empty" : "error.taken"));
             input.current?.focus();
             return;
         }
@@ -278,7 +279,7 @@ function NameDialog({ category, channelId, onClose }: { category?: Category; cha
         } else {
             const created = createCategory(state, name);
             if (!created.category) {
-                setError("You can't make any more categories");
+                setError(t("error.max"));
                 return;
             }
             commit(channelId ? assign(created.state, channelId, created.category.id) : created.state);
@@ -290,14 +291,14 @@ function NameDialog({ category, channelId, onClose }: { category?: Category; cha
         <div className="evi-dmc-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
             <div className="evi-dmc-modal evi-modal" role="dialog" aria-modal="true" aria-labelledby="evi-dmc-title">
                 <header className="evi-dmc-head">
-                    <h2 id="evi-dmc-title">{renaming ? "Rename Category" : "New Category"}</h2>
-                    <button type="button" className="evi-dmc-close" aria-label="Close" onClick={onClose}>
+                    <h2 id="evi-dmc-title">{renaming ? t("dialog.rename") : t("dialog.new")}</h2>
+                    <button type="button" className="evi-dmc-close" aria-label={t("dialog.close")} onClick={onClose}>
                         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                     </button>
                 </header>
                 <form className="evi-dmc-body" onSubmit={submit} noValidate>
-                    {!renaming && <p className="evi-dmc-hint">Categories sit above Direct Messages. Right-click any DM to add it to one.</p>}
-                    <label className="evi-dmc-label" htmlFor="evi-dmc-name">Category name</label>
+                    {!renaming && <p className="evi-dmc-hint">{t("dialog.hint")}</p>}
+                    <label className="evi-dmc-label" htmlFor="evi-dmc-name">{t("dialog.label")}</label>
                     <input
                         id="evi-dmc-name"
                         ref={input}
@@ -306,7 +307,7 @@ function NameDialog({ category, channelId, onClose }: { category?: Category; cha
                         inputMode="text"
                         value={name}
                         maxLength={MAX_NAME_LENGTH}
-                        placeholder="Friends, Work, Gaming…"
+                        placeholder={t("dialog.placeholder")}
                         autoComplete="off"
                         spellCheck={false}
                         aria-invalid={!!error}
@@ -318,8 +319,8 @@ function NameDialog({ category, channelId, onClose }: { category?: Category; cha
                     />
                     {error && <p id="evi-dmc-error" className="evi-dmc-error" role="alert">{error}</p>}
                     <footer className="evi-dmc-foot">
-                        <button type="button" className="evi-dmc-button" data-variant="secondary" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="evi-dmc-button">{renaming ? "Rename Category" : "Create Category"}</button>
+                        <button type="button" className="evi-dmc-button" data-variant="secondary" onClick={onClose}>{t("dialog.cancel")}</button>
+                        <button type="submit" className="evi-dmc-button">{renaming ? t("dialog.rename") : t("dialog.create")}</button>
                     </footer>
                 </form>
             </div>
@@ -332,7 +333,7 @@ function NameDialog({ category, channelId, onClose }: { category?: Category; cha
 function dmMenuItems(channelId: string): ReactNode {
     const inCategory = categoryOf(state, channelId);
     if (!state.categories.length) {
-        return <Menu.Item id="evi-dmc-add-new" label="Add to New Category" action={() => openNameDialog({ channelId })} />;
+        return <Menu.Item id="evi-dmc-add-new" label={t("menu.addNew")} action={() => openNameDialog({ channelId })} />;
     }
     const choices: ReactNode[] = state.categories.map(c => (
         <Menu.CheckboxItem
@@ -345,12 +346,12 @@ function dmMenuItems(channelId: string): ReactNode {
     ));
     choices.push(
         <Menu.Separator key="evi-dmc-sep" />,
-        <Menu.Item key="evi-dmc-add-new" id="evi-dmc-add-new" label="New Category" action={() => openNameDialog({ channelId })} />,
+        <Menu.Item key="evi-dmc-add-new" id="evi-dmc-add-new" label={t("menu.new")} action={() => openNameDialog({ channelId })} />,
     );
-    const items = [<Menu.Item key="evi-dmc-add" id="evi-dmc-add" label={inCategory ? "Move to Category" : "Add to Category"}>{choices}</Menu.Item>];
+    const items = [<Menu.Item key="evi-dmc-add" id="evi-dmc-add" label={inCategory ? t("menu.moveTo") : t("menu.addTo")}>{choices}</Menu.Item>];
     if (inCategory) {
         items.push(
-            <Menu.Item key="evi-dmc-remove" id="evi-dmc-remove" label={`Remove from ${inCategory.name}`} action={() => commit(assign(state, channelId, null))} />,
+            <Menu.Item key="evi-dmc-remove" id="evi-dmc-remove" label={t("menu.remove", { name: inCategory.name })} action={() => commit(assign(state, channelId, null))} />,
         );
     }
     return items;

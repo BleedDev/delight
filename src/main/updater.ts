@@ -26,6 +26,7 @@ import { join, resolve } from "path";
 
 import { DATA_DIR } from "./paths";
 import { settings } from "./settings";
+import { mt } from "./locale";
 
 /** evi.rest's mirror of GitHub's release API, then GitHub itself. EVI_UPDATE_API alone when set: tests serve fake releases from a local server */
 const APIS = releaseApis(process.env.EVI_UPDATE_API);
@@ -61,7 +62,7 @@ function blockedReason(): string | undefined {
     try {
         accessSync(process.resourcesPath, constants.W_OK);
     } catch {
-        return "Discord’s folder belongs to root, so Evi can’t update it from here. Run sudo evi update in a terminal.";
+        return mt("main.update.rootOwned");
     }
 }
 
@@ -111,11 +112,11 @@ async function fetchLatest(beta: boolean): Promise<ReleaseInfo | null> {
     try {
         res = await fetchReleaseApi(APIS, path, url => net.fetch(url, { headers: HEADERS, cache: "no-store", signal: AbortSignal.timeout(15_000) }));
     } catch (err) {
-        throw new Error(`Couldn’t reach GitHub: ${(err as Error).message}`);
+        throw new Error(mt("main.update.unreachable", { error: (err as Error).message }));
     }
     if (res.status === 404) return null;
-    if (res.status === 403 || res.status === 429) throw new Error("GitHub’s rate limit was hit. Try again in a few minutes.");
-    if (!res.ok) throw new Error(`GitHub answered ${res.status}`);
+    if (res.status === 403 || res.status === 429) throw new Error(mt("main.update.rateLimit"));
+    if (!res.ok) throw new Error(mt("main.update.githubStatus", { status: res.status }));
     const json = await res.json().catch(() => null);
     const release = parseRelease(beta ? pickRelease(json, true) : json);
     if (!release) return null;
@@ -159,9 +160,9 @@ export function checkForUpdate(force = false): Promise<UpdateStatus> {
 
 async function fetchBytes(url: string, max: number, onProgress?: (done: number, total: number) => void) {
     const res = await net.fetch(url, { headers: { "User-Agent": HEADERS["User-Agent"] }, cache: "no-store" });
-    if (!res.ok || !res.body) throw new Error(`Download failed: ${res.status}`);
+    if (!res.ok || !res.body) throw new Error(mt("main.update.downloadFailed", { status: res.status }));
     const total = Number(res.headers.get("content-length")) || 0;
-    if (total > max) throw new Error("The download is larger than expected");
+    if (total > max) throw new Error(mt("main.update.tooLarge"));
     const reader = res.body.getReader();
     const chunks: Uint8Array[] = [];
     let done = 0;
@@ -169,7 +170,7 @@ async function fetchBytes(url: string, max: number, onProgress?: (done: number, 
         const { done: end, value } = await reader.read();
         if (end) break;
         done += value.length;
-        if (done > max) throw new Error("The download is larger than expected");
+        if (done > max) throw new Error(mt("main.update.tooLarge"));
         chunks.push(value);
         onProgress?.(done, total);
     }
@@ -186,7 +187,7 @@ function download(release: ReleaseInfo, report?: (progress: UpdateProgress) => v
     const promise = (async () => {
         report?.({ phase: "downloading", done: 0 });
         const checksum = (await fetchBytes(release.checksumUrl, 4096)).toString("utf8").match(/\b[a-f0-9]{64}\b/i)?.[0].toLowerCase();
-        if (!checksum) throw new Error("The release's checksum file has no SHA-256 in it");
+        if (!checksum) throw new Error(mt("main.update.noChecksum"));
         const staged = { version: release.version, sha256: checksum };
 
         if (!stagedFile(checksum)) {
@@ -194,7 +195,7 @@ function download(release: ReleaseInfo, report?: (progress: UpdateProgress) => v
             const exe = await fetchBytes(release.exeUrl, MAX_EXE_BYTES, (done, total) => report?.({ phase: "downloading", done, total }));
             report?.({ phase: "verifying" });
             const actual = createHash("sha256").update(exe).digest("hex");
-            if (actual !== checksum) throw new Error("The download doesn’t match the release’s checksum. Nothing was changed.");
+            if (actual !== checksum) throw new Error(mt("main.update.mismatch"));
             mkdirSync(DATA_DIR, { recursive: true });
             // Written beside, then renamed: a half-written file is never taken for the installer
             try {
@@ -278,7 +279,7 @@ function swapIn(staged: StagedUpdate) {
     const file = stagedFile(staged.sha256);
     if (!file) {
         forgetStaged();
-        throw new Error("The downloaded update is missing or damaged. Check for updates to download it again.");
+        throw new Error(mt("main.update.damaged"));
     }
     if (file === PENDING) {
         try {
@@ -313,9 +314,9 @@ async function install(sender: WebContents): Promise<UpdateInstallResult> {
     if (isDevBuild()) return { ok: false, error: "This Evi runs from a dev build. Update it with git pull and bun run build." };
     const blocked = blockedReason();
     if (blocked) return { ok: false, error: blocked };
-    if (installing) return { ok: false, error: "Already updating" };
+    if (installing) return { ok: false, error: mt("main.update.already") };
     const flavor = flavorOf(process.execPath);
-    if (!flavor) return { ok: false, error: "Couldn’t tell which Discord this is" };
+    if (!flavor) return { ok: false, error: mt("main.update.unknownDiscord") };
 
     installing = true;
     try {

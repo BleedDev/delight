@@ -24,6 +24,7 @@ import {
     expressionFromMenuProps, isValidEmojiName, isValidStickerName, ParsedEmoji, ParsedSticker, sanitizeEmojiName,
     sanitizeStickerName, STICKER_MAX_BYTES, STICKER_NAME_MAX, stickerMime, stickerSlots, stickerUrl,
 } from "./emoji";
+import { t } from "./strings";
 
 let context: PluginContext | undefined;
 
@@ -74,10 +75,15 @@ const guildStickers = (guildId: string): any[] => store("StickersStore")?.getSti
 function slotsLeft(guild: any, expression: Expression) {
     if (expression.kind === "emoji") {
         const s = emojiSlots(guild, guildEmojis(guild.id));
-        return { left: expression.animated ? s.animatedLeft : s.staticLeft, limit: s.limit, detail: `${s.staticLeft} static, ${s.animatedLeft} animated left` };
+        const vars = { staticLeft: s.staticLeft, animatedLeft: s.animatedLeft, limit: s.limit };
+        return {
+            left: expression.animated ? s.animatedLeft : s.staticLeft, limit: s.limit,
+            detail: t("dialog.detail.emoji", vars), summary: t("dialog.summary.emoji", vars),
+        };
     }
     const s = stickerSlots(guild, guildStickers(guild.id));
-    return { left: s.left, limit: s.limit, detail: `${s.left} of ${s.limit} sticker slots left` };
+    const vars = { left: s.left, limit: s.limit };
+    return { left: s.left, limit: s.limit, detail: t("dialog.detail.sticker", vars), summary: t("dialog.summary.sticker", vars) };
 }
 
 /** The server the expression already lives in, if you're in it */
@@ -91,16 +97,16 @@ const http = (): HttpClient | undefined => find(filters.byProps("get", "post", "
 
 async function fetchBlob(url: string, maxBytes: number): Promise<Blob> {
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Couldn't download it (HTTP ${res.status})`);
+    if (!res.ok) throw new Error(t("error.download", { status: res.status }));
     const blob = await res.blob();
-    if (blob.size > maxBytes) throw new Error(`It's ${Math.ceil(blob.size / 1024)} KB, over Discord's ${maxBytes / 1024} KB limit`);
+    if (blob.size > maxBytes) throw new Error(t("error.tooBig", { size: Math.ceil(blob.size / 1024), limit: maxBytes / 1024 }));
     return blob;
 }
 
 const toDataUri = (blob: Blob) => new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error ?? new Error("Couldn't read the image"));
+    reader.onerror = () => reject(reader.error ?? new Error(t("error.read")));
     reader.readAsDataURL(blob);
 });
 
@@ -122,7 +128,7 @@ async function uploadEmoji(emoji: ParsedEmoji, guildId: string, name: string) {
     const action = findByCode("\"EMOJI_UPLOAD_START\"", "GUILD_EMOJIS(");
     if (typeof action === "function") return action({ guildId, image, name, roles: [] });
     const client = http();
-    if (!client) throw new Error("Couldn't find Discord's emoji upload");
+    if (!client) throw new Error(t("error.noEmojiUpload"));
     return (await client.post({ url: `/guilds/${guildId}/emojis`, body: { image, name, roles: [] }, oldFormErrors: true, rejectWithError: true }))?.body;
 }
 
@@ -140,7 +146,7 @@ async function stickerDetails(sticker: ParsedSticker): Promise<{ tags?: string; 
 async function uploadSticker(sticker: ParsedSticker, guildId: string, name: string) {
     const details = await stickerDetails(sticker);
     const formatType = sticker.formatType ?? details.format_type;
-    if (!canCopySticker(formatType)) throw new Error("Lottie stickers can only be uploaded to partnered and verified servers");
+    if (!canCopySticker(formatType)) throw new Error(t("error.lottie"));
     const blob = await fetchBlob(stickerUrl(sticker.id, formatType), STICKER_MAX_BYTES);
     const mime = stickerMime(formatType);
     const body = new FormData();
@@ -152,7 +158,7 @@ async function uploadSticker(sticker: ParsedSticker, guildId: string, name: stri
     const action = findByCode("\"GUILD_STICKERS_CREATE_SUCCESS\"", "GUILD_STICKER_PACKS(");
     if (typeof action === "function") return action({ guildId, body, platform: "web", originalMd5: null });
     const client = http();
-    if (!client) throw new Error("Couldn't find Discord's sticker upload");
+    if (!client) throw new Error(t("error.noStickerUpload"));
     return (await client.post({ url: `/guilds/${guildId}/stickers`, body, rejectWithError: true }))?.body;
 }
 
@@ -163,7 +169,7 @@ async function copy(text: string, done: string) {
         else await navigator.clipboard.writeText(text);
         context?.toast(done, { type: "success" });
     } catch {
-        context?.toast("Couldn't copy to the clipboard", { type: "failure" });
+        context?.toast(t("toast.copyFailed"), { type: "failure" });
     }
 }
 
@@ -183,7 +189,7 @@ const previewUrl = (e: Expression) => e.kind === "emoji" ? emojiUrl(e.id, e.anim
 
 function Dialog({ expression, initialGuildId, onClose }: { expression: Expression; initialGuildId?: string; onClose(): void; }) {
     const isEmoji = expression.kind === "emoji";
-    const noun = isEmoji ? "emoji" : "sticker";
+    const noun = expression.kind;
     const guilds = React.useMemo(() => {
         const source = sourceGuildId(expression);
         return eligibleGuilds().filter(g => g.id !== source).map(g => ({ guild: g, slots: slotsLeft(g, expression) }));
@@ -224,13 +230,13 @@ function Dialog({ expression, initialGuildId, onClose }: { expression: Expressio
         try {
             if (expression.kind === "emoji") await uploadEmoji(expression, selected.guild.id, finalName);
             else await uploadSticker(expression, selected.guild.id, finalName);
-            context?.toast(`Added ${isEmoji ? `:${finalName}:` : `"${finalName}"`} to ${selected.guild.name}`, { type: "success" });
+            context?.toast(t(isEmoji ? "toast.added.emoji" : "toast.added.sticker", { name: finalName, server: selected.guild.name }), { type: "success" });
             onClose();
         } catch (err) {
             context?.logger.error(`Uploading the ${noun} failed`, err);
-            const message = describeError(err, `Couldn't add the ${noun}`);
+            const message = describeError(err, t(isEmoji ? "error.failed.emoji" : "error.failed.sticker"));
             setError(message);
-            context?.toast(`Couldn't add the ${noun}: ${message}`, { type: "failure" });
+            context?.toast(t(isEmoji ? "toast.failed.emoji" : "toast.failed.sticker", { message }), { type: "failure" });
             setBusy(false);
         }
     }
@@ -239,18 +245,18 @@ function Dialog({ expression, initialGuildId, onClose }: { expression: Expressio
         <div className="evi-es-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && !busy && onClose()}>
             <div className="evi-es-modal evi-modal" role="dialog" aria-modal="true" aria-labelledby="evi-es-title" ref={ref}>
                 <header className="evi-es-head">
-                    <h2 id="evi-es-title">Add {isEmoji ? "Emoji" : "Sticker"} to Server</h2>
-                    <button type="button" className="evi-es-close" aria-label="Close" onClick={onClose} disabled={busy}>
+                    <h2 id="evi-es-title">{t(isEmoji ? "dialog.title.emoji" : "dialog.title.sticker")}</h2>
+                    <button type="button" className="evi-es-close" aria-label={t("dialog.close")} onClick={onClose} disabled={busy}>
                         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                     </button>
                 </header>
                 <form className="evi-es-body" onSubmit={submit}>
                     <div className="evi-es-preview" data-kind={expression.kind}>
                         <img src={previewUrl(expression)} alt="" width={isEmoji ? 64 : 120} height={isEmoji ? 64 : 120} />
-                        {isEmoji && expression.animated && <span className="evi-es-badge">Animated</span>}
+                        {isEmoji && expression.animated && <span className="evi-es-badge">{t("dialog.animated")}</span>}
                     </div>
 
-                    <label className="evi-es-label" htmlFor="evi-es-name">Name</label>
+                    <label className="evi-es-label" htmlFor="evi-es-name">{t("dialog.name")}</label>
                     <input
                         id="evi-es-name"
                         className="evi-es-input"
@@ -264,28 +270,28 @@ function Dialog({ expression, initialGuildId, onClose }: { expression: Expressio
                         onChange={e => setName(isEmoji ? cleanEmojiNameInput(e.currentTarget.value) : e.currentTarget.value.slice(0, STICKER_NAME_MAX))}
                     />
                     <p id="evi-es-name-hint" className="evi-es-hint" data-error={!nameOk || undefined}>
-                        {isEmoji ? "2 to 32 characters: letters, numbers and underscores." : "2 to 30 characters."}
+                        {t(isEmoji ? "dialog.hint.emoji" : "dialog.hint.sticker")}
                     </p>
 
-                    <label className="evi-es-label" htmlFor="evi-es-guild">Server</label>
+                    <label className="evi-es-label" htmlFor="evi-es-guild">{t("dialog.server")}</label>
                     {guilds.length ? (
                         <select id="evi-es-guild" className="evi-es-input" value={guildId} disabled={busy} onChange={e => setGuildId(e.currentTarget.value)}>
                             {guilds.map(({ guild, slots }) => (
                                 <option key={guild.id} value={guild.id} disabled={slots.left <= 0}>
-                                    {guild.name} ({slots.left <= 0 ? "full" : slots.detail})
+                                    {guild.name} ({slots.left <= 0 ? t("dialog.full") : slots.detail})
                                 </option>
                             ))}
                         </select>
                     ) : (
-                        <p className="evi-es-hint" data-error>You don't have permission to add {noun}s to any other server.</p>
+                        <p className="evi-es-hint" data-error>{t(isEmoji ? "dialog.noPermission.emoji" : "dialog.noPermission.sticker")}</p>
                     )}
-                    {selected && <p className="evi-es-hint">{selected.slots.detail}. Limit {selected.slots.limit}{isEmoji ? " of each kind" : ""} at this server's boost level.</p>}
+                    {selected && <p className="evi-es-hint">{selected.slots.summary}</p>}
 
                     {error && <p className="evi-es-error" role="alert">{error}</p>}
 
                     <footer className="evi-es-foot">
-                        <button type="button" className="evi-es-button" data-variant="secondary" onClick={onClose} disabled={busy}>Cancel</button>
-                        <button type="submit" className="evi-es-button" disabled={!canSubmit}>{busy ? "Uploading…" : `Add ${isEmoji ? "Emoji" : "Sticker"}`}</button>
+                        <button type="button" className="evi-es-button" data-variant="secondary" onClick={onClose} disabled={busy}>{t("dialog.cancel")}</button>
+                        <button type="submit" className="evi-es-button" disabled={!canSubmit}>{busy ? t("dialog.uploading") : t(isEmoji ? "dialog.submit.emoji" : "dialog.submit.sticker")}</button>
                     </footer>
                 </form>
             </div>
@@ -338,7 +344,7 @@ function menuItems(expression: Expression, children: ReactNode[]): ReactNode[] {
         const source = sourceGuildId(expression);
         const guilds = eligibleGuilds().filter(g => g.id !== source);
         items.push(guilds.length ? (
-            <Menu.Item key="evi-es-add" id="evi-es-add" label={isEmoji ? "Add to Server" : "Add Sticker to Server"}>
+            <Menu.Item key="evi-es-add" id="evi-es-add" label={t(isEmoji ? "menu.add.emoji" : "menu.add.sticker")}>
                 {guilds.map(g => {
                     const slots = slotsLeft(g, expression);
                     return (
@@ -346,7 +352,7 @@ function menuItems(expression: Expression, children: ReactNode[]): ReactNode[] {
                             key={g.id}
                             id={`evi-es-add-${g.id}`}
                             label={g.name}
-                            subtext={slots.left > 0 ? `${slots.left} ${isEmoji ? expression.animated ? "animated " : "static " : ""}slot${slots.left === 1 ? "" : "s"} left` : "No slots left"}
+                            subtext={slots.left > 0 ? t(!isEmoji ? "menu.slots.sticker" : expression.animated ? "menu.slots.animated" : "menu.slots.static", { count: slots.left }) : t("menu.noSlots")}
                             disabled={slots.left <= 0}
                             action={() => openDialog(expression, g.id)}
                         />
@@ -354,17 +360,17 @@ function menuItems(expression: Expression, children: ReactNode[]): ReactNode[] {
                 })}
             </Menu.Item>
         ) : (
-            <Menu.Item key="evi-es-add" id="evi-es-add" label={isEmoji ? "Add to Server" : "Add Sticker to Server"} subtext="No servers you can add to" disabled />
+            <Menu.Item key="evi-es-add" id="evi-es-add" label={t(isEmoji ? "menu.add.emoji" : "menu.add.sticker")} subtext={t("menu.noServers")} disabled />
         ));
     }
 
     const url = isEmoji ? emojiUrl(expression.id, expression.animated) : stickerUrl(expression.id, expression.formatType);
     // Skip what Discord's menu already offers
     if (!findMenuGroup(children, "copy-image-link")) {
-        items.push(<Menu.Item key="evi-es-link" id="evi-es-copy-link" label={isEmoji ? "Copy Emoji Link" : "Copy Sticker Link"} action={() => copy(url, "Link copied")} />);
+        items.push(<Menu.Item key="evi-es-link" id="evi-es-copy-link" label={t(isEmoji ? "menu.copyLink.emoji" : "menu.copyLink.sticker")} action={() => copy(url, t("toast.linkCopied"))} />);
     }
     if (!findMenuGroup(children, `devmode-copy-id-${expression.id}`)) {
-        items.push(<Menu.Item key="evi-es-id" id="evi-es-copy-id" label={isEmoji ? "Copy Emoji ID" : "Copy Sticker ID"} action={() => copy(expression.id, "ID copied")} />);
+        items.push(<Menu.Item key="evi-es-id" id="evi-es-copy-id" label={t(isEmoji ? "menu.copyId.emoji" : "menu.copyId.sticker")} action={() => copy(expression.id, t("toast.idCopied"))} />);
     }
     return items;
 }

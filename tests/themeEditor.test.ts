@@ -139,3 +139,15 @@ describe("community themes", () => {
         expect(isEditorTheme(css)).toBe(true);
     });
 });
+
+describe("theme translations", () => {
+    test("a theme's other languages survive being opened and saved in the editor", () => {
+        const css = `/**\n * @name Night\n * @description Dark.\n * @name:de Nacht\n * @description:de Dunkel.\n * @base dark\n */\n.theme-dark { --background-base-lower: #000; }`;
+        const draft = parseThemeCss(css, "night.css")!;
+        expect(draft.locales).toEqual({ de: { name: "Nacht", description: "Dunkel." } });
+        const saved = buildThemeCss(draft);
+        expect(saved).toContain(" * @name:de Nacht");
+        expect(saved).toContain(" * @description:de Dunkel.");
+        expect(parseThemeCss(saved, "night.css")!.locales).toEqual(draft.locales);
+    });
+});

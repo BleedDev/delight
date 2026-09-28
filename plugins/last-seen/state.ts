@@ -7,13 +7,39 @@ import type { PluginContext } from "@evi/api";
 
 import { DEFAULT_CAP, describe, isIgnored, isOnlineStatus, lineText, pack, PRUNE_SLACK } from "./track";
 import type { Entry, Options, Tracker } from "./track";
+import { t, words } from "./strings";
 
 export const settings = {
-    showOnProfiles: { type: "boolean", label: "On profiles", description: "A clock next to the badges on someone's profile; hover it for the times.", default: true },
-    showInMemberList: { type: "boolean", label: "In the member list", description: "Under the name of offline members.", default: true },
-    showInFriends: { type: "boolean", label: "In the friends list", description: "Under the name of offline friends.", default: true },
-    showInDms: { type: "boolean", label: "In direct messages", description: "Under the name of offline people in the DM list.", default: true },
-    ignoreBots: { type: "boolean", label: "Ignore bots", description: "Don't track bots and apps.", default: true },
+    showOnProfiles: {
+        type: "boolean",
+        get label() { return t("settings.showOnProfiles"); },
+        get description() { return t("settings.showOnProfiles.description"); },
+        default: true,
+    },
+    showInMemberList: {
+        type: "boolean",
+        get label() { return t("settings.showInMemberList"); },
+        get description() { return t("settings.showInMemberList.description"); },
+        default: true,
+    },
+    showInFriends: {
+        type: "boolean",
+        get label() { return t("settings.showInFriends"); },
+        get description() { return t("settings.showInFriends.description"); },
+        default: true,
+    },
+    showInDms: {
+        type: "boolean",
+        get label() { return t("settings.showInDms"); },
+        get description() { return t("settings.showInDms.description"); },
+        default: true,
+    },
+    ignoreBots: {
+        type: "boolean",
+        get label() { return t("settings.ignoreBots"); },
+        get description() { return t("settings.ignoreBots.description"); },
+        default: true,
+    },
 } as const;
 
 export type Settings = typeof settings;
@@ -107,9 +133,9 @@ export function channelLabel(channelId: string | undefined): string | undefined 
     if (!channelId) return;
     const channel = store("ChannelStore")?.getChannel?.(channelId);
     if (!channel) return;
-    if (channel.type === 1) return "your DMs";
-    if (channel.type === 3) return channel.name ? `the group ${channel.name}` : "a group DM";
-    return channel.name ? `#${channel.name}` : undefined;
+    if (channel.type === 1) return t("where.dms");
+    if (channel.type === 3) return channel.name ? t("where.group", { name: channel.name }) : t("where.groupUnnamed");
+    return channel.name ? t("where.channel", { name: channel.name }) : undefined;
 }
 
 export const entryOf = (id: string): Entry | undefined => state.tracker.get(id);
@@ -117,7 +143,7 @@ export const entryOf = (id: string): Entry | undefined => state.tracker.get(id);
 /** The full hover text for someone, or null when nothing is known */
 export function fullText(id: string): string | null {
     const entry = entryOf(id);
-    return describe(entry, isOnline(id), Date.now(), channelLabel(entry?.channelId));
+    return describe(entry, isOnline(id), Date.now(), channelLabel(entry?.channelId), words);
 }
 
 // --- Re-rendering ----------------------------------------------------------------------------
@@ -230,7 +256,7 @@ export function useUser<T extends string | number | boolean>(userId: string, rea
 /** The line under someone's name, or "" for none: the setting is off, they're online, or nothing is known */
 export function lineOf(userId: string, setting: Where): string {
     if (!state.context?.settings.get(setting) || isOnline(userId)) return "";
-    return lineText(entryOf(userId), clock) ?? "";
+    return lineText(entryOf(userId), clock, words) ?? "";
 }
 
 // --- Storage ---------------------------------------------------------------------------------

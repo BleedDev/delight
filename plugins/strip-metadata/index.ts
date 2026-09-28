@@ -1,6 +1,7 @@
 import { definePlugin, filters } from "@evi/api";
 import type { HookContext, PluginContext } from "@evi/api";
 
+import { t } from "./strings";
 import { randomFileName, stripMetadata } from "./strip";
 
 /**
@@ -16,14 +17,14 @@ type Settings = typeof settings;
 const settings = {
     stripImages: {
         type: "boolean",
-        label: "Strip image metadata",
-        description: "Remove EXIF (camera, GPS location, dates), XMP and text chunks from JPEG, PNG and WebP images.",
+        get label() { return t("settings.stripImages"); },
+        get description() { return t("settings.stripImages.description"); },
         default: true,
     },
     randomNames: {
         type: "boolean",
-        label: "Random file names",
-        description: "Upload files with a random name, keeping the extension.",
+        get label() { return t("settings.randomNames"); },
+        get description() { return t("settings.randomNames.description"); },
         default: true,
     },
 } as const;

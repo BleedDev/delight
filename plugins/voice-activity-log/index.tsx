@@ -1,6 +1,8 @@
 import { Components, definePlugin, findStore, openLayer, React } from "@evi/api";
 import type { CloseLayer, FluxAction, PluginContext } from "@evi/api";
 
+import { t } from "./strings";
+import type { Tr } from "./log";
 import {
     describe, FILTERS, filterEntries, formatClock, formatDuration, formatLine, formatSessions, KindFilter, LogEntry, Move, PATCHES,
     Session, shouldToast, snapshotOf, stayNote, touchesSession, VoiceLog,
@@ -20,12 +22,42 @@ import {
 
 type Settings = typeof settings;
 const settings = {
-    moves: { type: "boolean", label: "Moves", description: "Log moves from and to other channels as moves, not as plain joins and leaves.", default: true },
-    streams: { type: "boolean", label: "Streams and camera", description: "Log when someone starts or stops streaming or their camera.", default: false },
-    muteDeafen: { type: "boolean", label: "Mutes and deafens", description: "Log when someone mutes, unmutes, deafens or undeafens.", default: false },
-    toasts: { type: "boolean", label: "Toasts", description: "Pop up a toast when someone joins, leaves or moves.", default: false },
-    onlyUnfocused: { type: "boolean", label: "Only when Discord isn't focused", description: "Show those toasts only while the Discord window isn't focused.", default: false },
-    showButton: { type: "boolean", label: "Voice panel button", description: "A log button in the Voice Connected panel. /vclog works either way.", default: true },
+    moves: {
+        type: "boolean",
+        get label() { return t("settings.moves"); },
+        get description() { return t("settings.moves.description"); },
+        default: true,
+    },
+    streams: {
+        type: "boolean",
+        get label() { return t("settings.streams"); },
+        get description() { return t("settings.streams.description"); },
+        default: false,
+    },
+    muteDeafen: {
+        type: "boolean",
+        get label() { return t("settings.muteDeafen"); },
+        get description() { return t("settings.muteDeafen.description"); },
+        default: false,
+    },
+    toasts: {
+        type: "boolean",
+        get label() { return t("settings.toasts"); },
+        get description() { return t("settings.toasts.description"); },
+        default: false,
+    },
+    onlyUnfocused: {
+        type: "boolean",
+        get label() { return t("settings.onlyUnfocused"); },
+        get description() { return t("settings.onlyUnfocused.description"); },
+        default: false,
+    },
+    showButton: {
+        type: "boolean",
+        get label() { return t("settings.showButton"); },
+        get description() { return t("settings.showButton.description"); },
+        default: true,
+    },
 } as const;
 
 let context: PluginContext<Settings> | undefined;
@@ -51,13 +83,13 @@ function nameOf(userId: string, guildId: string | null) {
     const friendNick = store("RelationshipStore")?.getNickname?.(userId);
     if (friendNick) return friendNick;
     const user = store("UserStore")?.getUser?.(userId);
-    return user?.globalName ?? user?.global_name ?? user?.username ?? "Unknown user";
+    return user?.globalName ?? user?.global_name ?? user?.username ?? t("user.unknown");
 }
 
 function channelName(channelId: string) {
     const channel = getChannel(channelId);
     if (channel?.name) return channel.name;
-    return channel ? "a call" : "another channel";
+    return channel ? t("channel.call") : t("channel.other");
 }
 
 function avatarOf(userId: string, guildId: string | null | undefined): string | undefined {
@@ -90,9 +122,12 @@ function sync(moves?: Map<string, Move>) {
     });
     const focused = typeof document !== "undefined" && document.hasFocus();
     for (const entry of added) {
-        if (shouldToast(entry, s, focused)) context.toast(describe(entry), { type: "info" });
+        if (shouldToast(entry, s, focused)) context.toast(describe(entry, undefined, tr), { type: "info" });
     }
 }
+
+/** The log's words in Discord's language */
+const tr: Tr = (key, vars) => t(key, vars);
 
 function movesOf(action: FluxAction): Map<string, Move> {
     const moves = new Map<string, Move>();
@@ -135,8 +170,8 @@ function useNow(ms: number) {
 
 /** "Now · 12m" for the session you're in, "14:02 · 1h 5m" for earlier ones */
 function sessionDetail(session: Session, now: number) {
-    if (session.endedAt === undefined) return `Now · ${formatDuration(now - session.startedAt)}`;
-    return `${formatClock(session.startedAt)} · ${formatDuration(session.endedAt - session.startedAt)}`;
+    if (session.endedAt === undefined) return t("dialog.sessionNow", { d: formatDuration(now - session.startedAt, tr) });
+    return `${formatClock(session.startedAt)} · ${formatDuration(session.endedAt - session.startedAt, tr)}`;
 }
 
 function Avatar({ entry, guildId }: { entry: LogEntry; guildId?: string | null; }) {
@@ -147,9 +182,9 @@ function Avatar({ entry, guildId }: { entry: LogEntry; guildId?: string | null; 
 }
 
 function Row({ entry, session, now }: { entry: LogEntry; session: Session; now: number; }) {
-    const text = describe(entry, session.channelName);
+    const text = describe(entry, session.channelName, tr);
     const self = entry.kind === "selfJoin" || entry.kind === "selfLeave";
-    const note = stayNote(entry, now);
+    const note = stayNote(entry, now, tr);
     const named = !self && text.startsWith(entry.name);
     return (
         <li className="evi-vcl-row" data-kind={entry.kind} data-self={self || undefined}>
@@ -206,11 +241,11 @@ function LogDialog({ log, onClose }: { log: VoiceLog; onClose(): void; }) {
     const copyText = async () => {
         if (!session) return;
         try {
-            await copy(formatSessions([{ ...session, entries }], Date.now()));
-            context?.toast("Copied the log", { type: "success" });
+            await copy(formatSessions([{ ...session, entries }], Date.now(), tr));
+            context?.toast(t("toast.copied"), { type: "success" });
         } catch (err) {
             context?.logger.error("Couldn't copy", err);
-            context?.toast("Couldn't copy the log", { type: "failure" });
+            context?.toast(t("toast.copyFailed"), { type: "failure" });
         }
     };
 
@@ -219,22 +254,22 @@ function LogDialog({ log, onClose }: { log: VoiceLog; onClose(): void; }) {
             <div className="evi-vcl-modal evi-modal" role="dialog" aria-modal="true" aria-labelledby="evi-vcl-title" aria-describedby="evi-vcl-subtitle" tabIndex={-1} ref={ref}>
                 <header className="evi-vcl-head">
                     <div>
-                        <h2 id="evi-vcl-title">Voice Activity Log</h2>
-                        <p id="evi-vcl-subtitle">Who came and went in your voice channels. Kept until Discord restarts.</p>
+                        <h2 id="evi-vcl-title">{t("dialog.title")}</h2>
+                        <p id="evi-vcl-subtitle">{t("dialog.subtitle")}</p>
                     </div>
-                    <button type="button" className="evi-vcl-close" aria-label="Close" onClick={onClose}><CloseIcon /></button>
+                    <button type="button" className="evi-vcl-close" aria-label={t("dialog.close")} onClick={onClose}><CloseIcon /></button>
                 </header>
                 {!session ? (
-                    <p className="evi-vcl-empty">Nothing yet. Join a voice channel and who comes and goes shows up here.</p>
+                    <p className="evi-vcl-empty">{t("dialog.empty")}</p>
                 ) : (
                     <div className="evi-vcl-main">
                         {sessions.length > 1 && (
                             <nav className="evi-vcl-nav" aria-labelledby="evi-vcl-sessions">
-                                <h3 id="evi-vcl-sessions">Sessions</h3>
+                                <h3 id="evi-vcl-sessions">{t("dialog.sessions")}</h3>
                                 {sessions.map(s => (
                                     <button type="button" key={s.id} className="evi-vcl-tab" aria-current={s.id === session.id} title={s.channelName} onClick={() => setSelected(s.id)}>
                                         <span className="evi-vcl-tab-name">
-                                            {s.endedAt === undefined && <span className="evi-vcl-live" role="img" aria-label="You're here now" />}
+                                            {s.endedAt === undefined && <span className="evi-vcl-live" role="img" aria-label={t("dialog.live")} />}
                                             <span>{s.channelName}</span>
                                         </span>
                                         <small>{sessionDetail(s, now)}</small>
@@ -249,33 +284,33 @@ function LogDialog({ log, onClose }: { log: VoiceLog; onClose(): void; }) {
                                     <input
                                         type="search"
                                         inputMode="search"
-                                        placeholder="Filter by name"
-                                        aria-label="Filter by name"
+                                        placeholder={t("dialog.filterName")}
+                                        aria-label={t("dialog.filterName")}
                                         autoComplete="off"
                                         spellCheck={false}
                                         value={query}
                                         onChange={e => setQuery(e.currentTarget.value)}
                                     />
                                 </label>
-                                <div className="evi-vcl-chips" role="group" aria-label="Show">
+                                <div className="evi-vcl-chips" role="group" aria-label={t("dialog.show")}>
                                     {FILTERS.map(f => (
-                                        <button type="button" key={f.value} className="evi-vcl-chip" aria-pressed={kind === f.value} onClick={() => setKind(f.value)}>{f.label}</button>
+                                        <button type="button" key={f.value} className="evi-vcl-chip" aria-pressed={kind === f.value} onClick={() => setKind(f.value)}>{t(f.key)}</button>
                                     ))}
                                 </div>
                             </div>
                             {entries.length ? (
-                                <ul className="evi-vcl-list" aria-label={`Activity in ${session.channelName}`}>
+                                <ul className="evi-vcl-list" aria-label={t("dialog.activityIn", { channel: session.channelName })}>
                                     {[...entries].reverse().map(e => <Row key={e.id} entry={e} session={session} now={now} />)}
                                 </ul>
                             ) : (
-                                <p className="evi-vcl-empty">{session.entries.length ? "Nothing matches the filter." : "Nothing logged in this session yet."}</p>
+                                <p className="evi-vcl-empty">{session.entries.length ? t("dialog.noMatch") : t("dialog.noneInSession")}</p>
                             )}
                         </div>
                     </div>
                 )}
                 <footer className="evi-vcl-foot">
-                    <button type="button" className="evi-vcl-button" data-variant="danger" disabled={!log.size} onClick={() => log.clear()}>Clear log</button>
-                    <button type="button" className="evi-vcl-button" data-variant="primary" disabled={!entries.length} onClick={copyText}>Copy as text</button>
+                    <button type="button" className="evi-vcl-button" data-variant="danger" disabled={!log.size} onClick={() => log.clear()}>{t("dialog.clear")}</button>
+                    <button type="button" className="evi-vcl-button" data-variant="primary" disabled={!entries.length} onClick={copyText}>{t("dialog.copy")}</button>
                 </footer>
             </div>
         </div>
@@ -298,7 +333,7 @@ function LogIcon() {
 function LogButton() {
     const { showButton } = context!.settings.use();
     if (!showButton) return null;
-    const label = "Voice activity log";
+    const label = t("button.label");
     const button = (
         <button type="button" className="evi-vcl-panel-button" onClick={openLog} aria-label={label}>
             <LogIcon />
@@ -311,12 +346,12 @@ function LogButton() {
 function SettingsPanel({ log }: { log: VoiceLog; }) {
     React.useSyncExternalStore(log.subscribe, log.getVersion);
     const Button = Components.Button as any;
-    const label = "Open log";
+    const label = t("panel.open");
     return (
         <div className="dl-field-row">
             <div className="dl-field-text">
-                <div className="dl-label">Log</div>
-                <p className="dl-hint" role="status">{log.size ? `${log.size} entries over ${log.sessions.length} session${log.sessions.length === 1 ? "" : "s"}.` : "Nothing yet."} Kept in memory only.</p>
+                <div className="dl-label">{t("panel.log")}</div>
+                <p className="dl-hint" role="status">{log.size ? t("panel.summary", { entries: t("panel.entries", { count: log.size }), sessions: t("panel.sessions", { count: log.sessions.length }) }) : t("panel.nothing")}</p>
             </div>
             {Button
                 ? <Button size={Button.Sizes?.SMALL} onClick={openLog}>{label}</Button>
@@ -481,12 +516,12 @@ export default definePlugin({
 
         ctx.command({
             name: "vclog",
-            description: "Who joined and left your voice channel recently",
+            get description() { return t("command.description"); },
             execute() {
                 const entries = current.last(15);
-                if (!entries.length) return { ephemeral: "Nothing logged yet. Join a voice channel and who comes and goes shows up here." };
+                if (!entries.length) return { ephemeral: t("command.empty") };
                 const names = new Map(current.sessions.map(s => [s.id, s.channelName]));
-                return { ephemeral: entries.map(e => formatLine(e, names.get(e.sessionId))).join("\n") };
+                return { ephemeral: entries.map(e => formatLine(e, names.get(e.sessionId), tr)).join("\n") };
             },
         });
     },

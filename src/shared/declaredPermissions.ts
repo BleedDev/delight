@@ -22,6 +22,7 @@
  * Pure: no DOM, no network, no disk, shared by main, the renderer, the server and the tests.
  */
 import { DISCORD_HOST } from "./pluginActivity";
+import { englishTr, Tr } from "./tr";
 
 export type PermissionKey = "network" | "readMessages" | "sendMessages" | "changeSettings";
 /** The yes/no ones, in the order they're shown */
@@ -167,16 +168,16 @@ export function permissionGrowth(before: DeclaredPermissions | undefined, after:
     return hosts.length || flags.length ? { hosts, flags, undeclared: false } : undefined;
 }
 
-/** The growth in plain English, for main's own dialog (the page shows it translated) */
-export function describeGrowth(growth: PermissionGrowth) {
-    if (growth.undeclared) return "It no longer says what it needs, so Evi can't hold it to anything.";
+/** The growth in words, for main's own dialog (the page shows it its own way). English without `tr`. */
+export function describeGrowth(growth: PermissionGrowth, tr: Tr = englishTr) {
+    if (growth.undeclared) return tr("main.growth.undeclared");
     const words: Record<PermissionFlag, string> = {
-        readMessages: "read your messages",
-        sendMessages: "send messages",
-        changeSettings: "change your settings",
+        readMessages: tr("main.growth.readMessages"),
+        sendMessages: tr("main.growth.sendMessages"),
+        changeSettings: tr("main.growth.changeSettings"),
     };
-    const parts = [...growth.hosts.length ? [`contact ${growth.hosts.join(", ")}`] : [], ...growth.flags.map(f => words[f])];
-    return `It would also ${parts.join(", ")}.`;
+    const parts = [...growth.hosts.length ? [tr("main.growth.contact", { hosts: growth.hosts.join(tr("common.listSeparator")) })] : [], ...growth.flags.map(f => words[f])];
+    return tr("main.growth.also", { parts: parts.join(tr("common.listSeparator")) });
 }
 
 // ---- refusing --------------------------------------------------------------------------------------

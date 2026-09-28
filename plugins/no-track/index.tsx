@@ -1,7 +1,10 @@
-import { definePlugin, React } from "@evi/api";
+import { definePlugin, React, useLocale } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
+import { t } from "./strings";
+
 function BlockedCounter({ ctx }: { ctx: PluginContext; }) {
+    useLocale();
     const [count, setCount] = React.useState<number | null>(null);
 
     React.useEffect(() => {
@@ -17,7 +20,7 @@ function BlockedCounter({ ctx }: { ctx: PluginContext; }) {
 
     return (
         <p className="dl-hint" role="status" style={{ fontVariantNumeric: "tabular-nums" }}>
-            {count === null ? "Counting blocked requests…" : `Blocked ${count} tracking requests since Discord started.`}
+            {count === null ? t("counter.loading") : t("counter.blocked", { count })}
         </p>
     );
 }

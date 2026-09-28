@@ -7,5 +7,103 @@
     "tags": ["privacy"],
     "permissions": {},
     "changelog": [{ "version": "1.0.1", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] }, { "version": "1.0.0", "notes": ["First release."] }],
-    "enabledByDefault": false
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Persönliche Infos verbergen",
+            "description": "Verwischt deine E-Mail, Telefonnummer, Rechnungsdaten, verknüpften Konten sowie Standorte und IPs deiner Sitzungen in den Nutzereinstellungen, für Streams und Screenshots. Zum Aufdecken darüberfahren oder klicken.",
+            "changelog": {
+                "1.0.1": [
+                    "Sagt, was es braucht, und das ist nichts, was Discord ihm nicht ohnehin zeigt. Evi sorgt dafür, dass es dabei bleibt."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Ocultar información personal",
+            "description": "Difumina tu correo, teléfono, datos de facturación, cuentas conectadas y las ubicaciones e IP de tus sesiones en Ajustes de usuario, para streams y capturas. Pasa el ratón o haz clic para mostrarlos.",
+            "changelog": {
+                "1.0.1": [
+                    "Indica qué necesita, que no es nada más allá de lo que Discord ya le muestra, y Evi se encarga de que así sea."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Masquer les infos personnelles",
+            "description": "Floute ton e-mail, ton téléphone, tes informations de facturation, tes comptes connectés ainsi que les lieux et IP de tes sessions dans les paramètres utilisateur, pour les streams et les captures d'écran. Survole ou clique pour afficher.",
+            "changelog": {
+                "1.0.1": [
+                    "Indique ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi veille à ce qu'il s'y tienne."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "個人情報を隠す",
+            "description": "ユーザー設定内のメールアドレス、電話番号、請求情報、連携アカウント、セッションの場所や IP をぼかします。配信やスクリーンショットに便利です。カーソルを合わせるかクリックすると表示されます。",
+            "changelog": {
+                "1.0.1": [
+                    "必要な権限を明示するようになりました。Discord がすでに表示している以外は何も必要とせず、Evi がそれを守らせます。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Ukryj dane osobowe",
+            "description": "Rozmywa w Ustawieniach użytkownika Twój e-mail, telefon, dane rozliczeniowe, połączone konta oraz lokalizacje i adresy IP sesji, na potrzeby streamów i zrzutów ekranu. Najedź lub kliknij, aby odsłonić.",
+            "changelog": {
+                "1.0.1": [
+                    "Mówi, czego potrzebuje, a nie potrzebuje niczego poza tym, co Discord już mu pokazuje. Evi pilnuje, żeby tak zostało."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Ocultar informações pessoais",
+            "description": "Desfoca seu e-mail, telefone, dados de cobrança, contas conectadas e os locais e IPs das suas sessões nas Configurações de usuário, para transmissões e capturas de tela. Passe o mouse ou clique para revelar.",
+            "changelog": {
+                "1.0.1": [
+                    "Informa do que precisa, que é nada além do que o Discord já mostra, e o Evi garante que seja assim."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Скрыть личные данные",
+            "description": "Размывает в настройках пользователя вашу почту, телефон, платёжные данные, подключённые аккаунты, а также местоположение и IP сессий, для стримов и скриншотов. Наведите курсор или щёлкните, чтобы показать.",
+            "changelog": {
+                "1.0.1": [
+                    "Теперь сообщает, что ему нужно, а нужно ему только то, что Discord и так показывает, и Evi следит, чтобы так и оставалось."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Kişisel Bilgileri Gizle",
+            "description": "Kullanıcı Ayarları'nda e-postanı, telefonunu, fatura bilgilerini, bağlı hesaplarını ve oturumların konumlarını ile IP'lerini bulanıklaştırır; yayınlar ve ekran görüntüleri için. Göstermek için üzerine gel veya tıkla.",
+            "changelog": {
+                "1.0.1": [
+                    "Neye ihtiyacı olduğunu söylüyor: Discord'un zaten gösterdiğinden fazlasına değil, ve Evi onu buna bağlı tutuyor."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

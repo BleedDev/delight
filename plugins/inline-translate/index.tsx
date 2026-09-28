@@ -19,36 +19,37 @@ import {
     cacheKey, googleLanguage, isTranslatable, languageName, LRU, normalizeLanguage, parseLanguageList, protect, RateQueue, restore,
     shouldAutoTranslate, shouldShowAuto,
 } from "./translate";
+import { t } from "./strings";
 import type { AutoMode, AutoOptions, Translation } from "./translate";
 
 const settings = {
     target: {
         type: "string",
-        label: "Translate to",
-        description: "A language code like en, de or zh-TW. Empty uses Discord's language.",
+        get label() { return t("settings.target"); },
+        get description() { return t("settings.target.description"); },
         placeholder: "en",
         default: "",
     },
     autoMode: {
         type: "select",
-        label: "Translate automatically",
-        description: "Messages from others are translated as they appear. Uses a request per message.",
+        get label() { return t("settings.autoMode"); },
+        get description() { return t("settings.autoMode.description"); },
         default: "off",
         options: [
-            { label: "Off", value: "off" },
-            { label: "Only the languages I list", value: "list" },
-            { label: "Any language that isn't mine", value: "foreign" },
+            { get label() { return t("settings.autoMode.off"); }, value: "off" },
+            { get label() { return t("settings.autoMode.list"); }, value: "list" },
+            { get label() { return t("settings.autoMode.foreign"); }, value: "foreign" },
         ],
     },
     autoLanguages: {
         type: "string",
-        label: "Languages to translate automatically",
-        description: "Language codes separated by commas, like es, ja, de. Used by \"Only the languages I list\".",
+        get label() { return t("settings.autoLanguages"); },
+        get description() { return t("settings.autoLanguages.description"); },
         placeholder: "es, ja, de",
         default: "",
     },
-    ignoreBots: { type: "boolean", label: "Skip bots automatically", description: "Don't translate messages from bots and apps on your behalf.", default: true },
-    hoverButton: { type: "boolean", label: "Button in the message toolbar", description: "A translate button next to Reply when you hover a message.", default: true },
+    ignoreBots: { type: "boolean", get label() { return t("settings.ignoreBots"); }, get description() { return t("settings.ignoreBots.description"); }, default: true },
+    hoverButton: { type: "boolean", get label() { return t("settings.hoverButton"); }, get description() { return t("settings.hoverButton.description"); }, default: true },
 } as const;
 
 type Ctx = PluginContext<typeof settings>;
@@ -341,15 +342,15 @@ function Inline({ runtime, message }: { runtime: Runtime; message: any; }) {
     const uiLocale = discordLocale();
 
     if (entry.state === "loading") {
-        return <div className="dl-it" role="status"><Caption><span>Translating…</span></Caption></div>;
+        return <div className="dl-it" role="status"><Caption><span>{t("translating")}</span></Caption></div>;
     }
     if (entry.state === "error") {
         return (
             <div className="dl-it" role="alert">
                 <Caption>
-                    <span className="dl-it-error">Couldn't translate this message</span>
-                    <LinkButton onClick={() => { runtime.setView(key, "shown"); runtime.request(message, true); }}>Retry</LinkButton>
-                    <LinkButton onClick={dismiss}>Dismiss</LinkButton>
+                    <span className="dl-it-error">{t("error")}</span>
+                    <LinkButton onClick={() => { runtime.setView(key, "shown"); runtime.request(message, true); }}>{t("retry")}</LinkButton>
+                    <LinkButton onClick={dismiss}>{t("dismiss")}</LinkButton>
                 </Caption>
             </div>
         );
@@ -364,11 +365,11 @@ function Inline({ runtime, message }: { runtime: Runtime; message: any; }) {
                 </div>
             )}
             <Caption>
-                <span>Translated from {from}</span>
+                <span>{t("from", { language: from })}</span>
                 {view === "shown"
-                    ? <LinkButton onClick={() => runtime.setView(key, "collapsed")}>Show original</LinkButton>
-                    : <LinkButton onClick={() => runtime.setView(key, "shown")}>Show translation</LinkButton>}
-                <LinkButton onClick={dismiss}>Dismiss</LinkButton>
+                    ? <LinkButton onClick={() => runtime.setView(key, "collapsed")}>{t("original.show")}</LinkButton>
+                    : <LinkButton onClick={() => runtime.setView(key, "shown")}>{t("translation.show")}</LinkButton>}
+                <LinkButton onClick={dismiss}>{t("dismiss")}</LinkButton>
             </Caption>
         </div>
     );
@@ -386,7 +387,7 @@ function TranslateIcon(props: { className?: string; color?: string; }) {
 function HoverButton({ runtime, Button, message }: { runtime: Runtime; Button: React.ComponentType<any>; message: any; }) {
     useMessageState(runtime, cacheKey(message.id, runtime.target()));
     const shown = runtime.isShown(message);
-    return <Button label={shown ? "Hide Translation" : "Translate"} icon={TranslateIcon} onClick={() => runtime.toggle(message)} />;
+    return <Button label={t(shown ? "translate.hide" : "translate")} icon={TranslateIcon} onClick={() => runtime.toggle(message)} />;
 }
 
 const canTranslate = (message: any) => !!message?.id && typeof message.content === "string" && isTranslatable(message.content) && !isOwn(message);
@@ -442,7 +443,7 @@ export default definePlugin({
             (findMenuGroup(children, "copy-text") ?? children).push(
                 <Menu.Item
                     id="evi-inline-translate"
-                    label={runtime.isShown(message) ? "Hide Translation" : "Translate"}
+                    label={t(runtime.isShown(message) ? "translate.hide" : "translate")}
                     action={() => runtime.toggle(message)}
                 />,
             );

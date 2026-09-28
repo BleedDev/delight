@@ -1,3 +1,5 @@
+import { CHANGELOG_LOCALES } from "./changelogLocales";
+import { matchLocale } from "./i18n";
 import { compareVersions } from "./store";
 
 /** The sections of Discord's own changelog, in its order, each with its own heading color */
@@ -261,6 +263,19 @@ export const RELEASES: Release[] = [
         },
     },
 ];
+
+/**
+ * The release as `locale` reads it: each section in that language where there's a translation,
+ * in English where there isn't. Locales match like Evi's menus (`pt-BR`, `de-AT` -> `de`).
+ */
+export function localizedRelease(release: Release, locale: string | null | undefined, locales = CHANGELOG_LOCALES): Release {
+    const lang = matchLocale(locale, Object.keys(locales));
+    const notes = lang ? locales[lang]?.[release.version] : undefined;
+    if (!notes) return release;
+    const sections: Release["sections"] = { ...release.sections };
+    for (const kind of SECTION_KINDS) if (notes[kind]?.length) sections[kind] = notes[kind];
+    return { ...release, sections };
+}
 
 /** Releases newer than `seen`, up to and including `current`. Nothing on a first run (no `seen`). */
 export function releasesSince(seen: string | undefined, current: string, releases = RELEASES) {

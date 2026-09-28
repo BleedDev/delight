@@ -21,6 +21,7 @@ import { contextBridge, ipcRenderer, webFrame } from "electron";
 /** The bridge the renderer uses to reach the main process. Mirrored by src/renderer/native.ts */
 const EviNative = {
     boot: (): BootData => ipcRenderer.sendSync(IPC.GET_BOOT),
+    setLocale: (locale: string) => void ipcRenderer.send(IPC.SET_LOCALE, locale),
     saveSettings: (settings: EviSettings): Promise<SettingsSaveResult | void> => ipcRenderer.invoke(IPC.SETTINGS_SAVE, settings),
     saveQuickCss: (css: string) => ipcRenderer.invoke(IPC.CSS_SAVE, css),
     saveSettingsSync: (settings: EviSettings) => void ipcRenderer.sendSync(IPC.SETTINGS_SAVE_SYNC, settings),

@@ -7,6 +7,7 @@
  */
 import type { ReactNode } from "react";
 
+import { I18n, t } from "../i18n";
 import { Perf, PluginReport, RecordingReport, SiteKind, SLOW_CALL_MS, Totals, WINDOW_S } from "../perf";
 import { PluginManager } from "../plugins/manager";
 import { React } from "../webpack/common";
@@ -40,34 +41,26 @@ function stopRecording() {
 }
 
 // Evi's own hooks are measured like any plugin's
-const builtIn: Record<string, string> = {
-    "evi": "Evi menus and commands",
-    "evi-settings": "Evi in Discord settings",
-    "evi-badges": "Evi badges",
-    "evi-devtools": "Evi DevTools",
-};
+const builtIn = { "evi": true, "evi-settings": true, "evi-badges": true, "evi-devtools": true } as const;
+const isBuiltIn = (id: string): id is keyof typeof builtIn => id in builtIn;
 
-const pluginName = (id: string) => PluginManager.get(id)?.manifest.name ?? builtIn[id] ?? id;
+const pluginName = (id: string) => PluginManager.get(id)?.manifest.name ?? (isBuiltIn(id) ? t(`perf.builtIn.${id}`) : id);
 
-const kindLabel: Record<SiteKind, string> = {
-    hook: "Hook",
-    flux: "Flux",
-    patch: "Patch",
-    badges: "Badges",
-    menu: "Menu",
-    timer: "Timer",
-    keybind: "Shortcut",
-    start: "Start",
-};
+const kindLabel = (kind: SiteKind) => t(`perf.kind.${kind}`);
+
+/** A number in Discord's language: "1,2" in German, "1.2" in English */
+const num = (value: number, digits: number) => value.toLocaleString(I18n.discordLocale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+const int = (value: number) => value.toLocaleString(I18n.discordLocale);
 
 function ms(value: number) {
-    if (value === 0) return "0 ms";
-    if (value < 0.1) return "<0.1 ms";
-    if (value < 10) return `${value.toFixed(1)} ms`;
-    return `${Math.round(value).toLocaleString()} ms`;
+    if (value === 0) return t("perf.unit.ms", { n: 0 });
+    if (value < 0.1) return t("perf.unit.msTiny");
+    if (value < 10) return t("perf.unit.ms", { n: num(value, 1) });
+    return t("perf.unit.ms", { n: int(Math.round(value)) });
 }
 
-const count = (n: number, one: string, many: string) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+const seconds = (value: number, digits = 0) => t("perf.unit.s", { n: num(value, digits) });
+const calls = (n: number) => t("perf.calls", { count: n });
 
 /** A plugin's busiest sites, under its row */
 function Sites({ sites, recent }: { sites: (Totals & { kind: SiteKind; name: string; recent?: Totals; })[]; recent: boolean; }) {
@@ -76,17 +69,17 @@ function Sites({ sites, recent }: { sites: (Totals & { kind: SiteKind; name: str
         <ul className="dl-perf-sites">
             {top.map(s => (
                 <li key={`${s.kind} ${s.name}`}>
-                    <Badge>{kindLabel[s.kind]}</Badge>
+                    <Badge>{kindLabel(s.kind)}</Badge>
                     <span className="dl-perf-site-name dl-mono">{s.name}</span>
                     <Text variant="text-xs/normal" color="text-subtle" tabular className="dl-perf-site-numbers">
                         {recent && s.recent
-                            ? `${ms(s.recent.ms)} recently · ${ms(s.ms)} in all · ${count(s.calls, "call", "calls")} · worst ${ms(s.max)}`
-                            : `${ms(s.ms)} · ${count(s.calls, "call", "calls")} · worst ${ms(s.max)}`}
+                            ? t("perf.siteNumbersRecent", { recent: ms(s.recent.ms), time: ms(s.ms), calls: calls(s.calls), worst: ms(s.max) })
+                            : t("perf.siteNumbers", { time: ms(s.ms), calls: calls(s.calls), worst: ms(s.max) })}
                     </Text>
                 </li>
             ))}
             {sites.length > top.length && (
-                <li><Text variant="text-xs/normal" color="text-muted">{`and ${count(sites.length - top.length, "more place", "more places")}`}</Text></li>
+                <li><Text variant="text-xs/normal" color="text-muted">{t("perf.moreSites", { count: sites.length - top.length })}</Text></li>
             )}
         </ul>
     );
@@ -104,14 +97,14 @@ function PluginRow({ id, prefix, cells, children }: { id: string; prefix: string
                     <span className="dl-perf-plugin">
                         <IconButton
                             icon="chevronDown"
-                            label={`Where ${name} spends time`}
+                            label={t("perf.whereSpends", { name })}
                             onClick={() => setOpen(o => !o)}
                             className="dl-expand"
                             aria-expanded={open}
                             aria-controls={detailsId}
                         />
                         <Text variant="text-md/medium" color="text-strong">{name}</Text>
-                        {id in builtIn && <Badge>Built in</Badge>}
+                        {isBuiltIn(id) && <Badge>{t("perf.builtInBadge")}</Badge>}
                     </span>
                 </th>
                 {cells.map((c, i) => <td key={i}><Text variant="text-sm/normal" tabular>{c}</Text></td>)}
@@ -144,33 +137,34 @@ function Recording({ result }: { result: RecordingReport; }) {
     return (
         <div className="dl-stack" id="dl-perf-recording">
             <Text tag="p" variant="text-sm/normal" color="text-subtle" tabular role="status">
-                {`Recorded ${(result.ms / 1000).toFixed(1)} s. Plugins took ${ms(result.pluginMs)} of it.`}
+                {t("perf.recorded", { time: seconds(result.ms / 1000, 1), plugins: ms(result.pluginMs) })}
+                {longTasks && " "}
                 {longTasks && (longTasks.count
-                    ? ` Discord was busy for ${ms(longTasks.ms)} in ${count(longTasks.count, "long task", "long tasks")}, the longest ${ms(longTasks.longest)}. That’s all of Discord, plugins included, and opening settings counts too.`
-                    : " Nothing held Discord up for 50 ms or more.")}
+                    ? t("perf.longTasks", { count: longTasks.count, time: ms(longTasks.ms), longest: ms(longTasks.longest) })
+                    : t("perf.noLongTasks"))}
             </Text>
             {result.plugins.length ? (
-                <Table label="What ran while recording" columns={["Plugin", "Time", "Calls", "Worst call"]}>
+                <Table label={t("perf.recTable")} columns={[t("perf.col.plugin"), t("perf.col.time"), t("perf.col.calls"), t("perf.col.worst")]}>
                     {result.plugins.map(p => (
-                        <PluginRow key={p.plugin} id={p.plugin} prefix="rec" cells={[ms(p.ms), p.calls.toLocaleString(), ms(p.max)]}>
+                        <PluginRow key={p.plugin} id={p.plugin} prefix="rec" cells={[ms(p.ms), int(p.calls), ms(p.max)]}>
                             <Sites sites={p.sites} recent={false} />
                         </PluginRow>
                     ))}
                 </Table>
             ) : (
-                <Text tag="p" variant="text-sm/normal" color="text-subtle">No plugin code ran while recording.</Text>
+                <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("perf.noneRan")}</Text>
             )}
             {slowest.length > 0 && (
                 <div className="dl-stack">
-                    <Text tag="h3" variant="text-sm/semibold" color="text-strong">{`Slowest single calls (${SLOW_CALL_MS} ms or more)`}</Text>
+                    <Text tag="h3" variant="text-sm/semibold" color="text-strong">{t("perf.slowest", { ms: SLOW_CALL_MS })}</Text>
                     <ul className="dl-perf-sites">
                         {slowest.map((c, i) => (
                             <li key={i}>
-                                <Badge>{kindLabel[c.kind]}</Badge>
+                                <Badge>{kindLabel(c.kind)}</Badge>
                                 <Text variant="text-sm/medium" color="text-strong">{pluginName(c.plugin)}</Text>
                                 <span className="dl-perf-site-name dl-mono">{c.name}</span>
                                 <Text variant="text-xs/normal" color="text-subtle" tabular className="dl-perf-site-numbers">
-                                    {`${ms(c.ms)} at ${(c.at / 1000).toFixed(2)} s`}
+                                    {t("perf.slowCall", { time: ms(c.ms), at: seconds(c.at / 1000, 2) })}
                                 </Text>
                             </li>
                         ))}
@@ -184,15 +178,15 @@ function Recording({ result }: { result: RecordingReport; }) {
 function LiveTable({ plugins }: { plugins: PluginReport[]; }) {
     if (!plugins.length) {
         return (
-            <EmptyState icon="clock" title="Nothing measured yet">
-                Plugins show up here once their hooks, Flux handlers or patches run.
+            <EmptyState icon="clock" title={t("perf.empty.title")}>
+                {t("perf.empty.body")}
             </EmptyState>
         );
     }
     return (
-        <Table label="Time per plugin" columns={["Plugin", `Last ${WINDOW_S} s`, "Since start", "Calls", "Worst call"]}>
+        <Table label={t("perf.liveTable")} columns={[t("perf.col.plugin"), t("perf.col.last", { seconds: WINDOW_S }), t("perf.col.sinceStart"), t("perf.col.calls"), t("perf.col.worst")]}>
             {plugins.map(p => (
-                <PluginRow key={p.plugin} id={p.plugin} prefix="live" cells={[ms(p.recent.ms), ms(p.ms), p.calls.toLocaleString(), ms(p.max)]}>
+                <PluginRow key={p.plugin} id={p.plugin} prefix="live" cells={[ms(p.recent.ms), ms(p.ms), int(p.calls), ms(p.max)]}>
                     <Sites sites={p.sites} recent />
                 </PluginRow>
             ))}
@@ -222,33 +216,34 @@ export function PerformanceTab() {
         <div className="dl-tab">
             <Section
                 id="dl-perf-record"
-                title="Record"
-                description="Start recording, switch to your DMs (or do whatever feels slow), then come back and stop. You’ll see exactly which plugins ran and for how long."
+                title={t("perf.record.title")}
+                description={t("perf.record.description")}
                 action={recording
-                    ? <Button icon="close" onClick={stopRecording}>Stop recording</Button>
-                    : <Button variant="accent" icon="clock" onClick={startRecording}>Start recording</Button>}
+                    ? <Button icon="close" onClick={stopRecording}>{t("perf.record.stop")}</Button>
+                    : <Button variant="accent" icon="clock" onClick={startRecording}>{t("perf.record.start")}</Button>}
             >
                 {recording && (
-                    <Status tone="warning">{`Recording for ${elapsed} s. It stops by itself after ${MAX_RECORDING_MS / 1000} s.`}</Status>
+                    <Status tone="warning">{t("perf.recording", { elapsed: int(elapsed), max: MAX_RECORDING_MS / 1000 })}</Status>
                 )}
                 {!recording && result && <Recording result={result} />}
             </Section>
             <Section
                 id="dl-perf-live"
-                title="All plugins"
-                description={`How long each plugin’s code took in the last ${WINDOW_S} seconds and since Discord started. When one plugin’s code runs inside another’s, each is only charged for its own part.`}
+                title={t("perf.live.title")}
+                description={t("perf.live.description", { seconds: WINDOW_S })}
                 action={<Button icon="refresh" onClick={() => {
                     Perf.reset();
                     setPlugins(Perf.snapshot());
-                }}>Start over</Button>}
+                }}>{t("perf.reset")}</Button>}
             >
                 <LiveTable plugins={plugins} />
             </Section>
             <Text tag="p" variant="text-xs/normal" color="text-muted" tabular className="dl-perf-note">
                 {overhead === undefined
-                    ? "Measuring is always on."
-                    : `Measuring is always on and costs about ${overhead < 1 ? overhead.toFixed(2) : overhead.toFixed(1)} µs per call.`}
-                {" Times shorter than 0.1 ms are rounded by the browser’s clock, so a single fast call reads as 0 or 0.1 ms. Over many calls that evens out."}
+                    ? t("perf.note.measuring")
+                    : t("perf.note.cost", { time: t("perf.unit.us", { n: num(overhead, overhead < 1 ? 2 : 1) }) })}
+                {" "}
+                {t("perf.note.rounding")}
             </Text>
         </div>
     );

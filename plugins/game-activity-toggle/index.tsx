@@ -1,7 +1,9 @@
 import { Components, definePlugin, find, findStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
-import { buttonLabel, PATCHES, readShowCurrentGame, toggledMessage } from "./toggle";
+import { t } from "./strings";
+
+import { PATCHES, readShowCurrentGame } from "./toggle";
 
 /**
  * "Share my activity" is the showCurrentGame user setting (status.showCurrentGame in the
@@ -23,8 +25,8 @@ interface DiscordSetting<T> {
 
 type Settings = typeof settings;
 const settings = {
-    showButton: { type: "boolean", label: "User panel button", description: "A gamepad button next to mute and deafen. /gameactivity works either way.", default: true },
-    shortcut: { type: "keybind", label: "Shortcut", description: "Shows or hides your game activity from anywhere in Discord.", default: "" },
+    showButton: { type: "boolean", get label() { return t("settings.showButton"); }, get description() { return t("settings.showButton.description"); }, default: true },
+    shortcut: { type: "keybind", get label() { return t("settings.shortcut"); }, get description() { return t("settings.shortcut.description"); }, default: "" },
 } as const;
 
 let context: PluginContext<Settings> | undefined;
@@ -63,10 +65,10 @@ async function toggle() {
     try {
         if (showCurrentGame) await showCurrentGame.updateSetting(next);
         else await writeFallback(next);
-        context?.toast(toggledMessage(next), { type: "success" });
+        context?.toast(t(next ? "toast.shown" : "toast.hidden"), { type: "success" });
     } catch (err) {
         context?.logger.error("Couldn't change the game activity setting", err);
-        context?.toast("Couldn't change your game activity setting", { type: "failure" });
+        context?.toast(t("toast.failed"), { type: "failure" });
     } finally {
         busy = false;
     }
@@ -103,7 +105,7 @@ function GameActivityButton() {
     const shown = useShown();
     if (!showButton) return null;
 
-    const label = buttonLabel(shown);
+    const label = t(shown ? "button.hide" : "button.show");
     const button = (
         <button
             type="button"
@@ -163,7 +165,7 @@ export default definePlugin({
 
         ctx.command({
             name: "gameactivity",
-            description: "Show or hide the game you're playing",
+            get description() { return t("command.description"); },
             execute: () => void toggle(),
         });
     },

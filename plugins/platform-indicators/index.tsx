@@ -15,6 +15,8 @@
 import { Components, definePlugin, filters, getStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
+import { t } from "./strings";
+
 /** The username in a message header, with decorations = { [SYSTEM_TAG]: …, [BADGES]: [...] } */
 const usernameFilter = filters.componentByCode("withMentionPrefix", "hideSystemTag", "decorations");
 /** Discord's MessageHeaderDecorations.BADGES */
@@ -24,8 +26,6 @@ type Platform = "desktop" | "mobile" | "web" | "embedded";
 type Status = "online" | "idle" | "dnd";
 
 const PLATFORMS: Platform[] = ["desktop", "mobile", "web", "embedded"];
-const NAMES: Record<Platform, string> = { desktop: "desktop", mobile: "mobile", web: "the web", embedded: "a console" };
-const STATUS_NAMES: Record<Status, string> = { online: "Online", idle: "Idle", dnd: "Do Not Disturb" };
 /** Discord's status colors */
 const COLORS: Record<Status, string> = { online: "#23a55a", idle: "#f0b232", dnd: "#f23f43" };
 /** Discord's muted icon color, for profiles where the icon is an image and can't inherit it */
@@ -61,10 +61,10 @@ const iconSrc = (p: Platform, s: Status) => {
 };
 
 const settings = {
-    showOnProfiles: { type: "boolean", label: "On profiles", description: "Next to the badges on someone's profile.", default: true },
-    showInChat: { type: "boolean", label: "In chat", description: "After the name on each message.", default: true },
-    showInMemberList: { type: "boolean", label: "In the member list", description: "After each name in a server's member list.", default: true },
-    showOwn: { type: "boolean", label: "Your own devices", description: "Show which of your own clients are online too.", default: true },
+    showOnProfiles: { type: "boolean", get label() { return t("settings.showOnProfiles"); }, get description() { return t("settings.showOnProfiles.description"); }, default: true },
+    showInChat: { type: "boolean", get label() { return t("settings.showInChat"); }, get description() { return t("settings.showInChat.description"); }, default: true },
+    showInMemberList: { type: "boolean", get label() { return t("settings.showInMemberList"); }, get description() { return t("settings.showInMemberList.description"); }, default: true },
+    showOwn: { type: "boolean", get label() { return t("settings.showOwn"); }, get description() { return t("settings.showOwn.description"); }, default: true },
 } as const;
 
 let context: PluginContext<typeof settings> | undefined;
@@ -136,7 +136,7 @@ function deviceKey(userId: string): string {
     return device ? `${device[0]}:${device[1]}` : "";
 }
 
-const tooltip = (p: Platform, s: Status) => `${STATUS_NAMES[s]} on ${NAMES[p]}`;
+const tooltip = (p: Platform, s: Status) => t("tooltip", { status: t(`status.${s}`), device: t(`device.${p}`) });
 
 /**
  * Icons listen per person. PresenceStore changes on every presence update anywhere, so on each
@@ -266,7 +266,7 @@ export default definePlugin({
 
         // On profiles and in Discord's badge directory, through Evi's badges
         ctx.profileBadges(userId => ctx.settings.get("showOnProfiles")
-            ? devicesOf(userId).map(([p, s]) => ({ id: `platform-${p}`, name: `${STATUS_NAMES[s]} on ${NAMES[p]}`, description: tooltip(p, s), iconSrc: iconSrc(p, s) }))
+            ? devicesOf(userId).map(([p, s]) => ({ id: `platform-${p}`, name: tooltip(p, s), description: tooltip(p, s), iconSrc: iconSrc(p, s) }))
             : []);
 
         ctx.hookExport("before", usernameFilter, ({ args }) => {

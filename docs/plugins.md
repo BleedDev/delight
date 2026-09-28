@@ -29,7 +29,7 @@ bun test userplugins/my-plugin        # its test
 bun run preview-plugin my-plugin --open   # its store page, and what the store would say about it
 ```
 
-`new-plugin` writes a manifest, an `index.tsx` with a setting, a keyboard shortcut and a slash command, a pure `greeting.ts` and its test, all following this guide. Turn it on in Evi (`Ctrl+Shift+D`, Plugins), try its command, then make it yours. Options: `--name "My Plugin"`, `--author "You"`, and `--official` for a plugin in `plugins/` with its test in `tests/`.
+`new-plugin` writes a manifest (with a `locales` example), an `index.tsx` with a setting, a keyboard shortcut and a slash command, a `strings.ts` with its text in English and Spanish (see "Translations"), a pure `greeting.ts` and its test, all following this guide. Turn it on in Evi (`Ctrl+Shift+D`, Plugins), try its command, then make it yours. Options: `--name "My Plugin"`, `--author "You"`, and `--official` for a plugin in `plugins/` with its test in `tests/`.
 
 ## 1. Anatomy
 
@@ -429,7 +429,15 @@ function Counter({ n }: { n: number; }) {
 - Keys come from `en`; other languages can only use those keys (TypeScript checks it) and may leave some out.
 - `{name}` is filled from the second argument. A plural is an object keyed by [plural category](https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html) (`one`, `few`, `many`, `other`...), picked by `count`; `other` is required.
 - Languages are Discord's tags. `pt-BR` matches exactly; `es` also covers `es-ES` and `es-419`. `I18n.discordLocale` is Discord's tag, `I18n.locale` the one Evi uses for its own UI.
-- Translate what your plugin shows. Leave your manifest's `name`, `description` and `changelog` in English: the store shows them as written.
+- Settings are read when they're drawn, so give them getters: `{ type: "boolean", get label() { return t("settings.sound"); }, default: true }`.
+- Your manifest's `name`, `description` and `changelog` stay in English; translations go in `locales`, and the Plugins tab and the store show whichever matches Discord's language:
+
+```json
+"locales": {
+    "de": { "name": "Symbole ansehen", "description": "…", "changelog": { "1.0.0": ["Erste Version."] } },
+    "tr": { "description": "…" }
+}
+```
 
 ## 10. Native code
 

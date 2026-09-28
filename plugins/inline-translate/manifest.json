@@ -12,5 +12,151 @@
         { "version": "1.0.1", "notes": ["Faster: messages load with no extra work while automatic translation is off, and a finished translation only redraws its own message."] },
         { "version": "1.0.0", "notes": ["First release."] }
     ],
-    "enabledByDefault": false
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Inline-Übersetzer",
+            "description": "Übersetze Nachrichten direkt darunter, über das Nachrichtenmenü oder die Leiste beim Darüberfahren. Kann andere Sprachen automatisch übersetzen, sobald sie ankommen.",
+            "changelog": {
+                "1.0.3": [
+                    "Sagt, was es braucht (Verbindung zu translate.googleapis.com und Nachrichten lesen), und Evi hält es daran."
+                ],
+                "1.0.2": [
+                    "Flüssiger: Beim Darüberfahren wird der Text der Nachrichten nicht mehr jedes Mal neu geprüft, und ein erneutes Verbinden zeichnet nicht mehr jede Nachricht neu."
+                ],
+                "1.0.1": [
+                    "Schneller: Nachrichten laden ohne zusätzlichen Aufwand, solange die automatische Übersetzung aus ist, und eine fertige Übersetzung zeichnet nur ihre eigene Nachricht neu."
+                ],
+                "1.0.0": [
+                    "Erste Veröffentlichung."
+                ]
+            }
+        },
+        "es": {
+            "name": "Traducción en línea",
+            "description": "Traduce mensajes justo debajo de ellos, desde el menú del mensaje o la barra que aparece al pasar el ratón. Puede traducir automáticamente otros idiomas a medida que llegan.",
+            "changelog": {
+                "1.0.3": [
+                    "Indica lo que necesita (conectarse a translate.googleapis.com y leer mensajes) y Evi se lo exige."
+                ],
+                "1.0.2": [
+                    "Más fluido: pasar el ratón por los mensajes ya no vuelve a revisar su texto cada vez, y reconectar ya no redibuja todos los mensajes."
+                ],
+                "1.0.1": [
+                    "Más rápido: los mensajes cargan sin trabajo extra mientras la traducción automática está desactivada, y una traducción terminada solo redibuja su propio mensaje."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Traduction en ligne",
+            "description": "Traduis les messages juste en dessous, depuis le menu du message ou la barre qui apparaît au survol. Peut traduire automatiquement les autres langues dès leur arrivée.",
+            "changelog": {
+                "1.0.3": [
+                    "Indique ce dont il a besoin (se connecter à translate.googleapis.com et lire les messages), et Evi l'y tient."
+                ],
+                "1.0.2": [
+                    "Plus fluide : survoler les messages ne revérifie plus leur texte à chaque fois, et se reconnecter ne redessine plus chaque message."
+                ],
+                "1.0.1": [
+                    "Plus rapide : les messages se chargent sans travail supplémentaire tant que la traduction automatique est désactivée, et une traduction terminée ne redessine que son propre message."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "インライン翻訳",
+            "description": "メッセージのメニューやホバー時のツールバーから、メッセージのすぐ下に翻訳を表示します。ほかの言語のメッセージを届いた時点で自動翻訳することもできます。",
+            "changelog": {
+                "1.0.3": [
+                    "必要な権限(translate.googleapis.com への接続とメッセージの読み取り)を明示し、Evi がそれを守らせます。"
+                ],
+                "1.0.2": [
+                    "動作がスムーズになりました。メッセージにカーソルを合わせても毎回テキストを再チェックせず、再接続してもすべてのメッセージを再描画しません。"
+                ],
+                "1.0.1": [
+                    "高速化しました。自動翻訳がオフの間はメッセージが余計な処理なしで読み込まれ、翻訳が完了しても再描画されるのはそのメッセージだけです。"
+                ],
+                "1.0.0": [
+                    "最初のリリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Tłumaczenie w wiadomościach",
+            "description": "Tłumacz wiadomości bezpośrednio pod nimi, z menu wiadomości lub paska po najechaniu. Może automatycznie tłumaczyć inne języki, gdy tylko nadejdą.",
+            "changelog": {
+                "1.0.3": [
+                    "Podaje, czego potrzebuje (łączenie z translate.googleapis.com i czytanie wiadomości), a Evi go tego pilnuje."
+                ],
+                "1.0.2": [
+                    "Płynniej: najeżdżanie na wiadomości nie sprawdza już za każdym razem ich tekstu, a ponowne połączenie nie odświeża każdej wiadomości."
+                ],
+                "1.0.1": [
+                    "Szybciej: wiadomości ładują się bez dodatkowej pracy, gdy automatyczne tłumaczenie jest wyłączone, a gotowe tłumaczenie odświeża tylko własną wiadomość."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Tradução Inline",
+            "description": "Traduza mensagens logo abaixo delas, pelo menu da mensagem ou pela barra ao passar o mouse. Pode traduzir outros idiomas automaticamente assim que chegam.",
+            "changelog": {
+                "1.0.3": [
+                    "Informa do que precisa (conectar-se a translate.googleapis.com e ler mensagens), e o Evi o mantém nisso."
+                ],
+                "1.0.2": [
+                    "Mais fluido: passar o mouse sobre as mensagens não verifica mais o texto delas toda vez, e reconectar não redesenha mais todas as mensagens."
+                ],
+                "1.0.1": [
+                    "Mais rápido: as mensagens carregam sem trabalho extra enquanto a tradução automática está desativada, e uma tradução concluída redesenha apenas a própria mensagem."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Перевод на месте",
+            "description": "Переводите сообщения прямо под ними через меню сообщения или панель при наведении. Может автоматически переводить сообщения на других языках, как только они приходят.",
+            "changelog": {
+                "1.0.3": [
+                    "Теперь указывает, что ему нужно (подключение к translate.googleapis.com и чтение сообщений), и Evi следит, чтобы он не выходил за эти рамки."
+                ],
+                "1.0.2": [
+                    "Плавнее: при наведении на сообщения их текст больше не проверяется каждый раз, а переподключение не перерисовывает все сообщения."
+                ],
+                "1.0.1": [
+                    "Быстрее: пока автоматический перевод выключен, сообщения загружаются без лишней работы, а готовый перевод перерисовывает только своё сообщение."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Satır İçi Çeviri",
+            "description": "Mesajları hemen altlarında çevir; mesaj menüsünden ya da üzerine gelince beliren araç çubuğundan. Diğer dilleri geldikleri anda otomatik olarak çevirebilir.",
+            "changelog": {
+                "1.0.3": [
+                    "Neye ihtiyacı olduğunu (translate.googleapis.com'a bağlanmak ve mesajları okumak) belirtir ve Evi onu bununla sınırlar."
+                ],
+                "1.0.2": [
+                    "Daha akıcı: mesajların üzerine gelmek artık her seferinde metinlerini yeniden kontrol etmiyor ve yeniden bağlanmak her mesajı yeniden çizmiyor."
+                ],
+                "1.0.1": [
+                    "Daha hızlı: otomatik çeviri kapalıyken mesajlar ek iş yapılmadan yüklenir ve biten bir çeviri yalnızca kendi mesajını yeniden çizer."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

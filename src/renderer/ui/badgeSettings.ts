@@ -11,7 +11,8 @@
 import { arrange, BadgePrefs, EVI_PREFIX, oursFromDiscord, splitSettings } from "@shared/badges";
 import { DAY, nextSupporterTier, SUPPORTER_TIERS, supportedDays, supporterTier } from "@shared/supporter";
 
-import { Badge, badgeKey, Badges } from "../badges";
+import { Badge, badgeKey, Badges, levelName } from "../badges";
+import { t } from "../i18n";
 import type { PluginContext } from "../plugins/context";
 import { PLUGIN_BADGE_PREFIX, ProfileBadges, sameBadges } from "../profileBadges";
 import { showToast } from "../toolkit/toasts";
@@ -27,9 +28,8 @@ const LEVEL_RARITY = [RARITY.COMMON, RARITY.COMMON, RARITY.RARE, RARITY.RARE, RA
 /** "3 months", "1 year" */
 function span(days: number) {
     // 30-day months, the same as the levels
-    if (days < 365) return `${Math.round(days / 30)} month${Math.round(days / 30) === 1 ? "" : "s"}`;
-    const years = Math.round(days / 365);
-    return `${years} year${years === 1 ? "" : "s"}`;
+    if (days < 365) return t("badge.months", { count: Math.round(days / 30) });
+    return t("badge.years", { count: Math.round(days / 365) });
 }
 
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -53,23 +53,23 @@ function toEntry(userId: string, b: Badge) {
     const days = supportedDays(since);
     const current = supporterTier(since);
     const next = nextSupporterTier(since);
-    const tiers = SUPPORTER_TIERS.map((t, i) => {
-        const icon = Badges.info(t.badge)?.icon;
+    const tiers = SUPPORTER_TIERS.map((tier, i) => {
+        const icon = Badges.info(tier.badge)?.icon;
         return {
-            key: t.badge,
-            name: t.name,
-            owned: days >= t.days,
+            key: tier.badge,
+            name: levelName(tier.badge),
+            owned: days >= tier.days,
             rarity: LEVEL_RARITY[i],
             simple_icon_url: icon,
             complex_icon_static_url: icon,
-            milestone_text: t.days ? `${span(t.days)} of support` : "Support Evi",
-            requirements: [{ threshold: t.days }],
+            milestone_text: tier.days ? t("badge.milestoneSpan", { span: span(tier.days) }) : t("badge.milestoneStart"),
+            requirements: [{ threshold: tier.days }],
         };
     });
     return {
         ...base,
-        name: "Evi Supporter",
-        description: "Supports Evi. The badge levels up the longer they do.",
+        name: t("badge.supporter.name"),
+        description: t("badge.supporter.description"),
         rarity: LEVEL_RARITY[SUPPORTER_TIERS.indexOf(current)],
         tiers,
         current_tier: current.badge,
@@ -92,7 +92,7 @@ function pluginEntry(b: ReturnType<typeof ProfileBadges.forUser>[number]) {
         is_earnable: false,
         name: b.name ?? b.description,
         description: b.description,
-        info_label: `Shown by ${b.plugin}, an Evi plugin`,
+        info_label: t("badge.shownBy", { plugin: b.plugin }),
         rarity: RARITY.COMMON,
         simple_icon_url: b.iconSrc,
         simple_icon_raster_url: b.iconSrc,
@@ -198,7 +198,7 @@ export function installBadgeSettings(ctx: PluginContext) {
             // Hidden holds ours only; supporter levels all go by "supporter"
             if (prefs.hidden) prefs.hidden = [...new Set(prefs.hidden.map(badgeKey))];
             void Badges.setPrefs(userId, prefs).then(result => {
-                if (!result.ok) showToast(`Couldn’t save your Evi badges: ${result.error}`, { type: "failure" });
+                if (!result.ok) showToast(t("badge.saveFailed", { error: result.error }), { type: "failure" });
             });
         });
     });

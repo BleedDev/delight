@@ -1,6 +1,8 @@
 import type { ThemePayload } from "@shared/ipc";
 
-import { t } from "../i18n";
+import { localizePlugin } from "@shared/pluginLocales";
+
+import { I18n, t } from "../i18n";
 import { Native } from "../native";
 import { Settings } from "../settings";
 import { Store } from "../store";
@@ -18,7 +20,8 @@ type AddState =
     | { type: "done"; name: string; }
     | { type: "error"; error: string; };
 
-function ThemeRow({ theme }: { theme: ThemePayload; }) {
+function ThemeRow({ theme: source }: { theme: ThemePayload; }) {
+    const theme = localizePlugin(source, I18n.discordLocale);
     const titleId = `dl-theme-${theme.file.replace(/[^\w-]/g, "_")}`;
     const store = Store.getSnapshot();
     const storeId = Object.values(store.installedThemes).find(t => t.file === theme.file)?.id;

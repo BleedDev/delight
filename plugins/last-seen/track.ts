@@ -299,7 +299,32 @@ export function merge(into: Entry | undefined, from: Entry): Entry {
     return out;
 }
 
-const UNITS: [number, string][] = [
+/** The words the summaries are made of. English here; the plugin passes its translations in (strings.ts) */
+export type WordKey =
+    | "unit.y" | "unit.mo" | "unit.w" | "unit.d" | "unit.h" | "unit.m"
+    | "ago" | "justNow" | "seen" | "seenIn" | "active" | "online" | "message" | "messageIn";
+export type Words = (key: WordKey, vars?: Record<string, string | number>) => string;
+
+const ENGLISH: Record<WordKey, string> = {
+    "unit.y": "{n}y",
+    "unit.mo": "{n}mo",
+    "unit.w": "{n}w",
+    "unit.d": "{n}d",
+    "unit.h": "{n}h",
+    "unit.m": "{n}m",
+    ago: "{span} ago",
+    justNow: "just now",
+    seen: "Last seen {when}",
+    seenIn: "Last seen in the last {span}",
+    active: "Active {when}",
+    online: "Online now",
+    message: "Last message {when}",
+    messageIn: "Last message {when} in {where}",
+};
+
+export const english: Words = (key, vars) => ENGLISH[key].replace(/\{(\w+)\}/g, (whole, name: string) => vars && name in vars ? String(vars[name]) : whole);
+
+const UNITS: [number, "y" | "mo" | "w" | "d" | "h" | "m"][] = [
     [365 * 24 * 3600_000, "y"],
     [30 * 24 * 3600_000, "mo"],
     [7 * 24 * 3600_000, "w"],
@@ -309,44 +334,47 @@ const UNITS: [number, string][] = [
 ];
 
 /** "5m", "3h", "2d", or null under a minute */
-export function formatSpan(then: number, now: number): string | null {
+export function formatSpan(then: number, now: number, say: Words = english): string | null {
     const diff = Math.max(0, now - then);
     for (const [ms, unit] of UNITS) {
-        if (diff >= ms) return `${Math.floor(diff / ms)}${unit}`;
+        if (diff >= ms) return say(`unit.${unit}`, { n: Math.floor(diff / ms) });
     }
     return null;
 }
 
 /** "just now", "5m ago", "3h ago", "2d ago", "3w ago", "4mo ago", "1y ago" */
-export function formatRelative(then: number, now: number): string {
-    const span = formatSpan(then, now);
-    return span ? `${span} ago` : "just now";
+export function formatRelative(then: number, now: number, say: Words = english): string {
+    const span = formatSpan(then, now, say);
+    return span ? say("ago", { span }) : say("justNow");
 }
 
 /** "Last seen 3h ago", or "Last seen in the last 3h" when it's only a lower bound */
-export function seenText(entry: Entry, now: number): string | null {
+export function seenText(entry: Entry, now: number, say: Words = english): string | null {
     if (!entry.seen) return null;
-    if (!entry.approx) return `Last seen ${formatRelative(entry.seen, now)}`;
-    const span = formatSpan(entry.seen, now);
-    return span ? `Last seen in the last ${span}` : "Last seen just now";
+    if (!entry.approx) return say("seen", { when: formatRelative(entry.seen, now, say) });
+    const span = formatSpan(entry.seen, now, say);
+    return span ? say("seenIn", { span }) : say("seen", { when: say("justNow") });
 }
 
 /** The one-line summary for an offline person: whichever of last seen and last active is newer */
-export function lineText(entry: Entry | undefined, now: number): string | null {
+export function lineText(entry: Entry | undefined, now: number, say: Words = english): string | null {
     if (!entry) return null;
-    if (entry.active && entry.active > (entry.seen ?? 0)) return `Active ${formatRelative(entry.active, now)}`;
-    return seenText(entry, now);
+    if (entry.active && entry.active > (entry.seen ?? 0)) return say("active", { when: formatRelative(entry.active, now, say) });
+    return seenText(entry, now, say);
 }
 
 /**
  * "Last seen 3h ago · Active 1h ago · Last message 2d ago in #general", "Online now · Last message
  * 5m ago", or null when nothing is known. Activity is only mentioned when it's newer than last seen.
  */
-export function describe(entry: Entry | undefined, onlineNow: boolean, now: number, where?: string): string | null {
+export function describe(entry: Entry | undefined, onlineNow: boolean, now: number, where?: string, say: Words = english): string | null {
     const parts: string[] = [];
-    if (onlineNow) parts.push("Online now");
-    else if (entry?.seen) parts.push(seenText(entry, now)!);
-    if (!onlineNow && entry?.active && entry.active > (entry.seen ?? 0)) parts.push(`Active ${formatRelative(entry.active, now)}`);
-    if (entry?.message) parts.push(`Last message ${formatRelative(entry.message, now)}${where ? ` in ${where}` : ""}`);
+    if (onlineNow) parts.push(say("online"));
+    else if (entry?.seen) parts.push(seenText(entry, now, say)!);
+    if (!onlineNow && entry?.active && entry.active > (entry.seen ?? 0)) parts.push(say("active", { when: formatRelative(entry.active, now, say) }));
+    if (entry?.message) {
+        const when = formatRelative(entry.message, now, say);
+        parts.push(where ? say("messageIn", { when, where }) : say("message", { when }));
+    }
     return parts.length ? parts.join(" · ") : null;
 }

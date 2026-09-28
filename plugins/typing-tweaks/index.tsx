@@ -2,7 +2,9 @@ import { Components, definePlugin, findStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 import type { ReactNode } from "react";
 
-import { MAX_NAMED, nameSlots, PATCHES, typerIds, typingLabel } from "./typing";
+import { t } from "./strings";
+
+import { MAX_NAMED, nameSlots, PATCHES, typerIds } from "./typing";
 
 /**
  * Who's typing, easier to see:
@@ -15,10 +17,10 @@ import { MAX_NAMED, nameSlots, PATCHES, typerIds, typingLabel } from "./typing";
 
 type Settings = typeof settings;
 const settings = {
-    avatars: { type: "boolean", label: "Avatars in the typing line", description: "A small avatar before each name in “is typing” above the chat box.", default: true },
-    roleColors: { type: "boolean", label: "Names in role colours", description: "Names in “is typing” in the colour of their top role, like in chat.", default: true },
-    channels: { type: "boolean", label: "Dots on channels", description: "Three dots on a channel or thread in the channel list while someone types in it.", default: true },
-    dms: { type: "boolean", label: "Dots on DMs", description: "Three dots on a DM in the DM list while someone types in it, next to the ones Discord puts on the avatar.", default: true },
+    avatars: { type: "boolean", get label() { return t("settings.avatars"); }, get description() { return t("settings.avatars.description"); }, default: true },
+    roleColors: { type: "boolean", get label() { return t("settings.roleColors"); }, get description() { return t("settings.roleColors.description"); }, default: true },
+    channels: { type: "boolean", get label() { return t("settings.channels"); }, get description() { return t("settings.channels.description"); }, default: true },
+    dms: { type: "boolean", get label() { return t("settings.dms"); }, get description() { return t("settings.dms.description"); }, default: true },
 } as const;
 
 let context: PluginContext<Settings> | undefined;
@@ -52,7 +54,7 @@ function subscribeTyping(onChange: () => void) {
 function displayName(id: string, guildId?: string) {
     const user = store("UserStore")?.getUser?.(id);
     const nick = guildId ? store("GuildMemberStore")?.getNick?.(guildId, id) : undefined;
-    return nick ?? user?.globalName ?? user?.username ?? "Someone";
+    return nick ?? user?.globalName ?? user?.username ?? t("someone");
 }
 
 // ---- the "is typing" line ---------------------------------------------------------------------
@@ -69,6 +71,15 @@ function TypingName({ userId, guildId, children }: { userId: string; guildId?: s
     );
 }
 
+/** The dots' tooltip on a channel, in Discord's language: "Ada is typing", "Ada and Bo are typing"... */
+function typingText(names: string[]): string {
+    const [a, b, c] = names;
+    if (names.length === 1) return t("typing.one", { a });
+    if (names.length === 2) return t("typing.two", { a, b });
+    if (names.length === 3) return t("typing.three", { a, b, c });
+    return t("typing.many", { a, b, count: names.length - 2 });
+}
+
 // ---- dots in the lists ------------------------------------------------------------------------
 
 function TypingIndicator({ channelId, guildId }: { channelId: string; guildId?: string; }) {
@@ -76,7 +87,7 @@ function TypingIndicator({ channelId, guildId }: { channelId: string; guildId?: 
     const ids = React.useSyncExternalStore(subscribeTyping, () => typersIn(channelId).join(","));
     if (!ids) return null;
 
-    const label = typingLabel(ids.split(",").map(id => displayName(id, guildId)));
+    const label = typingText(ids.split(",").map(id => displayName(id, guildId)));
     const dots = (
         <span className="evi-typing-dots" role="img" aria-label={label}>
             <span /><span /><span />

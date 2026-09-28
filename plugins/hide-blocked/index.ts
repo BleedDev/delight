@@ -2,6 +2,7 @@ import { definePlugin, findStore, React } from "@evi/api";
 
 import { createReplyTracker, filterVoiceStates, PATCHES, shouldHideMemberRow, shouldHideMessage } from "./filter";
 import type { HideOptions, Lookups, MessageLike, RelationshipLike } from "./filter";
+import { t } from "./strings";
 
 /**
  * Discord folds a blocked user's messages into a "N blocked messages" row. This drops them from the
@@ -19,32 +20,32 @@ import type { HideOptions, Lookups, MessageLike, RelationshipLike } from "./filt
 const settings = {
     active: {
         type: "boolean",
-        label: "Hide blocked messages",
-        description: "Turn off to get Discord's collapsed \"blocked messages\" rows back. /hideblocked flips this.",
+        get label() { return t("settings.active"); },
+        get description() { return t("settings.active.description"); },
         default: true,
     },
     ignored: {
         type: "boolean",
-        label: "Ignored users too",
-        description: "Treat users you ignored like users you blocked.",
+        get label() { return t("settings.ignored"); },
+        get description() { return t("settings.ignored.description"); },
         default: true,
     },
     replies: {
         type: "boolean",
-        label: "Hide replies to them",
-        description: "Also hide messages replying to a hidden user. When off, the reply stays and its quote reads \"Blocked message\".",
+        get label() { return t("settings.replies"); },
+        get description() { return t("settings.replies.description"); },
         default: false,
     },
     memberList: {
         type: "boolean",
-        label: "Hide from the member list",
-        description: "Leave them out of a server's member list. Takes effect as the list updates.",
+        get label() { return t("settings.memberList"); },
+        get description() { return t("settings.memberList.description"); },
         default: true,
     },
     voice: {
         type: "boolean",
-        label: "Hide from voice channels",
-        description: "Leave them out of the users listed under voice channels.",
+        get label() { return t("settings.voice"); },
+        get description() { return t("settings.voice.description"); },
         default: false,
     },
 } as const;
@@ -132,11 +133,11 @@ export default definePlugin({
 
         ctx.command({
             name: "hideblocked",
-            description: "Toggle hiding blocked users' messages",
+            get description() { return t("command.description"); },
             execute() {
                 const next = !ctx.settings.get("active");
                 ctx.settings.set("active", next);
-                return { ephemeral: next ? "Blocked users' messages are hidden." : "Blocked users' messages show as Discord's collapsed rows again." };
+                return { ephemeral: next ? t("command.on") : t("command.off") };
             },
         });
 

@@ -43,5 +43,175 @@
             ]
         }
     ],
-    "enabledByDefault": false
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Versteckte Kanäle anzeigen",
+            "description": "Zeigt die Kanäle, die du nicht ansehen kannst, mit einem Schloss in der Kanalliste. Beim Öffnen siehst du Thema, Einstellungen und wer ihn sehen kann, nie aber die Nachrichten.",
+            "changelog": {
+                "1.0.4": [
+                    "Sagt, was es braucht, nämlich nichts über das hinaus, was Discord ihm ohnehin zeigt, und Evi hält es daran."
+                ],
+                "1.0.3": [
+                    "Schneller: Die Kanalliste fragt Discord nur noch einmal nach den Berechtigungen jedes Kanals, statt bei jedem Neuzeichnen."
+                ],
+                "1.0.2": [
+                    "Schneller: Eine Berechtigungsänderung auf einem Server zeichnet nicht mehr die Kanalliste jedes Servers neu."
+                ],
+                "1.0.1": [
+                    "Behebt, dass Discord einfriert, wenn das Plugin aktiv ist."
+                ],
+                "1.0.0": [
+                    "Erste Veröffentlichung."
+                ]
+            }
+        },
+        "es": {
+            "name": "Mostrar canales ocultos",
+            "description": "Muestra en la lista de canales los que no puedes ver, con un candado. Al abrir uno verás su tema, sus ajustes y quién puede verlo, nunca sus mensajes.",
+            "changelog": {
+                "1.0.4": [
+                    "Indica lo que necesita, que es nada más allá de lo que Discord ya le muestra, y Evi se lo exige."
+                ],
+                "1.0.3": [
+                    "Más rápido: la lista de canales pregunta a Discord por los permisos de cada canal una sola vez, en lugar de en cada redibujado."
+                ],
+                "1.0.2": [
+                    "Más rápido: un cambio de permisos en un servidor ya no redibuja la lista de canales de todos los servidores."
+                ],
+                "1.0.1": [
+                    "Corrige que Discord se congelara con el plugin activado."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Afficher les salons masqués",
+            "description": "Affiche dans la liste les salons que tu ne peux pas voir, avec un cadenas. En ouvrir un montre son sujet, ses paramètres et qui peut le voir, jamais ses messages.",
+            "changelog": {
+                "1.0.4": [
+                    "Indique ce dont il a besoin, c'est-à-dire rien de plus que ce que Discord lui montre déjà, et Evi l'y tient."
+                ],
+                "1.0.3": [
+                    "Plus rapide : la liste des salons interroge Discord une seule fois sur les permissions de chaque salon, au lieu de le faire à chaque rafraîchissement."
+                ],
+                "1.0.2": [
+                    "Plus rapide : un changement de permissions sur un serveur ne redessine plus la liste des salons de tous les serveurs."
+                ],
+                "1.0.1": [
+                    "Corrige le gel de Discord quand le plugin est activé."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "非表示チャンネルを表示",
+            "description": "見ることのできないチャンネルを、鍵付きでチャンネル一覧に表示します。開くとトピック、設定、閲覧できる人が表示され、メッセージは表示されません。",
+            "changelog": {
+                "1.0.4": [
+                    "必要なものを明示するようになりました。Discord がすでに表示している内容以上のものは必要なく、Evi がそれを守らせます。"
+                ],
+                "1.0.3": [
+                    "高速化しました。チャンネル一覧は、再描画のたびではなく、各チャンネルの権限を Discord に 1 回だけ問い合わせます。"
+                ],
+                "1.0.2": [
+                    "高速化しました。1 つのサーバーで権限が変わっても、すべてのサーバーのチャンネル一覧が再描画されなくなりました。"
+                ],
+                "1.0.1": [
+                    "プラグインが有効なときに Discord がフリーズする問題を修正しました。"
+                ],
+                "1.0.0": [
+                    "最初のリリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Pokaż ukryte kanały",
+            "description": "Pokazuje na liście kanałów te, których nie możesz zobaczyć, z kłódką. Po otwarciu zobaczysz jego temat, ustawienia i to, kto go widzi, ale nigdy wiadomości.",
+            "changelog": {
+                "1.0.4": [
+                    "Podaje, czego potrzebuje, czyli niczego ponad to, co Discord i tak mu pokazuje, a Evi go tego pilnuje."
+                ],
+                "1.0.3": [
+                    "Szybciej: lista kanałów pyta Discorda o uprawnienia każdego kanału raz, a nie przy każdym odświeżeniu."
+                ],
+                "1.0.2": [
+                    "Szybciej: zmiana uprawnień na jednym serwerze nie odświeża już list kanałów wszystkich serwerów."
+                ],
+                "1.0.1": [
+                    "Naprawia zawieszanie się Discorda przy włączonej wtyczce."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Mostrar Canais Ocultos",
+            "description": "Mostra na lista de canais os que você não pode ver, com um cadeado. Ao abrir um, você vê o tópico, as configurações e quem pode vê-lo, nunca as mensagens.",
+            "changelog": {
+                "1.0.4": [
+                    "Informa do que precisa, que é nada além do que o Discord já mostra, e o Evi o mantém nisso."
+                ],
+                "1.0.3": [
+                    "Mais rápido: a lista de canais pergunta ao Discord sobre as permissões de cada canal uma vez, em vez de a cada redesenho."
+                ],
+                "1.0.2": [
+                    "Mais rápido: uma mudança de permissão em um servidor não redesenha mais a lista de canais de todos os servidores."
+                ],
+                "1.0.1": [
+                    "Corrige o travamento do Discord quando o plugin está ativado."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Показывать скрытые каналы",
+            "description": "Показывает в списке каналов те, которые вам недоступны, с замком. Открыв такой канал, вы увидите его тему, настройки и то, кто может его видеть, но никогда не сообщения.",
+            "changelog": {
+                "1.0.4": [
+                    "Теперь указывает, что ему нужно, а именно ничего сверх того, что Discord и так показывает, и Evi следит, чтобы он не выходил за эти рамки."
+                ],
+                "1.0.3": [
+                    "Быстрее: список каналов запрашивает у Discord права каждого канала один раз, а не при каждой перерисовке."
+                ],
+                "1.0.2": [
+                    "Быстрее: изменение прав на одном сервере больше не перерисовывает списки каналов всех серверов."
+                ],
+                "1.0.1": [
+                    "Исправлено зависание Discord при включённом плагине."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Gizli Kanalları Göster",
+            "description": "Görüntüleyemediğin kanalları kanal listesinde kilit simgesiyle gösterir. Birini açtığında konusunu, ayarlarını ve kimlerin görebildiğini görürsün, mesajlarını asla.",
+            "changelog": {
+                "1.0.4": [
+                    "Neye ihtiyacı olduğunu belirtir; bu, Discord'un zaten gösterdiğinin ötesinde hiçbir şey değildir ve Evi onu bununla sınırlar."
+                ],
+                "1.0.3": [
+                    "Daha hızlı: kanal listesi, her yeniden çizimde değil, her kanalın izinlerini Discord'a bir kez sorar."
+                ],
+                "1.0.2": [
+                    "Daha hızlı: bir sunucudaki izin değişikliği artık tüm sunucuların kanal listelerini yeniden çizmiyor."
+                ],
+                "1.0.1": [
+                    "Eklenti açıkken Discord'un donması düzeltildi."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

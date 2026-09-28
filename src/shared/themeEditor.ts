@@ -9,6 +9,7 @@
  * each colour's main variable, so it also works on themes the editor didn't write (Midnight becomes a
  * starting point); anything it can't read keeps the preset's colour.
  */
+import type { PluginLocales } from "./pluginLocales";
 import { isPluginId } from "./store";
 import { parseThemeMeta } from "./themes";
 
@@ -38,6 +39,8 @@ export interface ThemeDraft {
     font: string;
     /** Anything else, added after the colours as it is */
     extraCss: string;
+    /** The name and description in other languages, from `@name:de` tags; kept as they were */
+    locales?: PluginLocales;
 }
 
 /** Discord's own colours, measured from its stylesheet (Dark, and Light), so a blank theme starts as Discord looks */
@@ -228,6 +231,10 @@ export function buildThemeCss(draft: ThemeDraft): string {
         ["author", headerValue(draft.author)],
         ["version", headerValue(draft.version) || "1.0.0"],
         ["base", draft.base],
+        ...Object.entries(draft.locales ?? {}).flatMap(([lang, l]) => [
+            [`name:${lang}`, headerValue(l.name ?? "")],
+            [`description:${lang}`, headerValue(l.description ?? "")],
+        ]),
     ].filter(([, v]) => v).map(([k, v]) => ` * @${k} ${v}`);
     const selectors = SELECTORS[draft.base];
     const scope = draft.base === "dark" ? "Discord's dark modes only: light mode stays as it is." : "Discord's light mode only: the dark modes stay as they are.";
@@ -327,6 +334,7 @@ export function parseThemeCss(css: string, file = ""): ThemeDraft {
         author: meta.author ?? "",
         version: meta.version ?? "1.0.0",
         extraCss: extraAt === -1 ? "" : css.slice(extraAt + EXTRA_MARKER.length).trim(),
+        ...meta.locales && { locales: meta.locales },
     };
 }
 

@@ -15,34 +15,92 @@ import type { PluginContext } from "@evi/api";
 
 import {
     ALL_CLASSES, autoActive, bodyClasses, buildCss, migrateHotkey, shouldActivate, toggledOverride,
-    transitionMessage,
 } from "./state";
+import { t } from "./strings";
 import type { ActivationMode, BlurOptions, LiveState, Override } from "./state";
 
 const settings = {
     mode: {
         type: "select",
-        label: "Turn on",
-        description: "When to blur. /streamerplus and the hotkey work in every mode.",
+        get label() { return t("settings.mode"); },
+        get description() { return t("settings.mode.description"); },
         default: "either",
         options: [
-            { label: "While streaming or in Streamer Mode", value: "either" },
-            { label: "While screen sharing or Go Live", value: "streaming" },
-            { label: "While Discord's Streamer Mode is on", value: "streamerMode" },
-            { label: "Always", value: "always" },
+            { get label() { return t("mode.either"); }, value: "either" },
+            { get label() { return t("mode.streaming"); }, value: "streaming" },
+            { get label() { return t("mode.streamerMode"); }, value: "streamerMode" },
+            { get label() { return t("mode.always"); }, value: "always" },
         ],
     },
-    hotkey: { type: "keybind", label: "Shortcut", description: "Turns blurring on or off, anywhere in Discord.", default: "Ctrl+Shift+KeyS" },
-    hoverReveal: { type: "boolean", label: "Reveal on hover", description: "Unblur something while the mouse is over it.", default: true },
-    blur: { type: "number", label: "Blur strength", description: "In pixels.", default: 8, min: 2, max: 30, step: 1 },
-    toasts: { type: "boolean", label: "Toasts", description: "A short notice when blurring turns on or off by itself.", default: true },
-    dms: { type: "boolean", label: "DM list", description: "Names, avatars and message previews in your DMs.", default: true },
-    servers: { type: "boolean", label: "Servers", description: "Server icons and names in the server list and header.", default: true },
-    channels: { type: "boolean", label: "Channel names", description: "The channel list and channel header.", default: false },
-    media: { type: "boolean", label: "Images and embeds", description: "Images, videos, embeds, stickers and attachments in chat.", default: true },
-    chatAvatars: { type: "boolean", label: "Avatars in chat", description: "Profile pictures next to messages.", default: false },
-    members: { type: "boolean", label: "Member list", description: "The member list and people in voice channels.", default: false },
-    dmContent: { type: "boolean", label: "Messages in DMs", description: "Message text and names while a DM is open.", default: false },
+    hotkey: {
+        type: "keybind",
+        get label() { return t("settings.hotkey"); },
+        get description() { return t("settings.hotkey.description"); },
+        default: "Ctrl+Shift+KeyS",
+    },
+    hoverReveal: {
+        type: "boolean",
+        get label() { return t("settings.hoverReveal"); },
+        get description() { return t("settings.hoverReveal.description"); },
+        default: true,
+    },
+    blur: {
+        type: "number",
+        get label() { return t("settings.blur"); },
+        get description() { return t("settings.blur.description"); },
+        default: 8,
+        min: 2,
+        max: 30,
+        step: 1,
+    },
+    toasts: {
+        type: "boolean",
+        get label() { return t("settings.toasts"); },
+        get description() { return t("settings.toasts.description"); },
+        default: true,
+    },
+    dms: {
+        type: "boolean",
+        get label() { return t("settings.dms"); },
+        get description() { return t("settings.dms.description"); },
+        default: true,
+    },
+    servers: {
+        type: "boolean",
+        get label() { return t("settings.servers"); },
+        get description() { return t("settings.servers.description"); },
+        default: true,
+    },
+    channels: {
+        type: "boolean",
+        get label() { return t("settings.channels"); },
+        get description() { return t("settings.channels.description"); },
+        default: false,
+    },
+    media: {
+        type: "boolean",
+        get label() { return t("settings.media"); },
+        get description() { return t("settings.media.description"); },
+        default: true,
+    },
+    chatAvatars: {
+        type: "boolean",
+        get label() { return t("settings.chatAvatars"); },
+        get description() { return t("settings.chatAvatars.description"); },
+        default: false,
+    },
+    members: {
+        type: "boolean",
+        get label() { return t("settings.members"); },
+        get description() { return t("settings.members.description"); },
+        default: false,
+    },
+    dmContent: {
+        type: "boolean",
+        get label() { return t("settings.dmContent"); },
+        get description() { return t("settings.dmContent.description"); },
+        default: false,
+    },
 } as const;
 
 type Settings = typeof settings;
@@ -116,6 +174,11 @@ function update(manual = false, quiet = false) {
     lastActive = active;
 }
 
+/** "Streamer Mode+ on: you're streaming", in Discord's language */
+function transitionMessage(active: boolean, reason: "manual" | "streaming" | "streamerMode") {
+    return t(`toast.${reason}.${active ? "on" : "off"}` as const);
+}
+
 function reasonFor(mode: ActivationMode, state: LiveState): "streaming" | "streamerMode" {
     if (mode === "streaming" || mode === "streamerMode") return mode;
     // "either": credit streaming if it's what is on now (or neither is, i.e. a stream just ended)
@@ -165,10 +228,10 @@ export default definePlugin({
 
         ctx.command({
             name: "streamerplus",
-            description: "Turn Streamer Mode+ blurring on or off",
+            get description() { return t("command.description"); },
             execute() {
                 const on = toggle(true);
-                return { ephemeral: on ? "Streamer Mode+ is on." : "Streamer Mode+ is off." };
+                return { ephemeral: on ? t("command.on") : t("command.off") };
             },
         });
 

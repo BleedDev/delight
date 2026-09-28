@@ -9,6 +9,7 @@ import type { DeclaredPermissions, PermissionGrowth } from "@shared/declaredPerm
 import { healthWarns, PluginHealth } from "@shared/health";
 import { entriesBetween } from "@shared/pluginChangelog";
 import type { PulledPlugin } from "@shared/pulls";
+import type { EviKey } from "@shared/locales";
 import { ListingInfo, ListingSort, RegistryEntry, sortListings, ThemeEntry } from "@shared/store";
 
 import { I18n, t, timeAgo as ago, tNodes } from "../i18n";
@@ -661,7 +662,12 @@ export function StoreView({ kind }: { kind: StoreKind; }) {
     );
 }
 
-const capitalize = (tag: string) => tag[0].toUpperCase() + tag.slice(1);
+/** A store tag in Discord's language: the ones Evi knows are translated, any other is shown as written, capitalized */
+const tagLabel = (tag: string) => {
+    const key = `store.tag.${tag}` as EviKey;
+    const text = t(key);
+    return text === key ? tag[0].toUpperCase() + tag.slice(1) : text;
+};
 
 function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, category, setCategory, sort, setSort, topRef, listRef, onOpen, onAuthor }: {
     kind: StoreKind;
@@ -701,7 +707,7 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
     const showHome = !q && filter === "all" && category === "all" && !!state.home;
     const visible = items.filter(i => tests[filter](i) && inCategory(i) && matches(i)).sort((a, b) => order.get(a.entry.id)! - order.get(b.entry.id)!);
     const paged = usePages(visible, PAGE_SIZE, [filter, category, q, sort].join("\n"));
-    const categories = [{ value: "all", label: t("store.allCategories") }, ...tags.map(tag => ({ value: tag, label: capitalize(tag) }))];
+    const categories = [{ value: "all", label: t("store.allCategories") }, ...tags.map(tag => ({ value: tag, label: tagLabel(tag) }))];
 
     return (
         <div className="dl-tab dl-tab-compact" ref={topRef}>
@@ -897,6 +903,9 @@ function StoreDetail({ item, onBack, onAuthor, onOpen }: { item: Item; onBack():
     const page = kind === "plugin" && state.pages[entry.id]?.status === "ready" ? (state.pages[entry.id] as { page: PluginPage; }).page : undefined;
     // Health and a pull have their own callouts; the rest of what evi.rest knows goes under Known issues
     const issues = page?.issues.filter(i => (i.kind === "status" || i.kind === "hotfix") && !item.health) ?? [];
+    // A community listing's own link is whatever its author wrote (a port may point at the original):
+    // its source is the exact code evi.rest serves, the version shown here
+    const code = item.official ? undefined : kind === "plugin" ? (entry as RegistryEntry).files["index.js"]?.url : (entry as ThemeEntry).file?.url;
 
     return (
         <article className="dl-tab dl-store-detail" aria-labelledby={headingId} data-store-detail={entry.id}>
@@ -943,7 +952,7 @@ function StoreDetail({ item, onBack, onAuthor, onOpen }: { item: Item; onBack():
                 {entry.minEviVersion && <Fact label={t("store.fact.needs")}>Evi {entry.minEviVersion}+</Fact>}
                 {page?.installs != null && <Fact label={t("community.fact.installs")}>{page.installs.toLocaleString(I18n.discordLocale)}</Fact>}
                 {item.health && <Fact label={t("store.fact.status")}><HealthPill health={item.health} /></Fact>}
-                {entry.tags.length > 0 && <Fact label={t("store.fact.categories")}>{entry.tags.join(", ")}</Fact>}
+                {entry.tags.length > 0 && <Fact label={t("store.fact.categories")}>{entry.tags.map(tagLabel).join(", ")}</Fact>}
             </dl>
 
             <section className="dl-store-access" data-native={item.native ? "" : undefined} aria-label={t("store.access")}>
@@ -961,11 +970,16 @@ function StoreDetail({ item, onBack, onAuthor, onOpen }: { item: Item; onBack():
             {kind === "plugin" && <StorePluginPermissions id={entry.id} version={entry.version} native={item.native} permissions={item.permissions} headingId={`${headingId}-permissions`} />}
             <KnownIssues issues={issues} />
 
-            {entry.source && (
-                <div>
-                    <a className="dl-store-source" href={entry.source} target="_blank" rel="noreferrer noopener">
+            {(code || entry.source) && (
+                <div className="dl-store-links">
+                    <a className="dl-store-source" href={code ?? entry.source} target="_blank" rel="noreferrer noopener">
                         <Icon name="link" size={16} />{t("store.viewSource")}
                     </a>
+                    {code && entry.source && (
+                        <a className="dl-store-source" href={entry.source} target="_blank" rel="noreferrer noopener">
+                            <Icon name="link" size={16} />{t("store.projectLink")}
+                        </a>
+                    )}
                 </div>
             )}
 

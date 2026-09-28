@@ -4,6 +4,7 @@
  */
 import type { UpdateProgress, UpdateStatus } from "@shared/release";
 
+import { t } from "./i18n";
 import { Native } from "./native";
 import { Settings } from "./settings";
 
@@ -71,7 +72,7 @@ export const Updates = {
         const result = await Native.installUpdate().catch(err => ({ ok: false as const, error: String(err) }));
         // On success the installer takes it from here and restarts Discord: stay on "installing"
         if (!result.ok) set({ installing: undefined, error: result.error });
-        else setTimeout(() => set({ installing: undefined, error: "The installer didn’t restart Discord. What it said is in update.log, in the logs folder of Evi’s data folder." }), INSTALL_TIMEOUT);
+        else setTimeout(() => set({ installing: undefined, error: t("updates.installerDidntRestart") }), INSTALL_TIMEOUT);
         return result;
     },
 

@@ -2,7 +2,7 @@ import type { ImportMode, ImportPreview } from "@shared/backup";
 import type { BackupOpenResult } from "@shared/ipc";
 
 import { Backup } from "../backup";
-import { t } from "../i18n";
+import { I18n, t } from "../i18n";
 import { React } from "../webpack/common";
 import { Button, Section, SettingField, Status, Text, Tone } from "./components";
 
@@ -33,7 +33,7 @@ function describe(p: ImportPreview) {
     return lines;
 }
 
-const formatDate = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+const formatDate = (iso: string) => new Date(iso).toLocaleString(I18n.discordLocale, { dateStyle: "medium", timeStyle: "short" });
 
 function Preview({ opened, onDone, onCancel }: { opened: Opened; onDone(note: Note): void; onCancel(): void; }) {
     const [mode, setMode] = React.useState<ImportMode>("merge");
@@ -87,7 +87,7 @@ function Preview({ opened, onDone, onCancel }: { opened: Opened; onDone(note: No
                         <p className="dl-hint">{t("backup.notInstalledHint")}</p>
                         <ul className="dl-backup-changes">
                             {userMissing.map(p => <li key={p.id}>{p.name} <span className="dl-mono">plugins/{p.id}</span></li>)}
-                            {devMissing.map(p => <li key={p.id}>{p.name} <span className="dl-badge">Dev</span></li>)}
+                            {devMissing.map(p => <li key={p.id}>{p.name} <span className="dl-badge">{t("common.dev")}</span></li>)}
                         </ul>
                     </div>
                 )}

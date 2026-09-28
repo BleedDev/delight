@@ -8,5 +8,79 @@
     "permissions": {},
     "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
     "minEviVersion": "1.0.0",
-    "enabledByDefault": false
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Tipp-Anpassungen",
+            "description": "Sieh auf einen Blick, wer schreibt: ihre Avatare und Rollenfarben in der Zeile „schreibt gerade“ und drei Punkte bei Kanälen und DMs in deinen Listen, solange dort jemand schreibt.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Ajustes de escritura",
+            "description": "Mira de un vistazo quién está escribiendo: sus avatares y colores de rol en la línea «está escribiendo», y tres puntos en los canales y MD de tus listas mientras alguien escribe en ellos.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Améliorations d'écriture",
+            "description": "Vois d'un coup d'œil qui est en train d'écrire : leurs avatars et les couleurs de leurs rôles dans la ligne « est en train d'écrire », et trois points sur les salons et MP de tes listes pendant que quelqu'un y écrit.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "入力表示の改善",
+            "description": "誰が入力中かがひと目でわかります。「入力中」の表示にアバターとロールの色を加え、誰かが入力している間はリストのチャンネルやDMに3つのドットを表示します。",
+            "changelog": {
+                "1.0.0": [
+                    "最初のリリースです。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Ulepszenia pisania",
+            "description": "Zobacz od razu, kto pisze: awatary i kolory ról w linii „pisze” oraz trzy kropki przy kanałach i DM-ach na twoich listach, gdy ktoś w nich pisze.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Ajustes de digitação",
+            "description": "Veja de relance quem está digitando: os avatares e as cores dos cargos na linha “está digitando” e três pontinhos nos canais e DMs das suas listas enquanto alguém digita neles.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Кто печатает",
+            "description": "Сразу видно, кто печатает: аватары и цвета ролей в строке «печатает» и три точки у каналов и ЛС в списках, пока в них кто-то печатает.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый релиз."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Yazma İyileştirmeleri",
+            "description": "Kimin yazdığını tek bakışta gör: “yazıyor” satırında avatarları ve rol renkleri, listelerindeki kanallarda ve DM'lerde ise birisi yazarken üç nokta.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

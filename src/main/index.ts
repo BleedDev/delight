@@ -6,6 +6,7 @@ import { existsSync, readFileSync, watch, writeFileSync } from "fs";
 import { dirname, join } from "path";
 
 import { initAccount } from "./account";
+import { setLocale } from "./locale";
 import { initBackup } from "./backup";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
@@ -68,6 +69,8 @@ function registerIpc() {
         };
         e.returnValue = boot;
     });
+
+    ipcMain.on(IPC.SET_LOCALE, (_, locale: unknown) => setLocale(locale));
 
     ipcMain.handle(IPC.SETTINGS_SAVE, (e, next: EviSettings) => saveFromPage(next, e.sender));
     ipcMain.handle(IPC.CSS_SAVE, (_, css: string) => writeFileSync(QUICK_CSS_FILE, css));

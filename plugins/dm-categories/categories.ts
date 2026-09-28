@@ -65,11 +65,11 @@ export const getCategory = (state: CategoryState, id: string | null | undefined)
 export const categoryOf = (state: CategoryState, channelId: string) => state.categories.find(c => c.channels.includes(channelId));
 
 /** Why a name can't be used, or null when it can. Names are unique, ignoring case */
-export function nameError(state: CategoryState, name: unknown, exceptId?: string): string | null {
+export function nameError(state: CategoryState, name: unknown, exceptId?: string): "empty" | "taken" | null {
     const clean = cleanName(name);
-    if (!clean) return "Give it a name";
+    if (!clean) return "empty";
     const taken = state.categories.some(c => c.id !== exceptId && c.name.toLowerCase() === clean.toLowerCase());
-    return taken ? "You already have a category with that name" : null;
+    return taken ? "taken" : null;
 }
 
 function update(state: CategoryState, id: string, change: (c: Category) => Category): CategoryState {

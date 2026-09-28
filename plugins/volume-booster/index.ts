@@ -1,5 +1,6 @@
 import { definePlugin, filters, find, getStore } from "@evi/api";
 
+import { t } from "./strings";
 import {
     clampMultiplier, clampSynced, DEFAULT_MULTIPLIER, DISCORD_MAX_AMPLITUDE, keepBoosted, MAX_MULTIPLIER, MIN_MULTIPLIER, PATCHES,
     sliderMax,
@@ -40,8 +41,8 @@ export default definePlugin({
     settings: {
         multiplier: {
             type: "number",
-            label: "Volume limit",
-            description: "How far past Discord's 200% the slider goes: 2 is 400%, 5 is 1000%. Very high volumes clip and distort.",
+            get label() { return t("settings.multiplier"); },
+            get description() { return t("settings.multiplier.description"); },
             default: DEFAULT_MULTIPLIER,
             min: MIN_MULTIPLIER,
             max: MAX_MULTIPLIER,

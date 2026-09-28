@@ -10,6 +10,7 @@ import { validateThemeSubmission, whyNotCommunityCss } from "@shared/themeSubmis
 import { ipcMain } from "electron";
 
 import { apiRequest } from "./evirest";
+import { mt } from "./locale";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -29,11 +30,11 @@ const submitAllowed = hourly(10);
 const reportAllowed = hourly(5);
 
 async function submitTheme(raw: unknown): Promise<ThemeSubmitResult> {
-    const checked = validateThemeSubmission(raw);
+    const checked = validateThemeSubmission(raw, mt);
     if ("error" in checked) return { ok: false, error: checked.error };
-    const problem = whyNotCommunityCss(checked.input.css);
+    const problem = whyNotCommunityCss(checked.input.css, mt);
     if (problem) return { ok: false, error: problem };
-    if (!submitAllowed()) return { ok: false, error: "That's a lot of uploads for one hour. Try again later." };
+    if (!submitAllowed()) return { ok: false, error: mt("main.rate.uploads") };
     try {
         const { json } = await apiRequest("POST", "/me/theme-submissions", {
             headers: { "Content-Type": "application/json" },
@@ -49,9 +50,9 @@ async function submitTheme(raw: unknown): Promise<ThemeSubmitResult> {
 }
 
 async function reportTheme(id: unknown, input: unknown): Promise<PluginReportResult> {
-    const checked = validatePluginReport(id, input);
+    const checked = validatePluginReport(id, input, mt);
     if ("error" in checked) return { ok: false, error: checked.error };
-    if (!reportAllowed()) return { ok: false, error: "That's a lot of reports for one hour. Try again later." };
+    if (!reportAllowed()) return { ok: false, error: mt("main.rate.reports") };
     const { plugin, ...report } = checked.report;
     try {
         await apiRequest("POST", `/themes/${plugin}/reports`, { headers: { "Content-Type": "application/json" }, body: JSON.stringify(report), max: 16 * 1024 });

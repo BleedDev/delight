@@ -8,5 +8,79 @@
     "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
     "minEviVersion": "0.1.0",
     "permissions": {},
-    "enabledByDefault": true
+    "enabledByDefault": true,
+    "locales": {
+        "de": {
+            "name": "Ruhige Namenseffekte",
+            "description": "Halbiert den Aufwand beim Öffnen eines Chats. Nitro-Namensstile wie Prism, Neon und Gummy spielen ihre Animation bei jedem Öffnen eines Chats neu ab, und zwar bei allen Nachrichten gleichzeitig, wodurch Discord sekundenlang ausgelastet ist. Namen behalten ihre Farben und Effekte und animieren sich, solange du mit der Maus darüber fährst.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Efectos de nombre tranquilos",
+            "description": "Reduce a la mitad el trabajo de abrir un chat. Los estilos de nombre de Nitro como Prism, Neon y Gummy repiten su animación cada vez que se abre un chat, en todos los mensajes a la vez, y eso mantiene a Discord ocupado durante segundos. Los nombres conservan sus colores y efectos, y se animan mientras pasas el cursor por encima.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Effets de pseudo apaisés",
+            "description": "Divise par deux le travail à l'ouverture d'une conversation. Les styles de pseudo Nitro comme Prism, Neon et Gummy rejouent leur animation à chaque ouverture d'une conversation, sur tous les messages à la fois, ce qui occupe Discord pendant plusieurs secondes. Les pseudos gardent leurs couleurs et leurs effets, et s'animent quand vous les survolez.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "ネームエフェクト静音化",
+            "description": "チャットを開くときの負荷を半分にします。Prism、Neon、GummyなどのNitro名前スタイルは、チャットを開くたびに全メッセージで一斉にアニメーションを再生し、Discordを数秒間忙しくさせます。名前の色とエフェクトはそのままで、カーソルを重ねている間だけアニメーションします。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Spokojne efekty nazw",
+            "description": "Zmniejsza o połowę pracę przy otwieraniu czatu. Style nazw z Nitro, takie jak Prism, Neon i Gummy, odtwarzają animację przy każdym otwarciu czatu, na wszystkich wiadomościach naraz, przez co Discord jest zajęty przez kilka sekund. Nazwy zachowują kolory i efekty, a animują się, gdy najedziesz na nie kursorem.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Efeitos de nome calmos",
+            "description": "Reduz pela metade o trabalho de abrir um chat. Os estilos de nome do Nitro, como Prism, Neon e Gummy, repetem a animação toda vez que um chat é aberto, em todas as mensagens ao mesmo tempo, e isso deixa o Discord ocupado por segundos. Os nomes mantêm as cores e os efeitos, e só se animam quando você passa o mouse por cima.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Спокойные эффекты имён",
+            "description": "Вдвое сокращает нагрузку при открытии чата. Стили имён Nitro, такие как Prism, Neon и Gummy, заново проигрывают анимацию при каждом открытии чата, сразу на всех сообщениях, и Discord несколько секунд занят. Имена сохраняют цвета и эффекты и анимируются, пока вы наводите на них курсор.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Sakin İsim Efektleri",
+            "description": "Bir sohbeti açmanın yükünü yarıya indirir. Prism, Neon ve Gummy gibi Nitro isim stilleri, sohbet her açıldığında animasyonlarını tüm mesajlarda aynı anda baştan oynatır ve bu Discord'u saniyelerce meşgul eder. İsimler renklerini ve efektlerini korur, üzerlerine geldiğinde animasyon oynar.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

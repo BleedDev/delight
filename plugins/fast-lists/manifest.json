@@ -7,5 +7,127 @@
     "tags": ["performance"],
     "permissions": {},
     "changelog": [{ "version": "2.0.2", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] }, { "version": "2.0.1", "notes": ["Faster start: the server list's GPU-layer fix is worked out in idle time instead of freezing Discord for a moment."] }, { "version": "2.0.0", "notes": ["Servers, messages and members far out of view skip rendering work instead of being removed, so nothing flickers or jumps."] }],
-    "enabledByDefault": true
+    "enabledByDefault": true,
+    "locales": {
+        "de": {
+            "name": "Schnelle Listen",
+            "description": "Hält Discord flüssig, auch mit Hunderten Servern und langen Chats. Server, Nachrichten und Mitglieder weit außerhalb des Sichtbereichs sparen sich die Renderarbeit, ohne je entfernt zu werden, sodass nichts flackert, verschwindet oder springt.",
+            "changelog": {
+                "2.0.2": [
+                    "Sagt, was es braucht, und das ist nichts, was Discord ihm nicht ohnehin zeigt. Evi sorgt dafür, dass es dabei bleibt."
+                ],
+                "2.0.1": [
+                    "Schnellerer Start: Der GPU-Ebenen-Fix der Serverliste wird in Leerlaufzeit berechnet, statt Discord kurz einzufrieren."
+                ],
+                "2.0.0": [
+                    "Server, Nachrichten und Mitglieder weit außerhalb des Sichtbereichs sparen sich die Renderarbeit, statt entfernt zu werden, sodass nichts flackert oder springt."
+                ]
+            }
+        },
+        "es": {
+            "name": "Listas rápidas",
+            "description": "Mantiene Discord fluido con cientos de servidores y chats largos. Los servidores, mensajes y miembros muy fuera de la vista se ahorran el trabajo de renderizado sin eliminarse nunca, así que nada parpadea, desaparece ni da saltos.",
+            "changelog": {
+                "2.0.2": [
+                    "Indica qué necesita, que no es nada más allá de lo que Discord ya le muestra, y Evi se encarga de que así sea."
+                ],
+                "2.0.1": [
+                    "Inicio más rápido: la corrección de capa GPU de la lista de servidores se calcula en tiempo inactivo en lugar de congelar Discord un momento."
+                ],
+                "2.0.0": [
+                    "Los servidores, mensajes y miembros muy fuera de la vista se ahorran el trabajo de renderizado en lugar de eliminarse, así que nada parpadea ni da saltos."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Listes rapides",
+            "description": "Garde Discord fluide avec des centaines de serveurs et de longs chats. Les serveurs, messages et membres très loin de la vue évitent le travail de rendu sans jamais être supprimés, donc rien ne clignote, ne disparaît ni ne saute.",
+            "changelog": {
+                "2.0.2": [
+                    "Indique ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi veille à ce qu'il s'y tienne."
+                ],
+                "2.0.1": [
+                    "Démarrage plus rapide : la correction de couche GPU de la liste des serveurs est calculée pendant les temps morts au lieu de figer Discord un instant."
+                ],
+                "2.0.0": [
+                    "Les serveurs, messages et membres très loin de la vue évitent le travail de rendu au lieu d'être supprimés, donc rien ne clignote ni ne saute."
+                ]
+            }
+        },
+        "ja": {
+            "name": "高速リスト",
+            "description": "数百のサーバーや長いチャットでも Discord をなめらかに保ちます。画面から大きく外れたサーバー、メッセージ、メンバーは削除されることなく描画処理だけを省くので、ちらつきや消失、ジャンプは起きません。",
+            "changelog": {
+                "2.0.2": [
+                    "必要な権限を明示するようになりました。Discord がすでに表示している以外は何も必要とせず、Evi がそれを守らせます。"
+                ],
+                "2.0.1": [
+                    "起動が速くなりました。サーバーリストの GPU レイヤー対策を、Discord を一瞬止めるのではなく、アイドル時間に計算します。"
+                ],
+                "2.0.0": [
+                    "画面から大きく外れたサーバー、メッセージ、メンバーは削除されず、描画処理だけを省くようになりました。ちらつきやジャンプは起きません。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Szybkie listy",
+            "description": "Utrzymuje płynność Discorda przy setkach serwerów i długich czatach. Serwery, wiadomości i członkowie daleko poza widokiem pomijają pracę renderowania, ale nigdy nie są usuwani, więc nic nie migocze, nie znika ani nie skacze.",
+            "changelog": {
+                "2.0.2": [
+                    "Mówi, czego potrzebuje, a nie potrzebuje niczego poza tym, co Discord już mu pokazuje. Evi pilnuje, żeby tak zostało."
+                ],
+                "2.0.1": [
+                    "Szybszy start: poprawka warstwy GPU listy serwerów jest liczona w czasie bezczynności, zamiast na chwilę zamrażać Discorda."
+                ],
+                "2.0.0": [
+                    "Serwery, wiadomości i członkowie daleko poza widokiem pomijają pracę renderowania zamiast być usuwani, więc nic nie migocze ani nie skacze."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Listas rápidas",
+            "description": "Mantém o Discord fluido com centenas de servidores e chats longos. Servidores, mensagens e membros bem fora da tela pulam o trabalho de renderização sem nunca serem removidos, então nada pisca, some ou pula.",
+            "changelog": {
+                "2.0.2": [
+                    "Informa do que precisa, que é nada além do que o Discord já mostra, e o Evi garante que seja assim."
+                ],
+                "2.0.1": [
+                    "Início mais rápido: a correção de camada de GPU da lista de servidores é calculada em tempo ocioso, em vez de travar o Discord por um instante."
+                ],
+                "2.0.0": [
+                    "Servidores, mensagens e membros bem fora da tela pulam o trabalho de renderização em vez de serem removidos, então nada pisca ou pula."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Быстрые списки",
+            "description": "Сохраняет плавность Discord при сотнях серверов и длинных чатах. Серверы, сообщения и участники далеко за пределами экрана не отрисовываются, но никогда не удаляются, поэтому ничего не мерцает, не пропадает и не прыгает.",
+            "changelog": {
+                "2.0.2": [
+                    "Теперь сообщает, что ему нужно, а нужно ему только то, что Discord и так показывает, и Evi следит, чтобы так и оставалось."
+                ],
+                "2.0.1": [
+                    "Быстрее запуск: исправление GPU-слоя списка серверов считается в моменты простоя, а не подвешивает Discord на секунду."
+                ],
+                "2.0.0": [
+                    "Серверы, сообщения и участники далеко за пределами экрана теперь не отрисовываются, а не удаляются, поэтому ничего не мерцает и не прыгает."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Hızlı Listeler",
+            "description": "Yüzlerce sunucu ve uzun sohbetlerle Discord'u akıcı tutar. Görüş alanının çok dışındaki sunucular, mesajlar ve üyeler hiç kaldırılmadan oluşturma işinden muaf tutulur; böylece hiçbir şey titremez, kaybolmaz veya sıçramaz.",
+            "changelog": {
+                "2.0.2": [
+                    "Neye ihtiyacı olduğunu söylüyor: Discord'un zaten gösterdiğinden fazlasına değil, ve Evi onu buna bağlı tutuyor."
+                ],
+                "2.0.1": [
+                    "Daha hızlı başlangıç: sunucu listesinin GPU katmanı düzeltmesi, Discord'u bir an dondurmak yerine boş zamanda hesaplanıyor."
+                ],
+                "2.0.0": [
+                    "Görüş alanının çok dışındaki sunucular, mesajlar ve üyeler kaldırılmak yerine oluşturma işinden muaf tutuluyor; böylece hiçbir şey titremiyor veya sıçramıyor."
+                ]
+            }
+        }
+    }
 }

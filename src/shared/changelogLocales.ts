@@ -1,0 +1,1357 @@
+/**
+ * Evi's release notes (RELEASES in changelog.ts) in the languages Evi ships. English is the source:
+ * each entry here lists the same lines as English, in the same order and count, per version and
+ * section. A release or section a language lacks shows in English (see localizedRelease).
+ * **Bold lead-ins**, `code`, plugin names and brand names stay as they are in English.
+ */
+import type { SectionKind } from "./changelog";
+
+export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
+
+/** Language -> version -> section -> lines */
+export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
+    de: {
+        "1.0.0": {
+            added: [
+                "**Eine Startseite für den Store.** Was gerade angesagt ist, was diese Woche neu ist, Empfehlungen und Sammlungen von Evis Team, noch vor der vollständigen Liste.",
+                "**Bewertungen und Rezensionen.** Bewerte Plugins, die du nutzt, und begründe es in ein paar Zeilen. Rezensionen, die jemand meldet, gehen an Evis Team.",
+                "**Plugin-Seiten zeigen mehr.** Ein Video oder GIF im Einsatz, was Leute, die es nutzen, sonst noch installieren, bekannte Probleme und eine Notiz der Autorin oder des Autors zur Version.",
+                "**Eine Wunschliste und ein Postfach.** Markiere alles im Store mit einem Herz, um zu erfahren, wenn es ein Update oder eine Beta bekommt oder wieder funktioniert. Rezensionen deiner Plugins, deine Uploads und Neuigkeiten von Autoren, denen du folgst, landen ebenfalls im neuen Postfach.",
+                "**Autoren folgen.** Autorenseiten haben ein Banner, angepinnte Plugins, die Zahl der Nutzer ihrer Plugins und einen Folgen-Button.",
+                "**Plugin-Betas.** Autoren können neben der stabilen Version eine Beta veröffentlichen, und du kannst dich auf der Seite jedes Plugins für dessen Betas anmelden.",
+                "**Dynamischer Hintergrund.** Ein Bild oder Video hinter Discord, abgedunkelt, damit Text lesbar bleibt, und im Akkubetrieb pausiert.",
+                "**Crash Detective.** Wenn Discord abstürzt oder hängt, sagt Evi, welches Plugin kurz davor am meisten zu tun hatte, und bietet an, es auszuschalten.",
+                "**Updates im Hintergrund.** Aktiviere es unter Updates: Neue Versionen laden sich von selbst herunter und werden installiert, wenn du Discord schließt.",
+                "**Tastenkürzel für Plugins.** Lege eines in den Einstellungen eines Plugins fest, indem du die Tasten drückst, wie bei Discords Tastenkombinationen. Streamer Mode+ und Game Activity Toggle haben eines, und das Feld sagt dir, wenn zwei Plugins dieselben Tasten wollen.",
+                "**Vorteile für Unterstützer.** Dein Unterstützer-Badge in einer Farbe deiner Wahl, auf Wunsch dein Name im Abspann und Aurora, ein Theme für Unterstützer.",
+                "**Who Reacted.** Kleine Avatare der Leute, die reagiert haben, direkt an jeder Reaktion neben der Anzahl.",
+                "**Typing Tweaks.** Sieh auf einen Blick, wer tippt: Avatare und Rollenfarben in der Zeile „schreibt gerade“ und drei Punkte an Kanälen und DMs, während dort jemand tippt.",
+                "**Für Plugin-Autoren:** Evi DevTools (Flux-Events live, Stores, Patch-Treffer und Zeiten), API-Doku beim Hovern im Patch Helper, ein öffentliches Changelog der Plugin-API, anonyme Installations- und Absturzzahlen im Dashboard sowie `bun run new-plugin` / `bun run preview-plugin`, um ein Plugin zu starten und zu prüfen.",
+            ],
+            improved: [
+                "**Die Suche findet Einstellungen, nicht nur Plugins.** Die Suche im Plugins-Tab durchsucht jetzt auch die Einstellungen aller Plugins, und ein Treffer bringt dich direkt zur Einstellung.",
+                "**Zeige nur, was du noch nicht hast,** mit dem neuen Filter „Nicht installiert“ im Store, und sortiere nach Bewertung oder Trend.",
+                "Streamer Mode+ behält das Kürzel, das du eingegeben hast, jetzt als aufgezeichnetes Kürzel.",
+                "Plugin-Autoren sehen, wie viele ihre Plugins nutzen: Einmal am Tag meldet Evi anonym an evi.rest, welche Store-Plugins installiert sind. Du kannst das in den Store-Einstellungen ausschalten.",
+                "Quick Actions ist nicht mehr Teil von Evi und wird beim Update von Evi entfernt.",
+                "**View Icons ist in die Profile gezogen.** Klicke auf jemandes Banner, um es wie den Avatar in voller Größe zu öffnen, und Herunterladen steht neben dem Zoom. Die Einträge im Rechtsklick-Menü sind weg.",
+            ],
+            fixed: [
+                "**Message Logger behält gelöschte Bilder, Videos und Dateien.** Discord löscht sie mit der Nachricht von seinen Servern, deshalb wurden sie bisher kaputt angezeigt. Auch bei Bearbeitungen, die einen Anhang entfernen, bleibt er bei der alten Version erhalten.",
+            ],
+        },
+        "0.7.0": {
+            added: [
+                "**Plugins sagen, was sie brauchen, und Evi hält sie daran.** Welche Seiten ein Plugin kontaktiert und ob es deine Nachrichten liest, Nachrichten sendet oder deine Einstellungen ändert. Alles andere, was es über Evi versucht, blockiert Evi, und Blockiertes erscheint in der Aktivität des Plugins.",
+                "**Evi repariert Plugins, die Discord kaputt macht, ohne auf ein Update zu warten.** Wenn ein Discord-Update ein Plugin kaputt macht, repariert Evis Team es auf evi.rest, und jede Installation übernimmt die Korrektur innerhalb von Minuten. In den Details des Plugins steht, was behoben wurde.",
+                "**Erstelle dein eigenes Theme.** Wähle Farben im neuen Editor-Tab, sieh zu, wie sich Discord währenddessen verändert, und speichere es dann als eigenes Theme.",
+                "**Community-Themes.** Sende ein Theme aus dem Editor oder deinem Dashboard an den Theme Store. Evis Team prüft jedes einzelne, und Community-Themes können nichts aus dem Internet laden, sodass niemand erfährt, wer sie nutzt.",
+                "**DM Categories.** Sortiere deine DMs in einklappbare Kategorien wie Freunde, Arbeit oder Gaming, oben in deiner DM-Liste. Rechtsklicke auf eine DM, um sie einer Kategorie hinzuzufügen.",
+                "**View Icons.** Rechtsklicke auf jemanden für Avatar und Banner in voller Größe oder auf einen Server für Icon und Banner, in Discords Bildbetrachter. Lade das Original herunter oder kopiere den Link.",
+                "**Calm Name Effects.** Das Öffnen eines Chats braucht nur halb so viel Aufwand: Nitro-Namensstile wie Prism und Neon werden animiert, solange du über einen Namen fährst, statt bei jeder Nachricht gleichzeitig.",
+            ],
+            improved: [
+                "**Ein Update, das mehr verlangt, wartet auf dein OK,** wie beim Vollzugriff. Store-Seiten, Installationsfragen und Plugin-Details listen auf, was jedes Plugin verlangt, und ältere Plugins ohne Angaben sind gekennzeichnet.",
+                "**Der Store weiß, wenn eine Korrektur wirkt.** Ein von Evi repariertes Plugin wird als repariert statt als defekt angezeigt und gilt nur dann wieder als defekt, wenn Installationen mit der Korrektur weiterhin Probleme haben.",
+                "Themes im Store können wie Plugins gemeldet werden.",
+            ],
+            fixed: [
+                "Das Symbol von Platform Indicators wächst nicht mehr auf eine ganze Nachricht an, wenn Evis Styles nicht greifen, etwa in ausgekoppelten Chats.",
+            ],
+        },
+        "0.6.1": {
+            fixed: [
+                "**Smooth Typing bringt keine gerade gesendete Nachricht mehr zurück** ins Textfeld. Auch beim Kanalwechsel und bei Slash-Befehlen bleibt das Feld aktuell.",
+                "Ein Plugin, das Evi ausgeschaltet hat oder bei dem ein Problem zu erklären ist, behält in der Plugin-Liste seine Kartengröße, statt sich über die ganze Breite zu strecken.",
+            ],
+        },
+        "0.6.0": {
+            improved: [
+                "**Kein Ruckeln mehr durch Evi.** Das Finden von Discords Bauteilen durchsuchte früher den gesamten Discord-Code, jeweils 10 bis 20 ms lang, und ein fehlendes Teil wurde jede Sekunde erneut gesucht. Jetzt wird es einmal gefunden, und jeder spätere Zugriff ist sofort da.",
+                "**Plugins erledigen ihre schwere Arbeit in kleinen Häppchen** zwischen allem anderen: Fast Lists, Read All, GIF Folders und das Speichern von Last Seen halten Discord nicht mehr auf.",
+                "**Show Hidden Channels merkt sich, wer was sehen kann,** statt bei jedem Neuzeichnen für jeden Kanal erneut zu fragen.",
+                "**Schneller: Message Logger, Inline Translate, Platform Indicators, Voice Activity Log, Relationship Notifier, Hide Blocked, Timezones, Friend Online Alerts, Streamer Mode+, Silent Typing und Snippets.**",
+                "Die Plugin-Gesundheitsprüfung im Hintergrund ist deutlich leichter.",
+            ],
+            fixed: [
+                "**Ein Plugin, das Evi überall ausschaltet, ist innerhalb von Sekunden aus,** mit Hinweis, statt erst bei der nächsten halbstündlichen Prüfung oder beim Neustart.",
+            ],
+        },
+        "0.5.3": {
+            fixed: [
+                "Das Plugin-Autor-Badge öffnet beim Anklicken seine Details und lässt sich unter „Badges anpassen“ ausblenden und verschieben.",
+            ],
+        },
+        "0.5.2": {
+            improved: [
+                "**Update-Prüfungen laufen über evi.rest,** sodass ein ausgelastetes Netzwerk nicht mehr an GitHubs Limit stößt und meldet, Evi könne nicht nach Updates suchen.",
+                "**Die Installation eines Plugins mit Vollzugriff fragt in einem Dialog nach,** statt in einem Kasten, der in die Karte gequetscht ist.",
+                "**Symbole an jedem Tab,** damit man Installiert und Store auf einen Blick unterscheidet.",
+                "**Jede Version bekommt ihr gepunktetes Cover** in „Neuigkeiten“.",
+            ],
+            fixed: [
+                "Das Öffnen des Stores scrollt Discords Einstellungen nicht mehr ein Stück nach unten.",
+            ],
+        },
+        "0.5.1": {
+            added: [
+                "**Community-Plugins mit nativem Teil.** Autoren können ihrem Plugin eine native.js beilegen. Evis Team liest alles, bevor es aufgenommen wird, und Evi fragt dich weiterhin, bevor etwas mit Vollzugriff installiert wird.",
+            ],
+            fixed: [
+                "Das Öffnen von Evis Seiten in Discords Einstellungen bringt Discord nicht mehr zum Absturz.",
+            ],
+        },
+        "0.5.0": {
+            added: [
+                "**Evi Setup.** Ein kleines Installationsprogramm mit Fenster: Wähle dein Discord und klicke auf Evi installieren oder Evi deinstallieren. Es prüft zuerst auf ein neueres Evi und lädt es herunter, daher sind es nur wenige MB statt über 100.",
+                "**Evi in deiner Sprache.** Evis Menüs folgen Discords Sprache: Spanisch, Portugiesisch, Französisch, Deutsch, Türkisch, Russisch, Polnisch und Japanisch. Auch Plugins können übersetzt werden.",
+                "**Sieh, was ein Plugin getan hat.** Die Details eines Plugins listen die Seiten auf, die es kontaktiert hat, und wann, und weisen auf solche hin, die sein Code nie erwähnt.",
+                "**Beta-Versionen.** Aktiviere unter Updates „Beta-Versionen erhalten“, um neue Evi-Versionen ein paar Tage früher zu bekommen.",
+                "**Plugin-Autor-Badge.** Alle, deren Plugin es in den Store schafft, bekommen es auf ihrem Profil.",
+            ],
+            improved: [
+                "Das Ein- oder Ausschalten eines Plugins lässt Discord nicht mehr kurz einfrieren.",
+                "**Unterstützerstufen gibt es monatlich.** Ein neues Badge jeden Monat für deine ersten sechs Monate, von Silver nach einem Monat bis Ruby nach sechs, dann Prismatic nach einem Jahr.",
+            ],
+            fixed: [
+                "Ein Klick auf den Schalter eines Plugins scrollt Discords Einstellungen nicht mehr davon weg.",
+            ],
+        },
+        "0.4.0": {
+            added: [
+                "**Community-Plugins im Store.** Plugin-Autoren können ihre Plugins jetzt selbst auf evi.rest veröffentlichen. Evis Team liest jede Version, bevor sie aufgenommen wird, und Community-Plugins sind gekennzeichnet, damit du immer weißt, wer was gemacht hat.",
+                "**Verifizierte Autoren.** Jedes Plugin zeigt, wer es gemacht hat, mit einem Häkchen für verifizierte Autoren. Klicke auf einen Namen, um weitere Plugins zu sehen.",
+                "**Einen Absturzbericht an den Autor senden.** Neben „Absturzbericht kopieren“. Du siehst genau, was gesendet wird, bevor es rausgeht, und nichts Persönliches ist darin enthalten.",
+                "**Erfahre, wenn ein Plugin defekt ist.** Wenn ein Plugin nach einem Discord-Update bei vielen Leuten nicht mehr funktioniert, sagen das der Store und deine Plugin-Liste, oft mit einer Notiz des Autors zur Korrektur.",
+                "**Ein Plugin melden.** Etwas Schädliches, Gefälschtes oder Defektes? Melde es auf seiner Store-Seite. Meldungen gehen an Evis Team.",
+                "**Evi kann ein schlechtes Plugin überall ausschalten.** Wenn sich ein Plugin als schädlich herausstellt, schaltet Evi es auf jeder Installation ab und sagt dir, warum.",
+            ],
+            improved: [
+                "**Neuigkeiten, die nach Evi aussehen.** Das Cover der Version oben und jede Art von Änderung unter ihrem eigenen Label.",
+                "**Pop-ups warten auf Discord.** Neuigkeiten, Plugin-Changelogs und der Update-Hinweis erscheinen, sobald Discord geladen ist, nicht über dem Ladebildschirm.",
+                "**Unterstützer-Badges steigen schneller auf.** Prismatic gibt es jetzt nach einem Jahr Unterstützung statt nach fünf.",
+                "**Plugin-Badges unter „Deine Badges“.** Badges, die Plugins zu Profilen hinzufügen, wie die Uhr von Last Seen und das Gerät von Platform Indicators, stehen auch in Discords Badge-Verzeichnis.",
+                "**Sicherer von Grund auf.** Das Einschalten eines Plugins mit Vollzugriff auf deinen Computer fragt immer in einem Systemdialog nach, den kein Plugin für dich beantworten kann.",
+            ],
+            fixed: [
+                "Die Installation eines Plugins aus dem Store schaltet es immer ein. Früher hieß es, es sei eingeschaltet, und manchmal stimmte das nicht.",
+                "Dropdowns in den Einstellungen eines Plugins öffnen sich beim ersten Klick. In Discords Einstellungen schlossen sie sich oft sofort wieder.",
+            ],
+        },
+        "0.3.2": {
+            improved: [
+                "**Dialoge und Menüs bewegen sich wie bei Discord.** Evis Dialoge, Hinweise und Plugin-Menüs öffnen sich jetzt federnd und blenden aus, statt aufzuploppen und zu verschwinden.",
+                "**Ein aufgeräumteres Voice Activity Log** mit nach Kanal aufgelisteten Sitzungen und einem richtigen Suchfeld.",
+            ],
+        },
+        "0.3.1": {
+            added: [
+                "**Evi auf macOS und Linux.** Lade das Installationsprogramm für dein System aus dem Release herunter und führe `evi install` aus. Unter Linux führst du es mit sudo aus.",
+            ],
+        },
+        "0.3.0": {
+            added: [
+                "**Evi-Badges sind Teil von Evi.** Sie erscheinen auf den Profilen aller, die Evi nutzen, und lassen sich nicht versehentlich ausschalten.",
+                "**Blende deine Evi-Badges aus und ordne sie neu an** in Discords eigenem „Badges anpassen“. Alle sehen die Änderung innerhalb von Sekunden.",
+                "**Unterstützer-Badges, die aufsteigen.** Von Bronze bis Prismatic, je länger du Evi unterstützt, mit deinem Fortschritt unter „Deine Badges“.",
+                "**Evi direkt in der App aktualisieren.** Evi sagt Bescheid, wenn eine neue Version da ist, und ein Klick installiert sie.",
+            ],
+            improved: [
+                "Badges aktualisieren sich live statt alle halbe Stunde.",
+                "Jedes Plugin lässt sich entfernen, auch die, die mit Evi kommen, und sie bleiben auch nach Evi-Updates entfernt.",
+            ],
+        },
+        "0.2.0": {
+            added: [
+                "**Der Plugin Store ist jetzt im Plugins-Tab.** Jedes Plugin hat eine eigene Seite mit Screenshots, Changelog, Quellcode und den Zugriffen, die es hat.",
+                "**Theme Store.** Installiere und aktualisiere Themes direkt im Themes-Tab.",
+                "**Alles aktualisieren und auf Wunsch automatische Updates.** Plugins mit Vollzugriff auf deinen Computer fragen weiterhin vorher nach.",
+                "**Absturzberichte.** Bei einem Plugin, das nicht startet, gibt es für den Autor eine Schaltfläche „Absturzbericht kopieren“.",
+            ],
+            improved: [
+                "Durchstöbere den Store nach Kategorie und sortiere ihn nach Name oder zuletzt aktualisiert.",
+                "Aktualisiere und deinstalliere Store-Plugins direkt in der Plugin-Liste.",
+                "Schalte alle Plugins mit einem Klick aus oder setze sie auf ihre Standardwerte zurück, mit Rückgängig-Option.",
+            ],
+        },
+        "0.1.0": {
+            added: ["**Erste Version.** Plugins, Themes, Quick CSS, Backups, abgesicherter Modus und der Plugin Store."],
+        },
+    },
+    es: {
+        "1.0.0": {
+            added: [
+                "**Una portada para la tienda.** Lo que es tendencia, lo nuevo de esta semana, selecciones del equipo y colecciones preparadas por el equipo de Evi, antes de la lista completa.",
+                "**Valoraciones y reseñas.** Valora los plugins que usas y cuenta por qué en unas pocas líneas. Las reseñas que alguien denuncie llegan al equipo de Evi.",
+                "**Las páginas de los plugins muestran más.** Un vídeo o GIF de cómo se usa, qué otros plugins instalan quienes lo usan, problemas conocidos y una nota del autor sobre la versión.",
+                "**Una lista de deseos y una bandeja de entrada.** Marca con un corazón lo que quieras de la tienda para enterarte cuando se actualice, tenga una beta o vuelva a funcionar. Las reseñas de tus plugins, tus subidas y las novedades de los autores a los que sigues llegan también a la nueva Bandeja de entrada.",
+                "**Sigue a autores.** Las páginas de autor tienen un banner, plugins fijados, cuánta gente usa sus plugins y un botón de Seguir.",
+                "**Betas de plugins.** Los autores pueden publicar una beta junto a la versión estable, y tú puedes apuntarte a las betas de cualquier plugin desde su página.",
+                "**Fondo de pantalla dinámico.** Una imagen o un vídeo detrás de Discord, atenuado para que el texto se lea bien y en pausa cuando funciona con batería.",
+                "**Crash Detective.** Cuando Discord se cierra o se congela, Evi te dice qué plugin estaba más ocupado justo antes y te ofrece desactivarlo.",
+                "**Actualizaciones en segundo plano.** Actívalo en Actualizaciones y las versiones nuevas se descargan solas y se instalan al cerrar Discord.",
+                "**Atajos de teclado para plugins.** Configura uno en los ajustes de un plugin pulsando las teclas, como los atajos de Discord. Streamer Mode+ y Game Activity Toggle tienen uno, y el campo avisa cuando dos plugins quieren las mismas teclas.",
+                "**Ventajas para quienes apoyan.** Tu insignia de colaborador en el color que quieras, tu nombre en los créditos si te apetece y Aurora, un tema para colaboradores.",
+                "**Who Reacted.** Pequeños avatares de quienes han reaccionado, justo en cada reacción junto al contador.",
+                "**Typing Tweaks.** Mira de un vistazo quién está escribiendo: avatares y colores de rol en la línea de «está escribiendo» y tres puntos en los canales y MD mientras alguien escribe allí.",
+                "**Para autores de plugins:** Evi DevTools (eventos de Flux en directo, stores, patches aplicados y tiempos), documentación de la API al pasar el ratón en el Patch Helper, un registro de cambios público de la API de plugins, cifras anónimas de instalaciones y fallos en tu panel, y `bun run new-plugin` / `bun run preview-plugin` para empezar y revisar un plugin.",
+            ],
+            improved: [
+                "**La búsqueda encuentra ajustes, no solo plugins.** Al buscar en la pestaña Plugins se revisan también los ajustes de todos los plugins, y al abrir uno desde los resultados llegas directo al ajuste.",
+                "**Muestra solo lo que aún no tienes** con el nuevo filtro No instalados de la tienda, y ordena por valoración o tendencia.",
+                "Streamer Mode+ conserva el atajo que habías escrito, ahora como atajo grabado.",
+                "Los autores de plugins ven cuánta gente usa sus plugins: una vez al día Evi le dice a evi.rest, de forma anónima, qué plugins de la tienda tiene. Puedes desactivarlo en los ajustes de la tienda.",
+                "Quick Actions ya no forma parte de Evi y se elimina cuando Evi se actualiza.",
+                "**View Icons pasa a los perfiles.** Haz clic en el banner de alguien para abrirlo a tamaño completo como su avatar, y Descargar está junto al zoom. Los elementos del menú contextual han desaparecido.",
+            ],
+            fixed: [
+                "**Message Logger conserva las imágenes, vídeos y archivos eliminados.** Discord los borra de sus servidores junto con el mensaje, así que antes se veían rotos. Las ediciones que quitan un adjunto también lo conservan en la versión anterior.",
+            ],
+        },
+        "0.7.0": {
+            added: [
+                "**Los plugins dicen qué necesitan y Evi se lo exige.** A qué sitios se conecta un plugin y si lee tus mensajes, envía mensajes o cambia tus ajustes. Evi bloquea el resto de lo que intente a través de Evi, y lo bloqueado aparece en la Actividad del plugin.",
+                "**Evi arregla los plugins que Discord rompe, sin esperar a una actualización.** Cuando una actualización de Discord rompe un plugin, el equipo de Evi lo repara en evi.rest y todas las instalaciones reciben el arreglo en minutos. Los detalles del plugin dicen qué se corrigió.",
+                "**Crea tu propio tema.** Elige colores en la nueva pestaña Editor, mira cómo cambia Discord mientras tanto y guárdalo como un tema tuyo.",
+                "**Temas de la comunidad.** Envía un tema a la Tienda de temas desde el editor o tu panel. El equipo de Evi revisa cada uno, y los temas de la comunidad no pueden cargar nada de internet, así que nadie sabe quién los usa.",
+                "**DM Categories.** Ordena tus MD en categorías plegables como Amigos, Trabajo o Juegos, en la parte superior de tu lista de MD. Haz clic derecho en un MD para añadirlo a una.",
+                "**View Icons.** Haz clic derecho en alguien para ver su avatar y banner a tamaño completo, o en un servidor para ver su icono y banner, en el visor de imágenes de Discord. Descarga el original o copia su enlace.",
+                "**Calm Name Effects.** Abrir un chat cuesta la mitad: los estilos de nombre de Nitro como Prism y Neon se animan mientras pasas el ratón por un nombre, en lugar de en todos los mensajes a la vez.",
+            ],
+            improved: [
+                "**Una actualización que pide más espera tu OK,** como el acceso completo. Las páginas de la tienda, las preguntas de instalación y los detalles de los plugins enumeran lo que pide cada plugin, y los plugins antiguos que no lo indican están marcados.",
+                "**La tienda sabe cuándo un arreglo funciona.** Un plugin que Evi arregló aparece como arreglado en lugar de roto, y solo vuelve a roto si las instalaciones con el arreglo siguen teniendo problemas.",
+                "Los temas de la tienda se pueden denunciar, igual que los plugins.",
+            ],
+            fixed: [
+                "El icono de Platform Indicators ya no crece hasta ocupar un mensaje entero en lugares a los que no llegan los estilos de Evi, como los chats en ventana emergente.",
+            ],
+        },
+        "0.6.1": {
+            fixed: [
+                "**Smooth Typing ya no devuelve al cuadro de texto un mensaje que acabas de enviar.** Cambiar de canal y usar comandos de barra también mantienen el cuadro al día.",
+                "Un plugin que Evi desactivó, o que tiene un problema que explicar, mantiene el tamaño de su tarjeta en la lista de Plugins en lugar de estirarse a todo el ancho.",
+            ],
+        },
+        "0.6.0": {
+            improved: [
+                "**Se acabaron los tirones por culpa de Evi.** Buscar las piezas de Discord antes recorría todo el código de Discord, entre 10 y 20 ms cada vez, y una pieza que faltaba se volvía a buscar cada segundo. Ahora se encuentra una vez y cualquier búsqueda posterior es instantánea.",
+                "**Los plugins hacen su trabajo pesado en trozos pequeños,** entre todo lo demás: Fast Lists, Read All, GIF Folders y el guardado de Last Seen ya no frenan a Discord.",
+                "**Show Hidden Channels recuerda quién puede ver qué,** en lugar de volver a preguntarlo por cada canal en cada redibujado.",
+                "**Más rápidos: Message Logger, Inline Translate, Platform Indicators, Voice Activity Log, Relationship Notifier, Hide Blocked, Timezones, Friend Online Alerts, Streamer Mode+, Silent Typing y Snippets.**",
+                "La comprobación de estado de los plugins en segundo plano es mucho más ligera.",
+            ],
+            fixed: [
+                "**Un plugin que Evi desactiva en todas partes se apaga en cuestión de segundos,** con un aviso, en lugar de en la siguiente comprobación de media hora o al reiniciar.",
+            ],
+        },
+        "0.5.3": {
+            fixed: [
+                "La insignia de Plugin Author abre sus detalles al hacer clic y se puede ocultar y mover en Personaliza tus insignias.",
+            ],
+        },
+        "0.5.2": {
+            improved: [
+                "**Las comprobaciones de actualizaciones pasan por evi.rest,** así que una red saturada ya no choca con el límite de GitHub ni dice que Evi no puede buscar actualizaciones.",
+                "**Instalar un plugin con acceso completo pregunta en un cuadro de diálogo,** en lugar de en un recuadro apretado dentro de su tarjeta.",
+                "**Iconos en cada pestaña,** para distinguir Instalados y Tienda de un vistazo.",
+                "**Todas las versiones tienen su portada de puntos** en Novedades.",
+            ],
+            fixed: [
+                "Abrir la Tienda ya no desplaza un poco hacia abajo los ajustes de Discord.",
+            ],
+        },
+        "0.5.1": {
+            added: [
+                "**Plugins de la comunidad con una parte nativa.** Los autores pueden enviar un native.js con su plugin. El equipo de Evi lo lee todo antes de que entre, y Evi sigue preguntándote antes de instalar algo con acceso completo.",
+            ],
+            fixed: [
+                "Abrir las páginas de Evi en los ajustes de Discord ya no cierra Discord de golpe.",
+            ],
+        },
+        "0.5.0": {
+            added: [
+                "**Evi Setup.** Un pequeño instalador con ventana: elige tu Discord y haz clic en Instalar Evi o Desinstalar Evi. Primero busca una versión más reciente de Evi y la descarga, así que pesa unos pocos MB en lugar de más de 100.",
+                "**Evi en tu idioma.** Los menús de Evi siguen el idioma de Discord: español, portugués, francés, alemán, turco, ruso, polaco y japonés. Los plugins también se pueden traducir.",
+                "**Mira lo que hizo un plugin.** Los detalles de un plugin enumeran los sitios con los que contactó y cuándo, y señalan los que su código nunca menciona.",
+                "**Versiones beta.** Activa Recibir versiones beta en Actualizaciones para obtener las nuevas versiones de Evi unos días antes.",
+                "**Insignia de Plugin Author.** Cualquiera cuyo plugin llegue a la tienda la recibe en su perfil.",
+            ],
+            improved: [
+                "Activar o desactivar un plugin ya no congela Discord por un momento.",
+                "**Los niveles de colaborador llegan cada mes.** Una insignia nueva cada mes durante los primeros seis meses, de Silver al mes a Ruby a los seis, y luego Prismatic al año.",
+            ],
+            fixed: [
+                "Hacer clic en el interruptor de un plugin ya no desplaza los ajustes de Discord lejos de él.",
+            ],
+        },
+        "0.4.0": {
+            added: [
+                "**Plugins de la comunidad en la tienda.** Los autores de plugins ya pueden publicar sus propios plugins en evi.rest. El equipo de Evi lee cada versión antes de que entre, y los plugins de la comunidad están etiquetados para que siempre sepas quién hizo qué.",
+                "**Autores verificados.** Cada plugin muestra quién lo hizo, con una marca de verificación para los autores verificados. Haz clic en un nombre para ver sus otros plugins.",
+                "**Envía un informe de fallo al autor.** Junto a Copiar informe de fallo. Ves exactamente lo que se envía antes de mandarlo, y no incluye nada personal.",
+                "**Entérate de cuándo un plugin está roto.** Si un plugin deja de funcionar para mucha gente tras una actualización de Discord, la tienda y tu lista de Plugins lo indican, a menudo con una nota del autor sobre el arreglo.",
+                "**Denuncia un plugin.** ¿Algo dañino, falso o roto? Denúncialo desde su página de la tienda. Las denuncias llegan al equipo de Evi.",
+                "**Evi puede desactivar un plugin malo en todas partes.** Si un plugin resulta ser dañino, Evi lo apaga en todas las instalaciones y te explica por qué.",
+            ],
+            improved: [
+                "**Unas Novedades con el aspecto de Evi.** La portada de la versión arriba del todo y cada tipo de cambio bajo su propia etiqueta.",
+                "**Los avisos esperan a Discord.** Novedades, registros de cambios de plugins y el aviso de actualización aparecen cuando Discord ya ha cargado, no sobre su pantalla de carga.",
+                "**Las insignias de colaborador suben de nivel más rápido.** Prismatic ahora es un año de apoyo en lugar de cinco.",
+                "**Insignias de plugins en Tus insignias.** Las insignias que los plugins añaden a los perfiles, como el reloj de Last Seen y el dispositivo de Platform Indicators, aparecen también en el directorio de insignias de Discord.",
+                "**Más seguro por diseño.** Activar un plugin con acceso completo a tu ordenador siempre te lo pregunta en un cuadro de diálogo del sistema que ningún plugin puede responder por ti.",
+            ],
+            fixed: [
+                "Instalar un plugin desde la tienda siempre lo activa. Antes decía que lo había hecho y a veces no era así.",
+                "Los desplegables en los ajustes de un plugin se abren al primer clic. En los ajustes de Discord a menudo se cerraban de nuevo enseguida.",
+            ],
+        },
+        "0.3.2": {
+            improved: [
+                "**Los diálogos y menús se mueven como los de Discord.** Los diálogos, avisos y menús de plugins de Evi ahora se abren con un rebote suave y se desvanecen, en lugar de aparecer y desaparecer de golpe.",
+                "**Un Voice Activity Log más limpio,** con las sesiones listadas por canal y un campo de búsqueda como es debido.",
+            ],
+        },
+        "0.3.1": {
+            added: [
+                "**Evi en macOS y Linux.** Descarga el instalador para tu sistema desde la versión y ejecuta `evi install`. En Linux, ejecútalo con sudo.",
+            ],
+        },
+        "0.3.0": {
+            added: [
+                "**Las insignias de Evi forman parte de Evi.** Se muestran en los perfiles de todos los que usan Evi y no se pueden desactivar por accidente.",
+                "**Oculta y reordena tus insignias de Evi** en el Personaliza tus insignias de Discord. Todos ven el cambio en cuestión de segundos.",
+                "**Insignias de colaborador que suben de nivel.** De Bronze a Prismatic cuanto más tiempo apoyes a Evi, con tu progreso en Tus insignias.",
+                "**Actualiza Evi desde la app.** Evi avisa cuando hay una versión nueva y un botón la instala.",
+            ],
+            improved: [
+                "Las insignias se actualizan al instante en lugar de cada media hora.",
+                "Todos los plugins se pueden eliminar, incluso los que vienen con Evi, y siguen eliminados cuando Evi se actualiza.",
+            ],
+        },
+        "0.2.0": {
+            added: [
+                "**La Tienda de plugins ahora está en la pestaña Plugins.** Cada plugin tiene su propia página con capturas de pantalla, su registro de cambios, su código fuente y a qué puede acceder.",
+                "**Tienda de temas.** Instala y actualiza temas directamente desde la pestaña Temas.",
+                "**Actualizar todo, y actualizaciones automáticas si quieres.** Los plugins con acceso completo a tu ordenador siguen preguntando antes.",
+                "**Informes de fallos.** Un plugin que no arranca tiene un botón Copiar informe de fallo para su autor.",
+            ],
+            improved: [
+                "Explora la tienda por categoría y ordénala por nombre o por lo más recientemente actualizado.",
+                "Actualiza y desinstala plugins de la tienda directamente desde la lista de Plugins.",
+                "Desactiva todos los plugins, o restablécelos a sus valores predeterminados, con un clic y con opción de deshacer.",
+            ],
+        },
+        "0.1.0": {
+            added: ["**Primera versión.** Plugins, temas, Quick CSS, copias de seguridad, modo seguro y la tienda de plugins."],
+        },
+    },
+    fr: {
+        "1.0.0": {
+            added: [
+                "**Une page d’accueil pour la boutique.** Les tendances, les nouveautés de la semaine, les sélections et les collections de l’équipe Evi, avant la liste complète.",
+                "**Notes et avis.** Note les plugins que tu utilises et explique pourquoi en quelques lignes. Les avis signalés par quelqu’un sont transmis à l’équipe Evi.",
+                "**Les pages de plugins en disent plus.** Une vidéo ou un GIF du plugin en action, ce que les gens qui l’utilisent installent aussi, les problèmes connus et un mot de son auteur sur la version.",
+                "**Une liste de souhaits et une boîte de réception.** Mets un cœur à ce que tu veux dans la boutique pour être prévenu d’une mise à jour, d’une bêta ou d’un retour en état de marche. Les avis sur tes plugins, tes envois et les actualités des auteurs que tu suis arrivent aussi dans la nouvelle Boîte de réception.",
+                "**Suis des auteurs.** Les pages d’auteur ont une bannière, des plugins épinglés, le nombre de personnes qui utilisent leurs plugins et un bouton Suivre.",
+                "**Bêtas de plugins.** Les auteurs peuvent publier une bêta à côté de la version stable, et tu peux t’inscrire aux bêtas de n’importe quel plugin depuis sa page.",
+                "**Fond d’écran dynamique.** Une image ou une vidéo derrière Discord, assombrie pour que le texte reste lisible, et mise en pause sur batterie.",
+                "**Crash Detective.** Quand Discord plante ou se fige, Evi indique quel plugin était le plus sollicité juste avant et propose de le désactiver.",
+                "**Mises à jour en arrière-plan.** Active-les dans Mises à jour : les nouvelles versions se téléchargent toutes seules et s’installent quand tu fermes Discord.",
+                "**Raccourcis clavier pour les plugins.** Définis-en un dans les paramètres d’un plugin en appuyant sur les touches, comme les raccourcis de Discord. Streamer Mode+ et Game Activity Toggle en ont un, et le champ te prévient quand deux plugins veulent les mêmes touches.",
+                "**Avantages pour les soutiens.** Ton badge de soutien dans la couleur de ton choix, ton nom dans les crédits si tu le souhaites, et Aurora, un thème pour les soutiens.",
+                "**Who Reacted.** De petits avatars de ceux qui ont réagi, directement sur chaque réaction, à côté du compteur.",
+                "**Typing Tweaks.** Vois d’un coup d’œil qui écrit : avatars et couleurs de rôle dans la ligne « est en train d’écrire », et trois points sur les salons et les MP pendant que quelqu’un y écrit.",
+                "**Pour les auteurs de plugins :** Evi DevTools (événements Flux en direct, stores, patchs appliqués et temps), documentation de l’API au survol dans le Patch Helper, un journal des modifications public de l’API des plugins, des chiffres anonymes d’installations et de plantages sur ton tableau de bord, et `bun run new-plugin` / `bun run preview-plugin` pour démarrer et vérifier un plugin.",
+            ],
+            improved: [
+                "**La recherche trouve les paramètres, pas seulement les plugins.** Chercher dans l’onglet Plugins parcourt aussi les paramètres de chaque plugin, et en ouvrir un depuis les résultats t’amène directement au paramètre.",
+                "**N’affiche que ce que tu n’as pas encore** avec le nouveau filtre Non installés de la boutique, et trie par note ou par tendance.",
+                "Streamer Mode+ garde le raccourci que tu avais saisi, désormais sous forme de raccourci enregistré.",
+                "Les auteurs de plugins voient combien de personnes utilisent leurs plugins : une fois par jour, Evi indique anonymement à evi.rest quels plugins de la boutique sont installés. Tu peux le désactiver dans les paramètres de la boutique.",
+                "Quick Actions ne fait plus partie d’Evi et est supprimé quand Evi se met à jour.",
+                "**View Icons passe dans les profils.** Clique sur la bannière de quelqu’un pour l’ouvrir en grand comme son avatar, et Télécharger se trouve à côté du zoom. Les éléments du menu contextuel ont disparu.",
+            ],
+            fixed: [
+                "**Message Logger conserve les images, vidéos et fichiers supprimés.** Discord les supprime de ses serveurs avec le message, si bien qu’ils s’affichaient cassés. Les modifications qui retirent une pièce jointe la conservent aussi avec l’ancienne version.",
+            ],
+        },
+        "0.7.0": {
+            added: [
+                "**Les plugins disent ce dont ils ont besoin, et Evi les y tient.** Quels sites un plugin contacte, et s’il lit tes messages, en envoie ou modifie tes paramètres. Evi bloque tout le reste de ce qu’il tente via Evi, et ce qui est bloqué apparaît dans l’Activité du plugin.",
+                "**Evi répare les plugins que Discord casse, sans attendre une mise à jour.** Quand une mise à jour de Discord casse un plugin, l’équipe Evi le répare sur evi.rest et chaque installation reçoit le correctif en quelques minutes. Les détails du plugin indiquent ce qui a été corrigé.",
+                "**Crée ton propre thème.** Choisis des couleurs dans le nouvel onglet Éditeur, regarde Discord changer au fur et à mesure, puis enregistre-le comme thème à toi.",
+                "**Thèmes de la communauté.** Envoie un thème à la boutique de thèmes depuis l’éditeur ou ton tableau de bord. L’équipe Evi examine chacun d’eux, et les thèmes de la communauté ne peuvent rien charger depuis Internet, donc personne ne sait qui les utilise.",
+                "**DM Categories.** Range tes MP dans des catégories repliables comme Amis, Travail ou Jeux, en haut de ta liste de MP. Fais un clic droit sur un MP pour l’ajouter à une catégorie.",
+                "**View Icons.** Fais un clic droit sur quelqu’un pour voir son avatar et sa bannière en grand, ou sur un serveur pour son icône et sa bannière, dans la visionneuse d’images de Discord. Télécharge l’original ou copie son lien.",
+                "**Calm Name Effects.** Ouvrir une discussion demande deux fois moins de travail : les styles de nom Nitro comme Prism et Neon s’animent pendant que tu survoles un nom, au lieu de s’animer sur chaque message en même temps.",
+            ],
+            improved: [
+                "**Une mise à jour qui demande plus attend ton accord,** comme l’accès complet. Les pages de la boutique, les questions d’installation et les détails des plugins listent ce que chaque plugin demande, et les anciens plugins qui ne le précisent pas sont signalés.",
+                "**La boutique sait qu’un correctif fonctionne.** Un plugin réparé par Evi apparaît comme réparé plutôt que cassé, et ne repasse en cassé que si les installations avec le correctif ont encore des problèmes.",
+                "Les thèmes de la boutique peuvent être signalés, comme les plugins.",
+            ],
+            fixed: [
+                "L’icône de Platform Indicators ne s’agrandit plus jusqu’à remplir tout un message là où les styles d’Evi ne s’appliquent pas, comme dans les discussions détachées.",
+            ],
+        },
+        "0.6.1": {
+            fixed: [
+                "**Smooth Typing ne remet plus dans la zone de texte un message que tu viens d’envoyer.** Le changement de salon et les commandes slash gardent aussi la zone à jour.",
+                "Un plugin qu’Evi a désactivé, ou qui a un problème à expliquer, garde la taille de sa carte dans la liste des Plugins au lieu de s’étirer sur toute la largeur.",
+            ],
+        },
+        "0.6.0": {
+            improved: [
+                "**Fini les saccades dues à Evi.** Retrouver les pièces de Discord parcourait tout le code de Discord, 10 à 20 ms à chaque fois, et une pièce manquante était recherchée à nouveau chaque seconde. Désormais, elle est trouvée une fois, et chaque recherche suivante est instantanée.",
+                "**Les plugins font leur gros travail par petits morceaux,** entre tout le reste : Fast Lists, Read All, GIF Folders et l’enregistrement de Last Seen ne bloquent plus Discord.",
+                "**Show Hidden Channels retient qui peut voir quoi,** au lieu de le redemander pour chaque salon à chaque redessin.",
+                "**Plus rapides : Message Logger, Inline Translate, Platform Indicators, Voice Activity Log, Relationship Notifier, Hide Blocked, Timezones, Friend Online Alerts, Streamer Mode+, Silent Typing et Snippets.**",
+                "La vérification de santé des plugins en arrière-plan est beaucoup plus légère.",
+            ],
+            fixed: [
+                "**Un plugin qu’Evi désactive partout s’éteint en quelques secondes,** avec un avis, au lieu d’attendre la prochaine vérification semi-horaire ou le redémarrage.",
+            ],
+        },
+        "0.5.3": {
+            fixed: [
+                "Le badge Plugin Author ouvre ses détails quand on clique dessus, et peut être masqué et déplacé dans Personnaliser tes badges.",
+            ],
+        },
+        "0.5.2": {
+            improved: [
+                "**Les vérifications de mise à jour passent par evi.rest,** si bien qu’un réseau très sollicité ne se heurte plus à la limite de GitHub et n’affiche plus qu’Evi ne peut pas chercher de mises à jour.",
+                "**Installer un plugin avec accès complet demande dans une boîte de dialogue,** au lieu d’un encadré coincé dans sa carte.",
+                "**Des icônes sur chaque onglet,** pour distinguer Installés et Boutique d’un coup d’œil.",
+                "**Chaque version a sa couverture en pointillés** dans Nouveautés.",
+            ],
+            fixed: [
+                "Ouvrir la Boutique ne fait plus défiler un peu les paramètres de Discord vers le bas.",
+            ],
+        },
+        "0.5.1": {
+            added: [
+                "**Des plugins de la communauté avec une partie native.** Les auteurs peuvent soumettre un native.js avec leur plugin. L’équipe Evi lit tout avant qu’il soit accepté, et Evi te demande toujours ton accord avant d’installer quoi que ce soit avec accès complet.",
+            ],
+            fixed: [
+                "Ouvrir les pages d’Evi dans les paramètres de Discord ne fait plus planter Discord.",
+            ],
+        },
+        "0.5.0": {
+            added: [
+                "**Evi Setup.** Un petit installateur avec une fenêtre : choisis ton Discord, puis clique sur Installer Evi ou Désinstaller Evi. Il vérifie d’abord s’il existe un Evi plus récent et le télécharge, ce qui ne pèse que quelques Mo au lieu de plus de 100.",
+                "**Evi dans ta langue.** Les menus d’Evi suivent la langue de Discord : espagnol, portugais, français, allemand, turc, russe, polonais et japonais. Les plugins peuvent aussi être traduits.",
+                "**Vois ce qu’un plugin a fait.** Les détails d’un plugin listent les sites qu’il a contactés et quand, et signalent ceux que son code ne mentionne jamais.",
+                "**Versions bêta.** Active Recevoir les versions bêta dans Mises à jour pour obtenir les nouvelles versions d’Evi quelques jours plus tôt.",
+                "**Badge Plugin Author.** Toute personne dont le plugin arrive dans la boutique l’obtient sur son profil.",
+            ],
+            improved: [
+                "Activer ou désactiver un plugin ne fige plus Discord un instant.",
+                "**Les niveaux de soutien arrivent chaque mois.** Un nouveau badge chaque mois pendant tes six premiers mois, de Silver à un mois jusqu’à Ruby à six, puis Prismatic à un an.",
+            ],
+            fixed: [
+                "Cliquer sur l’interrupteur d’un plugin ne fait plus défiler les paramètres de Discord loin de lui.",
+            ],
+        },
+        "0.4.0": {
+            added: [
+                "**Des plugins de la communauté dans la boutique.** Les auteurs de plugins peuvent désormais publier leurs propres plugins sur evi.rest. L’équipe Evi lit chaque version avant qu’elle soit acceptée, et les plugins de la communauté sont signalés pour que tu saches toujours qui a fait quoi.",
+                "**Auteurs vérifiés.** Chaque plugin indique qui l’a fait, avec une coche pour les auteurs vérifiés. Clique sur un nom pour voir ses autres plugins.",
+                "**Envoie un rapport de plantage à l’auteur.** À côté de Copier le rapport de plantage. Tu vois exactement ce qui est envoyé avant l’envoi, et rien de personnel n’y figure.",
+                "**Sache quand un plugin est cassé.** Si un plugin cesse de fonctionner pour beaucoup de monde après une mise à jour de Discord, la boutique et ta liste de Plugins l’indiquent, souvent avec un mot de son auteur sur le correctif.",
+                "**Signale un plugin.** Quelque chose de nuisible, de faux ou de cassé ? Signale-le depuis sa page de la boutique. Les signalements sont transmis à l’équipe Evi.",
+                "**Evi peut désactiver un mauvais plugin partout.** Si un plugin s’avère nuisible, Evi le désactive sur chaque installation et t’explique pourquoi.",
+            ],
+            improved: [
+                "**Des Nouveautés qui ressemblent à Evi.** La couverture de la version en haut, et chaque type de changement sous sa propre étiquette.",
+                "**Les fenêtres attendent Discord.** Nouveautés, journaux des modifications des plugins et avis de mise à jour s’affichent une fois Discord chargé, pas par-dessus son écran de chargement.",
+                "**Les badges de soutien montent de niveau plus vite.** Prismatic correspond désormais à un an de soutien au lieu de cinq.",
+                "**Badges de plugins dans Tes badges.** Les badges que les plugins ajoutent aux profils, comme l’horloge de Last Seen et l’appareil de Platform Indicators, figurent aussi dans le répertoire de badges de Discord.",
+                "**Plus sûr par conception.** Activer un plugin avec un accès complet à ton ordinateur te le demande toujours dans une boîte de dialogue système à laquelle aucun plugin ne peut répondre à ta place.",
+            ],
+            fixed: [
+                "Installer un plugin depuis la boutique l’active toujours. Avant, il disait l’avoir fait et parfois ce n’était pas le cas.",
+                "Les menus déroulants dans les paramètres d’un plugin s’ouvrent au premier clic. Dans les paramètres de Discord, ils se refermaient souvent aussitôt.",
+            ],
+        },
+        "0.3.2": {
+            improved: [
+                "**Les boîtes de dialogue et les menus bougent comme ceux de Discord.** Les dialogues, avis et menus de plugins d’Evi s’ouvrent maintenant avec un ressort et disparaissent en fondu, au lieu d’apparaître et de disparaître d’un coup.",
+                "**Un Voice Activity Log plus net,** avec les sessions listées par salon et un vrai champ de recherche.",
+            ],
+        },
+        "0.3.1": {
+            added: [
+                "**Evi sur macOS et Linux.** Télécharge l’installateur pour ton système depuis la version et lance `evi install`. Sous Linux, lance-le avec sudo.",
+            ],
+        },
+        "0.3.0": {
+            added: [
+                "**Les badges Evi font partie d’Evi.** Ils s’affichent sur les profils de tous ceux qui utilisent Evi et ne peuvent pas être désactivés par accident.",
+                "**Masque et réorganise tes badges Evi** dans le Personnaliser tes badges de Discord. Tout le monde voit le changement en quelques secondes.",
+                "**Des badges de soutien qui montent de niveau.** De Bronze à Prismatic plus tu soutiens Evi longtemps, avec ta progression dans Tes badges.",
+                "**Mets Evi à jour depuis l’appli.** Evi te prévient quand une nouvelle version est disponible, et un bouton l’installe.",
+            ],
+            improved: [
+                "Les badges se mettent à jour en direct au lieu de toutes les demi-heures.",
+                "Chaque plugin peut être supprimé, y compris ceux fournis avec Evi, et ils restent supprimés quand Evi se met à jour.",
+            ],
+        },
+        "0.2.0": {
+            added: [
+                "**La boutique de plugins est maintenant dans l’onglet Plugins.** Chaque plugin a sa propre page avec des captures d’écran, son journal des modifications, son code source et ce à quoi il peut accéder.",
+                "**Boutique de thèmes.** Installe et mets à jour des thèmes directement depuis l’onglet Thèmes.",
+                "**Tout mettre à jour, et mises à jour automatiques si tu veux.** Les plugins avec accès complet à ton ordinateur demandent toujours avant.",
+                "**Rapports de plantage.** Un plugin qui ne démarre pas a un bouton Copier le rapport de plantage pour son auteur.",
+            ],
+            improved: [
+                "Parcours la boutique par catégorie, et trie-la par nom ou par dernière mise à jour.",
+                "Mets à jour et désinstalle les plugins de la boutique directement depuis la liste des Plugins.",
+                "Désactive tous les plugins, ou réinitialise-les à leurs valeurs par défaut, d’un clic et avec possibilité d’annuler.",
+            ],
+        },
+        "0.1.0": {
+            added: ["**Première version.** Plugins, thèmes, Quick CSS, sauvegardes, mode sans échec et la boutique de plugins."],
+        },
+    },
+    ja: {
+        "1.0.0": {
+            added: [
+                "**ストアのトップページ。** 全体のリストの前に、トレンド、今週の新着、Evi チームが選んだおすすめやコレクションが並びます。",
+                "**評価とレビュー。** 使っているプラグインを評価して、理由を数行で伝えられます。誰かが報告したレビューは Evi チームに届きます。",
+                "**プラグインのページがより詳しく。** 使っているところの動画や GIF、そのプラグインを使っている人がほかに入れているもの、既知の問題、バージョンについての作者からのメモを表示します。",
+                "**ウィッシュリストと受信トレイ。** ストアのものにハートを付けると、更新やベータの公開、再び動くようになったときに通知されます。あなたのプラグインへのレビュー、アップロード、フォロー中の作者からのお知らせも、新しい受信トレイに届きます。",
+                "**作者をフォロー。** 作者のページにはバナー、ピン留めしたプラグイン、プラグインの利用者数、フォローボタンが表示されます。",
+                "**プラグインのベータ版。** 作者は安定版と並べてベータ版を公開でき、あなたは各プラグインのページからベータ版を選んで受け取れます。",
+                "**ダイナミック壁紙。** Discord の背景に画像や動画を表示します。文字が読みやすいように暗くなり、バッテリー駆動中は一時停止します。",
+                "**Crash Detective。** Discord がクラッシュしたりフリーズしたりしたとき、直前にいちばん負荷が高かったプラグインを Evi が教え、オフにすることを提案します。",
+                "**バックグラウンドで更新。** 「アップデート」でオンにすると、新しいバージョンが自動でダウンロードされ、Discord を閉じたときにインストールされます。",
+                "**プラグインのキーボードショートカット。** Discord のキーバインドと同じように、プラグインの設定でキーを押して割り当てられます。Streamer Mode+ と Game Activity Toggle にひとつずつあり、2つのプラグインが同じキーを使おうとすると入力欄でお知らせします。",
+                "**サポーター特典。** 好きな色にできるサポーターバッジ、希望すればクレジットへの名前掲載、サポーター向けテーマの Aurora。",
+                "**Who Reacted。** リアクションした人の小さなアイコンを、各リアクションの数の横に表示します。",
+                "**Typing Tweaks。** 入力中の人がひと目でわかります。「入力中」の行にアイコンとロールの色を表示し、誰かが入力しているチャンネルや DM には 3 つのドットが出ます。",
+                "**プラグイン作者向け:** Evi DevTools（リアルタイムの Flux イベント、ストア、パッチの一致とタイミング）、Patch Helper でカーソルを重ねると出る API ドキュメント、公開のプラグイン API 変更履歴、ダッシュボードの匿名のインストール数とクラッシュ数、プラグインの作成と確認に使う `bun run new-plugin` / `bun run preview-plugin`。",
+            ],
+            improved: [
+                "**検索でプラグインだけでなく設定も見つかります。** プラグインタブの検索は全プラグインの設定も対象になり、結果から開くとその設定まで移動します。",
+                "**まだ持っていないものだけを表示。** ストアの新しい「未インストール」フィルターで絞り込めます。評価順やトレンド順の並べ替えにも対応しました。",
+                "Streamer Mode+ は入力したショートカットを、記録したショートカットとして引き続き使います。",
+                "プラグイン作者は利用者数がわかります。1日に1回、Evi が入っているストアのプラグインを匿名で evi.rest に伝えます。ストアの設定でオフにできます。",
+                "Quick Actions は Evi の一部ではなくなり、Evi の更新時に削除されます。",
+                "**View Icons はプロフィールの中へ。** 相手のバナーをクリックすると、アイコンと同じようにフルサイズで開き、ダウンロードはズームの隣にあります。右クリックメニューの項目はなくなりました。",
+            ],
+            fixed: [
+                "**Message Logger が削除された画像、動画、ファイルを残します。** Discord はメッセージと一緒にサーバーから削除するため、これまでは壊れた表示になっていました。添付ファイルを外す編集でも、古いバージョンには添付ファイルが残ります。",
+            ],
+        },
+        "0.7.0": {
+            added: [
+                "**プラグインが必要なものを申告し、Evi がそれを守らせます。** プラグインが通信するサイト、メッセージの読み取り、メッセージの送信、設定の変更をするかどうか。それ以外の Evi 経由の操作は Evi がブロックし、ブロックされたものはプラグインのアクティビティに表示されます。",
+                "**Discord が壊したプラグインを、アップデートを待たずに Evi が直します。** Discord の更新でプラグインが壊れたとき、Evi チームが evi.rest で修正し、すべての環境に数分以内に反映されます。何を直したかはプラグインの詳細に載ります。",
+                "**オリジナルのテーマを作成。** 新しいエディタータブで色を選ぶと Discord がその場で変わり、自分だけのテーマとして保存できます。",
+                "**コミュニティテーマ。** エディターやダッシュボードからテーマストアにテーマを送れます。Evi チームがひとつずつ確認し、コミュニティテーマはインターネットから何も読み込めないので、誰が使っているかは誰にもわかりません。",
+                "**DM Categories。** DM 一覧の上部に、フレンド、仕事、ゲームのような折りたたみ式カテゴリを作って DM を整理できます。DM を右クリックしてカテゴリに追加します。",
+                "**View Icons。** 相手を右クリックするとアイコンとバナーを、サーバーを右クリックするとアイコンとバナーを、Discord の画像ビューアーでフルサイズ表示します。元の画像のダウンロードやリンクのコピーもできます。",
+                "**Calm Name Effects。** チャットを開くときの負荷が半分になります。Prism や Neon などの Nitro の名前スタイルは、すべてのメッセージで同時にではなく、名前にカーソルを重ねている間だけアニメーションします。",
+            ],
+            improved: [
+                "**より多くを求めるアップデートは、あなたの OK を待ちます。** フルアクセスのときと同じです。ストアのページ、インストール時の確認、プラグインの詳細に各プラグインが求めるものが表示され、申告のない古いプラグインにはその旨のラベルが付きます。",
+                "**ストアが修正の効果を把握します。** Evi が直したプラグインは「壊れている」ではなく「修正済み」と表示され、修正を適用した環境で問題が続く場合にのみ「壊れている」に戻ります。",
+                "ストアのテーマも、プラグインと同じように報告できます。",
+            ],
+            fixed: [
+                "ポップアウトしたチャットなど Evi のスタイルが届かない場所で、Platform Indicators のアイコンがメッセージいっぱいに大きくなる問題を修正しました。",
+            ],
+        },
+        "0.6.1": {
+            fixed: [
+                "**Smooth Typing が、送信したばかりのメッセージを入力欄に戻さなくなりました。** チャンネルの切り替えやスラッシュコマンドでも入力欄が最新の状態に保たれます。",
+                "Evi がオフにしたプラグインや、説明すべき問題があるプラグインが、プラグイン一覧で横いっぱいに伸びず、カードのサイズを保つようになりました。",
+            ],
+        },
+        "0.6.0": {
+            improved: [
+                "**Evi によるカクつきがなくなりました。** これまで Discord の部品を探すたびに Discord の全コードを 10〜20 ms かけて検索し、見つからない部品は毎秒探し直していました。今は一度見つければ、以降は一瞬で見つかります。",
+                "**プラグインは重い処理を小分けにして、ほかの処理の合間に実行します。** Fast Lists、Read All、GIF Folders、Last Seen の保存が Discord を待たせなくなりました。",
+                "**Show Hidden Channels が、誰が何を見られるかを記憶します。** 再描画のたびにすべてのチャンネルで確認し直すことがなくなりました。",
+                "**Message Logger、Inline Translate、Platform Indicators、Voice Activity Log、Relationship Notifier、Hide Blocked、Timezones、Friend Online Alerts、Streamer Mode+、Silent Typing、Snippets が高速化しました。**",
+                "バックグラウンドのプラグイン健全性チェックがずっと軽くなりました。",
+            ],
+            fixed: [
+                "**Evi がすべての環境でオフにしたプラグインは、数秒以内にオフになります。** 30 分ごとのチェックや再起動を待たず、お知らせも表示されます。",
+            ],
+        },
+        "0.5.3": {
+            fixed: [
+                "Plugin Author バッジをクリックすると詳細が開き、「バッジをカスタマイズ」で非表示にしたり並べ替えたりできるようになりました。",
+            ],
+        },
+        "0.5.2": {
+            improved: [
+                "**アップデートの確認は evi.rest 経由になりました。** 混雑したネットワークでも GitHub の制限に引っかからず、「Evi がアップデートを確認できません」と表示されなくなります。",
+                "**フルアクセスのプラグインをインストールするときは、ダイアログで確認します。** カードの中に押し込められた枠ではなくなりました。",
+                "**すべてのタブにアイコンを追加。** 「インストール済み」と「ストア」をひと目で見分けられます。",
+                "**すべてのリリースにドットのカバーが付きます。** 「新着情報」に表示されます。",
+            ],
+            fixed: [
+                "ストアを開いても、Discord の設定が少し下にスクロールしなくなりました。",
+            ],
+        },
+        "0.5.1": {
+            added: [
+                "**ネイティブ部分を持つコミュニティプラグイン。** 作者はプラグインと一緒に native.js を提出できます。Evi チームが追加前にすべて読み、フルアクセスのものをインストールする前には、これまでどおり Evi があなたに確認します。",
+            ],
+            fixed: [
+                "Discord の設定で Evi のページを開いても、Discord がクラッシュしなくなりました。",
+            ],
+        },
+        "0.5.0": {
+            added: [
+                "**Evi Setup。** ウィンドウ付きの小さなインストーラーです。Discord を選んで「Evi をインストール」または「Evi をアンインストール」をクリックするだけ。先に新しい Evi があるか確認してダウンロードするので、100 MB 超ではなく数 MB で済みます。",
+                "**Evi があなたの言語に。** Evi のメニューは Discord の言語に合わせて表示されます。スペイン語、ポルトガル語、フランス語、ドイツ語、トルコ語、ロシア語、ポーランド語、日本語に対応。プラグインも翻訳できます。",
+                "**プラグインが何をしたかがわかります。** プラグインの詳細に、通信したサイトとその時刻が一覧で表示され、コードに書かれていないサイトは目立たせて知らせます。",
+                "**ベータ版。** 「アップデート」で「ベータ版を入手」をオンにすると、新しい Evi を数日早く入手できます。",
+                "**Plugin Author バッジ。** プラグインがストアに載った人は、プロフィールにこのバッジが付きます。",
+            ],
+            improved: [
+                "プラグインのオン・オフを切り替えても、Discord が一瞬固まらなくなりました。",
+                "**サポーターレベルが毎月上がります。** 最初の 6 か月は毎月新しいバッジが届き、1 か月の Silver から 6 か月の Ruby まで、そして 1 年で Prismatic になります。",
+            ],
+            fixed: [
+                "プラグインのスイッチをクリックしても、Discord の設定がそこからスクロールして離れなくなりました。",
+            ],
+        },
+        "0.4.0": {
+            added: [
+                "**ストアにコミュニティプラグイン。** プラグイン作者が自分のプラグインを evi.rest で公開できるようになりました。Evi チームが追加前にすべてのバージョンを確認し、コミュニティプラグインにはラベルが付くので、誰が作ったものか常にわかります。",
+                "**認証済みの作者。** すべてのプラグインに作者が表示され、認証済みの作者にはチェックマークが付きます。名前をクリックすると、ほかのプラグインも見られます。",
+                "**クラッシュレポートを作者に送信。** 「クラッシュレポートをコピー」の隣にあります。送信前に内容をそのまま確認でき、個人情報は含まれません。",
+                "**プラグインが壊れているときにわかります。** Discord のアップデート後に多くの人でプラグインが動かなくなると、ストアとプラグイン一覧でお知らせします。作者からの修正についてのメモが付くことも多くあります。",
+                "**プラグインを報告。** 有害なもの、偽物、壊れているものを見つけたら、ストアのページから報告できます。報告は Evi チームに届きます。",
+                "**Evi は問題のあるプラグインをすべての環境でオフにできます。** プラグインが有害だとわかった場合、Evi はすべてのインストールでそれをオフにし、理由をお知らせします。",
+            ],
+            improved: [
+                "**Evi らしい「新着情報」。** 上部にリリースのカバー、変更の種類ごとに専用のラベルを付けました。",
+                "**ポップアップは Discord の読み込みを待ちます。** 新着情報、プラグインの変更履歴、アップデートのお知らせは、読み込み画面の上ではなく、Discord の読み込みが終わってから表示されます。",
+                "**サポーターバッジのレベルアップが早くなりました。** Prismatic は 5 年ではなく 1 年のサポートで到達します。",
+                "**プラグインのバッジが「あなたのバッジ」に。** Last Seen の時計や Platform Indicators のデバイスなど、プラグインがプロフィールに追加するバッジも、Discord のバッジ一覧に表示されます。",
+                "**設計から安全に。** コンピューターへのフルアクセスを持つプラグインをオンにするときは、どのプラグインにも代わりに答えられないシステムのダイアログで、必ず確認します。",
+            ],
+            fixed: [
+                "ストアからプラグインをインストールすると、必ずオンになります。以前はオンにしたと表示されても、そうなっていないことがありました。",
+                "プラグインの設定のドロップダウンが、最初のクリックで開くようになりました。Discord の設定では、すぐにまた閉じてしまうことがよくありました。",
+            ],
+        },
+        "0.3.2": {
+            improved: [
+                "**ダイアログとメニューが Discord のように動きます。** Evi のダイアログ、お知らせ、プラグインのメニューは、ぱっと現れて消えるのではなく、弾むように開いてフェードアウトします。",
+                "**すっきりした Voice Activity Log。** セッションをチャンネルごとに表示し、きちんとした検索欄も付きました。",
+            ],
+        },
+        "0.3.1": {
+            added: [
+                "**macOS と Linux で Evi が使えます。** リリースからお使いのシステム用のインストーラーをダウンロードし、`evi install` を実行してください。Linux では sudo を付けて実行します。",
+            ],
+        },
+        "0.3.0": {
+            added: [
+                "**Evi バッジは Evi の一部です。** Evi を使っている全員のプロフィールに表示され、うっかりオフにすることはできません。",
+                "**Evi バッジの非表示と並べ替え。** Discord 標準の「バッジをカスタマイズ」から設定できます。変更は数秒で全員に反映されます。",
+                "**レベルアップするサポーターバッジ。** Evi を支援した期間が長いほど Bronze から Prismatic へ上がり、進捗は「あなたのバッジ」で確認できます。",
+                "**アプリから Evi を更新。** 新しいバージョンが出るとお知らせし、ボタンひとつでインストールできます。",
+            ],
+            improved: [
+                "バッジが 30 分ごとではなく、リアルタイムで更新されます。",
+                "Evi に最初から入っているプラグインを含め、すべてのプラグインを削除でき、Evi を更新しても削除したままになります。",
+            ],
+        },
+        "0.2.0": {
+            added: [
+                "**プラグインストアがプラグインタブに登場。** 各プラグインに、スクリーンショット、変更履歴、ソース、アクセスできる内容を載せた専用ページがあります。",
+                "**テーマストア。** テーマタブから直接テーマをインストールして更新できます。",
+                "**すべて更新、お好みで自動更新も。** コンピューターへのフルアクセスを持つプラグインは、これまでどおり先に確認します。",
+                "**クラッシュレポート。** 起動に失敗したプラグインには、作者向けの「クラッシュレポートをコピー」ボタンが付きます。",
+            ],
+            improved: [
+                "ストアをカテゴリで探せるようになり、名前順や最近更新した順で並べ替えられます。",
+                "ストアのプラグインの更新とアンインストールを、プラグイン一覧から直接できます。",
+                "すべてのプラグインのオフ、または初期設定へのリセットが、ワンクリックで行え、元に戻すこともできます。",
+            ],
+        },
+        "0.1.0": {
+            added: ["**最初のリリース。** プラグイン、テーマ、Quick CSS、バックアップ、セーフモード、プラグインストア。"],
+        },
+    },
+    pl: {
+        "1.0.0": {
+            added: [
+                "**Strona główna sklepu.** To, co jest na topie, nowości tego tygodnia, wybory redakcji i kolekcje przygotowane przez zespół Evi, jeszcze przed pełną listą.",
+                "**Oceny i recenzje.** Oceniaj pluginy, których używasz, i w kilku linijkach napisz dlaczego. Recenzje, które ktoś zgłosi, trafiają do zespołu Evi.",
+                "**Strony pluginów pokazują więcej.** Wideo lub GIF z użycia, co jeszcze instalują osoby, które go używają, znane problemy i notatka autora o danej wersji.",
+                "**Lista życzeń i skrzynka odbiorcza.** Daj serduszko czemukolwiek w sklepie, żeby dowiedzieć się, gdy dostanie aktualizację, betę albo znów zacznie działać. Recenzje twoich pluginów, twoje przesłane pliki i wiadomości od obserwowanych autorów trafiają też do nowej Skrzynki odbiorczej.",
+                "**Obserwuj autorów.** Strony autorów mają baner, przypięte pluginy, liczbę osób używających ich pluginów i przycisk Obserwuj.",
+                "**Bety pluginów.** Autorzy mogą opublikować betę obok wersji stabilnej, a ty możesz zapisać się na bety dowolnego pluginu na jego stronie.",
+                "**Dynamiczna tapeta.** Obraz lub wideo za Discordem, przyciemnione, żeby tekst był czytelny, i wstrzymywane na baterii.",
+                "**Crash Detective.** Gdy Discord się zawiesi lub zamknie awaryjnie, Evi mówi, który plugin był najbardziej obciążony tuż przedtem, i proponuje jego wyłączenie.",
+                "**Aktualizacje w tle.** Włącz je w Aktualizacjach, a nowe wersje pobiorą się same i zainstalują po zamknięciu Discorda.",
+                "**Skróty klawiszowe dla pluginów.** Ustaw skrót w ustawieniach pluginu, naciskając klawisze, tak jak w skrótach Discorda. Streamer Mode+ i Game Activity Toggle mają po jednym, a pole informuje, gdy dwa pluginy chcą tych samych klawiszy.",
+                "**Bonusy dla wspierających.** Twoja odznaka wspierającego w wybranym przez ciebie kolorze, twoje imię w napisach, jeśli chcesz, i Aurora, motyw dla wspierających.",
+                "**Who Reacted.** Małe awatary osób, które zareagowały, tuż przy każdej reakcji obok licznika.",
+                "**Typing Tweaks.** Zobacz od razu, kto pisze: awatary i kolory ról w wierszu „pisze...” oraz trzy kropki przy kanałach i wiadomościach prywatnych, gdy ktoś tam pisze.",
+                "**Dla autorów pluginów:** Evi DevTools (zdarzenia Flux na żywo, store'y, trafienia patchy i czasy), dokumentacja API po najechaniu w Patch Helper, publiczny dziennik zmian API pluginów, anonimowe liczby instalacji i awarii w panelu oraz `bun run new-plugin` / `bun run preview-plugin`, żeby zacząć plugin i go sprawdzić.",
+            ],
+            improved: [
+                "**Wyszukiwanie znajduje ustawienia, nie tylko pluginy.** Szukanie w zakładce Pluginy przeszukuje też ustawienia każdego pluginu, a otwarcie wyniku prowadzi prosto do ustawienia.",
+                "**Pokaż tylko to, czego jeszcze nie masz** dzięki nowemu filtrowi Niezainstalowane w sklepie i sortuj według oceny lub popularności.",
+                "Streamer Mode+ zachowuje skrót, który wpisałeś, teraz jako nagrany skrót.",
+                "Autorzy pluginów widzą, ilu osobom służą ich pluginy: raz dziennie Evi anonimowo informuje evi.rest, które pluginy ze sklepu ma zainstalowane. Możesz to wyłączyć w ustawieniach sklepu.",
+                "Quick Actions nie jest już częścią Evi i zostaje usunięty przy aktualizacji Evi.",
+                "**View Icons przeniósł się do profili.** Kliknij czyjś baner, by otworzyć go w pełnym rozmiarze jak awatar, a Pobierz znajduje się obok powiększenia. Pozycje w menu prawego przycisku zniknęły.",
+            ],
+            fixed: [
+                "**Message Logger zachowuje usunięte zdjęcia, filmy i pliki.** Discord usuwa je ze swoich serwerów razem z wiadomością, więc wcześniej wyświetlały się jako uszkodzone. Edycje, które usuwają załącznik, też zachowują go przy starej wersji.",
+            ],
+        },
+        "0.7.0": {
+            added: [
+                "**Pluginy mówią, czego potrzebują, a Evi tego pilnuje.** Z jakimi stronami plugin się łączy i czy czyta twoje wiadomości, wysyła wiadomości lub zmienia twoje ustawienia. Evi blokuje całą resztę, co plugin próbuje zrobić przez Evi, a zablokowane rzeczy widać w Aktywności pluginu.",
+                "**Evi naprawia pluginy, które psuje Discord, nie czekając na aktualizację.** Gdy aktualizacja Discorda psuje plugin, zespół Evi naprawia go na evi.rest, a każda instalacja dostaje poprawkę w ciągu kilku minut. Szczegóły pluginu mówią, co naprawiono.",
+                "**Stwórz własny motyw.** Wybieraj kolory w nowej zakładce Edytor, patrz, jak Discord zmienia się na bieżąco, a potem zapisz go jako własny motyw.",
+                "**Motywy społeczności.** Wyślij motyw do Sklepu z motywami z edytora lub panelu. Zespół Evi sprawdza każdy z nich, a motywy społeczności nie mogą niczego ładować z internetu, więc nikt nie dowie się, kto ich używa.",
+                "**DM Categories.** Posortuj wiadomości prywatne w zwijane kategorie, jak Znajomi, Praca czy Gry, na górze listy. Kliknij prawym przyciskiem wiadomość prywatną, by dodać ją do kategorii.",
+                "**View Icons.** Kliknij kogoś prawym przyciskiem, by zobaczyć jego awatar i baner w pełnym rozmiarze, albo serwer, by zobaczyć jego ikonę i baner, w przeglądarce obrazów Discorda. Pobierz oryginał lub skopiuj jego link.",
+                "**Calm Name Effects.** Otwieranie czatu kosztuje o połowę mniej pracy: style nazw Nitro, takie jak Prism i Neon, animują się, gdy najedziesz na nazwę, a nie przy każdej wiadomości naraz.",
+            ],
+            improved: [
+                "**Aktualizacja, która prosi o więcej, czeka na twoją zgodę,** tak jak pełny dostęp. Strony sklepu, pytania przy instalacji i szczegóły pluginów wymieniają, o co prosi każdy plugin, a starsze pluginy, które tego nie podają, są oznaczone.",
+                "**Sklep wie, że poprawka działa.** Plugin naprawiony przez Evi wyświetla się jako naprawiony zamiast zepsuty i wraca do zepsutego tylko wtedy, gdy instalacje z poprawką nadal mają problemy.",
+                "Motywy w sklepie można zgłaszać, tak jak pluginy.",
+            ],
+            fixed: [
+                "Ikona Platform Indicators nie rośnie już na całą wiadomość w miejscach, do których nie docierają style Evi, jak czaty w osobnych oknach.",
+            ],
+        },
+        "0.6.1": {
+            fixed: [
+                "**Smooth Typing nie przywraca już do pola tekstowego wiadomości, którą właśnie wysłałeś.** Zmiana kanału i polecenia slash również utrzymują pole w aktualnym stanie.",
+                "Plugin, który Evi wyłączył albo który ma problem do wyjaśnienia, zachowuje rozmiar karty na liście Pluginów zamiast rozciągać się na całą szerokość.",
+            ],
+        },
+        "0.6.0": {
+            improved: [
+                "**Koniec z przycięciami przez Evi.** Szukanie elementów Discorda przeszukiwało cały kod Discorda, za każdym razem 10 do 20 ms, a brakujący element był szukany od nowa co sekundę. Teraz jest znajdowany raz, a każde kolejne wyszukanie jest natychmiastowe.",
+                "**Pluginy wykonują ciężką pracę małymi porcjami,** pomiędzy wszystkim innym: Fast Lists, Read All, GIF Folders i zapisywanie w Last Seen nie wstrzymują już Discorda.",
+                "**Show Hidden Channels zapamiętuje, kto co widzi,** zamiast pytać od nowa o każdy kanał przy każdym odświeżeniu.",
+                "**Szybsze: Message Logger, Inline Translate, Platform Indicators, Voice Activity Log, Relationship Notifier, Hide Blocked, Timezones, Friend Online Alerts, Streamer Mode+, Silent Typing i Snippets.**",
+                "Sprawdzanie kondycji pluginów w tle jest znacznie lżejsze.",
+            ],
+            fixed: [
+                "**Plugin, który Evi wyłącza wszędzie, wyłącza się w ciągu kilku sekund,** z powiadomieniem, zamiast przy następnym sprawdzeniu co pół godziny lub po restarcie.",
+            ],
+        },
+        "0.5.3": {
+            fixed: [
+                "Odznaka Plugin Author po kliknięciu otwiera swoje szczegóły i można ją ukrywać i przesuwać w Dostosuj swoje odznaki.",
+            ],
+        },
+        "0.5.2": {
+            improved: [
+                "**Sprawdzanie aktualizacji idzie przez evi.rest,** więc zajęta sieć nie trafia już na limit GitHuba i nie pokazuje, że Evi nie może sprawdzić aktualizacji.",
+                "**Instalacja pluginu z pełnym dostępem pyta w oknie dialogowym** zamiast w ramce wciśniętej w jego kartę.",
+                "**Ikony na każdej zakładce,** żeby Zainstalowane i Sklep dało się odróżnić na pierwszy rzut oka.",
+                "**Każde wydanie dostaje swoją kropkowaną okładkę** w Nowościach.",
+            ],
+            fixed: [
+                "Otwarcie Sklepu nie przewija już ustawień Discorda odrobinę w dół.",
+            ],
+        },
+        "0.5.1": {
+            added: [
+                "**Pluginy społeczności z częścią natywną.** Autorzy mogą przesłać native.js razem z pluginem. Zespół Evi czyta całość, zanim trafi do sklepu, a Evi nadal pyta cię przed zainstalowaniem czegokolwiek z pełnym dostępem.",
+            ],
+            fixed: [
+                "Otwarcie stron Evi w ustawieniach Discorda nie powoduje już awarii Discorda.",
+            ],
+        },
+        "0.5.0": {
+            added: [
+                "**Evi Setup.** Mały instalator z oknem: wybierz swojego Discorda i kliknij Zainstaluj Evi albo Odinstaluj Evi. Najpierw sprawdza, czy jest nowsze Evi, i je pobiera, więc to kilka MB zamiast ponad 100.",
+                "**Evi w twoim języku.** Menu Evi podążają za językiem Discorda: hiszpański, portugalski, francuski, niemiecki, turecki, rosyjski, polski i japoński. Pluginy też można tłumaczyć.",
+                "**Zobacz, co zrobił plugin.** Szczegóły pluginu wymieniają strony, z którymi się połączył, i kiedy, oraz wskazują te, o których jego kod nigdy nie wspomina.",
+                "**Wersje beta.** Włącz Otrzymuj wersje beta w Aktualizacjach, by dostawać nowe wersje Evi kilka dni wcześniej.",
+                "**Odznaka Plugin Author.** Każdy, czyj plugin trafi do sklepu, dostaje ją na swój profil.",
+            ],
+            improved: [
+                "Włączanie i wyłączanie pluginu nie zawiesza już Discorda na chwilę.",
+                "**Poziomy wspierającego przychodzą co miesiąc.** Nowa odznaka co miesiąc przez pierwsze sześć miesięcy, od Silver po miesiącu do Ruby po sześciu, a potem Prismatic po roku.",
+            ],
+            fixed: [
+                "Kliknięcie przełącznika pluginu nie odsuwa już ustawień Discorda od niego przewinięciem.",
+            ],
+        },
+        "0.4.0": {
+            added: [
+                "**Pluginy społeczności w sklepie.** Autorzy pluginów mogą teraz publikować własne pluginy na evi.rest. Zespół Evi czyta każdą wersję, zanim trafi do sklepu, a pluginy społeczności są oznaczone, żebyś zawsze wiedział, kto co stworzył.",
+                "**Zweryfikowani autorzy.** Każdy plugin pokazuje, kto go stworzył, ze znaczkiem dla zweryfikowanych autorów. Kliknij nazwę, by zobaczyć inne pluginy autora.",
+                "**Wyślij raport o awarii autorowi.** Obok Kopiuj raport o awarii. Widzisz dokładnie, co zostanie wysłane, zanim to wyślesz, i nie ma tam nic osobistego.",
+                "**Dowiedz się, kiedy plugin jest zepsuty.** Jeśli plugin przestaje działać u wielu osób po aktualizacji Discorda, sklep i twoja lista Pluginów o tym informują, często z notatką autora o poprawce.",
+                "**Zgłoś plugin.** Coś szkodliwego, fałszywego lub zepsutego? Zgłoś to na jego stronie w sklepie. Zgłoszenia trafiają do zespołu Evi.",
+                "**Evi może wyłączyć zły plugin wszędzie.** Jeśli plugin okaże się szkodliwy, Evi wyłącza go na każdej instalacji i mówi ci dlaczego.",
+            ],
+            improved: [
+                "**Nowości, które wyglądają jak Evi.** Okładka wydania u góry i każdy rodzaj zmian pod własną etykietą.",
+                "**Okna czekają na Discorda.** Nowości, dzienniki zmian pluginów i powiadomienie o aktualizacji pokazują się, gdy Discord się załaduje, a nie nad jego ekranem ładowania.",
+                "**Odznaki wspierających awansują szybciej.** Prismatic to teraz rok wsparcia zamiast pięciu.",
+                "**Odznaki pluginów w Twoich odznakach.** Odznaki, które pluginy dodają do profili, jak zegar Last Seen i urządzenie Platform Indicators, są też na liście odznak Discorda.",
+                "**Bezpieczniej z założenia.** Włączenie pluginu z pełnym dostępem do twojego komputera zawsze pyta w systemowym oknie, na które żaden plugin nie może odpowiedzieć za ciebie.",
+            ],
+            fixed: [
+                "Instalacja pluginu ze sklepu zawsze go włącza. Wcześniej mówiła, że to zrobiła, a czasem tak nie było.",
+                "Listy rozwijane w ustawieniach pluginu otwierają się po pierwszym kliknięciu. W ustawieniach Discorda często od razu się zamykały.",
+            ],
+        },
+        "0.3.2": {
+            improved: [
+                "**Okna i menu poruszają się jak w Discordzie.** Okna dialogowe, powiadomienia i menu pluginów Evi otwierają się teraz sprężyście i znikają płynnie, zamiast wyskakiwać i nagle znikać.",
+                "**Czytelniejszy Voice Activity Log** z sesjami pogrupowanymi według kanału i porządnym polem wyszukiwania.",
+            ],
+        },
+        "0.3.1": {
+            added: [
+                "**Evi na macOS i Linuksie.** Pobierz instalator dla swojego systemu z wydania i uruchom `evi install`. Na Linuksie uruchom go przez sudo.",
+            ],
+        },
+        "0.3.0": {
+            added: [
+                "**Odznaki Evi są częścią Evi.** Widać je na profilach wszystkich, którzy używają Evi, i nie można ich wyłączyć przypadkiem.",
+                "**Ukrywaj i zmieniaj kolejność swoich odznak Evi** w Dostosuj swoje odznaki w samym Discordzie. Wszyscy zobaczą zmianę w ciągu kilku sekund.",
+                "**Odznaki wspierających, które awansują.** Od Bronze do Prismatic, im dłużej wspierasz Evi, a twój postęp widać w Twoich odznakach.",
+                "**Aktualizuj Evi z poziomu aplikacji.** Evi mówi, gdy jest nowa wersja, a jeden przycisk ją instaluje.",
+            ],
+            improved: [
+                "Odznaki aktualizują się na żywo zamiast co pół godziny.",
+                "Każdy plugin można usunąć, także te dołączone do Evi, i pozostają usunięte po aktualizacjach Evi.",
+            ],
+        },
+        "0.2.0": {
+            added: [
+                "**Sklep z pluginami jest teraz w zakładce Pluginy.** Każdy plugin ma własną stronę ze zrzutami ekranu, dziennikiem zmian, kodem źródłowym i tym, do czego ma dostęp.",
+                "**Sklep z motywami.** Instaluj i aktualizuj motywy bezpośrednio w zakładce Motywy.",
+                "**Aktualizuj wszystko i automatyczne aktualizacje, jeśli chcesz.** Pluginy z pełnym dostępem do twojego komputera nadal pytają wcześniej.",
+                "**Raporty o awariach.** Plugin, który się nie uruchamia, ma przycisk Kopiuj raport o awarii dla swojego autora.",
+            ],
+            improved: [
+                "Przeglądaj sklep według kategorii i sortuj go według nazwy lub ostatniej aktualizacji.",
+                "Aktualizuj i odinstalowuj pluginy ze sklepu bezpośrednio z listy Pluginów.",
+                "Wyłącz wszystkie pluginy lub zresetuj je do ustawień domyślnych jednym kliknięciem, z możliwością cofnięcia.",
+            ],
+        },
+        "0.1.0": {
+            added: ["**Pierwsze wydanie.** Pluginy, motywy, Quick CSS, kopie zapasowe, tryb awaryjny i sklep z pluginami."],
+        },
+    },
+    "pt-BR": {
+        "1.0.0": {
+            added: [
+                "**Uma página inicial para a loja.** O que está em alta, as novidades da semana, seleções e coleções montadas pela equipe do Evi, antes da lista completa.",
+                "**Avaliações e resenhas.** Avalie os plugins que você usa e diga por quê em poucas linhas. Resenhas que alguém denunciar vão para a equipe do Evi.",
+                "**As páginas dos plugins mostram mais.** Um vídeo ou GIF dele em uso, o que quem o usa também instala, problemas conhecidos e uma nota do autor sobre a versão.",
+                "**Uma lista de desejos e uma caixa de entrada.** Coloque um coração em qualquer item da loja para saber quando ele for atualizado, ganhar uma beta ou voltar a funcionar. Resenhas dos seus plugins, seus envios e novidades dos autores que você segue também chegam à nova Caixa de entrada.",
+                "**Siga autores.** As páginas dos autores têm banner, plugins fixados, quantas pessoas usam os plugins deles e um botão Seguir.",
+                "**Betas de plugins.** Os autores podem publicar uma beta ao lado da versão estável, e você pode optar pelas betas de qualquer plugin na página dele.",
+                "**Papel de parede dinâmico.** Uma imagem ou vídeo atrás do Discord, escurecido para o texto continuar legível e pausado quando você está na bateria.",
+                "**Crash Detective.** Quando o Discord trava ou fecha sozinho, o Evi diz qual plugin estava mais ocupado logo antes e se oferece para desativá-lo.",
+                "**Atualizações em segundo plano.** Ative em Atualizações, e as novas versões são baixadas sozinhas e instaladas quando você fecha o Discord.",
+                "**Atalhos de teclado para plugins.** Defina um nas configurações de um plugin pressionando as teclas, como nos atalhos do Discord. O Streamer Mode+ e o Game Activity Toggle têm um, e o campo avisa quando dois plugins querem as mesmas teclas.",
+                "**Benefícios para apoiadores.** Sua insígnia de apoiador na cor que você quiser, seu nome nos créditos se você quiser e Aurora, um tema para apoiadores.",
+                "**Who Reacted.** Pequenos avatares de quem reagiu, direto em cada reação, ao lado da contagem.",
+                "**Typing Tweaks.** Veja num relance quem está digitando: avatares e cores de cargo na linha de «está digitando» e três pontinhos em canais e DMs enquanto alguém digita ali.",
+                "**Para autores de plugins:** Evi DevTools (eventos do Flux ao vivo, stores, patches aplicados e tempos), documentação da API ao passar o mouse no Patch Helper, um registro de mudanças público da API de plugins, números anônimos de instalações e falhas no seu painel e `bun run new-plugin` / `bun run preview-plugin` para começar e conferir um plugin.",
+            ],
+            improved: [
+                "**A busca encontra configurações, não só plugins.** Pesquisar na aba Plugins também vasculha as configurações de todos os plugins, e abrir um resultado leva você direto à configuração.",
+                "**Mostre só o que você ainda não tem** com o novo filtro Não instalados da loja e ordene por avaliação ou por o que está em alta.",
+                "O Streamer Mode+ mantém o atalho que você digitou, agora como um atalho gravado.",
+                "Autores de plugins veem quantas pessoas usam seus plugins: uma vez por dia o Evi informa ao evi.rest, de forma anônima, quais plugins da loja ele tem. Você pode desativar isso nas configurações da loja.",
+                "O Quick Actions deixou de fazer parte do Evi e é removido quando o Evi se atualiza.",
+                "**O View Icons foi para os perfis.** Clique no banner de alguém para abri-lo em tamanho real como o avatar, e Baixar fica ao lado do zoom. Os itens do menu de clique com o botão direito sumiram.",
+            ],
+            fixed: [
+                "**O Message Logger guarda imagens, vídeos e arquivos apagados.** O Discord os apaga dos servidores junto com a mensagem, então eles apareciam quebrados. Edições que removem um anexo também o mantêm na versão antiga.",
+            ],
+        },
+        "0.7.0": {
+            added: [
+                "**Os plugins dizem o que precisam, e o Evi os faz cumprir.** Quais sites um plugin acessa e se ele lê suas mensagens, envia mensagens ou altera suas configurações. O Evi bloqueia o resto do que ele tentar por meio do Evi, e tudo que for bloqueado aparece na Atividade do plugin.",
+                "**O Evi conserta plugins que o Discord quebra, sem esperar por uma atualização.** Quando uma atualização do Discord quebra um plugin, a equipe do Evi o conserta no evi.rest e cada instalação recebe a correção em minutos. Os detalhes do plugin dizem o que foi corrigido.",
+                "**Crie seu próprio tema.** Escolha cores na nova aba Editor, veja o Discord mudar enquanto você mexe e depois salve como um tema seu.",
+                "**Temas da comunidade.** Envie um tema para a Loja de temas pelo editor ou pelo seu painel. A equipe do Evi analisa cada um, e temas da comunidade não conseguem carregar nada da internet, então ninguém descobre quem os usa.",
+                "**DM Categories.** Organize suas DMs em categorias recolhíveis como Amigos, Trabalho ou Jogos, no topo da sua lista de DMs. Clique com o botão direito em uma DM para adicioná-la a uma.",
+                "**View Icons.** Clique com o botão direito em alguém para ver o avatar e o banner em tamanho real, ou em um servidor para ver o ícone e o banner, no visualizador de imagens do Discord. Baixe o original ou copie o link.",
+                "**Calm Name Effects.** Abrir um chat dá metade do trabalho: estilos de nome do Nitro como Prism e Neon animam enquanto você passa o mouse sobre um nome, em vez de em todas as mensagens ao mesmo tempo.",
+            ],
+            improved: [
+                "**Uma atualização que pede mais espera o seu OK,** como o acesso total. As páginas da loja, as perguntas de instalação e os detalhes dos plugins listam o que cada plugin pede, e plugins antigos que não informam ficam com uma etiqueta.",
+                "**A loja sabe quando uma correção está funcionando.** Um plugin que o Evi consertou aparece como consertado em vez de quebrado, e só volta a quebrado se as instalações com a correção ainda tiverem problemas.",
+                "Temas da loja podem ser denunciados, como os plugins.",
+            ],
+            fixed: [
+                "O ícone do Platform Indicators não cresce mais para ocupar uma mensagem inteira em lugares que os estilos do Evi não alcançam, como chats em janelas separadas.",
+            ],
+        },
+        "0.6.1": {
+            fixed: [
+                "**O Smooth Typing não traz mais de volta para a caixa de texto uma mensagem que você acabou de enviar.** Trocar de canal e usar comandos de barra também mantêm a caixa em dia.",
+                "Um plugin que o Evi desativou, ou que tem um problema para explicar, mantém o tamanho do card na lista de Plugins em vez de se esticar por toda a largura.",
+            ],
+        },
+        "0.6.0": {
+            improved: [
+                "**Chega de travadinhas causadas pelo Evi.** Encontrar as peças do Discord costumava varrer todo o código do Discord, de 10 a 20 ms por vez, e uma peça ausente era procurada de novo a cada segundo. Agora ela é encontrada uma vez, e toda busca depois é instantânea.",
+                "**Os plugins fazem o trabalho pesado em pedacinhos,** entre todo o resto: Fast Lists, Read All, GIF Folders e o salvamento do Last Seen não seguram mais o Discord.",
+                "**O Show Hidden Channels lembra quem pode ver o quê,** em vez de perguntar de novo para cada canal a cada redesenho.",
+                "**Mais rápidos: Message Logger, Inline Translate, Platform Indicators, Voice Activity Log, Relationship Notifier, Hide Blocked, Timezones, Friend Online Alerts, Streamer Mode+, Silent Typing e Snippets.**",
+                "A verificação de saúde dos plugins em segundo plano ficou muito mais leve.",
+            ],
+            fixed: [
+                "**Um plugin que o Evi desativa em todo lugar é desligado em segundos,** com um aviso, em vez de na próxima verificação de meia em meia hora ou ao reiniciar.",
+            ],
+        },
+        "0.5.3": {
+            fixed: [
+                "A insígnia Plugin Author abre os detalhes quando você clica nela e pode ser ocultada e movida em Personalize suas insígnias.",
+            ],
+        },
+        "0.5.2": {
+            improved: [
+                "**As verificações de atualização passam pelo evi.rest,** então uma rede movimentada não esbarra mais no limite do GitHub nem diz que o Evi não consegue verificar atualizações.",
+                "**Instalar um plugin com acesso total pergunta em uma caixa de diálogo,** em vez de numa caixa espremida no card dele.",
+                "**Ícones em todas as abas,** para diferenciar Instalados e Loja num relance.",
+                "**Toda versão ganha sua capa pontilhada** em Novidades.",
+            ],
+            fixed: [
+                "Abrir a Loja não rola mais as configurações do Discord um pouco para baixo.",
+            ],
+        },
+        "0.5.1": {
+            added: [
+                "**Plugins da comunidade com uma parte nativa.** Os autores podem enviar um native.js junto com o plugin. A equipe do Evi lê tudo antes de ele entrar, e o Evi continua perguntando antes de instalar qualquer coisa com acesso total.",
+            ],
+            fixed: [
+                "Abrir as páginas do Evi nas configurações do Discord não faz mais o Discord travar.",
+            ],
+        },
+        "0.5.0": {
+            added: [
+                "**Evi Setup.** Um instalador pequeno com janela: escolha seu Discord e clique em Instalar o Evi ou Desinstalar o Evi. Ele verifica se há um Evi mais novo e o baixa, então são poucos MB em vez de mais de 100.",
+                "**O Evi no seu idioma.** Os menus do Evi seguem o idioma do Discord: espanhol, português, francês, alemão, turco, russo, polonês e japonês. Os plugins também podem ser traduzidos.",
+                "**Veja o que um plugin fez.** Os detalhes de um plugin listam os sites que ele acessou e quando, e apontam os que o código dele nunca menciona.",
+                "**Versões beta.** Ative Receber versões beta em Atualizações para ter as novas versões do Evi alguns dias antes.",
+                "**Insígnia Plugin Author.** Quem tiver um plugin aceito na loja ganha a insígnia no perfil.",
+            ],
+            improved: [
+                "Ativar ou desativar um plugin não congela mais o Discord por um instante.",
+                "**Os níveis de apoiador vêm por mês.** Uma insígnia nova todo mês nos seus primeiros seis meses, de Silver com um mês a Ruby com seis, e depois Prismatic com um ano.",
+            ],
+            fixed: [
+                "Clicar no interruptor de um plugin não rola mais as configurações do Discord para longe dele.",
+            ],
+        },
+        "0.4.0": {
+            added: [
+                "**Plugins da comunidade na loja.** Autores de plugins agora podem publicar os próprios plugins no evi.rest. A equipe do Evi lê cada versão antes de ela entrar, e os plugins da comunidade têm uma etiqueta para você saber sempre quem fez o quê.",
+                "**Autores verificados.** Todo plugin mostra quem o fez, com uma marca de verificação para autores verificados. Clique em um nome para ver os outros plugins da pessoa.",
+                "**Envie um relatório de falha para o autor.** Ao lado de Copiar relatório de falha. Você vê exatamente o que será enviado antes de enviar, e não há nada pessoal nele.",
+                "**Saiba quando um plugin está quebrado.** Se um plugin para de funcionar para muita gente depois de uma atualização do Discord, a loja e a sua lista de Plugins avisam, muitas vezes com uma nota do autor sobre a correção.",
+                "**Denuncie um plugin.** Algo nocivo, falso ou quebrado? Denuncie na página dele na loja. As denúncias vão para a equipe do Evi.",
+                "**O Evi pode desativar um plugin ruim em todo lugar.** Se um plugin se mostrar nocivo, o Evi o desliga em todas as instalações e conta por quê.",
+            ],
+            improved: [
+                "**Uma tela de Novidades com a cara do Evi.** A capa da versão no topo e cada tipo de mudança sob a própria etiqueta.",
+                "**Os pop-ups esperam o Discord.** Novidades, registros de mudanças de plugins e o aviso de atualização aparecem depois que o Discord carregou, não por cima da tela de carregamento.",
+                "**As insígnias de apoiador sobem de nível mais rápido.** Prismatic agora é um ano de apoio em vez de cinco.",
+                "**Insígnias de plugins em Suas insígnias.** As insígnias que os plugins adicionam aos perfis, como o relógio do Last Seen e o dispositivo do Platform Indicators, também aparecem no diretório de insígnias do Discord.",
+                "**Mais seguro desde a concepção.** Ativar um plugin com acesso total ao seu computador sempre pergunta em uma caixa de diálogo do sistema que nenhum plugin consegue responder por você.",
+            ],
+            fixed: [
+                "Instalar um plugin da loja sempre o ativa. Antes ele dizia que tinha ativado, e às vezes não tinha.",
+                "Os menus suspensos nas configurações de um plugin abrem no primeiro clique. Nas configurações do Discord, eles muitas vezes fechavam de novo na hora.",
+            ],
+        },
+        "0.3.2": {
+            improved: [
+                "**Caixas de diálogo e menus se movem como os do Discord.** As caixas de diálogo, avisos e menus de plugins do Evi agora abrem com um efeito elástico e desaparecem suavemente, em vez de surgirem e sumirem de repente.",
+                "**Um Voice Activity Log mais limpo,** com as sessões listadas por canal e um campo de busca de verdade.",
+            ],
+        },
+        "0.3.1": {
+            added: [
+                "**O Evi no macOS e no Linux.** Baixe o instalador para o seu sistema na versão e execute `evi install`. No Linux, execute com sudo.",
+            ],
+        },
+        "0.3.0": {
+            added: [
+                "**As insígnias do Evi fazem parte do Evi.** Elas aparecem nos perfis de todo mundo que usa o Evi e não podem ser desativadas por acidente.",
+                "**Oculte e reordene suas insígnias do Evi** no Personalize suas insígnias do próprio Discord. Todo mundo vê a mudança em segundos.",
+                "**Insígnias de apoiador que sobem de nível.** De Bronze a Prismatic quanto mais tempo você apoia o Evi, com seu progresso em Suas insígnias.",
+                "**Atualize o Evi pelo app.** O Evi avisa quando há uma versão nova, e um botão a instala.",
+            ],
+            improved: [
+                "As insígnias são atualizadas ao vivo em vez de a cada meia hora.",
+                "Todo plugin pode ser removido, inclusive os que vêm com o Evi, e continuam removidos quando o Evi se atualiza.",
+            ],
+        },
+        "0.2.0": {
+            added: [
+                "**A Loja de plugins agora fica na aba Plugins.** Cada plugin tem a própria página com capturas de tela, registro de mudanças, código-fonte e o que ele pode acessar.",
+                "**Loja de temas.** Instale e atualize temas direto na aba Temas.",
+                "**Atualizar tudo, e atualizações automáticas se você quiser.** Plugins com acesso total ao seu computador continuam perguntando antes.",
+                "**Relatórios de falha.** Um plugin que não inicia tem um botão Copiar relatório de falha para o autor.",
+            ],
+            improved: [
+                "Navegue pela loja por categoria e ordene por nome ou por atualização mais recente.",
+                "Atualize e desinstale plugins da loja direto na lista de Plugins.",
+                "Desative todos os plugins, ou redefina todos para o padrão, com um clique e a opção de desfazer.",
+            ],
+        },
+        "0.1.0": {
+            added: ["**Primeira versão.** Plugins, temas, Quick CSS, backups, modo seguro e a loja de plugins."],
+        },
+    },
+    ru: {
+        "1.0.0": {
+            added: [
+                "**Главная страница магазина.** Что сейчас в тренде, новинки недели, подборки и коллекции от команды Evi, ещё до полного списка.",
+                "**Оценки и отзывы.** Оценивай плагины, которыми пользуешься, и в паре строк объясняй почему. Отзывы, на которые кто-то пожаловался, попадают к команде Evi.",
+                "**Страницы плагинов рассказывают больше.** Видео или GIF с плагином в деле, что ещё устанавливают те, кто им пользуется, известные проблемы и заметка автора о версии.",
+                "**Список желаемого и входящие.** Поставь сердечко чему угодно в магазине, чтобы узнать, когда оно обновится, получит бету или снова заработает. Отзывы на твои плагины, твои загрузки и новости от авторов, на которых ты подписан, тоже приходят в новые Входящие.",
+                "**Подписка на авторов.** На страницах авторов есть баннер, закреплённые плагины, число тех, кто пользуется их плагинами, и кнопка «Подписаться».",
+                "**Бета-версии плагинов.** Авторы могут выпустить бету рядом со стабильной версией, а ты можешь подписаться на беты любого плагина на его странице.",
+                "**Динамические обои.** Картинка или видео за Discord, приглушённые, чтобы текст оставался читаемым, и на паузе при работе от батареи.",
+                "**Crash Detective.** Когда Discord вылетает или зависает, Evi говорит, какой плагин был самым занятым прямо перед этим, и предлагает его отключить.",
+                "**Обновления в фоне.** Включи их в разделе «Обновления», и новые версии будут скачиваться сами и устанавливаться, когда ты закроешь Discord.",
+                "**Горячие клавиши для плагинов.** Задай сочетание в настройках плагина, просто нажав клавиши, как в горячих клавишах Discord. Они есть у Streamer Mode+ и Game Activity Toggle, а если двум плагинам нужны одни и те же клавиши, поле об этом скажет.",
+                "**Бонусы для поддерживающих.** Твой значок поддержки в выбранном тобой цвете, твоё имя в титрах, если захочешь, и Aurora, тема для поддерживающих.",
+                "**Who Reacted.** Маленькие аватарки тех, кто отреагировал, прямо на каждой реакции рядом со счётчиком.",
+                "**Typing Tweaks.** Сразу видно, кто печатает: аватарки и цвета ролей в строке «печатает» и три точки у каналов и личных сообщений, пока там кто-то пишет.",
+                "**Для авторов плагинов:** Evi DevTools (события Flux в реальном времени, сторы, срабатывания патчей и тайминги), документация по API при наведении в Patch Helper, публичный журнал изменений API плагинов, анонимная статистика установок и сбоев в твоей панели, а также `bun run new-plugin` / `bun run preview-plugin`, чтобы начать плагин и проверить его.",
+            ],
+            improved: [
+                "**Поиск находит настройки, а не только плагины.** Поиск во вкладке «Плагины» теперь просматривает и настройки каждого плагина, а открытие результата приводит прямо к настройке.",
+                "**Показывай только то, чего у тебя ещё нет** с новым фильтром «Не установлены» в магазине, а сортируй по оценке или по популярности.",
+                "Streamer Mode+ сохраняет введённое тобой сочетание клавиш, теперь как записанное.",
+                "Авторы плагинов видят, сколько людей ими пользуется: раз в сутки Evi анонимно сообщает evi.rest, какие плагины из магазина у тебя установлены. Это можно отключить в настройках магазина.",
+                "Quick Actions больше не входит в Evi и удаляется при обновлении Evi.",
+                "**View Icons переехал в профили.** Нажми на чей-то баннер, чтобы открыть его в полном размере, как аватар, а «Скачать» находится рядом с увеличением. Пунктов в контекстном меню больше нет.",
+            ],
+            fixed: [
+                "**Message Logger сохраняет удалённые картинки, видео и файлы.** Discord удаляет их со своих серверов вместе с сообщением, поэтому раньше они отображались сломанными. Правки, которые убирают вложение, тоже сохраняют его у старой версии.",
+            ],
+        },
+        "0.7.0": {
+            added: [
+                "**Плагины сообщают, что им нужно, а Evi следит за соблюдением.** К каким сайтам обращается плагин, читает ли он твои сообщения, отправляет ли сообщения или меняет твои настройки. Всё остальное, что он пытается сделать через Evi, Evi блокирует, а заблокированное отображается в «Активности» плагина.",
+                "**Evi чинит плагины, которые ломает Discord, не дожидаясь обновления.** Когда обновление Discord ломает плагин, команда Evi исправляет его на evi.rest, и все установки получают исправление в течение нескольких минут. В сведениях о плагине сказано, что было исправлено.",
+                "**Создай свою тему.** Выбирай цвета в новой вкладке «Редактор», смотри, как меняется Discord, и сохрани результат как собственную тему.",
+                "**Темы сообщества.** Отправь тему в магазин тем из редактора или своей панели. Команда Evi проверяет каждую, а темы сообщества не могут ничего загружать из интернета, так что никто не узнает, кто ими пользуется.",
+                "**DM Categories.** Раскладывай личные сообщения по сворачиваемым категориям вроде «Друзья», «Работа» или «Игры» в верхней части списка личных сообщений. Нажми правой кнопкой на личное сообщение, чтобы добавить его в категорию.",
+                "**View Icons.** Нажми правой кнопкой на пользователя, чтобы увидеть его аватар и баннер в полном размере, или на сервер, чтобы увидеть его значок и баннер, в просмотрщике изображений Discord. Скачай оригинал или скопируй ссылку.",
+                "**Calm Name Effects.** Открытие чата требует вдвое меньше работы: стили имён Nitro вроде Prism и Neon анимируются, пока ты наводишь на имя, а не на всех сообщениях сразу.",
+            ],
+            improved: [
+                "**Обновление, которое просит больше прав, ждёт твоего согласия,** как и полный доступ. Страницы магазина, вопросы при установке и сведения о плагинах перечисляют, что запрашивает каждый плагин, а старые плагины, которые это не указывают, помечены.",
+                "**Магазин знает, что исправление работает.** Плагин, который починил Evi, отображается как исправленный, а не сломанный, и снова становится сломанным, только если у установок с исправлением по-прежнему есть проблемы.",
+                "На темы в магазине можно пожаловаться, как и на плагины.",
+            ],
+            fixed: [
+                "Значок Platform Indicators больше не разрастается на всё сообщение там, куда не доходят стили Evi, например в чатах в отдельных окнах.",
+            ],
+        },
+        "0.6.1": {
+            fixed: [
+                "**Smooth Typing больше не возвращает в поле ввода только что отправленное сообщение.** Переключение каналов и слэш-команды тоже держат поле в актуальном состоянии.",
+                "Плагин, который Evi отключил или у которого есть проблема, требующая пояснения, сохраняет размер карточки в списке плагинов, а не растягивается на всю ширину.",
+            ],
+        },
+        "0.6.0": {
+            improved: [
+                "**Больше никаких подтормаживаний из-за Evi.** Поиск частей Discord раньше просматривал весь код Discord, каждый раз по 10–20 мс, а отсутствующая часть искалась заново каждую секунду. Теперь она находится один раз, и любой последующий поиск мгновенный.",
+                "**Плагины выполняют тяжёлую работу небольшими порциями** между всем остальным: Fast Lists, Read All, GIF Folders и сохранение в Last Seen больше не задерживают Discord.",
+                "**Show Hidden Channels запоминает, кто что видит,** вместо того чтобы спрашивать заново по каждому каналу при каждой перерисовке.",
+                "**Быстрее работают Message Logger, Inline Translate, Platform Indicators, Voice Activity Log, Relationship Notifier, Hide Blocked, Timezones, Friend Online Alerts, Streamer Mode+, Silent Typing и Snippets.**",
+                "Фоновая проверка состояния плагинов стала намного легче.",
+            ],
+            fixed: [
+                "**Плагин, который Evi отключает везде, отключается в течение нескольких секунд** с уведомлением, а не при следующей проверке раз в полчаса или после перезапуска.",
+            ],
+        },
+        "0.5.3": {
+            fixed: [
+                "Значок Plugin Author открывает свои сведения по нажатию, и его можно скрыть и переместить в разделе «Настроить значки».",
+            ],
+        },
+        "0.5.2": {
+            improved: [
+                "**Проверка обновлений идёт через evi.rest,** так что загруженная сеть больше не упирается в лимит GitHub и не сообщает, что Evi не может проверить обновления.",
+                "**Установка плагина с полным доступом спрашивает в диалоговом окне,** а не в рамке, зажатой в его карточке.",
+                "**Значки на каждой вкладке,** чтобы «Установленные» и «Магазин» различались с первого взгляда.",
+                "**У каждого релиза есть своя точечная обложка** в «Что нового».",
+            ],
+            fixed: [
+                "Открытие магазина больше не прокручивает настройки Discord немного вниз.",
+            ],
+        },
+        "0.5.1": {
+            added: [
+                "**Плагины сообщества с нативной частью.** Авторы могут приложить к плагину native.js. Команда Evi прочитывает всё, прежде чем плагин попадёт в магазин, а Evi по-прежнему спрашивает тебя перед установкой всего, что имеет полный доступ.",
+            ],
+            fixed: [
+                "Открытие страниц Evi в настройках Discord больше не приводит к сбою Discord.",
+            ],
+        },
+        "0.5.0": {
+            added: [
+                "**Evi Setup.** Небольшой установщик с окном: выбери свой Discord и нажми «Установить Evi» или «Удалить Evi». Он сначала проверяет, есть ли более новая версия Evi, и скачивает её, так что это несколько МБ вместо более чем 100.",
+                "**Evi на твоём языке.** Меню Evi следуют языку Discord: испанский, португальский, французский, немецкий, турецкий, русский, польский и японский. Плагины тоже можно переводить.",
+                "**Смотри, что сделал плагин.** В сведениях о плагине перечислены сайты, к которым он обращался, и когда, и отмечены те, которые его код нигде не упоминает.",
+                "**Бета-версии.** Включи «Получать бета-версии» в разделе «Обновления», чтобы получать новые версии Evi на несколько дней раньше.",
+                "**Значок Plugin Author.** Каждый, чей плагин попал в магазин, получает его в профиль.",
+            ],
+            improved: [
+                "Включение и отключение плагина больше не замораживает Discord на мгновение.",
+                "**Уровни поддержки теперь выдаются каждый месяц.** Новый значок каждый месяц в течение первых шести месяцев, от Silver за один месяц до Ruby за шесть, а затем Prismatic за год.",
+            ],
+            fixed: [
+                "Нажатие на переключатель плагина больше не прокручивает настройки Discord прочь от него.",
+            ],
+        },
+        "0.4.0": {
+            added: [
+                "**Плагины сообщества в магазине.** Авторы плагинов теперь могут публиковать свои плагины на evi.rest. Команда Evi прочитывает каждую версию, прежде чем она попадёт в магазин, а плагины сообщества помечены, чтобы ты всегда знал, кто что сделал.",
+                "**Проверенные авторы.** У каждого плагина указан автор, а у проверенных авторов есть галочка. Нажми на имя, чтобы увидеть другие плагины автора.",
+                "**Отправка отчёта о сбое автору.** Рядом с «Скопировать отчёт о сбое». Ты видишь, что именно будет отправлено, прежде чем оно уйдёт, и ничего личного в нём нет.",
+                "**Узнавай, когда плагин сломан.** Если плагин перестаёт работать у многих после обновления Discord, магазин и твой список плагинов сообщат об этом, часто с заметкой автора об исправлении.",
+                "**Пожаловаться на плагин.** Что-то вредоносное, поддельное или сломанное? Пожалуйся на странице плагина в магазине. Жалобы попадают к команде Evi.",
+                "**Evi может отключить плохой плагин везде.** Если плагин окажется вредоносным, Evi отключит его на всех установках и объяснит почему.",
+            ],
+            improved: [
+                "**«Что нового» в стиле Evi.** Обложка релиза сверху и каждый тип изменений под своей меткой.",
+                "**Окна ждут Discord.** «Что нового», журналы изменений плагинов и уведомление об обновлении появляются, когда Discord загрузился, а не поверх его экрана загрузки.",
+                "**Значки поддержки растут быстрее.** Prismatic теперь даётся за год поддержки, а не за пять.",
+                "**Значки плагинов в разделе «Ваши значки».** Значки, которые плагины добавляют в профили, например часы Last Seen и устройство Platform Indicators, теперь есть и в каталоге значков Discord.",
+                "**Безопасность по умолчанию.** Включение плагина с полным доступом к твоему компьютеру всегда запрашивается в системном диалоге, на который никакой плагин не может ответить за тебя.",
+            ],
+            fixed: [
+                "Установка плагина из магазина всегда включает его. Раньше она сообщала, что включила, а иногда это было не так.",
+                "Выпадающие списки в настройках плагина открываются с первого нажатия. В настройках Discord они часто тут же закрывались снова.",
+            ],
+        },
+        "0.3.2": {
+            improved: [
+                "**Диалоги и меню двигаются как в Discord.** Диалоги, уведомления и меню плагинов Evi теперь пружинисто раскрываются и плавно исчезают, а не выскакивают и пропадают.",
+                "**Более аккуратный Voice Activity Log** с сеансами по каналам и нормальным полем поиска.",
+            ],
+        },
+        "0.3.1": {
+            added: [
+                "**Evi на macOS и Linux.** Скачай установщик для своей системы из релиза и запусти `evi install`. В Linux запускай его через sudo.",
+            ],
+        },
+        "0.3.0": {
+            added: [
+                "**Значки Evi стали частью Evi.** Они отображаются в профилях всех, кто пользуется Evi, и их нельзя случайно отключить.",
+                "**Скрывай и переставляй свои значки Evi** в стандартном разделе Discord «Настроить значки». Все увидят изменение в течение нескольких секунд.",
+                "**Значки поддержки, которые растут в уровне.** От Bronze до Prismatic, чем дольше ты поддерживаешь Evi, а твой прогресс виден в разделе «Ваши значки».",
+                "**Обновляй Evi из приложения.** Evi сообщает, когда вышла новая версия, а одна кнопка её устанавливает.",
+            ],
+            improved: [
+                "Значки обновляются сразу, а не раз в полчаса.",
+                "Любой плагин можно удалить, в том числе те, что поставляются с Evi, и они остаются удалёнными после обновлений Evi.",
+            ],
+        },
+        "0.2.0": {
+            added: [
+                "**Магазин плагинов теперь во вкладке «Плагины».** У каждого плагина своя страница со скриншотами, журналом изменений, исходным кодом и списком того, к чему у него есть доступ.",
+                "**Магазин тем.** Устанавливай и обновляй темы прямо во вкладке «Темы».",
+                "**Обновить всё и автоматические обновления, если хочешь.** Плагины с полным доступом к твоему компьютеру по-прежнему спрашивают заранее.",
+                "**Отчёты о сбоях.** У плагина, который не запускается, есть кнопка «Скопировать отчёт о сбое» для его автора.",
+            ],
+            improved: [
+                "Просматривай магазин по категориям и сортируй его по названию или по последнему обновлению.",
+                "Обновляй и удаляй плагины из магазина прямо из списка плагинов.",
+                "Отключай все плагины или сбрасывай их к настройкам по умолчанию одним нажатием, с возможностью отмены.",
+            ],
+        },
+        "0.1.0": {
+            added: ["**Первый релиз.** Плагины, темы, Quick CSS, резервные копии, безопасный режим и магазин плагинов."],
+        },
+    },
+    tr: {
+        "1.0.0": {
+            added: [
+                "**Mağaza için bir ana sayfa.** Tam listeden önce, gündemdeki şeyler, bu haftanın yenilikleri, Evi ekibinin seçtikleri ve derlediği koleksiyonlar.",
+                "**Puanlar ve yorumlar.** Kullandığın eklentileri puanla ve nedenini birkaç satırda anlat. Birinin bildirdiği yorumlar Evi ekibine gider.",
+                "**Eklenti sayfaları daha fazlasını gösteriyor.** Kullanımdan bir video veya GIF, onu kullananların başka neler yüklediği, bilinen sorunlar ve yazarından sürüm hakkında bir not.",
+                "**Bir istek listesi ve bir gelen kutusu.** Mağazadaki her şeye kalp ver, güncellendiğinde, beta aldığında ya da yeniden çalıştığında haberin olsun. Eklentilerine gelen yorumlar, yüklemelerin ve takip ettiğin yazarlardan haberler de yeni Gelen Kutusu’na düşer.",
+                "**Yazarları takip et.** Yazar sayfalarında bir afiş, sabitlenmiş eklentiler, eklentilerini kaç kişinin kullandığı ve bir Takip Et düğmesi var.",
+                "**Eklenti betaları.** Yazarlar kararlı sürümün yanında bir beta yayımlayabilir, sen de herhangi bir eklentinin betalarına sayfasından katılabilirsin.",
+                "**Dinamik Duvar Kağıdı.** Discord’un arkasında bir görsel veya video; yazılar okunaklı kalsın diye karartılır ve pilde duraklatılır.",
+                "**Crash Detective.** Discord çöktüğünde veya donduğunda Evi, hemen öncesinde hangi eklentinin en meşgul olduğunu söyler ve onu kapatmayı önerir.",
+                "**Arka planda güncellemeler.** Güncellemeler’den aç, yeni sürümler kendiliğinden iner ve Discord’u kapattığında kurulur.",
+                "**Eklentiler için klavye kısayolları.** Discord’un tuş atamaları gibi, bir eklentinin ayarlarında tuşlara basarak bir kısayol belirle. Streamer Mode+ ve Game Activity Toggle’ın birer kısayolu var, iki eklenti aynı tuşları istediğinde alan bunu söyler.",
+                "**Destekçi ayrıcalıkları.** Kendi seçtiğin bir renkte destekçi rozetin, istersen adın jenerikte ve destekçilere özel bir tema olan Aurora.",
+                "**Who Reacted.** Tepki verenlerin küçük avatarları, her tepkinin üzerinde sayının yanında.",
+                "**Typing Tweaks.** Kimin yazdığını bir bakışta gör: “yazıyor” satırında avatarlar ve rol renkleri, birileri yazarken kanallarda ve DM’lerde üç nokta.",
+                "**Eklenti yazarları için:** Evi DevTools (canlı Flux olayları, store’lar, yama eşleşmeleri ve süreler), Patch Helper’da üzerine gelince API belgeleri, herkese açık bir eklenti API değişiklik günlüğü, panelinde anonim yükleme ve çökme sayıları ve bir eklentiyi başlatıp denetlemek için `bun run new-plugin` / `bun run preview-plugin`.",
+            ],
+            improved: [
+                "**Arama yalnızca eklentileri değil, ayarları da buluyor.** Eklentiler sekmesinde arama yapmak artık her eklentinin ayarlarına da bakar, sonuçlardan birini açmak seni doğrudan ayara götürür.",
+                "**Yalnızca henüz sahip olmadıklarını göster:** mağazanın yeni Yüklü değil filtresiyle, ayrıca puana veya gündeme göre sırala.",
+                "Streamer Mode+ yazdığın kısayolu koruyor, artık kaydedilmiş bir kısayol olarak.",
+                "Eklenti yazarları kaç kişinin eklentilerini kullandığını görür: Evi günde bir kez, hangi mağaza eklentilerinin yüklü olduğunu anonim olarak evi.rest’e bildirir. Mağaza ayarlarından kapatabilirsin.",
+                "Quick Actions artık Evi’nin parçası değil ve Evi güncellendiğinde kaldırılır.",
+                "**View Icons profillerin içine taşındı.** Birinin afişine tıkla, avatarı gibi tam boyutta açılsın; İndir, yakınlaştırmanın yanında. Sağ tık menüsündeki öğeler kalktı.",
+            ],
+            fixed: [
+                "**Message Logger silinen resimleri, videoları ve dosyaları saklıyor.** Discord bunları mesajla birlikte sunucularından siler, bu yüzden bozuk görünüyorlardı. Bir eki kaldıran düzenlemeler de eki eski sürümde tutar.",
+            ],
+        },
+        "0.7.0": {
+            added: [
+                "**Eklentiler neye ihtiyaç duyduklarını söyler, Evi de buna uymalarını sağlar.** Bir eklentinin hangi sitelere eriştiği ve mesajlarını okuyup okumadığı, mesaj gönderip göndermediği veya ayarlarını değiştirip değiştirmediği. Evi, Evi üzerinden denenen geri kalan her şeyi engeller ve engellenenler eklentinin Etkinlik bölümünde görünür.",
+                "**Evi, Discord’un bozduğu eklentileri güncelleme beklemeden onarır.** Bir Discord güncellemesi bir eklentiyi bozduğunda Evi ekibi onu evi.rest üzerinde onarır ve her kurulum düzeltmeyi dakikalar içinde alır. Eklentinin ayrıntıları neyin düzeltildiğini söyler.",
+                "**Kendi temanı yap.** Yeni Düzenleyici sekmesinde renkleri seç, Discord’un değiştiğini izle, sonra kendi temanı olarak kaydet.",
+                "**Topluluk temaları.** Düzenleyiciden veya panelinden Tema Mağazası’na bir tema gönder. Evi ekibi her birini inceler ve topluluk temaları internetten hiçbir şey yükleyemez, dolayısıyla kimse onları kimin kullandığını öğrenemez.",
+                "**DM Categories.** DM’lerini DM listenin en üstünde Arkadaşlar, İş veya Oyun gibi katlanabilir kategorilere ayır. Bir DM’ye sağ tıklayıp bir kategoriye ekle.",
+                "**View Icons.** Birine sağ tıklayarak avatarını ve afişini, bir sunucuya sağ tıklayarak simgesini ve afişini Discord’un resim görüntüleyicisinde tam boyutta gör. Orijinali indir veya bağlantısını kopyala.",
+                "**Calm Name Effects.** Bir sohbeti açmak yarı yarıya daha az iş: Prism ve Neon gibi Nitro isim stilleri, her mesajda aynı anda değil, bir ismin üzerine geldiğinde canlanır.",
+            ],
+            improved: [
+                "**Daha fazlasını isteyen bir güncelleme onayını bekler,** tam erişim gibi. Mağaza sayfaları, kurulum soruları ve eklenti ayrıntıları her eklentinin ne istediğini listeler; bunu belirtmeyen eski eklentiler etiketlenir.",
+                "**Mağaza bir düzeltmenin işe yaradığını biliyor.** Evi’nin düzelttiği bir eklenti bozuk yerine düzeltildi olarak görünür ve yalnızca düzeltmeyi çalıştıran kurulumlar hâlâ sorun yaşıyorsa tekrar bozuk olur.",
+                "Mağazadaki temalar da eklentiler gibi bildirilebilir.",
+            ],
+            fixed: [
+                "Platform Indicators’ın simgesi, açılır pencere sohbetleri gibi Evi’nin stillerinin ulaşmadığı yerlerde artık tüm mesajı kaplayacak kadar büyümüyor.",
+            ],
+        },
+        "0.6.1": {
+            fixed: [
+                "**Smooth Typing artık az önce gönderdiğin bir mesajı metin kutusuna geri getirmiyor.** Kanal değiştirmek ve slash komutları da kutuyu güncel tutuyor.",
+                "Evi’nin kapattığı veya açıklanacak bir sorunu olan bir eklenti, Eklentiler listesinde tüm genişliğe yayılmak yerine kart boyutunu koruyor.",
+            ],
+        },
+        "0.6.0": {
+            improved: [
+                "**Evi kaynaklı takılmalar bitti.** Discord’un parçalarını bulmak eskiden Discord’un tüm kodunu her seferinde 10 ila 20 ms tarıyordu ve eksik bir parça her saniye yeniden aranıyordu. Şimdi bir kez bulunuyor ve sonraki her bakış anında.",
+                "**Eklentiler ağır işlerini küçük parçalar hâlinde yapar,** diğer her şeyin arasında: Fast Lists, Read All, GIF Folders ve Last Seen’in kaydetmesi artık Discord’u bekletmiyor.",
+                "**Show Hidden Channels kimin neyi görebildiğini hatırlıyor,** her yeniden çizimde her kanal için yeniden sormak yerine.",
+                "**Daha hızlı: Message Logger, Inline Translate, Platform Indicators, Voice Activity Log, Relationship Notifier, Hide Blocked, Timezones, Friend Online Alerts, Streamer Mode+, Silent Typing ve Snippets.**",
+                "Arka plandaki eklenti sağlık denetimi çok daha hafif.",
+            ],
+            fixed: [
+                "**Evi’nin her yerde kapattığı bir eklenti birkaç saniye içinde kapanıyor,** bir bildirimle, yarım saatlik sonraki denetimi veya yeniden başlatmayı beklemeden.",
+            ],
+        },
+        "0.5.3": {
+            fixed: [
+                "Plugin Author rozeti tıklandığında ayrıntılarını açıyor ve Rozetlerini özelleştir bölümünde gizlenip taşınabiliyor.",
+            ],
+        },
+        "0.5.2": {
+            improved: [
+                "**Güncelleme denetimleri evi.rest üzerinden geçiyor,** böylece yoğun bir ağ artık GitHub’ın sınırına takılıp Evi’nin güncellemeleri denetleyemediğini söylemiyor.",
+                "**Tam erişimli bir eklenti kurmak bir iletişim kutusunda soruyor,** kartına sıkıştırılmış bir kutuda değil.",
+                "**Her sekmede simgeler,** Yüklü ve Mağaza bir bakışta ayırt edilsin diye.",
+                "**Her sürüm Yenilikler’de noktalı kapağını alıyor.**",
+            ],
+            fixed: [
+                "Mağazayı açmak artık Discord’un ayarlarını biraz aşağı kaydırmıyor.",
+            ],
+        },
+        "0.5.1": {
+            added: [
+                "**Yerel parçası olan topluluk eklentileri.** Yazarlar eklentileriyle birlikte bir native.js gönderebilir. Evi ekibi, eklenmeden önce hepsini okur ve Evi, tam erişimli herhangi bir şeyi kurmadan önce hâlâ sana sorar.",
+            ],
+            fixed: [
+                "Evi’nin sayfalarını Discord’un ayarlarında açmak artık Discord’u çökertmiyor.",
+            ],
+        },
+        "0.5.0": {
+            added: [
+                "**Evi Setup.** Pencereli küçük bir yükleyici: Discord’unu seç, Evi’yi Yükle veya Evi’yi Kaldır’a tıkla. Önce daha yeni bir Evi olup olmadığına bakar ve onu indirir, yani 100 MB’ın üzerinde değil birkaç MB.",
+                "**Evi senin dilinde.** Evi’nin menüleri Discord’un dilini izler: İspanyolca, Portekizce, Fransızca, Almanca, Türkçe, Rusça, Lehçe ve Japonca. Eklentiler de çevrilebilir.",
+                "**Bir eklentinin ne yaptığını gör.** Eklentinin ayrıntıları eriştiği siteleri ve ne zaman eriştiğini listeler, kodunun hiç anmadığı siteleri ise işaret eder.",
+                "**Beta sürümleri.** Yeni Evi sürümlerini birkaç gün erken almak için Güncellemeler’de Beta sürümlerini al’ı aç.",
+                "**Plugin Author rozeti.** Eklentisi mağazaya giren herkes bunu profilinde alır.",
+            ],
+            improved: [
+                "Bir eklentiyi açıp kapatmak artık Discord’u bir an için dondurmuyor.",
+                "**Destekçi seviyeleri aylık geliyor.** İlk altı ay boyunca her ay yeni bir rozet: bir ayda Silver’dan altı ayda Ruby’ye, sonra bir yılda Prismatic.",
+            ],
+            fixed: [
+                "Bir eklentinin anahtarına tıklamak artık Discord’un ayarlarını ondan uzağa kaydırmıyor.",
+            ],
+        },
+        "0.4.0": {
+            added: [
+                "**Mağazada topluluk eklentileri.** Eklenti yazarları artık kendi eklentilerini evi.rest’te yayımlayabilir. Evi ekibi her sürümü eklenmeden önce okur ve topluluk eklentileri etiketlidir, böylece kimin neyi yaptığını her zaman bilirsin.",
+                "**Doğrulanmış yazarlar.** Her eklenti kimin yaptığını gösterir, doğrulanmış yazarlar için bir onay işaretiyle. Diğer eklentilerini görmek için bir isme tıkla.",
+                "**Yazara çökme raporu gönder.** Çökme raporunu kopyala’nın yanında. Gönderilmeden önce tam olarak ne gönderildiğini görürsün ve içinde kişisel hiçbir şey yoktur.",
+                "**Bir eklentinin bozuk olduğunu öğren.** Bir Discord güncellemesinden sonra bir eklenti çok kişi için çalışmayı bırakırsa mağaza ve Eklentiler listen bunu söyler, çoğu zaman yazarından düzeltmeyle ilgili bir notla.",
+                "**Bir eklentiyi bildir.** Zararlı, sahte veya bozuk bir şey mi var? Mağaza sayfasından bildir. Bildirimler Evi ekibine gider.",
+                "**Evi kötü bir eklentiyi her yerde kapatabilir.** Bir eklenti zararlı çıkarsa Evi onu her kurulumda kapatır ve nedenini söyler.",
+            ],
+            improved: [
+                "**Evi’ye benzeyen bir Yenilikler.** Üstte sürümün kapağı ve her değişiklik türü kendi etiketinin altında.",
+                "**Açılır pencereler Discord’u bekliyor.** Yenilikler, eklenti değişiklik günlükleri ve güncelleme bildirimi, Discord’un yükleme ekranının üstünde değil, Discord yüklendikten sonra görünür.",
+                "**Destekçi rozetleri daha hızlı seviye atlıyor.** Prismatic artık beş yıl yerine bir yıllık destek.",
+                "**Eklenti rozetleri Rozetlerin’de.** Eklentilerin profillere eklediği rozetler, Last Seen’in saati ve Platform Indicators’ın cihazı gibi, Discord’un rozet dizininde de listelenir.",
+                "**Tasarımdan güvenli.** Bilgisayarına tam erişimi olan bir eklentiyi açmak, hiçbir eklentinin senin yerine yanıtlayamayacağı bir sistem iletişim kutusunda her zaman sana sorar.",
+            ],
+            fixed: [
+                "Mağazadan bir eklenti kurmak onu her zaman açıyor. Eskiden açtığını söylüyordu, ama bazen açmıyordu.",
+                "Bir eklentinin ayarlarındaki açılır menüler ilk tıklamada açılıyor. Discord’un ayarlarında çoğu zaman hemen tekrar kapanıyorlardı.",
+            ],
+        },
+        "0.3.2": {
+            improved: [
+                "**İletişim kutuları ve menüler Discord’unkiler gibi hareket ediyor.** Evi’nin iletişim kutuları, bildirimleri ve eklenti menüleri artık aniden belirip kaybolmak yerine yaylanarak açılıyor ve solarak kayboluyor.",
+                "**Daha temiz bir Voice Activity Log,** kanala göre listelenen oturumlar ve düzgün bir arama alanıyla.",
+            ],
+        },
+        "0.3.1": {
+            added: [
+                "**macOS ve Linux’ta Evi.** Sürümden sistemin için yükleyiciyi indir ve `evi install` komutunu çalıştır. Linux’ta sudo ile çalıştır.",
+            ],
+        },
+        "0.3.0": {
+            added: [
+                "**Evi rozetleri Evi’nin bir parçası.** Evi kullanan herkesin profilinde görünür ve yanlışlıkla kapatılamaz.",
+                "**Evi rozetlerini gizle ve yeniden sırala,** Discord’un kendi Rozetlerini özelleştir bölümünde. Herkes değişikliği birkaç saniye içinde görür.",
+                "**Seviye atlayan destekçi rozetleri.** Evi’yi ne kadar uzun desteklersen Bronze’dan Prismatic’e, ilerlemen Rozetlerin’de.",
+                "**Evi’yi uygulamadan güncelle.** Evi yeni bir sürüm çıktığında söyler ve tek bir düğme onu kurar.",
+            ],
+            improved: [
+                "Rozetler her yarım saatte bir yerine canlı güncelleniyor.",
+                "Her eklenti kaldırılabilir, Evi’yle birlikte gelenler de dahil, ve Evi güncellendiğinde kaldırılmış kalırlar.",
+            ],
+        },
+        "0.2.0": {
+            added: [
+                "**Eklenti Mağazası artık Eklentiler sekmesinde.** Her eklentinin ekran görüntüleri, değişiklik günlüğü, kaynağı ve nelere erişebildiğiyle kendi sayfası var.",
+                "**Tema Mağazası.** Temaları doğrudan Temalar sekmesinden kur ve güncelle.",
+                "**Hepsini güncelle ve istersen otomatik güncellemeler.** Bilgisayarına tam erişimi olan eklentiler yine önce sorar.",
+                "**Çökme raporları.** Başlamayan bir eklentinin yazarı için bir Çökme raporunu kopyala düğmesi var.",
+            ],
+            improved: [
+                "Mağazaya kategoriye göre göz at, ada veya en son güncellenene göre sırala.",
+                "Mağaza eklentilerini doğrudan Eklentiler listesinden güncelle ve kaldır.",
+                "Tüm eklentileri kapat veya hepsini varsayılana sıfırla; tek tıkla ve geri alma seçeneğiyle.",
+            ],
+        },
+        "0.1.0": {
+            added: ["**İlk sürüm.** Eklentiler, temalar, Quick CSS, yedekler, güvenli mod ve eklenti mağazası."],
+        },
+    },
+};

@@ -1,6 +1,8 @@
 import { definePlugin, findStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
+import { t } from "./strings";
+
 import { extraLabel, FetchQueue, pickReactors, PATCHES, REACTION_VOTE, reactionKey, shownCount } from "./reactors";
 import type { ReactionEmoji } from "./reactors";
 
@@ -13,8 +15,8 @@ import type { ReactionEmoji } from "./reactors";
 
 type Settings = typeof settings;
 const settings = {
-    max: { type: "number", label: "Avatars per reaction", description: "Past that, a reaction shows how many more reacted.", default: 5, min: 1, max: 10, step: 1 },
-    showExtra: { type: "boolean", label: "Show how many more", description: "A +12 after the avatars when more people reacted than are shown.", default: true },
+    max: { type: "number", get label() { return t("settings.max"); }, get description() { return t("settings.max.description"); }, default: 5, min: 1, max: 10, step: 1 },
+    showExtra: { type: "boolean", get label() { return t("settings.showExtra"); }, get description() { return t("settings.showExtra.description"); }, default: true },
 } as const;
 
 /** Asked of Discord's API per reaction: enough for the most avatars a reaction can show */

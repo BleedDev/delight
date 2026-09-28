@@ -4,6 +4,7 @@
  * can pull the plugin (pulls.ts) from there.
  */
 import { isPluginId, isVersion } from "./store";
+import { englishTr, Tr } from "./tr";
 
 export type ReportReason = "malicious" | "scam" | "stolen" | "broken" | "other";
 
@@ -46,13 +47,13 @@ export interface PluginReport {
     closedAt?: number;
 }
 
-export function validatePluginReport(plugin: unknown, raw: unknown): { report: PluginReportInput & { plugin: string; }; } | { error: string; } {
+export function validatePluginReport(plugin: unknown, raw: unknown, tr: Tr = englishTr): { report: PluginReportInput & { plugin: string; }; } | { error: string; } {
     if (!isPluginId(plugin)) return { error: "plugin must be a plugin id" };
     const e = (raw ?? {}) as Record<string, unknown>;
     if (!REPORT_REASONS.some(r => r.value === e.reason)) return { error: `reason must be one of ${REPORT_REASONS.map(r => r.value).join(", ")}` };
     const details = e.details ?? "";
-    if (typeof details !== "string" || details.length > 1000 || /[\0-\x08\x0e-\x1f]/.test(details)) return { error: "The details must be at most 1000 characters" };
-    if (e.reason === "other" && !details.trim()) return { error: "Say what's wrong" };
+    if (typeof details !== "string" || details.length > 1000 || /[\0-\x08\x0e-\x1f]/.test(details)) return { error: tr("check.report.details") };
+    if (e.reason === "other" && !details.trim()) return { error: tr("check.report.sayWhat") };
     if (e.version !== undefined && !isVersion(e.version)) return { error: "version must look like 1.2.3" };
     return { report: { plugin, reason: e.reason as ReportReason, details: details.trim(), ...(isVersion(e.version) && { version: e.version }) } };
 }

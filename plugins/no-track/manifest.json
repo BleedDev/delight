@@ -7,5 +7,103 @@
     "tags": ["privacy"],
     "permissions": {},
     "changelog": [{ "version": "1.0.1", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] }, { "version": "1.0.0", "notes": ["First release."] }],
-    "enabledByDefault": true
+    "enabledByDefault": true,
+    "locales": {
+        "de": {
+            "name": "No Track",
+            "description": "Blockiert die Analyse- und Metrik-Anfragen von Discord, bevor sie deinen Rechner verlassen.",
+            "changelog": {
+                "1.0.1": [
+                    "Sagt jetzt, was sie braucht, nämlich nichts, was Discord ihr nicht ohnehin zeigt, und Evi hält sie dazu an."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "No Track",
+            "description": "Bloquea las solicitudes de analíticas y métricas de Discord antes de que salgan de tu equipo.",
+            "changelog": {
+                "1.0.1": [
+                    "Ahora dice lo que necesita, que es nada más allá de lo que Discord ya le muestra, y Evi se lo hace cumplir."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "No Track",
+            "description": "Bloque les requêtes d'analyse et de métriques de Discord avant qu'elles ne quittent votre machine.",
+            "changelog": {
+                "1.0.1": [
+                    "Indique désormais ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi l'y tient."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "No Track",
+            "description": "Discordの分析・メトリクスのリクエストを、お使いのPCから出る前にブロックします。",
+            "changelog": {
+                "1.0.1": [
+                    "必要な権限を宣言するようになりました。Discordがすでに表示している内容以外は必要なく、Eviがその範囲を守らせます。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "No Track",
+            "description": "Blokuje żądania analityczne i metryczne Discorda, zanim opuszczą Twój komputer.",
+            "changelog": {
+                "1.0.1": [
+                    "Podaje teraz, czego potrzebuje, czyli niczego ponad to, co Discord już mu pokazuje, a Evi tego pilnuje."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "No Track",
+            "description": "Bloqueia as requisições de análise e métricas do Discord antes que saiam do seu computador.",
+            "changelog": {
+                "1.0.1": [
+                    "Agora informa o que precisa, que é nada além do que o Discord já mostra a ele, e o Evi garante que ele respeite isso."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "No Track",
+            "description": "Блокирует аналитические запросы и запросы метрик Discord до того, как они покинут ваш компьютер.",
+            "changelog": {
+                "1.0.1": [
+                    "Теперь заявляет, что ему нужно, а это ничего сверх того, что Discord и так ему показывает, и Evi следит, чтобы он не выходил за эти рамки."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "No Track",
+            "description": "Discord'un analiz ve ölçüm isteklerini bilgisayarından çıkmadan engeller.",
+            "changelog": {
+                "1.0.1": [
+                    "Artık neye ihtiyaç duyduğunu belirtiyor; bu, Discord'un zaten gösterdiğinin ötesinde hiçbir şey değil ve Evi bunu denetliyor."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

@@ -16,6 +16,10 @@ export interface Finding {
     level: FindingLevel;
     code: string;
     message: string;
+    /** Translation key when the same code has more than one wording (defaults to the code) */
+    key?: string;
+    /** Values the wording is built from, so the dialog can say it in another language */
+    vars?: Record<string, string>;
 }
 
 export interface UrlParts {
@@ -354,13 +358,13 @@ export function hostnameInText(text: string): { host: string; whole: boolean; } 
 const SCAM_WORDS = ["gift", "nitro", "free", "promo", "claim", "drop", "airdrop", "login", "verify", "verification", "auth", "oauth", "trade",
     "giveaway", "bonus", "reward", "secure", "account", "support", "qr", "wallet", "skins", "case", "offer", "event", "prize", "appeal", "staff"];
 
-const SCAM_PATTERNS: { re: RegExp; what: string; }[] = [
-    { re: /free[-_.\s]*(?:discord[-_.\s]*)?nitro/, what: "free Nitro" },
-    { re: /nitro[-_.\s]*(?:gift|free|drop|claim|generator|gen)s?\b/, what: "a Nitro giveaway" },
-    { re: /discord[-_.]?(?:gift|nitro|airdrop|promo|drop|claim)s?/, what: "a Discord gift" },
-    { re: /steam[-_.]?(?:gift|giveaway|trade[-_.]?offer|free|drop|claim|skins?)s?/, what: "a Steam gift or trade" },
-    { re: /(?:free|claim)[-_.\s]*(?:robux|vbucks|v-bucks|skins?|cs2?[-_.]?skins?)/, what: "free in-game currency or skins" },
-    { re: /(?:airdrop|claim)[-_.\s]*(?:crypto|token|nft|eth|btc|usdt)/, what: "a crypto airdrop" },
+const SCAM_PATTERNS: { id: string; re: RegExp; what: string; }[] = [
+    { id: "free-nitro", re: /free[-_.\s]*(?:discord[-_.\s]*)?nitro/, what: "free Nitro" },
+    { id: "nitro-giveaway", re: /nitro[-_.\s]*(?:gift|free|drop|claim|generator|gen)s?\b/, what: "a Nitro giveaway" },
+    { id: "discord-gift", re: /discord[-_.]?(?:gift|nitro|airdrop|promo|drop|claim)s?/, what: "a Discord gift" },
+    { id: "steam", re: /steam[-_.]?(?:gift|giveaway|trade[-_.]?offer|free|drop|claim|skins?)s?/, what: "a Steam gift or trade" },
+    { id: "currency", re: /(?:free|claim)[-_.\s]*(?:robux|vbucks|v-bucks|skins?|cs2?[-_.]?skins?)/, what: "free in-game currency or skins" },
+    { id: "crypto", re: /(?:airdrop|claim)[-_.\s]*(?:crypto|token|nft|eth|btc|usdt)/, what: "a crypto airdrop" },
 ];
 
 const DANGEROUS_EXTENSIONS = new Set([
@@ -389,10 +393,10 @@ function brandLookalike(domain: string, displayDomain: string): Finding | null {
         const official = brand.domains[0];
         for (const key of brand.keys) {
             if (name === key) {
-                return { level: "danger", code: "brand-tld", message: `Uses ${brand.name}'s name on a domain ${brand.name} doesn't own: this is ${displayDomain}, not ${official}.` };
+                return { level: "danger", code: "brand-tld", vars: { brand: brand.name, domain: displayDomain, official }, message: `Uses ${brand.name}'s name on a domain ${brand.name} doesn't own: this is ${displayDomain}, not ${official}.` };
             }
             if (nameSkeleton === skeleton(key)) {
-                return { level: "danger", code: "lookalike", message: `${displayDomain} is made to look like ${official} by swapping lookalike characters. It isn't run by ${brand.name}.` };
+                return { level: "danger", code: "lookalike", key: "lookalike-swap", vars: { brand: brand.name, domain: displayDomain, official }, message: `${displayDomain} is made to look like ${official} by swapping lookalike characters. It isn't run by ${brand.name}.` };
             }
         }
     }
@@ -404,11 +408,11 @@ function brandLookalike(domain: string, displayDomain: string): Finding | null {
             const keySkeleton = skeleton(key);
             if (flat.includes(key) || tokens.includes(key)) {
                 return hasScamWord
-                    ? { level: "danger", code: "brand-scam", message: `Puts ${brand.name}'s name next to words like "gift", "free" or "login" on a site ${brand.name} doesn't run (${displayDomain}). That's how most phishing links look.` }
-                    : { level: "caution", code: "brand-mention", message: `Has ${brand.name}'s name in it but isn't one of ${brand.name}'s sites: ${displayDomain} is run by someone else.` };
+                    ? { level: "danger", code: "brand-scam", vars: { brand: brand.name, domain: displayDomain }, message: `Puts ${brand.name}'s name next to words like "gift", "free" or "login" on a site ${brand.name} doesn't run (${displayDomain}). That's how most phishing links look.` }
+                    : { level: "caution", code: "brand-mention", vars: { brand: brand.name, domain: displayDomain }, message: `Has ${brand.name}'s name in it but isn't one of ${brand.name}'s sites: ${displayDomain} is run by someone else.` };
             }
             if (nameSkeleton.includes(keySkeleton)) {
-                return { level: "danger", code: "lookalike", message: `${displayDomain} imitates ${brand.name}'s name with lookalike characters. It isn't run by ${brand.name}.` };
+                return { level: "danger", code: "lookalike", vars: { brand: brand.name, domain: displayDomain }, message: `${displayDomain} imitates ${brand.name}'s name with lookalike characters. It isn't run by ${brand.name}.` };
             }
             if (key.length < 6) continue;
             const max = key.length >= 10 ? 2 : 1;
@@ -420,6 +424,7 @@ function brandLookalike(domain: string, displayDomain: string): Finding | null {
                         // Long names don't get mistyped into a registered domain by accident
                         level: hasScamWord || key.length >= 10 ? "danger" : "caution",
                         code: "typosquat",
+                        vars: { domain: displayDomain, official },
                         message: `${displayDomain} is one or two letters off from ${official}. Typo domains like this are often used to steal accounts.`,
                     };
                 }
@@ -435,7 +440,7 @@ function brandLookalike(domain: string, displayDomain: string): Finding | null {
  */
 export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysis {
     const findings: Finding[] = [];
-    const add = (level: FindingLevel, code: string, message: string) => void findings.push({ level, code, message });
+    const add = (level: FindingLevel, code: string, message: string, vars?: Record<string, string>, key?: string) => void findings.push({ level, code, message, ...(key && { key }), ...(vars && { vars }) });
     const result = (url: string, hostname: string, extra: Partial<Analysis> = {}): Analysis => {
         const level = findings.reduce<RiskLevel>((max, f) => (RANK[f.level] > RANK[max] ? (f.level as RiskLevel) : max), "safe");
         return { level, url, hostname, displayHostname: decodeHostname(hostname), domain: registrableDomain(hostname), findings, ...extra };
@@ -467,7 +472,7 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
 
     const allowlist = (options.allowlist ?? []).map(normalizeDomain).filter(Boolean);
     if (allowlist.some(d => withinDomain(host, d))) {
-        add("info", "allowlisted", `${displayDomain} is on your allowlist.`);
+        add("info", "allowlisted", `${displayDomain} is on your allowlist.`, { domain: displayDomain });
         return done();
     }
 
@@ -484,8 +489,8 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
             if (!sameOwner) {
                 const shownDisplay = decodeHostname(shown.host);
                 const message = `The link says ${shownDisplay} but actually goes to ${displayHost}.`;
-                if (shown.whole) add(official ? "caution" : "danger", "masked-mismatch", message);
-                else add("caution", "masked-mention", `The link text mentions ${shownDisplay}, but the link goes to ${displayHost}.`);
+                if (shown.whole) add(official ? "caution" : "danger", "masked-mismatch", message, { shown: shownDisplay, host: displayHost });
+                else add("caution", "masked-mention", `The link text mentions ${shownDisplay}, but the link goes to ${displayHost}.`, { shown: shownDisplay, host: displayHost });
             }
         }
     }
@@ -500,18 +505,20 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
             looksLikeHost
                 ? `Everything before the "@" is ignored: this link starts with "${fake}" but goes to ${displayHost}.`
                 : `The link has a hidden "name@" part before the address. It goes to ${displayHost}.`,
+            { fake, host: displayHost },
+            looksLikeHost ? "userinfo-host" : "userinfo-hidden",
         );
     }
 
     if (isIP(host)) {
-        add("caution", "ip-address", `Goes to a bare IP address (${host}) instead of a named website. Real services almost never link like this.`);
+        add("caution", "ip-address", `Goes to a bare IP address (${host}) instead of a named website. Real services almost never link like this.`, { host });
     } else {
         // Punycode and lookalike scripts
         const mixed = mixedScriptLabels(displayHost);
         if (mixed.length) {
-            add("danger", "mixed-script", `The address mixes alphabets (like Latin with Cyrillic or Greek) in "${mixed.join(".")}", a trick to make a fake domain look real.`);
+            add("danger", "mixed-script", `The address mixes alphabets (like Latin with Cyrillic or Greek) in "${mixed.join(".")}", a trick to make a fake domain look real.`, { labels: mixed.join(".") });
         } else if (host.split(".").some(l => l.startsWith("xn--"))) {
-            add("caution", "punycode", `The address uses international characters (${displayHost}, written ${host}). Some of these are lookalikes of normal letters.`);
+            add("caution", "punycode", `The address uses international characters (${displayHost}, written ${host}). Some of these are lookalikes of normal letters.`, { display: displayHost, host });
         }
 
         // discord.com.evil.xyz
@@ -519,7 +526,7 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
             if (official) break;
             const hit = b.domains.find(d => host.startsWith(d + ".") && d !== domain);
             if (hit) {
-                add("danger", "subdomain-trick", `Starts with ${hit} but the site is really ${displayDomain}. Everything to the left of it is just a label its owner picked.`);
+                add("danger", "subdomain-trick", `Starts with ${hit} but the site is really ${displayDomain}. Everything to the left of it is just a label its owner picked.`, { hit, domain: displayDomain });
                 break;
             }
         }
@@ -528,13 +535,13 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
         if (lookalike) findings.push(lookalike);
 
         const tld = host.slice(host.lastIndexOf(".") + 1);
-        if (FILE_LIKE_TLDS.has(tld)) add("caution", "file-tld", `The address ends in .${tld}, which looks like a file name but is a website.`);
+        if (FILE_LIKE_TLDS.has(tld)) add("caution", "file-tld", `The address ends in .${tld}, which looks like a file name but is a website.`, { tld });
 
         if (SHORTENERS.has(domain) || SHORTENERS.has(host)) {
-            add("info", "shortener", `${displayDomain} is a link shortener: where it really leads is hidden until you open it.`);
+            add("info", "shortener", `${displayDomain} is a link shortener: where it really leads is hidden until you open it.`, { domain: displayDomain });
         }
         if (HOSTING_SUFFIXES.has(suffixOf(domain)) && !official) {
-            add("info", "free-hosting", `Hosted on ${suffixOf(domain)}, where anyone can make a site for free.`);
+            add("info", "free-hosting", `Hosted on ${suffixOf(domain)}, where anyone can make a site for free.`, { suffix: suffixOf(domain) });
         }
     }
 
@@ -548,7 +555,7 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
         const scam = SCAM_PATTERNS.find(p => haystacks.some(h => p.re.test(h)));
         if (scam) {
             const inHost = scam.re.test(displayHost.toLowerCase());
-            add(inHost ? "danger" : "caution", "scam-words", `Mentions ${scam.what}, the most common bait in Discord scams.`);
+            add(inHost ? "danger" : "caution", "scam-words", `Mentions ${scam.what}, the most common bait in Discord scams.`, { what: scam.what }, `scam-words-${scam.id}`);
         }
     }
 
@@ -569,6 +576,8 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
                 doubled
                     ? `Downloads "${file}", a program disguised as a .${pieces[pieces.length - 2]} file.`
                     : `Downloads a .${ext} file ("${file}"), which can run code on your computer. Only open it if you trust the sender.`,
+                doubled ? { file, fake: pieces[pieces.length - 2] } : { file, ext },
+                doubled ? "dangerous-file-disguised" : "dangerous-file",
             );
         }
     }

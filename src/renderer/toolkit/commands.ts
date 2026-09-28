@@ -10,6 +10,7 @@
  * Replies are ephemeral by default (Discord's own "Only you can see this" message); a real message is
  * only sent when the plugin explicitly returns { content }.
  */
+import { t } from "../i18n";
 import { Logger } from "../logger";
 import { filters, find, functionSource } from "../webpack/find";
 import { inModulesWith, SharedHook } from "./shared";
@@ -125,7 +126,7 @@ function toDiscordCommand(def: CommandDefinition, owner: string) {
                 }
             } catch (err) {
                 logger.error(`/${def.name} (${owner}) threw`, err);
-                reply(`/${def.name} failed: ${err instanceof Error ? err.message : err}`);
+                reply(t("commands.failed", { name: def.name, error: err instanceof Error ? err.message : String(err) }));
             }
         },
     };

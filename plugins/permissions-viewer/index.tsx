@@ -14,6 +14,13 @@ import {
     ADMINISTRATOR, computePermissions, OverwriteInput, PermissionEntry, PERMISSIONS, permissionsIn, RoleInput, sortRoles, Source,
     summarizeOverwrites, toBits,
 } from "./perms";
+import { t } from "./strings";
+
+/** t() for keys built at runtime (permission and category names) */
+const td = (key: string, vars?: Record<string, string | number>) => (t as (key: string, vars?: Record<string, string | number>) => string)(key, vars);
+
+/** A permission's name in Discord's language */
+const permName = (p: { key: string; }) => p.key.startsWith("BIT_") ? t("perm.unknown", { bit: p.key.slice(4) }) : td(`perm.${p.key}`);
 
 // ---- Discord's stores ---------------------------------------------------------------------------
 
@@ -74,7 +81,7 @@ function overwritesOf(channel: any): OverwriteInput[] {
     return (Object.values(raw) as any[]).map(o => ({ id: o.id, type: o.type, allow: toBits(o.allow), deny: toBits(o.deny) }));
 }
 
-const channelLabel = (channel: any) => channel?.name ? `#${channel.name}` : "this channel";
+const channelLabel = (channel: any) => channel?.name ? `#${channel.name}` : t("this.channel");
 
 // ---- Categories, in the order Discord's role editor uses ----------------------------------------
 
@@ -182,8 +189,13 @@ function Dialog({ subject, sections, onClose }: { subject: Subject; sections: Se
     const granted = items.filter(i => i.state === "allow").length;
     const q = query.trim().toLowerCase();
     const visible = items.filter(i => (filter === "all" || (filter === "allow") === (i.state === "allow")) && (!q || i.name.toLowerCase().includes(q)));
-    const labels = current?.overwrite ? ["Allowed", "Denied"] : ["Granted", "Not granted"];
-    const filters: [Filter, string, number][] = [["all", "All", items.length], ["allow", labels[0], granted], ["off", labels[1], items.length - granted]];
+    const names = current?.overwrite ? ["allowed", "denied"] as const : ["granted", "notGranted"] as const;
+    const filters: [Filter, string, number][] = [["all", t("filter.all"), items.length], ["allow", td(`filter.${names[0]}`), granted], ["off", td(`filter.${names[1]}`), items.length - granted]];
+    const emptyText = () => {
+        const which = filter === "all" ? undefined : filter === "allow" ? names[0] : names[1];
+        if (q) return td(`empty.match.${which ?? "all"}`, { query: query.trim() });
+        return td(`empty.none.${which ?? "granted"}`);
+    };
 
     return (
         <div className="evi-pv-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && onClose()}>
@@ -194,13 +206,13 @@ function Dialog({ subject, sections, onClose }: { subject: Subject; sections: Se
                         <h2 id="evi-pv-title">{subject.title}</h2>
                         <p id="evi-pv-subtitle">{subject.subtitle}</p>
                     </div>
-                    <button className="evi-pv-close" aria-label="Close" onClick={onClose}>
+                    <button className="evi-pv-close" aria-label={t("ui.close")} onClick={onClose}>
                         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                     </button>
                 </header>
                 <div className="evi-pv-main">
                     {sections.length > 1 && (
-                        <nav className="evi-pv-nav" aria-label="Sections">
+                        <nav className="evi-pv-nav" aria-label={t("ui.sections")}>
                             {sections.map((s, i) => (
                                 <React.Fragment key={s.key}>
                                     {s.group && s.group !== sections[i - 1]?.group && <h3 className="evi-pv-nav-group">{s.group}</h3>}
@@ -216,7 +228,7 @@ function Dialog({ subject, sections, onClose }: { subject: Subject; sections: Se
                     <div className="evi-pv-body">
                         {items.length > 0 && (
                             <div className="evi-pv-toolbar">
-                                <div className="evi-pv-seg" role="group" aria-label="Show">
+                                <div className="evi-pv-seg" role="group" aria-label={t("ui.show")}>
                                     {filters.map(([key, label, count]) => (
                                         <button key={key} aria-pressed={filter === key} onClick={() => setFilter(key)}>
                                             {label}
@@ -226,29 +238,29 @@ function Dialog({ subject, sections, onClose }: { subject: Subject; sections: Se
                                 </div>
                                 <label className="evi-pv-search">
                                     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M16 16l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                                    <span className="evi-pv-sr">Search permissions</span>
-                                    <input ref={searchRef} type="search" inputMode="search" placeholder="Search" autoComplete="off" spellCheck={false} value={query} onChange={e => setQuery(e.target.value)} />
+                                    <span className="evi-pv-sr">{t("ui.searchLabel")}</span>
+                                    <input ref={searchRef} type="search" inputMode="search" placeholder={t("ui.search")} autoComplete="off" spellCheck={false} value={query} onChange={e => setQuery(e.target.value)} />
                                 </label>
                             </div>
                         )}
                         <div className="evi-pv-scroll" key={current?.key}>
                             {current?.notice && <Notice>{current.notice}</Notice>}
                             {!items.length
-                                ? <p className="evi-pv-empty">{current?.empty ?? "Nothing to show."}</p>
+                                ? <p className="evi-pv-empty">{current?.empty ?? t("ui.nothing")}</p>
                                 : !visible.length
                                 ? (
                                     <div className="evi-pv-empty">
-                                        <p>{q ? `No ${filter === "all" ? "" : `${filters.find(f => f[0] === filter)![1].toLowerCase()} `}permissions match “${query.trim()}”.` : `No permissions are ${filters.find(f => f[0] === filter)![1].toLowerCase()} here.`}</p>
-                                        <button className="evi-pv-link" onClick={() => { setFilter("all"); setQuery(""); }}>Show all permissions</button>
+                                        <p>{emptyText()}</p>
+                                        <button className="evi-pv-link" onClick={() => { setFilter("all"); setQuery(""); }}>{t("ui.showAll")}</button>
                                     </div>
                                 )
                                 : byCategory(visible).map(([category, list]) => {
                                     const all = items.filter(i => (ORDER.get(i.key)?.category ?? "Other") === category);
                                     return (
-                                        <section className="evi-pv-group" key={category} aria-label={category}>
+                                        <section className="evi-pv-group" key={category} aria-label={td(`category.${category}`)}>
                                             <h3 className="evi-pv-heading">
-                                                <span>{category}</span>
-                                                <span className="evi-pv-heading-count">{current.overwrite ? list.length : `${all.filter(i => i.state === "allow").length} of ${all.length}`}</span>
+                                                <span>{td(`category.${category}`)}</span>
+                                                <span className="evi-pv-heading-count">{current.overwrite ? list.length : t("count.of", { granted: all.filter(i => i.state === "allow").length, total: all.length })}</span>
                                             </h3>
                                             <ul className="evi-pv-list">{list.map(i => <Row key={i.key} item={i} />)}</ul>
                                         </section>
@@ -275,10 +287,10 @@ function SubjectIcon({ subject }: { subject: Subject; }) {
 function TabCount({ section }: { section: Section; }) {
     if (!section.items.length) return null;
     const allowed = section.items.filter(i => i.state === "allow").length;
-    if (!section.overwrite) return <span className="evi-pv-tab-count" title={`${allowed} granted`}>{allowed}</span>;
+    if (!section.overwrite) return <span className="evi-pv-tab-count" title={t("count.granted", { count: allowed })}>{allowed}</span>;
     const denied = section.items.length - allowed;
     return (
-        <span className="evi-pv-tab-count" title={`${allowed} allowed, ${denied} denied`}>
+        <span className="evi-pv-tab-count" title={t("count.allowedDenied", { allowed, denied })}>
             {allowed > 0 && <span data-state="allow">+{allowed}</span>}
             {denied > 0 && <span data-state="deny">−{denied}</span>}
         </span>
@@ -292,14 +304,15 @@ const Notice = ({ children }: { children: ReactNode; }) => (
     </p>
 );
 
-const MARKS: Record<State, [string, string]> = {
-    allow: ["Granted", "M6.5 12.5l3.5 3.5 7.5-8"],
-    deny: ["Denied", "M8 8l8 8M16 8l-8 8"],
-    none: ["Not granted", "M8 12h8"],
+const MARKS: Record<State, [() => string, string]> = {
+    allow: [() => t("filter.granted"), "M6.5 12.5l3.5 3.5 7.5-8"],
+    deny: [() => t("filter.denied"), "M8 8l8 8M16 8l-8 8"],
+    none: [() => t("filter.notGranted"), "M8 12h8"],
 };
 
 function Row({ item }: { item: Item; }) {
-    const [label, path] = MARKS[item.state];
+    const [labelOf, path] = MARKS[item.state];
+    const label = labelOf();
     const { chip } = item;
     return (
         <li className="evi-pv-row" data-state={item.state}>
@@ -311,7 +324,7 @@ function Row({ item }: { item: Item; }) {
                 <span className="evi-pv-chip" data-tone={chip.tone} title={chip.title}>
                     {chip.tone !== "quiet" && <span className="evi-pv-dot" style={chip.color ? { background: chip.color } : undefined} data-empty={!chip.color || undefined} />}
                     <span className="evi-pv-chip-label">{chip.label}</span>
-                    {chip.overwrite && <span className="evi-pv-chip-kind">overwrite</span>}
+                    {chip.overwrite && <span className="evi-pv-chip-kind">{t("chip.overwrite")}</span>}
                 </span>
             )}
         </li>
@@ -321,21 +334,20 @@ function Row({ item }: { item: Item; }) {
 // ---- What each menu shows -----------------------------------------------------------------------
 
 function sourceChip(source: Source, granted: boolean, guildId: string, roles: Map<string, Role>): Chip | undefined {
-    const name = (id: string) => roles.get(id)?.name ?? "Deleted role";
+    const name = (id: string) => roles.get(id)?.name ?? t("chip.deletedRole");
     switch (source.kind) {
-        case "owner": return { label: "Server owner", title: "Server owner" };
-        case "administrator": return { label: name(source.roleId), color: roles.get(source.roleId)?.color, title: `Administrator through the ${name(source.roleId)} role` };
+        case "owner": return { label: t("chip.owner"), title: t("chip.owner") };
+        case "administrator": return { label: name(source.roleId), color: roles.get(source.roleId)?.color, title: t("chip.admin", { role: name(source.roleId) }) };
         case "none": return undefined;
         case "role": {
-            if (source.roleId === guildId) return { label: "@everyone", tone: "quiet", title: "Granted to @everyone" };
-            return { label: name(source.roleId), color: roles.get(source.roleId)?.color, title: `Granted by the ${name(source.roleId)} role` };
+            if (source.roleId === guildId) return { label: "@everyone", tone: "quiet", title: t("chip.everyone") };
+            return { label: name(source.roleId), color: roles.get(source.roleId)?.color, title: t("chip.role", { role: name(source.roleId) }) };
         }
         case "overwrite": {
-            const verb = granted ? "Allowed" : "Denied";
             const tone = granted ? undefined : "deny";
-            if (source.target === "everyone") return { label: "@everyone", overwrite: true, tone, title: `${verb} by this channel's @everyone overwrite` };
-            if (source.target === "role") return { label: name(source.id), color: roles.get(source.id)?.color, overwrite: true, tone, title: `${verb} by this channel's ${name(source.id)} overwrite` };
-            return { label: "Member", overwrite: true, tone, title: `${verb} by an overwrite for this member` };
+            if (source.target === "everyone") return { label: "@everyone", overwrite: true, tone, title: granted ? t("chip.everyone.allowed") : t("chip.everyone.denied") };
+            if (source.target === "role") return { label: name(source.id), color: roles.get(source.id)?.color, overwrite: true, tone, title: t(granted ? "chip.roleOverwrite.allowed" : "chip.roleOverwrite.denied", { role: name(source.id) }) };
+            return { label: t("chip.member"), overwrite: true, tone, title: granted ? t("chip.memberOverwrite.allowed") : t("chip.memberOverwrite.denied") };
         }
     }
 }
@@ -347,15 +359,15 @@ function entrySection(entries: PermissionEntry[], guildId: string, roles: Role[]
     if (first?.kind === "owner" || first?.kind === "administrator") {
         return {
             notice: first.kind === "owner"
-                ? "Server owner: has every permission, and channel overwrites don't apply."
-                : `Administrator through the ${byId.get(first.roleId)?.name ?? "deleted"} role: has every permission, and channel overwrites don't apply.`,
-            items: entries.map(e => ({ key: e.key, name: e.name, state: "allow" })),
+                ? t("notice.owner")
+                : byId.get(first.roleId) ? t("notice.admin", { role: byId.get(first.roleId)!.name }) : t("notice.adminDeleted"),
+            items: entries.map(e => ({ key: e.key, name: permName(e), state: "allow" })),
         };
     }
     return {
         items: entries.map(e => ({
             key: e.key,
-            name: e.name,
+            name: permName(e),
             state: e.granted ? "allow" : e.source.kind === "overwrite" ? "deny" : "none",
             chip: sourceChip(e.source, e.granted, guildId, byId),
         })),
@@ -365,10 +377,10 @@ function entrySection(entries: PermissionEntry[], guildId: string, roles: Role[]
 function roleSection(role: Role): Pick<Section, "items" | "notice"> {
     const bits = toBits(role.permissions);
     return {
-        notice: bits & ADMINISTRATOR ? "Administrator: this role has every permission and bypasses channel overwrites." : undefined,
+        notice: bits & ADMINISTRATOR ? t("notice.roleAdmin") : undefined,
         items: [
-            ...PERMISSIONS.map(p => ({ key: p.key, name: p.name, state: bits & p.flag ? "allow" as const : "none" as const })),
-            ...permissionsIn(bits).filter(p => p.key.startsWith("BIT_")).map(p => ({ key: p.key, name: p.name, state: "allow" as const })),
+            ...PERMISSIONS.map(p => ({ key: p.key, name: permName(p), state: bits & p.flag ? "allow" as const : "none" as const })),
+            ...permissionsIn(bits).filter(p => p.key.startsWith("BIT_")).map(p => ({ key: p.key, name: permName(p), state: "allow" as const })),
         ],
     };
 }
@@ -380,19 +392,19 @@ function memberSections(guildId: string, userId: string, channel: any): Section[
     const roles = guildRoles(guildId);
     const compute = (overwrites?: OverwriteInput[]) => computePermissions({ guildId, ownerId: guild.ownerId, userId, memberRoleIds: roleIds, roles, overwrites }).entries;
     const sections: Section[] = [];
-    if (channel) sections.push({ key: "channel", label: `In ${channelLabel(channel)}`, ...entrySection(compute(overwritesOf(channel)), guildId, roles) });
-    sections.push({ key: "server", label: "Server-wide", ...entrySection(compute(), guildId, roles) });
+    if (channel) sections.push({ key: "channel", label: t("section.inChannel", { channel: channelLabel(channel) }), ...entrySection(compute(overwritesOf(channel)), guildId, roles) });
+    sections.push({ key: "server", label: t("section.serverWide"), ...entrySection(compute(), guildId, roles) });
     return sections;
 }
 
 function viewMember(guildId: string, userId: string, channel: any) {
     const sections = memberSections(guildId, userId, channel);
     if (!sections) return false;
-    const guildName = getGuild(guildId)?.name ?? "this server";
+    const guildName = getGuild(guildId)?.name ?? t("this.server");
     const name = userName(guildId, userId);
     openDialog({
         title: name,
-        subtitle: channel ? `Permissions in ${channelLabel(channel)} · ${guildName}` : `Permissions in ${guildName}`,
+        subtitle: channel ? t("subtitle.memberChannel", { channel: channelLabel(channel), guild: guildName }) : t("subtitle.member", { guild: guildName }),
         image: attempt(() => store("UserStore")?.getUser?.(userId)?.getAvatarURL?.(guildId, 80)),
         glyph: [...name][0]?.toUpperCase() ?? "?",
     }, sections);
@@ -402,7 +414,7 @@ function viewMember(guildId: string, userId: string, channel: any) {
 function viewRole(guildId: string, role: Role) {
     openDialog({
         title: role.name,
-        subtitle: `Role permissions · ${getGuild(guildId)?.name ?? "this server"}`,
+        subtitle: t("subtitle.role", { guild: getGuild(guildId)?.name ?? t("this.server") }),
         glyph: "@",
         color: role.color,
     }, [{ key: role.id, label: role.name, color: role.color, ...roleSection(role) }]);
@@ -422,28 +434,28 @@ function viewChannel(channel: any) {
     const summaries = summarizeOverwrites(guildId, overwritesOf(channel), roles);
     const sections: Section[] = [];
     const me = ownId();
-    if (me && memberRoleIds(guildId, me)) sections.push({ key: "you", label: "You", ...entrySection(computeYou(guildId, me, channel), guildId, roles) });
+    if (me && memberRoleIds(guildId, me)) sections.push({ key: "you", label: t("section.you"), ...entrySection(computeYou(guildId, me, channel), guildId, roles) });
     for (const s of summaries) {
-        const label = s.target === "member" ? userName(guildId, s.id) : byId.get(s.id)?.name ?? (s.target === "everyone" ? "@everyone" : "Deleted role");
+        const label = s.target === "member" ? userName(guildId, s.id) : byId.get(s.id)?.name ?? (s.target === "everyone" ? "@everyone" : t("chip.deletedRole"));
         sections.push({
             key: s.id,
             label,
             color: s.target === "role" ? byId.get(s.id)?.color : undefined,
-            group: "Overwrites",
+            group: t("section.overwrites"),
             overwrite: true,
-            notice: `${s.target === "member" ? "Member" : "Role"} overwrite: anything not listed is inherited from the server.`,
+            notice: t(s.target === "member" ? "notice.overwrite.member" : "notice.overwrite.role"),
             items: [
-                ...s.allowed.map(p => ({ key: p.key, name: p.name, state: "allow" as const })),
-                ...s.denied.map(p => ({ key: p.key, name: p.name, state: "deny" as const })),
+                ...s.allowed.map(p => ({ key: p.key, name: permName(p), state: "allow" as const })),
+                ...s.denied.map(p => ({ key: p.key, name: permName(p), state: "deny" as const })),
             ],
-            empty: "This overwrite doesn't allow or deny anything, so everything is inherited from the server.",
+            empty: t("empty.overwrite"),
         });
     }
-    if (!summaries.length) sections.push({ key: "none", label: "Overwrites", items: [], empty: "This channel has no overwrites, so everyone gets their server role permissions here." });
-    const count = `${summaries.length} overwrite${summaries.length === 1 ? "" : "s"}`;
+    if (!summaries.length) sections.push({ key: "none", label: t("section.overwrites"), items: [], empty: t("empty.noOverwrites") });
+    const count = t("overwrites.count", { count: summaries.length });
     openDialog({
         title: channelLabel(channel),
-        subtitle: `Channel permissions · ${count} · ${getGuild(guildId)?.name ?? "this server"}`,
+        subtitle: t("subtitle.channel", { overwrites: count, guild: getGuild(guildId)?.name ?? t("this.server") }),
         glyph: "#",
     }, sections);
 }
@@ -452,11 +464,11 @@ function viewGuild(guild: any) {
     const roles = guildRoles(guild.id);
     const sections: Section[] = [];
     const me = ownId();
-    if (me && memberRoleIds(guild.id, me)) sections.push({ key: "you", label: "You", ...entrySection(computeYou(guild.id, me, undefined), guild.id, roles) });
-    for (const role of roles) sections.push({ key: role.id, label: role.name, color: role.color, group: "Roles", ...roleSection(role) });
+    if (me && memberRoleIds(guild.id, me)) sections.push({ key: "you", label: t("section.you"), ...entrySection(computeYou(guild.id, me, undefined), guild.id, roles) });
+    for (const role of roles) sections.push({ key: role.id, label: role.name, color: role.color, group: t("section.roles"), ...roleSection(role) });
     openDialog({
         title: guild.name,
-        subtitle: `Server permissions · ${roles.length} role${roles.length === 1 ? "" : "s"}`,
+        subtitle: t("subtitle.guild", { roles: t("roles.count", { count: roles.length }) }),
         image: attempt(() => guild.getIconURL?.(80, false)),
         glyph: [...(guild.name ?? "?")][0]?.toUpperCase() ?? "?",
     }, sections);
@@ -566,7 +578,7 @@ const css = `
 
 const item = (id: string, action: () => void) => (
     <Menu.Group key={`${id}-group`}>
-        <Menu.Item id={id} label="View Permissions" action={action} />
+        <Menu.Item id={id} label={t("menu.view")} action={action} />
     </Menu.Group>
 );
 
@@ -575,7 +587,7 @@ export default definePlugin({
         ctx.addStyle(css);
         ctx.onDispose(() => closeOpen?.({ instant: true }));
 
-        const fail = () => ctx.toast("Couldn't read the permissions", { type: "failure" });
+        const fail = () => ctx.toast(t("toast.fail"), { type: "failure" });
 
         ctx.contextMenu("user-context", (children, props) => {
             const userId: string | undefined = props.user?.id;

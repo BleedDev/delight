@@ -2,6 +2,8 @@ import { definePlugin, filters, find, getStore } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 import type { ComponentType } from "react";
 
+import { t } from "./strings";
+
 /**
  * Discord's typing actions are one object, `{ startTyping(channelId), stopTyping(channelId) }`.
  * startTyping dispatches TYPING_START_LOCAL, and TypingStore's handler for it is what POSTs
@@ -19,8 +21,18 @@ const chatButtonFilter = filters.componentByCode("CHAT_INPUT_BUTTON_NOTIFICATION
 
 type Settings = typeof settings;
 const settings = {
-    enabled: { type: "boolean", label: "Enabled", description: "Hide your typing indicator from others. /silenttyping toggles this.", default: true },
-    showButton: { type: "boolean", label: "Chat bar button", description: "A keyboard button in the chat bar that toggles it.", default: true },
+    enabled: {
+        type: "boolean",
+        get label() { return t("settings.enabled"); },
+        get description() { return t("settings.enabled.description"); },
+        default: true,
+    },
+    showButton: {
+        type: "boolean",
+        get label() { return t("settings.showButton"); },
+        get description() { return t("settings.showButton.description"); },
+        default: true,
+    },
 } as const;
 
 let context: PluginContext<Settings> | undefined;
@@ -30,7 +42,7 @@ function toggle() {
     if (!context) return "";
     const enabled = !context.settings.get("enabled");
     context.settings.set("enabled", enabled);
-    return enabled ? "Silent typing is on: others won't see you typing." : "Silent typing is off.";
+    return t(enabled ? "toast.on" : "toast.off");
 }
 
 /**
@@ -75,7 +87,7 @@ function KeyboardIcon({ off }: { off: boolean; }) {
 
 function SilentTypingButton() {
     const { enabled } = context!.settings.use();
-    const label = enabled ? "Silent typing on (click to turn off)" : "Silent typing off (click to turn on)";
+    const label = t(enabled ? "button.on" : "button.off");
     const ChatButton = getChatButton();
     const icon = <KeyboardIcon off={enabled} />;
 
@@ -139,7 +151,7 @@ export default definePlugin({
 
         ctx.command({
             name: "silenttyping",
-            description: "Turn silent typing on or off",
+            get description() { return t("command.description"); },
             // An "Only you can see this" reply in the channel, nothing is ever sent
             execute: () => ({ ephemeral: toggle() }),
         });

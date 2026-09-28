@@ -4,6 +4,7 @@ import type { ImportMode, ImportPreview } from "./backup";
 import type { PluginHealth } from "./health";
 import type { Hotfix } from "./hotfixes";
 import type { EviNotification } from "./notifications";
+import type { PluginLocales } from "./pluginLocales";
 import type { PulledPlugins } from "./pulls";
 import type { WallpaperKind, WallpaperSettings } from "./wallpaper";
 
@@ -13,6 +14,8 @@ export const IPC = {
     GET_RENDERER: "evi:get-renderer",
     /** sync: everything the renderer needs to boot, see BootData */
     GET_BOOT: "evi:get-boot",
+    /** The renderer tells main Evi's language, for its native dialogs and error messages */
+    SET_LOCALE: "evi:set-locale",
     /** answers with SettingsSaveResult, after asking about plugins it turns on that reach beyond the page */
     SETTINGS_SAVE: "evi:settings-save",
     /** sync: last-chance flush while the page unloads, async IPC may not make it */
@@ -147,6 +150,8 @@ export interface PluginManifest {
     preview?: string;
     /** Newest first, published to the store registry */
     changelog?: { version: string; notes: string[]; }[];
+    /** Name, description and changelog in other languages (shared/pluginLocales.ts), published to the store registry */
+    locales?: PluginLocales;
     /** Oldest Evi the plugin works with, published to the store registry */
     minEviVersion?: string;
     /** Renderer entry, relative to the plugin folder. Defaults to index.js */
@@ -192,6 +197,8 @@ export interface ThemeMeta {
     description?: string;
     author?: string;
     version?: string;
+    /** From `@name:de` / `@description:de` tags: the name and description in other languages */
+    locales?: import("./pluginLocales").PluginLocales;
 }
 
 export interface ThemePayload extends ThemeMeta {

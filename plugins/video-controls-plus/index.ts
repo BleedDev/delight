@@ -20,31 +20,32 @@ import {
     Action, actionForKey, clampSeekSeconds, clampSpeed, estimateFps, formatPosition, formatSpeed, frameStepTime, isArrowAction, seekTime,
     SPEEDS, stepSpeed, withShortcut,
 } from "./controls";
+import { t } from "./strings";
 
 type Settings = typeof settings;
 const settings = {
     rememberSpeed: {
         type: "boolean",
-        label: "Remember playback speed",
-        description: "Videos start at the speed you last picked, instead of 1x.",
+        get label() { return t("settings.rememberSpeed"); },
+        get description() { return t("settings.rememberSpeed.description"); },
         default: true,
     },
     showStrip: {
         type: "boolean",
-        label: "Show the control strip",
-        description: "Speed, loop, frame step and picture-in-picture buttons at the top right of a video you hover.",
+        get label() { return t("settings.showStrip"); },
+        get description() { return t("settings.showStrip.description"); },
         default: true,
     },
     shortcuts: {
         type: "boolean",
-        label: "Keyboard shortcuts",
-        description: "While hovering a video: Space/K play, J/L and arrow keys seek, M mute, F fullscreen, [ ] speed, P picture-in-picture, , and . step one frame.",
+        get label() { return t("settings.shortcuts"); },
+        get description() { return t("settings.shortcuts.description"); },
         default: true,
     },
     seekSeconds: {
         type: "number",
-        label: "Seek step (seconds)",
-        description: "How far J, L and the arrow keys jump.",
+        get label() { return t("settings.seekSeconds"); },
+        get description() { return t("settings.seekSeconds.description"); },
         default: 5,
         min: 1,
         max: 60,
@@ -205,7 +206,7 @@ function toggleMute(video: HTMLVideoElement) {
     const button = playerButton(video, "volume");
     if (button) button.click();
     else video.muted = !video.muted;
-    flash(video.muted || video.volume === 0 ? "Muted" : "Unmuted");
+    flash(t(video.muted || video.volume === 0 ? "flash.muted" : "flash.unmuted"));
 }
 
 function toggleFullscreen(video: HTMLVideoElement) {
@@ -218,15 +219,15 @@ function toggleFullscreen(video: HTMLVideoElement) {
 function toggleLoop(video: HTMLVideoElement) {
     video.loop = !video.loop;
     touch(video, { loop: true });
-    flash(video.loop ? "Loop on" : "Loop off");
+    flash(t(video.loop ? "flash.loopOn" : "flash.loopOff"));
     sync();
 }
 
 async function togglePip(video: HTMLVideoElement) {
-    if (!document.pictureInPictureEnabled) return flash("Picture-in-picture isn't available");
+    if (!document.pictureInPictureEnabled) return flash(t("flash.pipUnavailable"));
     try {
         if (document.pictureInPictureElement === video) return void await document.exitPictureInPicture();
-        if (video.readyState < HTMLMediaElement.HAVE_METADATA) return flash("Play the video first");
+        if (video.readyState < HTMLMediaElement.HAVE_METADATA) return flash(t("flash.playFirst"));
         // Discord renders its player with disablePictureInPicture
         if (video.disablePictureInPicture) {
             video.disablePictureInPicture = false;
@@ -235,7 +236,7 @@ async function togglePip(video: HTMLVideoElement) {
         await video.requestPictureInPicture();
     } catch (err) {
         ctx?.logger.warn("Picture-in-picture failed", err);
-        flash("Couldn't open picture-in-picture");
+        flash(t("flash.pipFailed"));
     }
 }
 
@@ -247,7 +248,7 @@ function seek(video: HTMLVideoElement, delta: number) {
 function stepFrame(video: HTMLVideoElement, direction: 1 | -1) {
     pause(video);
     video.currentTime = frameStepTime(video.currentTime, direction, fps.get(video), video.duration);
-    flash(`${direction > 0 ? "Next" : "Previous"} frame · ${formatPosition(video.currentTime, video.duration)}`);
+    flash(t(direction > 0 ? "flash.nextFrame" : "flash.previousFrame", { position: formatPosition(video.currentTime, video.duration) }));
 }
 
 function changeSpeed(video: HTMLVideoElement, speed: number) {
@@ -314,22 +315,21 @@ function buildOverlay() {
     strip = document.createElement("div");
     strip.className = "evi-vcp-strip";
     strip.setAttribute("role", "toolbar");
-    strip.setAttribute("aria-label", "Video controls");
 
-    speedButton = button("speed", "Playback speed ([ and ])", "1×");
+    speedButton = button("speed", "", "1×");
     speedButton.classList.add("evi-vcp-speed");
     speedButton.setAttribute("aria-haspopup", "menu");
     speedButton.setAttribute("aria-expanded", "false");
-    loopButton = button("loop", "Loop", svg(ICONS.loop));
+    loopButton = button("loop", "", svg(ICONS.loop));
     loopButton.setAttribute("aria-pressed", "false");
-    pipButton = button("pip", withShortcut("Picture-in-picture", "P"), svg(ICONS.pip));
+    pipButton = button("pip", "", svg(ICONS.pip));
     pipButton.hidden = !document.pictureInPictureEnabled;
     const sep = document.createElement("span");
     sep.className = "evi-vcp-sep";
     strip.append(
-        button("frameBack", withShortcut("Previous frame", ","), svg(ICONS.frameBack)),
+        button("frameBack", "", svg(ICONS.frameBack)),
         speedButton,
-        button("frameForward", withShortcut("Next frame", "."), svg(ICONS.frameForward)),
+        button("frameForward", "", svg(ICONS.frameForward)),
         sep,
         loopButton,
         pipButton,
@@ -338,7 +338,6 @@ function buildOverlay() {
     menu = document.createElement("div");
     menu.className = "evi-vcp-menu evi-popout";
     menu.setAttribute("role", "menu");
-    menu.setAttribute("aria-label", "Playback speed");
     menu.hidden = true;
     for (const speed of SPEEDS) {
         const item = document.createElement("button");
@@ -358,6 +357,7 @@ function buildOverlay() {
     root.append(strip, menu, flashEl);
     root.addEventListener("click", onOverlayClick);
     root.addEventListener("keydown", onOverlayKey);
+    labelOverlay();
     document.body.append(root);
 }
 
@@ -425,15 +425,33 @@ function setMenu(open: boolean, refocus: boolean) {
     update();
 }
 
+/** Names and tooltips, read now so they follow Discord's language */
+function labelOverlay() {
+    if (!strip || !menu) return;
+    const name = (el: Element | null | undefined, label: string) => {
+        if (!el) return;
+        (el as HTMLElement).title = label;
+        el.setAttribute("aria-label", label);
+    };
+    strip.setAttribute("aria-label", t("label.controls"));
+    menu.setAttribute("aria-label", t("label.speedMenu"));
+    name(speedButton, t("label.speed"));
+    name(pipButton, withShortcut(t("label.pip"), "P"));
+    name(strip.querySelector("[data-act=\"frameBack\"]"), withShortcut(t("label.previousFrame"), ","));
+    name(strip.querySelector("[data-act=\"frameForward\"]"), withShortcut(t("label.nextFrame"), "."));
+    name(loopButton, t("label.loop"));
+}
+
 /** Buttons reflect the current video */
 function sync() {
     const video = current;
     if (!video || !speedButton || !loopButton || !pipButton || !menu) return;
+    labelOverlay();
     const speed = clampSpeed(video.playbackRate);
     speedButton.textContent = formatSpeed(speed);
     speedButton.dataset.changed = String(speed !== 1);
     loopButton.setAttribute("aria-pressed", String(video.loop));
-    loopButton.title = video.loop ? "Loop: on" : "Loop: off";
+    loopButton.title = t(video.loop ? "label.loopOn" : "label.loopOff");
     pipButton.setAttribute("aria-pressed", String(document.pictureInPictureElement === video));
     for (const item of menu.querySelectorAll<HTMLElement>(".evi-vcp-item")) {
         item.setAttribute("aria-checked", String(Math.abs(Number(item.dataset.speed) - speed) < 1e-6));

@@ -47,6 +47,7 @@ import { confirmWithUser } from "./confirm";
 import { downloadHttps } from "./download";
 import { DATA_DIR, PLUGINS_DIR, THEMES_DIR } from "./paths";
 import { consentToRun, hideDevPlugin, pluginLocation, refreshUserPlugin, setRemoved } from "./plugins";
+import { mt } from "./locale";
 import { authorBanners } from "./reports";
 import { settings } from "./settings";
 import { reloadTheme } from "./themes";
@@ -182,7 +183,7 @@ async function current() {
 
 async function getEntry(id: string) {
     const entry = (await current()).entries.get(id);
-    if (!entry) throw new Error(`${id} isn't in the store`);
+    if (!entry) throw new Error(mt("main.store.notInStore", { id }));
     return entry;
 }
 
@@ -192,7 +193,7 @@ function decodeText(name: string, data: Uint8Array) {
     try {
         return new TextDecoder("utf-8", { fatal: true }).decode(data);
     } catch {
-        throw new Error(`${name} isn't text`);
+        throw new Error(mt("main.store.notText", { name }));
     }
 }
 
@@ -212,13 +213,13 @@ async function install(id: string, sender: WebContents, pageAllowed: { native: b
     const beta = settings.pluginBetas?.includes(id) ? betaOf(stable) : undefined;
     const entry = beta && meetsMinEvi(EVI_VERSION, beta.minEviVersion) ? beta : stable;
     if (!meetsMinEvi(EVI_VERSION, entry.minEviVersion)) {
-        throw new Error(`${entry.name} needs Evi ${entry.minEviVersion} or newer, this is ${EVI_VERSION}`);
+        throw new Error(mt("main.store.needsEvi", { name: entry.name, min: entry.minEviVersion ?? "", version: EVI_VERSION }));
     }
 
     const dir = join(PLUGINS_DIR, id);
     const existing = existsSync(dir);
     if (existing && readMarker(dir)?.id !== id) {
-        throw new Error(`A plugin folder named ${id} is already there and wasn't installed from the store. Remove it yourself to install this one.`);
+        throw new Error(mt("main.store.folderExists", { id }));
     }
     // Full access is the user's call, asked from main: the page could be a plugin saying yes for them.
     // An update of a store install they already trusted doesn't ask again.
@@ -226,24 +227,24 @@ async function install(id: string, sender: WebContents, pageAllowed: { native: b
     const confirmed = entry.native && !trusted;
     if (confirmed) {
         if (!await confirmWithUser(sender, {
-            message: `Install ${entry.name} with full access to your computer?`,
-            detail: `${entry.name} by ${entry.authors.join(", ")} runs outside Discord's page. It can read and change files and run programs, like any app you install. Only install it if you trust it.`,
-            confirm: "Install",
+            message: mt("main.installNative.message", { name: entry.name }),
+            detail: mt("main.installNative.detail", { name: entry.name, authors: entry.authors.join(mt("common.listSeparator")) }),
+            confirm: mt("common.install"),
             pageSaid: pageAllowed.native,
         })) {
-            throw new Error(`${entry.name} runs with full access to your computer. Confirm that before installing it.`);
+            throw new Error(mt("main.installNative.refused", { name: entry.name }));
         }
     }
     // An update that asks for more than the installed version declares is a new decision, asked the
     // same way. The download is checked against entry.permissions (whyNotManifest): this is what it gets.
     const growth = existing && !confirmed ? permissionGrowth(installedPermissions(dir), entry.permissions) : undefined;
     if (growth && !await confirmWithUser(sender, {
-        message: `Update ${entry.name}? It asks for more access.`,
-        detail: `${describeGrowth(growth)} Evi blocks what a plugin doesn't ask for when it goes through Evi. Only update it if you trust ${entry.authors.join(", ")} with this.`,
-        confirm: "Update",
+        message: mt("main.growth.message", { name: entry.name }),
+        detail: mt("main.growth.detail", { growth: describeGrowth(growth, mt), authors: entry.authors.join(mt("common.listSeparator")) }),
+        confirm: mt("common.update"),
         pageSaid: pageAllowed.more,
     })) {
-        throw new Error(`${entry.name} ${entry.version} asks for more access. Confirm that before updating it.`);
+        throw new Error(mt("main.growth.refused", { name: entry.name, version: entry.version }));
     }
 
     // Download and verify everything in memory first: any failure leaves the disk untouched
@@ -319,17 +320,17 @@ async function uninstall(id: string, sender: WebContents, report: (p: StoreProgr
     const inPlugins = (dir: string) => resolve(dirname(dir)) === resolve(PLUGINS_DIR);
     const dir = loaded?.source === "user" && inPlugins(loaded.dir) ? loaded.dir
         : existsSync(join(PLUGINS_DIR, id)) ? join(PLUGINS_DIR, id) : undefined;
-    if (!dir && loaded?.source !== "dev") throw new Error(`${id} isn't installed`);
+    if (!dir && loaded?.source !== "dev") throw new Error(mt("main.store.notInstalled", { id }));
     const version = (dir && readMarker(dir)?.version) || loaded?.version || "";
     // A folder the store didn't make may be the user's own work, with nothing to reinstall it from:
     // deleting it takes their OK, asked from main so a plugin can't delete it for them
     if (dir && readMarker(dir)?.id !== id && !await confirmWithUser(sender, {
-        message: `Delete ${loaded?.version ? id : basename(dir)} from your plugins folder?`,
-        detail: `It wasn't installed from the store, so its folder (${dir}) is deleted for good.`,
-        confirm: "Delete",
+        message: mt("main.delete.message", { name: loaded?.version ? id : basename(dir) }),
+        detail: mt("main.delete.detail", { dir }),
+        confirm: mt("main.delete.confirm"),
         pageSaid: true,
     })) {
-        throw new Error("Kept it: removing it wasn't confirmed");
+        throw new Error(mt("main.delete.refused"));
     }
 
     report({ id, phase: "removing", done: 0, total: 1 });
@@ -351,16 +352,16 @@ async function uninstall(id: string, sender: WebContents, report: (p: StoreProgr
 
 async function installTheme(id: string, report: (p: StoreProgress) => void): Promise<StoreResult> {
     const entry = (await current()).themes.get(id);
-    if (!entry) throw new Error(`${id} isn't in the store`);
+    if (!entry) throw new Error(mt("main.store.notInStore", { id }));
     if (!meetsMinEvi(EVI_VERSION, entry.minEviVersion)) {
-        throw new Error(`${entry.name} needs Evi ${entry.minEviVersion} or newer, this is ${EVI_VERSION}`);
+        throw new Error(mt("main.store.needsEvi", { name: entry.name, min: entry.minEviVersion ?? "", version: EVI_VERSION }));
     }
 
     const file = storeThemeFile(id);
     const record = readThemesRecord();
     const path = join(THEMES_DIR, file);
     if (existsSync(path) && record[id]?.file !== file) {
-        throw new Error(`A theme named ${file} is already there and wasn't installed from the store. Remove it yourself to install this one.`);
+        throw new Error(mt("main.store.themeExists", { file }));
     }
 
     report({ id, phase: "downloading", done: 0, total: 1 });
@@ -370,7 +371,7 @@ async function installTheme(id: string, report: (p: StoreProgress) => void): Pro
     report({ id, phase: "verifying", done: 1, total: 1 });
     const badHash = await whyNotHash(file, download.body, entry.file.sha256);
     if (badHash) throw new Error(badHash);
-    const badCss = whyNotCss(decodeText(file, download.body));
+    const badCss = whyNotCss(decodeText(file, download.body), "", mt);
     if (badCss) throw new Error(badCss);
 
     report({ id, phase: "installing", done: 1, total: 1 });
@@ -389,7 +390,7 @@ async function installTheme(id: string, report: (p: StoreProgress) => void): Pro
 function uninstallTheme(id: string, report: (p: StoreProgress) => void): StoreResult {
     const record = readThemesRecord();
     const installed = record[id];
-    if (!installed || installed.file !== storeThemeFile(id)) throw new Error(`${id} wasn't installed from the store`);
+    if (!installed || installed.file !== storeThemeFile(id)) throw new Error(mt("main.store.notFromStore", { id }));
 
     report({ id, phase: "removing", done: 0, total: 1 });
     rmSync(join(THEMES_DIR, installed.file), { force: true });
@@ -526,7 +527,7 @@ async function previewPlugin(id: unknown): Promise<StorePreviewResult> {
 async function exclusive(id: unknown, run: (id: string) => Promise<StoreResult> | StoreResult, kind = "plugin"): Promise<StoreResult> {
     if (!isPluginId(id)) return { ok: false, error: `That isn't a valid ${kind} id` };
     const key = `${kind}:${id}`;
-    if (busy.has(key)) return { ok: false, error: `${id} is already being changed` };
+    if (busy.has(key)) return { ok: false, error: mt("main.store.busy", { id }) };
     busy.add(key);
     try {
         return await run(id);

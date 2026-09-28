@@ -11,5 +11,127 @@
         { "version": "1.0.1", "notes": ["Faster: when a channel or server goes away, only what's needed to tell whether it concerns you is looked up."] },
         { "version": "1.0.0", "notes": ["First release."] }
     ],
-    "enabledByDefault": false
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Beziehungs-Benachrichtigungen",
+            "description": "Sagt dir Bescheid, wenn dich jemand als Freund entfernt, deine Freundschaftsanfrage ablehnt oder dich aus einer Gruppen-DM oder von einem Server entfernt. Nur im Arbeitsspeicher: nichts wird gespeichert, und das Protokoll ist beim Neustart von Discord weg.",
+            "changelog": {
+                "1.0.2": [
+                    "Sagt, was es braucht (Nachrichten lesen), und Evi hält es daran."
+                ],
+                "1.0.1": [
+                    "Schneller: Wenn ein Kanal oder Server verschwindet, wird nur nachgeschlagen, was nötig ist, um festzustellen, ob es dich betrifft."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Avisos de relaciones",
+            "description": "Te avisa cuando alguien te elimina como amigo, rechaza tu solicitud de amistad o te saca de un MD grupal o de un servidor. Solo en memoria: no se guarda nada y el registro desaparece al reiniciar Discord.",
+            "changelog": {
+                "1.0.2": [
+                    "Indica lo que necesita (leer mensajes) y Evi se encarga de que lo cumpla."
+                ],
+                "1.0.1": [
+                    "Más rápido: cuando desaparece un canal o servidor, solo se consulta lo necesario para saber si te afecta."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Notifications de relations",
+            "description": "Te prévient quand quelqu'un te retire de ses amis, refuse ta demande d'ami ou te retire d'un groupe de MP ou d'un serveur. Gardé en mémoire uniquement : rien n'est enregistré et le journal disparaît au redémarrage de Discord.",
+            "changelog": {
+                "1.0.2": [
+                    "Indique ce dont il a besoin (lire les messages) et Evi le lui fait respecter."
+                ],
+                "1.0.1": [
+                    "Plus rapide : quand un salon ou un serveur disparaît, seul le nécessaire est consulté pour savoir si cela te concerne."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "リレーション通知",
+            "description": "誰かにフレンドから削除されたとき、フレンド申請を拒否されたとき、グループDMやサーバーから削除されたときにお知らせします。メモリ上にのみ保持され、何も保存されません。ログはDiscordを再起動すると消えます。",
+            "changelog": {
+                "1.0.2": [
+                    "必要な権限(メッセージの読み取り)を明示するようになり、Eviがそれを守らせます。"
+                ],
+                "1.0.1": [
+                    "高速化しました。チャンネルやサーバーがなくなったとき、自分に関係があるかどうかの判断に必要な情報だけを調べるようになりました。"
+                ],
+                "1.0.0": [
+                    "最初のリリースです。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Powiadomienia o relacjach",
+            "description": "Powiadamia, gdy ktoś usuwa cię ze znajomych, odrzuca twoje zaproszenie do znajomych albo usuwa cię z grupowego DM-a lub serwera. Tylko w pamięci: nic nie jest zapisywane, a dziennik znika po ponownym uruchomieniu Discorda.",
+            "changelog": {
+                "1.0.2": [
+                    "Deklaruje, czego potrzebuje (czytanie wiadomości), a Evi pilnuje, żeby tak było."
+                ],
+                "1.0.1": [
+                    "Szybciej: gdy znika kanał lub serwer, sprawdzane jest tylko to, co potrzebne do ustalenia, czy dotyczy ciebie."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Avisos de relacionamento",
+            "description": "Avisa quando alguém te remove dos amigos, recusa seu pedido de amizade ou te remove de uma DM em grupo ou de um servidor. Fica só na memória: nada é salvo e o registro some quando o Discord reinicia.",
+            "changelog": {
+                "1.0.2": [
+                    "Informa o que precisa (ler mensagens) e o Evi garante que seja assim."
+                ],
+                "1.0.1": [
+                    "Mais rápido: quando um canal ou servidor some, só o necessário é consultado para saber se isso te afeta."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Уведомления об удалении",
+            "description": "Сообщает, когда кто-то удаляет вас из друзей, отклоняет вашу заявку в друзья или удаляет вас из группового чата или с сервера. Всё хранится только в памяти: ничего не сохраняется, а журнал пропадает при перезапуске Discord.",
+            "changelog": {
+                "1.0.2": [
+                    "Теперь плагин указывает, что ему нужно (чтение сообщений), и Evi следит за этим."
+                ],
+                "1.0.1": [
+                    "Быстрее: когда канал или сервер исчезает, проверяется только то, что нужно, чтобы понять, касается ли это вас."
+                ],
+                "1.0.0": [
+                    "Первый релиз."
+                ]
+            }
+        },
+        "tr": {
+            "name": "İlişki Bildirici",
+            "description": "Biri seni arkadaşlıktan çıkardığında, arkadaşlık isteğini reddettiğinde veya seni bir grup DM'sinden ya da sunucudan çıkardığında haber verir. Yalnızca bellekte tutulur: hiçbir şey kaydedilmez ve günlük Discord yeniden başlatıldığında silinir.",
+            "changelog": {
+                "1.0.2": [
+                    "Neye ihtiyaç duyduğunu (mesajları okuma) belirtir ve Evi bunu denetler."
+                ],
+                "1.0.1": [
+                    "Daha hızlı: bir kanal veya sunucu ortadan kalktığında, seni ilgilendirip ilgilendirmediğini anlamak için yalnızca gerekenler sorgulanır."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

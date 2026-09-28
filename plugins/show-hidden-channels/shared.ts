@@ -3,32 +3,9 @@ import type { PluginContext, SettingsValues } from "@evi/api";
 
 export const ID = "show-hidden-channels";
 
-export const settings = {
-    showMode: {
-        type: "select",
-        label: "How hidden channels look",
-        description: "Takes effect after a reload for voice channels.",
-        default: "lock",
-        options: [
-            { label: "A lock instead of the channel icon", value: "lock" },
-            { label: "Muted, with a crossed-out eye after the name", value: "muted" },
-        ],
-    },
-    hideUnreads: {
-        type: "boolean",
-        label: "Hide unreads",
-        description: "Hidden channels never show as unread.",
-        default: true,
-    },
-    showAllowedByDefault: {
-        type: "boolean",
-        label: "Show who can see it",
-        description: "Open the allowed users and roles list on a hidden channel's page by default.",
-        default: true,
-    },
-} as const;
+const defaults = { showMode: "lock", hideUnreads: true, showAllowedByDefault: true } as const;
 
-export type Settings = typeof settings;
+export type Settings = typeof import("./settings").settings;
 
 let context: PluginContext<Settings> | undefined;
 export const setContext = (ctx: PluginContext<Settings> | undefined) => void (context = ctx);
@@ -41,7 +18,7 @@ export const getContext = () => context;
 export function setting<K extends keyof Settings & string>(key: K): SettingsValues<Settings>[K] {
     if (context) return context.settings.get(key);
     const stored = (window as any).Evi?.settings?.plugin?.(ID)?.settings;
-    return (stored && key in stored ? stored[key] : settings[key].default) as SettingsValues<Settings>[K];
+    return (stored && key in stored ? stored[key] : defaults[key]) as SettingsValues<Settings>[K];
 }
 
 export const Permissions = {

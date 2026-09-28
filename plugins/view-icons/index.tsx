@@ -14,6 +14,7 @@ import { Components, definePlugin, filters, find, getStore, React } from "@evi/a
 import type { PluginContext, SourcePatch } from "@evi/api";
 import type { MouseEvent, ReactNode } from "react";
 
+import { t } from "./strings";
 import { fileName, fitSize, LinkedPicture, linkedPicture, Picture, pictureFromUrl } from "./icons";
 
 /** How long to wait for a picture's real size before going by its usual shape */
@@ -102,7 +103,7 @@ async function openViewer(picture: Picture) {
         proxyUrl: picture.url,
         width,
         height,
-        alt: picture.label,
+        alt: t(`kind.${picture.kind}`),
         animated: picture.animated,
         srcIsAnimated: picture.animated,
         contentType: picture.animated ? "image/gif" : "image/png",
@@ -143,7 +144,7 @@ async function download(picture: Picture) {
         await save(data, fileName(picture), res.headers.get("content-type") ?? (picture.animated ? "image/gif" : "image/png"));
     } catch (err) {
         ctx?.logger.error(`Downloading the ${picture.label.toLowerCase()} failed`, err);
-        ctx?.toast(`Couldn't download the ${picture.label.toLowerCase()}, opening it in your browser`, { type: "failure" });
+        ctx?.toast(t("toast.downloadFailed"), { type: "failure" });
         openExternal(picture.url);
     }
 }
@@ -166,15 +167,15 @@ function DownloadButton({ picture }: { picture: Picture; }) {
         setSaving(true);
         void download(picture).finally(() => setSaving(false));
     };
-    if (ViewerButton) return <ViewerButton tooltipText="Download" icon={DownloadIcon} loading={saving} onClick={onClick} />;
+    if (ViewerButton) return <ViewerButton tooltipText={t("download")} icon={DownloadIcon} loading={saving} onClick={onClick} />;
 
     const button = (
-        <button type="button" className="evi-vi-download" aria-label="Download" aria-busy={saving || undefined} onClick={onClick}>
+        <button type="button" className="evi-vi-download" aria-label={t("download")} aria-busy={saving || undefined} onClick={onClick}>
             <DownloadIcon />
         </button>
     );
     const Tooltip = Components.Tooltip;
-    return Tooltip ? <Tooltip text="Download" position="bottom">{button}</Tooltip> : button;
+    return Tooltip ? <Tooltip text={t("download")} position="bottom">{button}</Tooltip> : button;
 }
 
 /** The button fills the banner, so the banner has to be what it's positioned against */
@@ -246,7 +247,7 @@ export default definePlugin({
         };
         return (
             <>
-                <button type="button" className="evi-vi-banner" aria-label="View Banner" onClick={open} ref={fillParent} />
+                <button type="button" className="evi-vi-banner" aria-label={t("viewBanner")} onClick={open} ref={fillParent} />
                 {overlay}
             </>
         );

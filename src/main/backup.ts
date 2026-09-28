@@ -9,6 +9,7 @@ import { QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { getPluginPayloads } from "./plugins";
 import { saveSettings, settings } from "./settings";
 import { getThemePayloads, reloadTheme } from "./themes";
+import { mt } from "./locale";
 
 /**
  * Tests can't click through native dialogs: with this set, both dialogs answer with this path.
@@ -33,9 +34,9 @@ async function pickSavePath(e: IpcMainInvokeEvent) {
     if (TEST_PATH) return TEST_PATH;
     const win = BrowserWindow.fromWebContents(e.sender);
     const options: Electron.SaveDialogOptions = {
-        title: "Save Evi backup",
+        title: mt("main.backup.saveTitle"),
         defaultPath: join(app.getPath("documents"), backupFileName()),
-        filters: [{ name: "Evi backup", extensions: ["json"] }],
+        filters: [{ name: mt("main.backup.filterName"), extensions: ["json"] }],
     };
     const { canceled, filePath } = await (win ? dialog.showSaveDialog(win, options) : dialog.showSaveDialog(options));
     return canceled ? undefined : filePath;
@@ -45,9 +46,9 @@ async function pickOpenPath(e: IpcMainInvokeEvent) {
     if (TEST_PATH) return TEST_PATH;
     const win = BrowserWindow.fromWebContents(e.sender);
     const options: Electron.OpenDialogOptions = {
-        title: "Restore Evi backup",
+        title: mt("main.backup.restoreTitle"),
         properties: ["openFile"],
-        filters: [{ name: "Evi backup", extensions: ["json"] }, { name: "All files", extensions: ["*"] }],
+        filters: [{ name: mt("main.backup.filterName"), extensions: ["json"] }, { name: mt("main.backup.filterAll"), extensions: ["*"] }],
     };
     const { canceled, filePaths } = await (win ? dialog.showOpenDialog(win, options) : dialog.showOpenDialog(options));
     return canceled ? undefined : filePaths[0];
@@ -62,15 +63,15 @@ export function writeBackup(path: string) {
 
 export function readBackup(path: string) {
     // Check the size before reading, a wrong pick could be a multi-GB file
-    if (statSync(path).size > MAX_BACKUP_BYTES) return { ok: false as const, error: `That file is larger than ${MAX_BACKUP_BYTES / 1024 / 1024} MB` };
+    if (statSync(path).size > MAX_BACKUP_BYTES) return { ok: false as const, error: mt("main.backup.tooLarge", { mb: MAX_BACKUP_BYTES / 1024 / 1024 }) };
     const bytes = readFileSync(path);
     let text: string;
     try {
         text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     } catch {
-        return { ok: false as const, error: "That file isn't text" };
+        return { ok: false as const, error: mt("main.backup.notText") };
     }
-    return parseBackup(text);
+    return parseBackup(text, mt);
 }
 
 /**
@@ -121,7 +122,7 @@ export function applyBackup(backup: EviBackup, mode: ImportMode): BackupApplyRes
     try {
         rollback = commitFiles(writes);
     } catch (err) {
-        return { ok: false, error: `Couldn't write the files, nothing was changed: ${errorOf(err)}` };
+        return { ok: false, error: mt("main.backup.writeFailed", { error: errorOf(err) }) };
     }
     try {
         saveSettings(plan.settings);
@@ -130,7 +131,7 @@ export function applyBackup(backup: EviBackup, mode: ImportMode): BackupApplyRes
             rollback();
             saveSettings(previousSettings);
         } catch { }
-        return { ok: false, error: `Couldn't save settings, nothing was changed: ${errorOf(err)}` };
+        return { ok: false, error: mt("main.backup.settingsFailed", { error: errorOf(err) }) };
     }
 
     // Don't wait for the watchers, the renderer should have everything when this resolves
@@ -151,7 +152,7 @@ export function initBackup() {
             console.log(`[Evi] Saved a backup to ${path}`);
             return { ok: true, path };
         } catch (err) {
-            return { ok: false, error: `Couldn't save the backup: ${errorOf(err)}` };
+            return { ok: false, error: mt("main.backup.saveFailed", { error: errorOf(err) }) };
         }
     });
 
@@ -178,12 +179,12 @@ export function initBackup() {
                 },
             };
         } catch (err) {
-            return { ok: false, error: `Couldn't read that file: ${errorOf(err)}` };
+            return { ok: false, error: mt("main.backup.readFailed", { error: errorOf(err) }) };
         }
     });
 
     ipcMain.handle(IPC.BACKUP_APPLY, (_, token: string, mode: ImportMode): BackupApplyResult => {
-        if (!pending || pending.token !== token) return { ok: false, error: "That backup is no longer open, choose the file again" };
+        if (!pending || pending.token !== token) return { ok: false, error: mt("main.backup.closed") };
         if (mode !== "merge" && mode !== "replace") return { ok: false, error: "Unknown import mode" };
         const { backup } = pending;
         pending = undefined;

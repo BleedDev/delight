@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Evi</title>
     <link rel="stylesheet" href="style.css">
+    <script src="i18n.js" defer></script>
     <script src="app.js" defer></script>
 </head>
 <body>
     <div class="titlebar" data-tauri-drag-region>
         <span class="titlebar-name" data-tauri-drag-region>Evi Setup</span>
-        <button class="titlebar-button" id="minimize" type="button" aria-label="Minimize">
+        <button class="titlebar-button" id="minimize" type="button" aria-label="Minimize" data-i18n-label="minimize">
             <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8" /></svg>
         </button>
-        <button class="titlebar-button close" id="close" type="button" aria-label="Close">
+        <button class="titlebar-button close" id="close" type="button" aria-label="Close" data-i18n-label="close">
             <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" /></svg>
         </button>
     </div>
@@ -23,7 +24,7 @@
             <img class="logo" src="logo.svg" alt="" width="52" height="52">
             <div>
                 <h1>Evi</h1>
-                <p class="subtitle">Discord client mod <span class="version" id="version"></span></p>
+                <p class="subtitle"><span data-i18n="subtitle">Discord client mod</span> <span class="version" id="version"></span></p>
             </div>
         </header>
 
@@ -33,14 +34,14 @@
         </div>
 
         <section class="view" id="choose">
-            <h2 class="section-label" id="installs-label">Your Discord</h2>
+            <h2 class="section-label" id="installs-label" data-i18n="yourDiscord">Your Discord</h2>
             <div class="installs" id="installs" role="group" aria-labelledby="installs-label">
-                <div class="installs-loading">Looking for Discord…</div>
+                <div class="installs-loading" data-i18n="looking">Looking for Discord…</div>
             </div>
-            <p class="hint" id="hint">Discord closes and opens again while Evi installs.</p>
+            <p class="hint" id="hint" data-i18n="hint">Discord closes and opens again while Evi installs.</p>
             <div class="actions">
-                <button class="button secondary" id="uninstall" type="button" disabled>Uninstall Evi</button>
-                <button class="button primary" id="install" type="button" disabled>Install Evi</button>
+                <button class="button secondary" id="uninstall" type="button" data-i18n="uninstall" disabled>Uninstall Evi</button>
+                <button class="button primary" id="install" type="button" data-i18n="install" disabled>Install Evi</button>
             </div>
         </section>
 
@@ -50,8 +51,8 @@
             <p class="status-text" id="status-text" role="status"></p>
             <ul class="outcomes" id="outcomes"></ul>
             <div class="actions" id="status-actions" hidden>
-                <button class="button secondary" id="back" type="button">Back</button>
-                <button class="button primary" id="finish" type="button">Close</button>
+                <button class="button secondary" id="back" type="button" data-i18n="back">Back</button>
+                <button class="button primary" id="finish" type="button" data-i18n="close">Close</button>
             </div>
         </section>
     </main>

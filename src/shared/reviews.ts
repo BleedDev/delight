@@ -3,6 +3,7 @@
  * rate a plugin they have installed, once (editing replaces it). Reviews anyone can report go to Evi's
  * team, who can hide them; a hidden review isn't shown or counted.
  */
+import { englishTr, Tr } from "./tr";
 
 export const MAX_REVIEW_CHARS = 500;
 export const REVIEWS_PER_PAGE = 10;
@@ -36,13 +37,13 @@ export interface RatingSummary {
 }
 
 /** A review as written, cleaned, or why it can't be sent */
-export function validateReview(raw: unknown): { rating: number; body: string; version: string; } | { error: string; } {
+export function validateReview(raw: unknown, tr: Tr = englishTr): { rating: number; body: string; version: string; } | { error: string; } {
     const r = (raw ?? {}) as Record<string, unknown>;
-    if (!Number.isInteger(r.rating) || (r.rating as number) < 1 || (r.rating as number) > 5) return { error: "Pick 1 to 5 stars" };
+    if (!Number.isInteger(r.rating) || (r.rating as number) < 1 || (r.rating as number) > 5) return { error: tr("check.review.stars") };
     const body = typeof r.body === "string" ? r.body.replace(/\r\n?/g, "\n").trim() : "";
-    if (body.length > MAX_REVIEW_CHARS) return { error: `A review can be at most ${MAX_REVIEW_CHARS} characters` };
-    if (/[\0-\x08\x0e-\x1f]/.test(body)) return { error: "The review has characters that can't be shown" };
-    if (/(?:\n\s*){4,}/.test(body)) return { error: "Too many empty lines" };
+    if (body.length > MAX_REVIEW_CHARS) return { error: tr("check.review.tooLong", { max: MAX_REVIEW_CHARS }) };
+    if (/[\0-\x08\x0e-\x1f]/.test(body)) return { error: tr("check.review.badChars") };
+    if (/(?:\n\s*){4,}/.test(body)) return { error: tr("check.review.emptyLines") };
     const version = typeof r.version === "string" && r.version.length <= 64 ? r.version : "";
     return { rating: r.rating as number, body, version };
 }

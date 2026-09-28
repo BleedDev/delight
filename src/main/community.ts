@@ -24,6 +24,7 @@ import { DATA_DIR } from "./paths";
 import { cachedGet } from "./reports";
 import { settings } from "./settings";
 import { storeUsage } from "./store";
+import { mt } from "./locale";
 
 
 const home = cachedGet("store-home.json", "/store/home", parseStoreHome);
@@ -58,9 +59,9 @@ const json = (body: unknown) => ({ headers: { "Content-Type": "application/json"
 
 async function review(id: unknown, input: unknown) {
     if (!isPluginId(id)) return { ok: false as const, error: "That isn't a plugin id" };
-    if (!allowWrite()) return { ok: false as const, error: "That's a lot at once. Try again in a minute." };
+    if (!allowWrite()) return { ok: false as const, error: mt("main.rate.write") };
     if (input === null) return call(async () => (await apiRequest("DELETE", `/plugins/${id}/review`)).json);
-    const checked = validateReview(input);
+    const checked = validateReview(input, mt);
     if ("error" in checked) return { ok: false as const, error: checked.error };
     return call(async () => (await apiRequest("PUT", `/plugins/${id}/review`, json(checked))).json);
 }
@@ -112,12 +113,12 @@ export function initCommunity() {
     ipcMain.handle(IPC.COMMUNITY_REVIEW, (_, id: unknown, input: unknown) => review(id, input));
     ipcMain.handle(IPC.COMMUNITY_REVIEW_REPORT, (_, reviewId: unknown) => {
         if (!Number.isSafeInteger(reviewId) || (reviewId as number) < 1) return { ok: false, error: "That isn't a review" };
-        if (!allowWrite()) return { ok: false, error: "That's a lot at once. Try again in a minute." };
+        if (!allowWrite()) return { ok: false, error: mt("main.rate.write") };
         return call(async () => (await apiRequest("POST", `/reviews/${reviewId}/report`)).json);
     });
     ipcMain.handle(IPC.COMMUNITY_FOLLOW, (_, slug: unknown, on: unknown) => {
         if (typeof slug !== "string" || !/^[a-z0-9-]{1,64}$/.test(slug) || typeof on !== "boolean") return { ok: false, error: "That isn't an author" };
-        if (!allowWrite()) return { ok: false, error: "That's a lot at once. Try again in a minute." };
+        if (!allowWrite()) return { ok: false, error: mt("main.rate.write") };
         return call(async () => (await apiRequest(on ? "PUT" : "DELETE", `/authors/${slug}/follow`)).json as { following: boolean; followers: number; });
     });
     ipcMain.handle(IPC.COMMUNITY_FOLLOWING, () => call(async () => {

@@ -1,4 +1,4 @@
-import { Components, definePlugin, filters, find, findAllExports, getStore, Menu, openLayer, React, registerCommand } from "@evi/api";
+import { Components, definePlugin, filters, find, findAllExports, getStore, I18n, Menu, openLayer, React, registerCommand, useLocale } from "@evi/api";
 import type { CloseLayer, PluginContext } from "@evi/api";
 import type { ComponentType, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 
@@ -7,6 +7,8 @@ import {
     MAX_TEXT_LENGTH, nameError, parseState, PLACEHOLDERS, PlaceholderValues, recordUse, resolveSnippet, searchSnippets, Snippet,
     SnippetInput, SnippetState, suggestName, textError, updateSnippet, usedPlaceholders,
 } from "./snippets";
+import type { SayKey } from "./snippets";
+import { t } from "./strings";
 
 /**
  * Saved replies. Snippets live in this plugin's settings entry under a key the generated settings
@@ -27,15 +29,20 @@ const STORAGE_KEY = "snippets";
 
 type Settings = typeof settings;
 const settings = {
-    showButton: { type: "boolean", label: "Chat bar button", description: "A button in the chat bar that opens your snippets.", default: true },
+    showButton: {
+        type: "boolean",
+        get label() { return t("settings.showButton"); },
+        get description() { return t("settings.showButton.description"); },
+        default: true,
+    },
     commandAction: {
         type: "select",
-        label: "/snip does",
-        description: "What /snip does with the snippet when you don't pick the send option.",
+        get label() { return t("settings.commandAction"); },
+        get description() { return t("settings.commandAction.description"); },
         default: "send",
         options: [
-            { label: "Send it right away", value: "send" },
-            { label: "Put it in the message box to edit first", value: "insert" },
+            { get label() { return t("settings.commandAction.send"); }, value: "send" },
+            { get label() { return t("settings.commandAction.insert"); }, value: "insert" },
         ],
     },
 } as const;
@@ -148,11 +155,14 @@ async function expand(snippet: Snippet, channel: any) {
     return expandPlaceholders(snippet.text, await placeholderValues(snippet.text, channel));
 }
 
+/** The pure module's messages, in Discord's language */
+const say = (key: SayKey, vars?: Record<string, string | number>) => t(key, vars);
+
 /** Puts a snippet in the message box and counts the use */
 async function insertSnippet(snippet: Snippet, channel: any) {
     const text = await expand(snippet, channel);
     if (!insertText(text)) {
-        ctx?.toast("Couldn't find the message box to put the snippet in", { type: "failure" });
+        ctx?.toast(t("toast.noBox"), { type: "failure" });
         return false;
     }
     commit(recordUse(state, snippet.id));
@@ -168,31 +178,31 @@ let registeredChoices = "";
 function syncCommand() {
     if (!ctx) return;
     const choices = commandChoices(state);
-    const key = JSON.stringify(choices ?? null);
+    const key = JSON.stringify([choices ?? null, I18n.locale]);
     if (unregisterCommand && key === registeredChoices) return;
     unregisterCommand?.();
     registeredChoices = key;
     const plugin = ctx;
     unregisterCommand = registerCommand({
         name: "snip",
-        description: "Send one of your snippets, or put it in the message box",
+        description: t("command.description"),
         options: [
             {
                 name: "name",
-                description: choices ? "The snippet" : "The snippet's name",
+                description: choices ? t("command.name.choices") : t("command.name.free"),
                 type: "string",
                 required: true,
                 choices,
             },
             {
                 name: "send",
-                description: "On: send it right away. Off: put it in the message box to edit first.",
+                description: t("command.send"),
                 type: "boolean",
                 required: false,
             },
         ],
         async execute(args, command) {
-            const found = resolveSnippet(state, args.name);
+            const found = resolveSnippet(state, args.name, say);
             if ("error" in found) return { ephemeral: found.error };
             const text = await expand(found.snippet, command.channel);
             commit(recordUse(state, found.snippet.id));
@@ -200,7 +210,7 @@ function syncCommand() {
             if (send) return { content: text };
             // After Discord has cleared the message box of the command
             setTimeout(() => {
-                if (!insertText(text)) plugin.toast("Couldn't find the message box to put the snippet in", { type: "failure" });
+                if (!insertText(text)) plugin.toast(t("toast.noBox"), { type: "failure" });
             }, 50);
         },
     }, plugin.id);
@@ -217,13 +227,14 @@ interface EditorProps {
 }
 
 function Editor({ snippet, initial, onDone, autoFocusText }: EditorProps) {
+    useLocale();
     const current = useSnippets();
     const [name, setName] = React.useState(snippet?.name ?? initial?.name ?? "");
     const [text, setText] = React.useState(snippet?.text ?? initial?.text ?? "");
     const [tried, setTried] = React.useState(false);
     const textRef = React.useRef<HTMLTextAreaElement>(null);
-    const nameProblem = nameError(current, name, snippet?.id);
-    const textProblem = textError(text);
+    const nameProblem = nameError(current, name, snippet?.id, say);
+    const textProblem = textError(text, say);
     const error = nameProblem ?? textProblem;
 
     const save = () => {
@@ -261,42 +272,42 @@ function Editor({ snippet, initial, onDone, autoFocusText }: EditorProps) {
     return (
         <form className="evi-snip-editor" onSubmit={e => (e.preventDefault(), save())} onKeyDown={onKeyDown}>
             <label className="evi-snip-label">
-                <span>Name</span>
+                <span>{t("editor.name")}</span>
                 <input
                     className="evi-snip-input"
                     value={name}
                     maxLength={MAX_NAME_LENGTH}
-                    placeholder="e.g. welcome"
+                    placeholder={t("editor.namePlaceholder")}
                     aria-invalid={tried && !!nameProblem}
                     autoFocus={!autoFocusText}
                     onChange={e => setName(e.currentTarget.value)}
                 />
             </label>
             <label className="evi-snip-label">
-                <span>Text</span>
+                <span>{t("editor.text")}</span>
                 <textarea
                     ref={textRef}
                     className="evi-snip-input evi-snip-textarea"
                     value={text}
                     maxLength={MAX_TEXT_LENGTH}
                     rows={5}
-                    placeholder="Hi {user}, thanks for reaching out!"
+                    placeholder={t("editor.textPlaceholder")}
                     aria-invalid={tried && !nameProblem && !!textProblem}
                     autoFocus={autoFocusText}
                     onChange={e => setText(e.currentTarget.value)}
                 />
             </label>
-            <div className="evi-snip-placeholders" aria-label="Placeholders">
+            <div className="evi-snip-placeholders" aria-label={t("editor.placeholders")}>
                 {PLACEHOLDERS.map(p => (
-                    <button key={p.key} type="button" className="evi-snip-chip" title={p.description} onClick={() => insertPlaceholder(p.key)}>
+                    <button key={p.key} type="button" className="evi-snip-chip" title={t(`ph.${p.key}`)} onClick={() => insertPlaceholder(p.key)}>
                         {`{${p.key}}`}
                     </button>
                 ))}
             </div>
             <div className="evi-snip-editor-foot">
                 <span className="evi-snip-error" role="alert">{tried && error ? error : ""}</span>
-                <button type="button" className="evi-snip-button" onClick={() => onDone(null)}>Cancel</button>
-                <button type="submit" className="evi-snip-button evi-snip-primary">{snippet ? "Save" : "Add snippet"}</button>
+                <button type="button" className="evi-snip-button" onClick={() => onDone(null)}>{t("editor.cancel")}</button>
+                <button type="submit" className="evi-snip-button evi-snip-primary">{snippet ? t("editor.save") : t("editor.add")}</button>
             </div>
         </form>
     );
@@ -338,14 +349,14 @@ function Row({ snippet, active, id, onPick, onEdit, onDelete, onHover }: {
             <div className="evi-snip-actions" onClick={e => e.stopPropagation()}>
                 {confirming
                     ? (
-                        <button type="button" className="evi-snip-button evi-snip-danger" tabIndex={-1} onClick={onDelete}>Delete</button>
+                        <button type="button" className="evi-snip-button evi-snip-danger" tabIndex={-1} onClick={onDelete}>{t("row.delete")}</button>
                     )
                     : (
                         <>
-                            <button type="button" className="evi-snip-icon" tabIndex={-1} aria-label={`Edit ${snippet.name}`} title="Edit" onClick={onEdit}>
+                            <button type="button" className="evi-snip-icon" tabIndex={-1} aria-label={t("row.editLabel", { name: snippet.name })} title={t("row.edit")} onClick={onEdit}>
                                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="m13.96 5.46 4.58 4.58L8.58 20H4v-4.58l9.96-9.96Zm1.41-1.41 1.84-1.84a2 2 0 0 1 2.83 0l1.75 1.75a2 2 0 0 1 0 2.83l-1.84 1.84-4.58-4.58Z" /></svg>
                             </button>
-                            <button type="button" className="evi-snip-icon" tabIndex={-1} aria-label={`Delete ${snippet.name}`} title="Delete" onClick={() => setConfirming(true)}>
+                            <button type="button" className="evi-snip-icon" tabIndex={-1} aria-label={t("row.deleteLabel", { name: snippet.name })} title={t("row.delete")} onClick={() => setConfirming(true)}>
                                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9Z" /></svg>
                             </button>
                         </>
@@ -360,6 +371,7 @@ function Row({ snippet, active, id, onPick, onEdit, onDelete, onHover }: {
 type View = { kind: "list"; } | { kind: "edit"; snippet?: Snippet; initial?: Partial<SnippetInput>; };
 
 function Picker({ channel, onClose }: { channel: any; onClose(): void; }) {
+    useLocale();
     const current = useSnippets();
     const [query, setQuery] = React.useState("");
     const [index, setIndex] = React.useState(0);
@@ -389,7 +401,7 @@ function Picker({ channel, onClose }: { channel: any; onClose(): void; }) {
         return (
             <div className="evi-snip-picker">
                 <header className="evi-snip-head">
-                    <h2 className="evi-snip-title">{view.snippet ? "Edit snippet" : "New snippet"}</h2>
+                    <h2 className="evi-snip-title">{view.snippet ? t("picker.editTitle") : t("picker.newTitle")}</h2>
                 </header>
                 <Editor
                     snippet={view.snippet}
@@ -430,8 +442,8 @@ function Picker({ channel, onClose }: { channel: any; onClose(): void; }) {
                 <input
                     ref={searchRef}
                     className="evi-snip-input evi-snip-search"
-                    placeholder={current.snippets.length ? "Search snippets" : "Name your first snippet"}
-                    aria-label="Search snippets"
+                    placeholder={current.snippets.length ? t("picker.search") : t("picker.nameFirst")}
+                    aria-label={t("picker.search")}
                     role="combobox"
                     aria-expanded="true"
                     aria-controls="evi-snip-list"
@@ -446,12 +458,12 @@ function Picker({ channel, onClose }: { channel: any; onClose(): void; }) {
                     className="evi-snip-button evi-snip-primary"
                     onClick={() => setView({ kind: "edit", initial: { name: results.length ? "" : query.trim() } })}
                 >
-                    New
+                    {t("picker.new")}
                 </button>
             </header>
             {results.length
                 ? (
-                    <ul id="evi-snip-list" className="evi-snip-list" role="listbox" aria-label="Snippets" ref={listRef}>
+                    <ul id="evi-snip-list" className="evi-snip-list" role="listbox" aria-label={t("picker.list")} ref={listRef}>
                         {results.map((s, i) => (
                             <Row
                                 key={s.id}
@@ -469,14 +481,14 @@ function Picker({ channel, onClose }: { channel: any; onClose(): void; }) {
                 : (
                     <p className="evi-snip-empty">
                         {current.snippets.length
-                            ? <>No snippet matches "{query}". Press Enter to create it.</>
-                            : <>Save replies you type often, then put them in the message box from here or with /snip.</>}
+                            ? <>{t("picker.noMatch", { query })}</>
+                            : <>{t("picker.empty")}</>}
                     </p>
                 )}
             <footer className="evi-snip-foot">
-                <span><kbd>↑</kbd><kbd>↓</kbd> choose</span>
-                <span><kbd>Enter</kbd> insert</span>
-                <span><kbd>Esc</kbd> close</span>
+                <span><kbd>↑</kbd><kbd>↓</kbd> {t("picker.hintChoose")}</span>
+                <span><kbd>Enter</kbd> {t("picker.hintInsert")}</span>
+                <span><kbd>Esc</kbd> {t("picker.hintClose")}</span>
             </footer>
         </div>
     );
@@ -538,14 +550,14 @@ function showLayer(render: (close: CloseLayer) => ReactNode, anchor?: HTMLElemen
         const right = Math.max(8, window.innerWidth - rect.right - 8);
         const bottom = Math.max(8, window.innerHeight - rect.top + 8);
         content = (
-            <div className="evi-snip-popover evi-popout" data-side="top" role="dialog" aria-label="Snippets" style={{ right, bottom, maxHeight: Math.max(240, rect.top - 24) }} ref={setHost} onKeyDown={onInnerKey}>
+            <div className="evi-snip-popover evi-popout" data-side="top" role="dialog" aria-label={t("picker.list")} style={{ right, bottom, maxHeight: Math.max(240, rect.top - 24) }} ref={setHost} onKeyDown={onInnerKey}>
                 {render(close)}
             </div>
         );
     } else {
         content = (
             <div className="evi-snip-scrim evi-scrim" ref={setHost} onKeyDown={onInnerKey} onMouseDown={e => e.target === e.currentTarget && close()}>
-                <div className="evi-snip-dialog evi-modal" role="dialog" aria-modal="true" aria-label="Snippet">{render(close)}</div>
+                <div className="evi-snip-dialog evi-modal" role="dialog" aria-modal="true" aria-label={t("dialog.snippet")}>{render(close)}</div>
             </div>
         );
     }
@@ -565,13 +577,13 @@ function openPicker(anchor: HTMLElement, channel: any) {
 function openEditorDialog(initial: Partial<SnippetInput>) {
     showLayer(close => (
         <div className="evi-snip-picker">
-            <header className="evi-snip-head"><h2 className="evi-snip-title">Save as snippet</h2></header>
+            <header className="evi-snip-head"><h2 className="evi-snip-title">{t("dialog.saveTitle")}</h2></header>
             <Editor
                 initial={initial}
                 autoFocusText={false}
                 onDone={saved => {
                     close();
-                    if (saved) ctx?.toast(`Saved "${saved.name}". Use it with /snip or the snippets button.`, { type: "success" });
+                    if (saved) ctx?.toast(t("toast.saved", { name: saved.name }), { type: "success" });
                 }}
             />
         </div>
@@ -613,13 +625,14 @@ function SnippetIcon() {
 }
 
 function SnippetsButton({ channel }: { channel: any; }) {
+    useLocale();
     const { showButton } = ctx!.settings.use();
     const ref = React.useRef<HTMLDivElement>(null);
     const anchor = useOpenAnchor();
     if (!showButton) return null;
     const open = !!anchor && anchor === ref.current;
     const onClick = () => ref.current && openPicker(ref.current, channel);
-    const label = "Snippets";
+    const label = t("button.label");
     const ChatButton = getChatButton();
 
     const button = ChatButton
@@ -635,7 +648,14 @@ function SnippetsButton({ channel }: { channel: any; }) {
 
 // ---- Settings panel -----------------------------------------------------------------------------
 
+/** "Type \{user} to keep one as written", with the example in a <code> wherever the translation puts it */
+function escapeHint() {
+    const [before, after = ""] = t("panel.escape").split("{code}");
+    return <>{before}<code>{"\\{user}"}</code>{after}</>;
+}
+
 function ManagePanel() {
+    useLocale();
     const current = useSnippets();
     const [editing, setEditing] = React.useState<string | "new" | null>(null);
     const sorted = [...current.snippets].sort(compareByName);
@@ -644,8 +664,8 @@ function ManagePanel() {
     return (
         <section className="evi-snip-panel">
             <div className="evi-snip-panel-head">
-                <h3 className="evi-snip-title">Your snippets · {current.snippets.length}</h3>
-                {editing === null && <button type="button" className="evi-snip-button evi-snip-primary" onClick={() => setEditing("new")}>New snippet</button>}
+                <h3 className="evi-snip-title">{t("panel.title", { count: current.snippets.length })}</h3>
+                {editing === null && <button type="button" className="evi-snip-button evi-snip-primary" onClick={() => setEditing("new")}>{t("panel.new")}</button>}
             </div>
             {editing !== null && (editing === "new" || editingSnippet) && (
                 <div className="evi-snip-panel-editor">
@@ -660,9 +680,9 @@ function ManagePanel() {
                         ))}
                     </ul>
                 )
-                : editing === null && <p className="evi-snip-empty">No snippets yet. Add one here, from the chat bar button, or right-click a message and pick Save as Snippet.</p>}
+                : editing === null && <p className="evi-snip-empty">{t("panel.empty")}</p>}
             <p className="evi-snip-hint">
-                Placeholders: {PLACEHOLDERS.map(p => `{${p.key}}`).join(" ")}. Type <code>\{"{"}user{"}"}</code> to keep one as written.
+                {t("panel.placeholders", { list: PLACEHOLDERS.map(p => `{${p.key}}`).join(" ") })} {escapeHint()}
             </p>
         </section>
     );
@@ -803,7 +823,7 @@ export default definePlugin({
                 <Menu.Group key="evi-snippets">
                     <Menu.Item
                         id="evi-snippets-save"
-                        label="Save as Snippet"
+                        label={t("menu.save")}
                         action={() => openEditorDialog({ name: suggestName(state, content), text: content })}
                     />
                 </Menu.Group>,

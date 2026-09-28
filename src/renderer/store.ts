@@ -2,6 +2,7 @@ import type { AuthorProfile } from "@shared/authors";
 import { permissionGrowth, PermissionGrowth, readPermissions } from "@shared/declaredPermissions";
 import type { PluginHealth } from "@shared/health";
 import type { PluginManifest } from "@shared/ipc";
+import { localizePlugin } from "@shared/pluginLocales";
 import { PulledPlugin, pullFor } from "@shared/pulls";
 import { starKey, StarsSnapshot } from "@shared/stars";
 import type { PluginPage, RatingSummary } from "@shared/reviews";
@@ -9,7 +10,7 @@ import { ratingScore } from "@shared/reviews";
 import type { StoreHome } from "@shared/storeHome";
 import { betaOf, InstalledPlugin, InstalledTheme, RegistryEntry, storeAction, StoreProgress, StoreResult, ThemeEntry } from "@shared/store";
 
-import { t } from "./i18n";
+import { I18n, t } from "./i18n";
 import { Logger } from "./logger";
 import { Native } from "./native";
 import { PluginManager } from "./plugins/manager";
@@ -75,6 +76,20 @@ const listeners = new Set<() => void>();
 let state: StoreState = { status: "idle", plugins: [], themes: [], problems: [], installed: {}, installedThemes: {}, ops: {}, themeOps: {}, pages: {} };
 let listening = false;
 let reportsAsked = false;
+
+/** The registry's lists as they came: the state has them in Discord's language, which can change */
+let raw: { plugins: RegistryEntry[]; themes: ThemeEntry[]; } | undefined;
+
+function localizedLists() {
+    if (!raw) return {};
+    const locale = I18n.discordLocale;
+    return { plugins: raw.plugins.map(p => localizePlugin(p, locale)), themes: raw.themes.map(th => localizePlugin(th, locale)) };
+}
+
+function followLocale() {
+    if (raw) return;
+    I18n.subscribe(() => raw && set(localizedLists()));
+}
 
 function set(next: Partial<StoreState>) {
     state = { ...state, ...next };
@@ -176,7 +191,9 @@ export const Store = {
             // Mains older than the theme store don't send these
             const installedThemes = Object.fromEntries((listing.installedThemes ?? []).map(t => [t.id, t]));
             if (!listing.ok) return set({ status: "error", error: listing.error, registryUrl: listing.registryUrl, installed, installedThemes });
-            set({ status: "ready", registryUrl: listing.registryUrl, plugins: listing.plugins, themes: listing.themes ?? [], problems: listing.problems, installed, installedThemes });
+            followLocale();
+            raw = { plugins: listing.plugins, themes: listing.themes ?? [] };
+            set({ status: "ready", registryUrl: listing.registryUrl, ...localizedLists(), problems: listing.problems, installed, installedThemes });
             void Store.refreshStars();
             void Store.refreshCommunity();
         } catch (err) {
@@ -257,7 +274,7 @@ export const Store = {
 
     /** Writes or changes this account's review, or takes it back (null) */
     async review(id: string, review: { rating: number; body: string; } | null) {
-        if (!Native.setReview) return { ok: false as const, error: "Not supported" };
+        if (!Native.setReview) return { ok: false as const, error: t("common.notSupported") };
         const version = Store.installedPlugin(id)?.version ?? state.plugins.find(p => p.id === id)?.version ?? "";
         const result = await Native.setReview(id, review && { ...review, version });
         if (!result.ok && result.unlinked) set({ linked: false });
@@ -271,14 +288,14 @@ export const Store = {
     },
 
     async reportReview(reviewId: number) {
-        return Native.reportReview?.(reviewId) ?? { ok: false as const, error: "Not supported" };
+        return Native.reportReview?.(reviewId) ?? { ok: false as const, error: t("common.notSupported") };
     },
 
     isFollowing: (slug: string) => !!state.following?.includes(slug),
 
     /** Follows or unfollows an author; the count comes back with the answer */
     async follow(slug: string, on: boolean) {
-        if (!Native.follow) return { ok: false as const, error: "Not supported" };
+        if (!Native.follow) return { ok: false as const, error: t("common.notSupported") };
         const result = await Native.follow(slug, on);
         if (result.ok) {
             const following = new Set(state.following ?? []);
@@ -555,7 +572,7 @@ export const Store = {
     image(url: string) {
         let pending = images.get(url);
         if (!pending) {
-            pending = (Native.storeImage?.(url) ?? Promise.resolve({ ok: false as const, error: "Not supported" }))
+            pending = (Native.storeImage?.(url) ?? Promise.resolve({ ok: false as const, error: t("common.notSupported") }))
                 .then(r => r.ok ? r.dataUrl : null, () => null);
             images.set(url, pending);
             pending.then(r => r === null && images.delete(url));
@@ -570,7 +587,7 @@ export const Store = {
     previewMedia(url: string) {
         let pending = media.get(url);
         if (!pending) {
-            pending = (Native.storePreviewMedia?.(url) ?? Promise.resolve({ ok: false as const, error: "Not supported" }))
+            pending = (Native.storePreviewMedia?.(url) ?? Promise.resolve({ ok: false as const, error: t("common.notSupported") }))
                 .then(r => r.ok ? { url: URL.createObjectURL(new Blob([r.bytes as Uint8Array<ArrayBuffer>], { type: r.mime })), video: r.mime.startsWith("video/") } : null, () => null);
             // Big: only the latest few are kept
             if (media.size >= 4) {

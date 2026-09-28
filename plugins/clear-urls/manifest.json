@@ -7,5 +7,103 @@
     "tags": ["privacy"],
     "permissions": { "readMessages": true },
     "changelog": [{ "version": "1.0.1", "notes": ["Says what it needs (reading messages), and Evi holds it to that."] }, { "version": "1.0.0", "notes": ["First release."] }],
-    "enabledByDefault": true
+    "enabledByDefault": true,
+    "locales": {
+        "de": {
+            "name": "Links bereinigen",
+            "description": "Entfernt Tracking-Parameter wie utm_source und si aus Links, bevor du sie sendest.",
+            "changelog": {
+                "1.0.1": [
+                    "Sagt jetzt, was sie braucht (Nachrichten lesen), und Evi hält sie dazu an."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Limpiar enlaces",
+            "description": "Quita los parámetros de rastreo como utm_source y si de los enlaces antes de enviarlos.",
+            "changelog": {
+                "1.0.1": [
+                    "Ahora dice lo que necesita (leer mensajes), y Evi se lo hace cumplir."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Nettoyeur de liens",
+            "description": "Retire les paramètres de suivi comme utm_source et si des liens avant leur envoi.",
+            "changelog": {
+                "1.0.1": [
+                    "Indique désormais ce dont il a besoin (lire les messages), et Evi l'y tient."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "URLクリーナー",
+            "description": "送信前のリンクから、utm_sourceやsiなどのトラッキングパラメーターを取り除きます。",
+            "changelog": {
+                "1.0.1": [
+                    "必要な権限(メッセージの読み取り)を宣言するようになり、Eviがその範囲を守らせます。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Czyszczenie linków",
+            "description": "Usuwa z linków parametry śledzące, takie jak utm_source i si, zanim je wyślesz.",
+            "changelog": {
+                "1.0.1": [
+                    "Podaje teraz, czego potrzebuje (czytanie wiadomości), a Evi tego pilnuje."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Limpar links",
+            "description": "Remove parâmetros de rastreamento como utm_source e si dos links antes de você enviá-los.",
+            "changelog": {
+                "1.0.1": [
+                    "Agora informa o que precisa (ler mensagens), e o Evi garante que ele respeite isso."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Очистка ссылок",
+            "description": "Удаляет из ссылок параметры отслеживания, такие как utm_source и si, перед отправкой.",
+            "changelog": {
+                "1.0.1": [
+                    "Теперь заявляет, что ему нужно (чтение сообщений), и Evi следит, чтобы он не выходил за эти рамки."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Bağlantı Temizleyici",
+            "description": "Bağlantıları göndermeden önce utm_source ve si gibi izleme parametrelerini kaldırır.",
+            "changelog": {
+                "1.0.1": [
+                    "Artık neye ihtiyaç duyduğunu (mesajları okuma) belirtiyor ve Evi bunu denetliyor."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

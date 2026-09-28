@@ -769,7 +769,7 @@ export function ErrorBoundary(props: BoundaryProps) {
             if (!error) return this.props.children;
             return (
                 <div className="dl-stack" role="alert">
-                    <Notice tone="danger">This view crashed. The rest of Evi still works.</Notice>
+                    <Notice tone="danger">{t("boundary.crashed")}</Notice>
                     <pre className="dl-error">{String(error.stack ?? error)}</pre>
                 </div>
             );
@@ -885,7 +885,7 @@ export function Dialog({ title, onClose, children, id }: { title: ReactNode; onC
                     <FocusLayer containerRef={ref}>
                         <header className="dl-dialog-head">
                             <Text tag="h2" variant="heading-lg/semibold" color="text-strong" id={`${id}-title`}>{title}</Text>
-                            <IconButton icon="close" label="Close" onClick={exit.close} />
+                            <IconButton icon="close" label={t("common.close")} onClick={exit.close} />
                         </header>
                         <div className="dl-dialog-body">{typeof children === "function" ? children(exit.close) : children}</div>
                     </FocusLayer>

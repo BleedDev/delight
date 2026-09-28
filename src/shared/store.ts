@@ -30,6 +30,7 @@
  */
 import { DeclaredPermissions, readPermissions, samePermissions, whyNotPermissions } from "./declaredPermissions";
 import type { PluginManifest } from "./ipc";
+import { PluginLocales, validateLocales } from "./pluginLocales";
 
 export const REGISTRY_SCHEMA = 1;
 export const DEFAULT_REGISTRY_URL = "https://evi.rest/registry.json";
@@ -102,6 +103,8 @@ export interface ListingInfo {
     supporters?: boolean;
     /** Newest first */
     changelog: ChangelogEntry[];
+    /** Name, description and changelog in other languages */
+    locales?: PluginLocales;
 }
 
 export interface RegistryEntry extends ListingInfo {
@@ -332,6 +335,8 @@ function validateInfo(e: Record<string, unknown>): { info: ListingInfo; } | { er
     if (e.supporters !== undefined && typeof e.supporters !== "boolean") return fail("supporters must be true or false");
     const changelog = validateChangelog(e.changelog);
     if (typeof changelog === "string") return fail(changelog);
+    const locales = validateLocales(e.locales);
+    if (typeof locales === "string") return fail(locales);
 
     return {
         info: {
@@ -348,6 +353,7 @@ function validateInfo(e: Record<string, unknown>): { info: ListingInfo; } | { er
             ...(e.preview !== undefined && { preview: e.preview as string }),
             ...(e.supporters === true && { supporters: true }),
             changelog,
+            ...locales && { locales },
         },
     };
 }

@@ -3,7 +3,7 @@
  * row has room for one line of subtext, so this replaces it rather than adding a second one, and
  * falls back to Discord's own when there's nothing to show.
  */
-import { React } from "@evi/api";
+import { React, useLocale } from "@evi/api";
 import type { SourcePatch } from "@evi/api";
 
 import { lastSeenLine } from "./line";
@@ -25,6 +25,7 @@ interface SubTextProps { original: React.ReactNode; userId: string; }
 
 /** Re-renders only when whether this friend has a line changes (or the row itself re-renders) */
 function FriendSubText({ original, userId }: SubTextProps) {
+    useLocale();
     const show = useUser(userId, () => !!lineOf(userId, "showInFriends"));
     const Line = lastSeenLine();
     return show ? <Line userId={userId} setting="showInFriends" /> : <>{original}</>;

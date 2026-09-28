@@ -3,6 +3,8 @@
  * Intl, "2h ahead of you", and ranking zones for the search box. No Discord code in here.
  */
 
+import { format, Vars } from "@shared/i18n";
+
 export type HourCycle = "12h" | "24h";
 export type ZoneMap = Record<string, string>;
 
@@ -130,15 +132,29 @@ export function formatOffset(minutes: number): string {
     return `UTC${minutes < 0 ? "-" : "+"}${h}${m ? `:${String(m).padStart(2, "0")}` : ""}`;
 }
 
+/** The words of the time difference. English lives here so this file stays pure; strings.ts has the rest. */
+export const EN_WORDS = {
+    "diff.same": "same time as you",
+    "diff.ahead": "{amount} ahead of you",
+    "diff.behind": "{amount} behind you",
+    "amount.h": "{h}h",
+    "amount.m": "{m}m",
+    "amount.hm": "{h}h {m}m",
+} as const;
+export type WordKey = keyof typeof EN_WORDS;
+/** Looks a word up in the current language; plain English by default */
+export type Tr = (key: WordKey, vars?: Vars) => string;
+const english: Tr = (key, vars) => format(EN_WORDS[key], vars);
+
 /** "2h ahead of you", "3h 30m behind you", "same time as you" */
-export function describeDiff(theirOffset: number, yourOffset: number): string {
+export function describeDiff(theirOffset: number, yourOffset: number, tr: Tr = english): string {
     const diff = theirOffset - yourOffset;
-    if (!diff) return "same time as you";
+    if (!diff) return tr("diff.same");
     const abs = Math.abs(diff);
     const h = Math.floor(abs / 60);
     const m = abs % 60;
-    const amount = [h ? `${h}h` : "", m ? `${m}m` : ""].filter(Boolean).join(" ");
-    return `${amount} ${diff > 0 ? "ahead of" : "behind"} you`;
+    const amount = h && m ? tr("amount.hm", { h, m }) : h ? tr("amount.h", { h }) : tr("amount.m", { m });
+    return tr(diff > 0 ? "diff.ahead" : "diff.behind", { amount });
 }
 
 // ---- Formatting ---------------------------------------------------------------------------------
@@ -217,14 +233,14 @@ export interface Describe {
     diff: string;
 }
 
-export function describeTime(date: Date, zone: string, yourZone: string, o: Omit<FormatOptions, "weekday">): Describe {
+export function describeTime(date: Date, zone: string, yourZone: string, o: Omit<FormatOptions, "weekday">, tr?: Tr): Describe {
     const theirs = offsetMinutes(zone, date);
     const yours = offsetMinutes(yourZone, date);
     return {
         short: formatTime(date, zone, o),
         long: formatTime(date, zone, { ...o, weekday: true }),
         offset: formatOffset(theirs),
-        diff: describeDiff(theirs, yours),
+        diff: describeDiff(theirs, yours, tr),
     };
 }
 

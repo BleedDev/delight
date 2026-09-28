@@ -12,6 +12,7 @@
  */
 
 import { DISCORD_HOST } from "./pluginActivity";
+import { englishTr, Tr } from "./tr";
 
 export type Risk = "low" | "medium" | "high";
 
@@ -323,10 +324,8 @@ export function scanBundle(input: string): StaticFindings {
     };
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
-function cap(details: string[]) {
-    return details.length > MAX_DETAILS ? [...details.slice(0, MAX_DETAILS), `and ${details.length - MAX_DETAILS} more`] : details;
+function cap(details: string[], tr: Tr) {
+    return details.length > MAX_DETAILS ? [...details.slice(0, MAX_DETAILS), tr("perms.andMore", { count: details.length - MAX_DETAILS })] : details;
 }
 
 /** A patch's find, short enough for one line */
@@ -335,107 +334,94 @@ export function describeFind(find: string | RegExp) {
     return text.length > 72 ? `${text.slice(0, 71)}…` : text;
 }
 
-/** Everything a plugin can touch, from whatever is known about it */
-export function analyzePermissions(input: PermissionsInput): PermissionsReport {
+/** Everything a plugin can touch, from whatever is known about it. `tr` words it in the reader's language (English without). */
+export function analyzePermissions(input: PermissionsInput, tr: Tr = englishTr): PermissionsReport {
     const found = input.code ? scanBundle(input.code) : undefined;
     const runtime = input.runtime;
     const caps: Capability[] = [];
     const add = (id: CapabilityId, risk: Risk, title: string, description: string, details: string[] = []) =>
-        caps.push({ id, risk, title, description, details: cap(unique(details)) });
+        caps.push({ id, risk, title, description, details: cap(unique(details), tr) });
 
     // Native: certain, from the manifest or the registry
     const switches = Object.entries(input.manifest?.chromiumSwitches ?? {});
     const nativeModule = !!input.manifest?.native || !!input.native;
     if (nativeModule || switches.length) {
-        add("native", "high", "Full access to your computer",
-            "Runs outside Discord with full access to your computer: it can read and change your files, start programs and use your network like any app you install.",
+        add("native", "high", tr("perms.cap.native.title"), tr("perms.cap.native.description"),
             [
-                ...nativeModule ? ["Runs code in Discord’s main process (native.js)"] : [],
-                ...switches.map(([k, v]) => `Chromium switch --${k}${v === true ? "" : `=${v}`}`),
+                ...nativeModule ? [tr("perms.cap.native.module")] : [],
+                ...switches.map(([k, v]) => tr("perms.cap.native.switch", { name: `--${k}${v === true ? "" : `=${v}`}` })),
             ]);
     }
 
     if (found?.network.length) {
         const where = found.domains.length ? found.domains : [];
-        add("network", "medium", "Connects to the internet",
-            found.domains.length
-                ? "Can send and receive data over the network. Addresses written in its code are listed; it could contact others too."
-                : "Can send and receive data over the network. No addresses are written in its code, so where it connects isn’t known.",
-            [`Uses ${found.network.join(", ")}`, ...where, ...found.discordDomains.length ? [`Discord: ${found.discordDomains.join(", ")}`] : []]);
+        add("network", "medium", tr("perms.cap.network.title"),
+            tr(found.domains.length ? "perms.cap.network.known" : "perms.cap.network.unknown"),
+            [tr("perms.cap.network.uses", { list: found.network.join(", ") }), ...where, ...found.discordDomains.length ? [tr("perms.cap.network.discord", { list: found.discordDomains.join(", ") })] : []]);
     } else if (found?.domains.length) {
-        add("links", "low", "Links to websites",
-            found.opensLinks
-                ? "Mentions web addresses and can open them in your browser. No code that connects to them was found."
-                : "Mentions web addresses, for example as links or images. No code that connects to them was found.",
+        add("links", "low", tr("perms.cap.links.title"),
+            tr(found.opensLinks ? "perms.cap.links.opens" : "perms.cap.links.mentions"),
             found.domains);
     }
 
     if (found?.dynamicCode.length) {
-        add("dynamicCode", "medium", "Runs code it builds while running",
-            "Part of what it does is decided while it runs, so it can’t be checked from its files.",
-            found.dynamicCode);
+        add("dynamicCode", "medium", tr("perms.cap.dynamicCode.title"), tr("perms.cap.dynamicCode.description"), found.dynamicCode);
     }
 
     if (found?.clipboardRead) {
-        add("clipboard", "medium", "Reads your clipboard", "Can read what you copied, including from other apps.", found.clipboardWrite ? ["Reads and writes"] : ["Reads"]);
+        add("clipboard", "medium", tr("perms.cap.clipboard.read.title"), tr("perms.cap.clipboard.read.description"), [tr(found.clipboardWrite ? "perms.cap.clipboard.readWriteDetail" : "perms.cap.clipboard.readDetail")]);
     } else if (found?.clipboardWrite) {
-        add("clipboard", "low", "Copies to your clipboard", "Can put text on your clipboard, for example when you pick a Copy item.");
+        add("clipboard", "low", tr("perms.cap.clipboard.write.title"), tr("perms.cap.clipboard.write.description"));
     }
 
     // Source patches: exact from the evaluated plugin, else what the scan read
     const finds = input.patches?.length ? input.patches.map(p => describeFind(p.find)) : found?.patchFinds.map(describeFind) ?? [];
     const patchCount = input.patches?.length ?? found?.patchCount ?? 0;
     if (patchCount || found?.hasPatches) {
-        add("patches", "medium", patchCount ? `Rewrites Discord’s code (${plural(patchCount, "patch", "patches")})` : "Rewrites Discord’s code",
-            "Changes parts of Discord’s own code before it runs, so it can change anything Discord shows or does.",
-            finds.map(f => `Find ${f}`));
+        add("patches", "medium", patchCount ? tr("perms.cap.patches.title", { count: patchCount }) : tr("perms.cap.patches.titleUnknown"),
+            tr("perms.cap.patches.description"),
+            finds.map(f => tr("perms.cap.patches.find", { find: f })));
     }
 
     const hookNames = unique([...runtime?.hooks ?? [], ...found?.hookNames ?? []]);
     if (hookNames.length || found?.hooks) {
-        add("hooks", "low", "Hooks Discord functions",
-            "Runs its own code when Discord calls some of its functions, and can change what they do.",
-            hookNames);
+        add("hooks", "low", tr("perms.cap.hooks.title"), tr("perms.cap.hooks.description"), hookNames);
     }
 
     const flux = unique([...runtime?.flux ?? [], ...found?.flux ?? []]);
     if (flux.length || found?.fluxDispatch) {
-        add("flux", "low", "Listens to Discord events",
-            found?.fluxDispatch
-                ? "Sees events inside Discord (messages arriving, channels switching…) and can send its own."
-                : "Sees events inside Discord, like messages arriving or channels switching.",
-            [...flux, ...found?.fluxDispatch ? ["Sends events"] : []]);
+        add("flux", "low", tr("perms.cap.flux.title"),
+            tr(found?.fluxDispatch ? "perms.cap.flux.descriptionSends" : "perms.cap.flux.description"),
+            [...flux, ...found?.fluxDispatch ? [tr("perms.cap.flux.sends")] : []]);
     }
 
     if (found?.stores.length) {
-        add("discordData", "low", "Reads Discord data", "Reads what Discord keeps in memory, like users, channels or messages.", found.stores);
+        add("discordData", "low", tr("perms.cap.discordData.title"), tr("perms.cap.discordData.description"), found.stores);
     }
 
     const menus = unique([...runtime?.menus ?? [], ...found?.menus ?? []]);
     if (menus.length || found?.menuCalls) {
-        add("menus", "low", "Adds menu items", "Adds items to Discord’s right-click menus.", menus.map(m => m === "*" ? "Every menu" : m));
+        add("menus", "low", tr("perms.cap.menus.title"), tr("perms.cap.menus.description"), menus.map(m => m === "*" ? tr("perms.cap.menus.every") : m));
     }
 
     const commands = unique([...runtime?.commands ?? [], ...found?.commands ?? []]);
     if (commands.length || found?.commandCalls) {
-        add("commands", "low", "Adds slash commands", "Adds commands you can type in the chat bar. They run on your computer.", commands.map(c => `/${c}`));
+        add("commands", "low", tr("perms.cap.commands.title"), tr("perms.cap.commands.description"), commands.map(c => `/${c}`));
     }
 
     if (runtime?.styles || found?.css) {
-        add("css", "low", "Changes how Discord looks", "Adds its own styles to Discord’s page.");
+        add("css", "low", tr("perms.cap.css.title"), tr("perms.cap.css.description"));
     }
 
     if (found?.storage.length) {
         const cookies = found.storage.includes("cookies");
-        add("storage", cookies ? "medium" : "low", cookies ? "Reads browser storage and cookies" : "Stores data in Discord’s page",
-            cookies
-                ? "Keeps its own data in Discord’s page and can read its cookies."
-                : "Keeps its own data in Discord’s page storage, which stays on your computer.",
+        add("storage", cookies ? "medium" : "low", tr(cookies ? "perms.cap.storage.titleCookies" : "perms.cap.storage.title"),
+            tr(cookies ? "perms.cap.storage.descriptionCookies" : "perms.cap.storage.description"),
             found.storage);
     }
 
     if (input.settings?.length || found?.settings) {
-        add("settings", "low", "Saves its settings", "Keeps its own settings in Evi’s settings file.");
+        add("settings", "low", tr("perms.cap.settings.title"), tr("perms.cap.settings.description"));
     }
 
     caps.sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk] || ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
@@ -446,9 +432,8 @@ export function analyzePermissions(input: PermissionsInput): PermissionsReport {
 export const RISK_LABELS: Record<Risk, string> = { low: "Low risk", medium: "Medium risk", high: "High risk" };
 
 /** One line on the overall picture, for the top of the list */
-export function riskSummary(report: PermissionsReport) {
-    if (report.risk === "high") return "Can do anything any app on your computer can.";
-    if (!report.capabilities.length) return report.scanned ? "Nothing found beyond running inside Discord’s page." : "Runs inside Discord’s page only.";
-    if (report.risk === "medium") return "Runs inside Discord only, with some access worth knowing about.";
-    return "Runs inside Discord only. It can’t reach your files.";
+export function riskSummary(report: PermissionsReport, tr: Tr = englishTr) {
+    if (report.risk === "high") return tr("perms.summary.high");
+    if (!report.capabilities.length) return tr(report.scanned ? "perms.summary.nothingFound" : "perms.summary.pageOnly");
+    return tr(report.risk === "medium" ? "perms.summary.medium" : "perms.summary.low");
 }

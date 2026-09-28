@@ -12,5 +12,127 @@
         { "version": "1.0.1", "notes": ["The speed menu slides in like Discord's menus, and fades out instead of vanishing."] },
         { "version": "1.0.0", "notes": ["First release."] }
     ],
+    "locales": {
+        "de": {
+            "name": "Video-Steuerung+",
+            "description": "Wiedergabegeschwindigkeit von 0,25x bis 3x, Wiederholen, Einzelbildschaltung und Bild-in-Bild für Videos im Chat, dazu YouTube-artige Tastenkürzel, solange du mit der Maus über einem Video bist.",
+            "changelog": {
+                "1.0.2": [
+                    "Sagt jetzt, was es braucht: nichts, was Discord ihm nicht ohnehin zeigt. Evi hält es dazu an."
+                ],
+                "1.0.1": [
+                    "Das Geschwindigkeitsmenü gleitet ein wie die Menüs von Discord und blendet sich aus, statt einfach zu verschwinden."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Controles de vídeo+",
+            "description": "Velocidad de reproducción de 0,25x a 3x, repetición, avance fotograma a fotograma e imagen en imagen para los vídeos del chat, además de atajos de teclado al estilo de YouTube mientras pasas el ratón por un vídeo.",
+            "changelog": {
+                "1.0.2": [
+                    "Ahora dice qué necesita, que es nada más allá de lo que Discord ya le muestra, y Evi se lo exige."
+                ],
+                "1.0.1": [
+                    "El menú de velocidad se desliza al abrirse como los menús de Discord y se desvanece al cerrarse en lugar de desaparecer de golpe."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Contrôles vidéo+",
+            "description": "Vitesse de lecture de 0,25x à 3x, lecture en boucle, avance image par image et image dans l'image pour les vidéos du chat, avec des raccourcis clavier à la YouTube quand vous survolez une vidéo.",
+            "changelog": {
+                "1.0.2": [
+                    "Indique désormais ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi le lui fait respecter."
+                ],
+                "1.0.1": [
+                    "Le menu de vitesse glisse à l'ouverture comme les menus de Discord et disparaît en fondu au lieu de s'effacer d'un coup."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "動画コントロール+",
+            "description": "チャット内の動画に、0.25xから3xまでの再生速度、ループ、コマ送り、ピクチャーインピクチャーを追加します。動画にカーソルを合わせている間は、YouTubeのようなキーボードショートカットも使えます。",
+            "changelog": {
+                "1.0.2": [
+                    "必要とするものを明示するようになりました。Discordがすでに表示している範囲を超えるものは不要で、Eviがそれを守らせます。"
+                ],
+                "1.0.1": [
+                    "速度メニューがDiscordのメニューのようにスライドして開き、消えるときは突然消えずにフェードアウトします。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Sterowanie wideo+",
+            "description": "Prędkość odtwarzania od 0,25x do 3x, zapętlanie, przechodzenie klatka po klatce i obraz w obrazie dla filmów na czacie, a do tego skróty klawiszowe w stylu YouTube, gdy kursor jest nad filmem.",
+            "changelog": {
+                "1.0.2": [
+                    "Podaje teraz, czego potrzebuje, czyli niczego ponad to, co Discord już mu pokazuje, a Evi tego pilnuje."
+                ],
+                "1.0.1": [
+                    "Menu prędkości wsuwa się jak menu Discorda, a przy zamykaniu płynnie zanika zamiast znikać nagle."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Controles de vídeo+",
+            "description": "Velocidade de reprodução de 0,25x a 3x, repetição, avanço quadro a quadro e picture-in-picture para os vídeos do chat, além de atalhos de teclado no estilo do YouTube enquanto você passa o mouse sobre um vídeo.",
+            "changelog": {
+                "1.0.2": [
+                    "Agora diz do que precisa, que é nada além do que o Discord já mostra a ele, e o Evi garante isso."
+                ],
+                "1.0.1": [
+                    "O menu de velocidade desliza ao abrir como os menus do Discord e some com um fade em vez de sumir de repente."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Управление видео+",
+            "description": "Скорость воспроизведения от 0,25x до 3x, повтор, покадровый просмотр и «картинка в картинке» для видео в чате, а также горячие клавиши как на YouTube, пока курсор наведён на видео.",
+            "changelog": {
+                "1.0.2": [
+                    "Теперь указывает, что ему нужно, а нужно ему лишь то, что Discord и так показывает, и Evi следит за этим."
+                ],
+                "1.0.1": [
+                    "Меню скорости выезжает так же, как меню Discord, и плавно исчезает, а не пропадает мгновенно."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Video Denetimleri+",
+            "description": "Sohbetteki videolar için 0,25x ile 3x arası oynatma hızı, döngü, kare kare ilerleme ve pencere içinde pencere; bir videonun üzerindeyken YouTube tarzı klavye kısayolları da var.",
+            "changelog": {
+                "1.0.2": [
+                    "Neye ihtiyaç duyduğunu artık belirtiyor: Discord'un zaten gösterdiği şeyin ötesinde hiçbir şey. Evi de buna uymasını sağlıyor."
+                ],
+                "1.0.1": [
+                    "Hız menüsü Discord'un menüleri gibi kayarak açılıyor ve birden kaybolmak yerine yavaşça sönüyor."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    },
     "enabledByDefault": false
 }

@@ -3,6 +3,7 @@ import type { PluginContext } from "@evi/api";
 
 import { collectKnown, detectSensitive } from "./detect";
 import type { KnownValues } from "./detect";
+import { t } from "./strings";
 
 /**
  * Blurs personal information in User Settings: email, phone, username, billing details, connected
@@ -28,17 +29,27 @@ const SKIP = new Set(["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "SVG", "CODE"]);
 
 type Settings = typeof settings;
 const settings = {
-    enabled: { type: "boolean", label: "Enabled", description: "Blur personal info in User Settings. /hidepersonal toggles this.", default: true },
-    onlyStreamerMode: { type: "boolean", label: "Only in Streamer Mode", description: "Only blur while Discord's Streamer Mode is on, instead of always.", default: false },
+    enabled: {
+        type: "boolean",
+        get label() { return t("settings.enabled"); },
+        get description() { return t("settings.enabled.description"); },
+        default: true,
+    },
+    onlyStreamerMode: {
+        type: "boolean",
+        get label() { return t("settings.onlyStreamerMode"); },
+        get description() { return t("settings.onlyStreamerMode.description"); },
+        default: false,
+    },
     reveal: {
         type: "select",
-        label: "Reveal",
-        description: "How to see a blurred value.",
+        get label() { return t("settings.reveal"); },
+        get description() { return t("settings.reveal.description"); },
         default: "hover",
         options: [
-            { label: "Hover to reveal", value: "hover" },
-            { label: "Click to reveal", value: "click" },
-            { label: "Never", value: "never" },
+            { get label() { return t("reveal.hover"); }, value: "hover" },
+            { get label() { return t("reveal.click"); }, value: "click" },
+            { get label() { return t("reveal.never"); }, value: "never" },
         ],
     },
 } as const;
@@ -197,7 +208,7 @@ function toggle() {
     if (!context) return "";
     const enabled = !context.settings.get("enabled");
     context.settings.set("enabled", enabled);
-    return enabled ? "Personal info in User Settings is now blurred." : "Personal info is no longer blurred.";
+    return enabled ? t("toggle.on") : t("toggle.off");
 }
 
 export default definePlugin({
@@ -270,7 +281,7 @@ export default definePlugin({
 
         ctx.command({
             name: "hidepersonal",
-            description: "Toggle blurring your personal info in User Settings",
+            description: t("command.description"),
             execute: () => ({ ephemeral: toggle() }),
         });
 

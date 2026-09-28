@@ -2,9 +2,10 @@
  * Settings panel: how many people are remembered, clear (with confirm and undo), export and
  * import, and a searchable list of everyone, most recently seen first.
  */
-import { Components, React } from "@evi/api";
+import { Components, React, useLocale } from "@evi/api";
 
 import { fullText, opts, replaceAll, state, store, useVersion } from "./state";
+import { people, t } from "./strings";
 import { DEFAULT_CAP, deserialize, merge, serialize } from "./track";
 import type { Entry, Tracker } from "./track";
 
@@ -36,8 +37,6 @@ function SmallButton({ children, onClick, disabled, danger, label }: { children:
         : <button type="button" className="dl-button" data-variant={danger ? "danger" : undefined} disabled={disabled} onClick={onClick} aria-label={label}>{children}</button>;
 }
 
-const people = (n: number) => `${n.toLocaleString()} ${n === 1 ? "person" : "people"}`;
-
 const latest = (e: Entry) => Math.max(e.seen ?? 0, e.active ?? 0, e.message ?? 0);
 
 function nameOf(id: string): { name: string; known: boolean; search: string; user: any; } {
@@ -64,6 +63,7 @@ function download(data: unknown) {
 // --- Remembered: count, clear with undo, export, import --------------------------------------
 
 function Remembered() {
+    useLocale();
     useVersion();
     const count = state.tracker.size;
     const [confirming, setConfirming] = React.useState(false);
@@ -93,14 +93,14 @@ function Remembered() {
         }
         setUndo(undefined);
         void replaceAll(tracker);
-        state.context?.toast(`Restored ${people(tracker.size)}`, { type: "success" });
+        state.context?.toast(t("toast.restored", { people: people(tracker.size) }), { type: "success" });
     };
 
     const importFile = async (file: File) => {
         try {
             const imported = deserialize(JSON.parse(await file.text()), opts);
             if (!imported.size) {
-                state.context?.toast("Nothing to import in that file", { type: "failure" });
+                state.context?.toast(t("toast.nothingToImport"), { type: "failure" });
                 return;
             }
             const tracker = new Map(state.tracker);
@@ -110,10 +110,10 @@ function Remembered() {
                 tracker.set(id, current ? merge(entry, current) : entry);
             }
             await replaceAll(tracker);
-            state.context?.toast(`Imported ${people(imported.size)}`, { type: "success" });
+            state.context?.toast(t("toast.imported", { people: people(imported.size) }), { type: "success" });
         } catch (e) {
             state.context?.logger.error("Couldn't import", e);
-            state.context?.toast("That file isn't a Last Seen export", { type: "failure" });
+            state.context?.toast(t("toast.badFile"), { type: "failure" });
         }
     };
 
@@ -122,30 +122,30 @@ function Remembered() {
     return (
         <div className="evi-ls-row">
             <div className="dl-field-text">
-                <div className="dl-label">Remembered</div>
+                <div className="dl-label">{t("remembered.title")}</div>
                 <p className="dl-hint" role="status" style={{ fontVariantNumeric: "tabular-nums" }}>
                     {undo
-                        ? `Cleared ${people(undo.count)}.`
-                        : `${people(count)} of ${DEFAULT_CAP.toLocaleString()}. Kept on this device only; friends and DMs are kept longest.`}
+                        ? t("remembered.cleared", { people: people(undo.count) })
+                        : t("remembered.status", { people: people(count), cap: DEFAULT_CAP.toLocaleString() })}
                 </p>
                 {!undo && (
-                    <div className="evi-ls-meter" data-full={ratio >= 0.9 || undefined} role="meter" aria-label="Space used" aria-valuemin={0} aria-valuemax={DEFAULT_CAP} aria-valuenow={count}>
+                    <div className="evi-ls-meter" data-full={ratio >= 0.9 || undefined} role="meter" aria-label={t("remembered.meter")} aria-valuemin={0} aria-valuemax={DEFAULT_CAP} aria-valuenow={count}>
                         <span style={{ inlineSize: `${ratio * 100}%` }} />
                     </div>
                 )}
             </div>
             <div className="evi-ls-actions">
                 {undo
-                    ? <SmallButton onClick={restore}>Undo</SmallButton>
+                    ? <SmallButton onClick={restore}>{t("remembered.undo")}</SmallButton>
                     : confirming
                         ? <>
-                            <SmallButton onClick={() => setConfirming(false)}>Cancel</SmallButton>
-                            <SmallButton danger onClick={clear}>Clear {people(count)}?</SmallButton>
+                            <SmallButton onClick={() => setConfirming(false)}>{t("remembered.cancel")}</SmallButton>
+                            <SmallButton danger onClick={clear}>{t("remembered.confirmClear", { people: people(count) })}</SmallButton>
                         </>
                         : <>
-                            <SmallButton disabled={!count} onClick={() => download(serialize(state.tracker, Date.now()))}>Export</SmallButton>
-                            <SmallButton onClick={() => fileRef.current?.click()}>Import</SmallButton>
-                            <SmallButton danger disabled={!count} onClick={() => setConfirming(true)}>Clear data</SmallButton>
+                            <SmallButton disabled={!count} onClick={() => download(serialize(state.tracker, Date.now()))}>{t("remembered.export")}</SmallButton>
+                            <SmallButton onClick={() => fileRef.current?.click()}>{t("remembered.import")}</SmallButton>
+                            <SmallButton danger disabled={!count} onClick={() => setConfirming(true)}>{t("remembered.clear")}</SmallButton>
                         </>}
                 <input
                     ref={fileRef}
@@ -176,6 +176,7 @@ function Avatar({ user, name }: { user: any; name: string; }) {
 }
 
 function People() {
+    useLocale();
     const [query, setQuery] = React.useState("");
     const q = query.trim().toLowerCase();
 
@@ -197,14 +198,14 @@ function People() {
     if (!q) total = sorted.length;
 
     const TextField = Components.TextField as any;
-    const label = "Search remembered people";
+    const label = t("people.searchLabel");
 
     return (
         <div className="dl-field">
-            <div className="dl-label">People</div>
+            <div className="dl-label">{t("people.title")}</div>
             {TextField
-                ? <TextField value={query} onChange={(v: string) => setQuery(v)} placeholder="Search by name or ID" aria-label={label} />
-                : <input className="dl-input" type="search" autoComplete="off" spellCheck={false} placeholder="Search by name or ID" aria-label={label} value={query} onChange={e => setQuery(e.currentTarget.value)} />}
+                ? <TextField value={query} onChange={(v: string) => setQuery(v)} placeholder={t("people.searchPlaceholder")} aria-label={label} />
+                : <input className="dl-input" type="search" autoComplete="off" spellCheck={false} placeholder={t("people.searchPlaceholder")} aria-label={label} value={query} onChange={e => setQuery(e.currentTarget.value)} />}
             {matches.length
                 ? <ul className="evi-ls-list">
                     {matches.map(({ id, name }) => (
@@ -212,13 +213,13 @@ function People() {
                             <Avatar user={name.user} name={name.name} />
                             <span className="evi-ls-text">
                                 <span className={name.known ? "evi-ls-name" : "evi-ls-name evi-ls-id"}>{name.name}</span>
-                                <span className="evi-ls-times">{fullText(id) ?? "Nothing recent"}</span>
+                                <span className="evi-ls-times">{fullText(id) ?? t("people.nothingRecent")}</span>
                             </span>
                         </li>
                     ))}
                 </ul>
-                : <p className="dl-hint">{state.tracker.size ? "No one matches that." : "No one yet. People show up here as Discord tells your client about them."}</p>}
-            {total > matches.length && <p className="dl-hint" style={{ fontVariantNumeric: "tabular-nums" }}>Showing {matches.length.toLocaleString()} of {total.toLocaleString()}. Search to find someone else.</p>}
+                : <p className="dl-hint">{state.tracker.size ? t("people.noMatch") : t("people.empty")}</p>}
+            {total > matches.length && <p className="dl-hint" style={{ fontVariantNumeric: "tabular-nums" }}>{t("people.showing", { shown: matches.length.toLocaleString(), total: total.toLocaleString() })}</p>}
         </div>
     );
 }

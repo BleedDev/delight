@@ -1713,7 +1713,15 @@
     text-decoration: none;
 }
 
-.dl-store-source:hover { text-decoration: underline; }
+.dl-store-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+}
+
+@media (hover: hover) {
+    .dl-store-source:hover { text-decoration: underline; }
+}
 
 .dl-store-source:focus-visible {
     outline: 2px solid var(--dl-focus-ring);
@@ -2962,47 +2970,165 @@
 
 /* ---- wallpaper ----------------------------------------------------------------------------- */
 
-.dl-wallpaper-current {
-    flex-direction: row;
+/* The card: what's showing, then the editor under it */
+.dl-wp-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+}
+
+.dl-wp-card-head {
+    display: flex;
     align-items: center;
     gap: 16px;
 }
 
-.dl-wallpaper-thumb {
+.dl-wp-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Discord in miniature: the wallpaper as the window shows it, the layout painted over it */
+.dl-wp-stage {
     position: relative;
-    flex: none;
-    inline-size: 176px;
-    aspect-ratio: 16 / 9;
-    /* Inside the card's padding: the card's corner minus it would be square, keep a control's */
-    border-radius: var(--dl-radius-control);
+    inline-size: 100%;
     overflow: hidden;
-    background: var(--dl-bg-emphasis);
+    isolation: isolate;
+    /* Inside the card's padding: a control's corner */
+    border-radius: var(--dl-radius-control);
+    background: #000;
     outline: 1px solid rgb(255 255 255 / 0.08);
     outline-offset: -1px;
+    touch-action: none;
+    user-select: none;
 }
 
-.theme-light .dl-wallpaper-thumb { outline-color: rgb(0 0 0 / 0.08); }
+.dl-wp-stage-empty { aspect-ratio: 16 / 9; }
+.dl-wp-stage[data-movable] { cursor: grab; }
+.dl-wp-stage[data-dragging] { cursor: grabbing; }
 
-.dl-wallpaper-thumb > img,
-.dl-wallpaper-thumb > video {
-    display: block;
-    inline-size: 100%;
-    block-size: 100%;
-    object-fit: cover;
-    /* Blur pulls in transparent edges, same as the full window */
-    scale: 1.06;
+.dl-wp-stage:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: 2px;
 }
 
-.dl-wallpaper-thumb-dim {
+.theme-light .dl-wp-stage {
+    background: #fff;
+    outline-color: rgb(0 0 0 / 0.08);
+}
+
+.dl-wp-stage > img,
+.dl-wp-stage > video,
+.dl-wp-stage > .evi-wallpaper-tile {
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+
+.dl-wp-stage-dim {
     position: absolute;
     inset: 0;
     background: #000;
     pointer-events: none;
 }
 
-.theme-light .dl-wallpaper-thumb-dim { background: #fff; }
+.theme-light .dl-wp-stage-dim { background: #fff; }
 
-.dl-wallpaper-current .dl-toolbar { margin-block-start: 8px; }
+.dl-wp-mock {
+    --dl-wp-neutral: 0 0 0;
+    --dl-wp-skeleton: rgb(255 255 255 / 0.14);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+}
+
+.theme-light .dl-wp-mock {
+    --dl-wp-neutral: 255 255 255;
+    --dl-wp-skeleton: rgb(0 0 0 / 0.12);
+}
+
+.dl-wp-mock-title { flex: none; }
+
+.dl-wp-mock-body {
+    display: flex;
+    flex: 1;
+    min-block-size: 0;
+}
+
+.dl-wp-mock-rail {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding-block: 8px;
+}
+
+.dl-wp-mock-rail > span {
+    inline-size: 56%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--dl-wp-skeleton);
+}
+
+.dl-wp-mock-sidebar {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 8px;
+}
+
+.dl-wp-mock-sidebar > span,
+.dl-wp-mock-messages > span {
+    display: block;
+    block-size: 5px;
+    border-radius: 3px;
+    background: var(--dl-wp-skeleton);
+}
+
+.dl-wp-mock-chat {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 12px;
+    min-inline-size: 0;
+    padding: 10px;
+}
+
+.dl-wp-mock-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dl-wp-mock-input {
+    flex: none;
+    block-size: 16px;
+    border-radius: 5px;
+}
+
+.dl-wp-zoom {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+/* On the slider's line, under its label */
+.dl-wp-zoom-icon {
+    display: grid;
+    place-items: center;
+    block-size: 40px;
+    color: var(--dl-text-muted);
+}
+
+.dl-wp-native-range {
+    inline-size: 100%;
+    accent-color: var(--dl-brand);
+}
 
 /* ---- DevTools (DevToolsTab.tsx) ------------------------------------------------------------ */
 

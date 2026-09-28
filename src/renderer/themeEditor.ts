@@ -97,7 +97,7 @@ export const ThemeEditor = {
 
     /** Writes it to the themes folder and turns it on; the editor stays open on it */
     async save(): Promise<ThemeSaveResult> {
-        if (!session) return { ok: false, error: "Nothing to save" };
+        if (!session) return { ok: false, error: t("themeEditor.nothingToSave") };
         const css = buildThemeCss(session.draft);
         const result = await Native.saveTheme({ css, name: session.draft.name, ...(session.file && { file: session.file }) });
         if (!result.ok || !session) return result;

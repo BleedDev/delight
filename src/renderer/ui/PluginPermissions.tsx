@@ -5,9 +5,9 @@
  * store's install and update questions. The analysis itself is src/shared/pluginPermissions.ts.
  */
 import { DeclaredPermissions, PERMISSION_FLAGS, PermissionFlag, PermissionGrowth, readPermissions } from "@shared/declaredPermissions";
-import { analyzePermissions, Capability, PermissionsReport, Risk, StorePreviewResult } from "@shared/pluginPermissions";
+import { analyzePermissions, Capability, PermissionsReport, Risk, riskSummary, StorePreviewResult } from "@shared/pluginPermissions";
 
-import { t } from "../i18n";
+import { t, useLocale } from "../i18n";
 import { Native } from "../native";
 import type { PluginState } from "../plugins/manager";
 import { PluginUsage } from "../plugins/usage";
@@ -94,12 +94,6 @@ export function PermissionGrowthList({ growth }: { growth: PermissionGrowth; }) 
 /** Whether a manifest reaches beyond Discord's page: native code or Chromium switches */
 const reachesBeyondPage = (manifest: PluginState["manifest"]) => !!manifest.native || Object.keys(manifest.chromiumSwitches ?? {}).length > 0;
 
-/** One line on the overall picture, for the top of the list (shared/pluginPermissions.ts riskSummary) */
-function riskSummary(report: PermissionsReport) {
-    if (report.risk === "high") return t("perms.summary.high");
-    if (!report.capabilities.length) return t(report.scanned ? "perms.summary.nothingFound" : "perms.summary.pageOnly");
-    return t(report.risk === "medium" ? "perms.summary.medium" : "perms.summary.low");
-}
 
 function CapabilityRow({ capability: c }: { capability: Capability; }) {
     return (
@@ -134,7 +128,7 @@ export function PermissionsList({ report, pending, error, note }: {
         <div className="dl-perms" data-risk={report.risk}>
             <div className="dl-perms-head">
                 <Status tone={riskTone[report.risk]}>{t(`perms.riskLabel.${report.risk}`)}</Status>
-                <Text variant="text-sm/normal" color="text-subtle">{riskSummary(report)}</Text>
+                <Text variant="text-sm/normal" color="text-subtle">{riskSummary(report, t)}</Text>
             </div>
             {report.capabilities.length > 0 && (
                 <ul className="dl-perms-list">
@@ -161,12 +155,13 @@ export function reportForInstalled(state: PluginState) {
         patches: state.definition?.patches,
         settings: Object.keys(state.definition?.settings ?? {}),
         runtime: PluginUsage.get(state.manifest.id),
-    });
+    }, t);
 }
 
 export function InstalledPluginPermissions({ state }: { state: PluginState; }) {
     // Scanning takes a few milliseconds: not on every settings change that re-renders the row
-    const report = React.useMemo(() => reportForInstalled(state), [state.code, state.definition, state.running, state.manifest]);
+    const locale = useLocale();
+    const report = React.useMemo(() => reportForInstalled(state), [state.code, state.definition, state.running, state.manifest, locale]);
     const ran = !!PluginUsage.get(state.manifest.id);
     return (
         <PermissionsList
@@ -288,9 +283,10 @@ export function StorePluginPermissions({ id, version, native, permissions, headi
         return () => void (live = false);
     }, [id, version]);
 
+    const locale = useLocale();
     const report = React.useMemo(() => result?.ok
-        ? analyzePermissions({ code: result.code, manifest: result.manifest, native })
-        : analyzePermissions({ native }), [result, native]);
+        ? analyzePermissions({ code: result.code, manifest: result.manifest, native }, t)
+        : analyzePermissions({ native }, t), [result, native, locale]);
 
     return (
         <section className="dl-stack" aria-labelledby={headingId} data-store-permissions={id}>

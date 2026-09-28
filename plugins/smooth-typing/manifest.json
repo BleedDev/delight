@@ -13,5 +13,87 @@
         { "version": "1.0.0", "notes": ["First release."] }
     ],
     "minEviVersion": "0.1.0",
-    "enabledByDefault": true
+    "enabledByDefault": true,
+    "locales": {
+        "de": {
+            "name": "Flüssiges Tippen",
+            "description": "Halbiert die schlimmsten Ruckler beim Tippen. Discord aktualisiert bei jedem Tastenanschlag seinen gespeicherten Entwurf und zeichnet alles neu, was Entwürfe anzeigt; das hier bündelt diese Updates, bis du eine Pause machst. Was du tippst, wird nie verzögert oder geht verloren.",
+            "changelog": {
+                "1.0.3": ["Gibt an, was es braucht (Nachrichten lesen), und Evi achtet darauf."],
+                "1.0.2": ["Eine soeben gesendete Nachricht kehrt nicht mehr ins Textfeld zurück: Der Entwurf, der diese Nachricht war, wird beim Senden verworfen. Auch beim Kanalwechsel und bei Slash-Befehlen bleibt das Feld aktuell."],
+                "1.0.1": ["Behoben: Eine soeben gesendete Nachricht kam manchmal ins Textfeld zurück, wenn man sie direkt nach dem Tippen abschickte."],
+                "1.0.0": ["Erste Version."]
+            }
+        },
+        "es": {
+            "name": "Escritura fluida",
+            "description": "Reduce a la mitad las peores caídas de fotogramas al escribir. Discord actualiza su borrador guardado con cada tecla y vuelve a dibujar todo lo que muestra borradores; esto agrupa esas actualizaciones hasta que haces una pausa. Lo que escribes nunca se retrasa ni se pierde.",
+            "changelog": {
+                "1.0.3": ["Indica lo que necesita (leer mensajes), y Evi lo hace cumplir."],
+                "1.0.2": ["Un mensaje que acabas de enviar ya no vuelve al cuadro de texto: el borrador que era ese mensaje se descarta al enviarlo. Cambiar de canal y usar comandos de barra también mantienen el cuadro al día."],
+                "1.0.1": ["Se corrigió que un mensaje recién enviado a veces volviera al cuadro de texto cuando lo enviabas justo después de escribir."],
+                "1.0.0": ["Primera versión."]
+            }
+        },
+        "fr": {
+            "name": "Saisie fluide",
+            "description": "Réduit de moitié les pires chutes de fluidité pendant la frappe. Discord met à jour son brouillon enregistré à chaque touche et redessine tout ce qui affiche des brouillons ; ceci regroupe ces mises à jour jusqu'à ce que tu fasses une pause. Ce que tu tapes n'est jamais retardé ni perdu.",
+            "changelog": {
+                "1.0.3": ["Indique ce dont il a besoin (lire les messages), et Evi le lui fait respecter."],
+                "1.0.2": ["Un message que tu viens d'envoyer ne revient plus dans la zone de texte : le brouillon qui était ce message est abandonné à l'envoi. Changer de salon et les commandes slash gardent aussi la zone à jour."],
+                "1.0.1": ["Correction d'un message tout juste envoyé qui revenait parfois dans la zone de texte quand tu l'envoyais juste après avoir tapé."],
+                "1.0.0": ["Première version."]
+            }
+        },
+        "ja": {
+            "name": "スムーズ入力",
+            "description": "入力中のひどいフレーム落ちを半分に減らします。Discord は1キー入力ごとに保存用の下書きを更新し、下書きを表示するものすべてを再描画しますが、このプラグインは入力が止まるまでその更新をまとめます。入力内容が遅れたり失われたりすることはありません。",
+            "changelog": {
+                "1.0.3": ["必要な権限（メッセージの読み取り）を明示するようになり、Evi がそれを守らせます。"],
+                "1.0.2": ["送信したばかりのメッセージがテキストボックスに戻らなくなりました。そのメッセージだった下書きは送信時に破棄されます。チャンネルの切り替えやスラッシュコマンドでも、テキストボックスが最新に保たれます。"],
+                "1.0.1": ["入力の直後に送信すると、送信したばかりのメッセージがテキストボックスに戻ることがある問題を修正しました。"],
+                "1.0.0": ["初回リリース。"]
+            }
+        },
+        "pl": {
+            "name": "Płynne pisanie",
+            "description": "Zmniejsza o połowę największe spadki płynności podczas pisania. Discord aktualizuje zapisany szkic przy każdym naciśnięciu klawisza i przerysowuje wszystko, co go pokazuje; ta wtyczka grupuje te aktualizacje, aż zrobisz przerwę. To, co piszesz, nigdy nie jest opóźniane ani tracone.",
+            "changelog": {
+                "1.0.3": ["Mówi, czego potrzebuje (czytania wiadomości), a Evi tego przestrzega."],
+                "1.0.2": ["Wiadomość, którą właśnie wysłałeś(-aś), nie wraca już do pola tekstowego: szkic, który był tą wiadomością, jest porzucany przy wysłaniu. Zmiana kanału i polecenia ukośnikowe też utrzymują pole aktualne."],
+                "1.0.1": ["Naprawiono sytuację, w której świeżo wysłana wiadomość czasem wracała do pola tekstowego, gdy wysłano ją zaraz po napisaniu."],
+                "1.0.0": ["Pierwsze wydanie."]
+            }
+        },
+        "pt-BR": {
+            "name": "Digitação fluida",
+            "description": "Reduz pela metade as piores quedas de quadros ao digitar. O Discord atualiza o rascunho salvo a cada tecla e redesenha tudo que mostra rascunhos; isto agrupa essas atualizações até você fazer uma pausa. O que você digita nunca é atrasado nem perdido.",
+            "changelog": {
+                "1.0.3": ["Informa o que precisa (ler mensagens), e o Evi faz cumprir isso."],
+                "1.0.2": ["Uma mensagem que você acabou de enviar não volta mais para a caixa de texto: o rascunho que era essa mensagem é descartado ao enviar. Trocar de canal e usar comandos de barra também mantêm a caixa atualizada."],
+                "1.0.1": ["Corrigido: uma mensagem recém-enviada às vezes voltava para a caixa de texto quando você a enviava logo depois de digitar."],
+                "1.0.0": ["Primeira versão."]
+            }
+        },
+        "ru": {
+            "name": "Плавный набор",
+            "description": "Вдвое уменьшает самые сильные просадки кадров при наборе текста. Discord обновляет сохранённый черновик при каждом нажатии клавиши и перерисовывает всё, что его показывает; этот плагин объединяет такие обновления, пока вы не сделаете паузу. Набираемый текст никогда не задерживается и не теряется.",
+            "changelog": {
+                "1.0.3": ["Сообщает, что ему нужно (чтение сообщений), и Evi следит за этим."],
+                "1.0.2": ["Только что отправленное сообщение больше не возвращается в поле ввода: черновик, который был этим сообщением, отбрасывается при отправке. Смена канала и слэш-команды тоже поддерживают поле в актуальном состоянии."],
+                "1.0.1": ["Исправлено: только что отправленное сообщение иногда возвращалось в поле ввода, если отправить его сразу после набора."],
+                "1.0.0": ["Первый выпуск."]
+            }
+        },
+        "tr": {
+            "name": "Akıcı Yazma",
+            "description": "Yazarken yaşanan en kötü kare düşüşlerini yarıya indirir. Discord her tuş vuruşunda kayıtlı taslağını günceller ve taslak gösteren her şeyi yeniden çizer; bu eklenti, sen durana kadar bu güncellemeleri toplu hâle getirir. Yazdığın hiçbir şey gecikmez ya da kaybolmaz.",
+            "changelog": {
+                "1.0.3": ["Neye ihtiyacı olduğunu söylüyor (mesajları okumak) ve Evi buna uymasını sağlıyor."],
+                "1.0.2": ["Az önce gönderdiğin mesaj artık metin kutusuna geri gelmiyor: o mesaj olan taslak gönderilince atılıyor. Kanal değiştirmek ve slash komutları da kutuyu güncel tutuyor."],
+                "1.0.1": ["Yazdıktan hemen sonra gönderilen mesajın bazen metin kutusuna geri gelmesi düzeltildi."],
+                "1.0.0": ["İlk sürüm."]
+            }
+        }
+    }
 }

@@ -8,7 +8,7 @@ import { COLOR_GROUPS, ColorKey, contrast, PRESETS, RADIUS_MAX, RADIUS_MIN, RADI
 import { MAX_THEME_SCREENSHOT_BYTES, ScreenshotType, SCREENSHOT_EXTENSIONS, whyNotCommunityCss } from "@shared/themeSubmissions";
 import { isVersion } from "@shared/store";
 
-import { t } from "../i18n";
+import { I18n, t } from "../i18n";
 import { Native } from "../native";
 import { EditorSession, ThemeEditor } from "../themeEditor";
 import { Themes } from "../themes";
@@ -94,7 +94,7 @@ function ColorRow({ colorKey, value, chat, onChange }: { colorKey: ColorKey; val
                 <div className="dl-row-text">
                     <label htmlFor={`${id}-hex`}><Text variant="text-md/semibold" color="text-strong">{name}</Text></label>
                     <Text tag="p" variant="text-sm/normal" color="text-subtle" id={`${id}-hint`}>{t(`themeEditor.color.${colorKey}Hint`)}</Text>
-                    {ratio !== undefined && ratio < min! && <Status tone="warning">{t("themeEditor.lowContrast", { ratio: ratio.toFixed(1) })}</Status>}
+                    {ratio !== undefined && ratio < min! && <Status tone="warning">{t("themeEditor.lowContrast", { ratio: ratio.toLocaleString(I18n.discordLocale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</Status>}
                 </div>
                 <div className="dl-color-controls">
                     <input
@@ -394,7 +394,7 @@ function PublishDialog({ session, onClose }: { session: EditorSession; onClose()
     const [sent, setSent] = React.useState<Sent>();
     const fileRef = React.useRef<HTMLInputElement>(null);
     const css = session.savedCss ?? "";
-    const policyProblem = whyNotCommunityCss(css);
+    const policyProblem = whyNotCommunityCss(css, t);
 
     // Checked again every few seconds while it isn't linked, so linking from here moves on by itself
     React.useEffect(() => {

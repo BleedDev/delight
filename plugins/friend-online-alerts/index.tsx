@@ -2,8 +2,9 @@ import { Components, definePlugin, filters, find, getStore, Menu, React } from "
 import type { PluginContext } from "@evi/api";
 
 import {
-    Alert, AlertConfig, AlertEngine, isWatched, messageFor, parseWatchList, shouldDeliver, snapshotOf, STARTUP_GRACE_MS, toggleWatch,
+    Alert, AlertConfig, AlertEngine, isWatched, parseWatchList, shouldDeliver, snapshotOf, STARTUP_GRACE_MS, toggleWatch,
 } from "./alerts";
+import { t } from "./strings";
 
 /**
  * Tells you when the people you pick come online (and optionally go offline, start a game or
@@ -25,38 +26,72 @@ const WATCH_KEY = "watched";
 const LOG_SIZE = 30;
 
 const SOUNDS = [
-    { label: "No sound", value: "none" },
-    { label: "Message", value: "message1" },
-    { label: "Soft ping", value: "message2" },
-    { label: "Chime", value: "message3" },
-    { label: "Mention", value: "mention1" },
-    { label: "User joined", value: "user_join" },
-    { label: "Stream started", value: "stream_started" },
-    { label: "Success", value: "success" },
+    { get label() { return t("sound.none"); }, value: "none" },
+    { get label() { return t("sound.message1"); }, value: "message1" },
+    { get label() { return t("sound.message2"); }, value: "message2" },
+    { get label() { return t("sound.message3"); }, value: "message3" },
+    { get label() { return t("sound.mention1"); }, value: "mention1" },
+    { get label() { return t("sound.user_join"); }, value: "user_join" },
+    { get label() { return t("sound.stream_started"); }, value: "stream_started" },
+    { get label() { return t("sound.success"); }, value: "success" },
 ] as const;
 
 const settings = {
-    watchAllFriends: { type: "boolean", label: "Watch all friends", description: "Alert for every friend, not only the people you pick.", default: false },
-    showToast: { type: "boolean", label: "In-app toast", description: "A toast at the top of Discord.", default: true },
-    showDesktop: { type: "boolean", label: "Desktop notification", description: "A Windows notification, like Discord's own. Clicking it opens the DM.", default: true },
-    sound: { type: "select", label: "Sound", description: "One of Discord's sounds.", default: "message2", options: SOUNDS },
-    volume: { type: "number", label: "Sound volume", description: "Percent.", default: 40, min: 0, max: 100, step: 5 },
-    alertInDnd: { type: "boolean", label: "Alert even in Do Not Disturb", description: "Otherwise nothing shows or plays while your status is Do Not Disturb.", default: false },
-    onOffline: { type: "boolean", label: "When they go offline", default: false },
-    onGame: { type: "boolean", label: "When they start playing a game", default: false },
-    onStream: { type: "boolean", label: "When they start streaming", default: false },
+    watchAllFriends: {
+        type: "boolean",
+        get label() { return t("settings.watchAllFriends"); },
+        get description() { return t("settings.watchAllFriends.description"); },
+        default: false,
+    },
+    showToast: {
+        type: "boolean",
+        get label() { return t("settings.showToast"); },
+        get description() { return t("settings.showToast.description"); },
+        default: true,
+    },
+    showDesktop: {
+        type: "boolean",
+        get label() { return t("settings.showDesktop"); },
+        get description() { return t("settings.showDesktop.description"); },
+        default: true,
+    },
+    sound: {
+        type: "select",
+        get label() { return t("settings.sound"); },
+        get description() { return t("settings.sound.description"); },
+        default: "message2",
+        options: SOUNDS,
+    },
+    volume: {
+        type: "number",
+        get label() { return t("settings.volume"); },
+        get description() { return t("settings.volume.description"); },
+        default: 40,
+        min: 0,
+        max: 100,
+        step: 5,
+    },
+    alertInDnd: {
+        type: "boolean",
+        get label() { return t("settings.alertInDnd"); },
+        get description() { return t("settings.alertInDnd.description"); },
+        default: false,
+    },
+    onOffline: { type: "boolean", get label() { return t("settings.onOffline"); }, default: false },
+    onGame: { type: "boolean", get label() { return t("settings.onGame"); }, default: false },
+    onStream: { type: "boolean", get label() { return t("settings.onStream"); }, default: false },
     flapMinutes: {
         type: "number",
-        label: "Ignore reconnects (minutes)",
-        description: "Coming back online this soon after going offline isn't announced. 0 announces every time.",
+        get label() { return t("settings.flapMinutes"); },
+        get description() { return t("settings.flapMinutes.description"); },
         default: 5,
         min: 0,
         max: 60,
     },
     cooldownMinutes: {
         type: "number",
-        label: "Cooldown per person (minutes)",
-        description: "At most one alert of each kind per person in this time. 0 turns it off.",
+        get label() { return t("settings.cooldownMinutes"); },
+        get description() { return t("settings.cooldownMinutes.description"); },
         default: 2,
         min: 0,
         max: 120,
@@ -165,7 +200,7 @@ function toggle(id: string) {
     // Start from what they're doing now, so adding someone online doesn't announce them
     if (adding && presenceKnown(id)) engine.seed(id, snapshot(id), Date.now());
     else if (!watched(id)) engine.forget(id);
-    ctx?.toast(adding ? `Online alerts on for ${userName(id)}` : `Online alerts off for ${userName(id)}`, { type: "success" });
+    ctx?.toast(t(adding ? "toast.on" : "toast.off", { name: userName(id) }), { type: "success" });
 }
 
 /** Everyone watched right now */
@@ -188,6 +223,18 @@ function seedAll() {
 }
 
 // ---- Alerts -------------------------------------------------------------------------------------
+
+/** What an alert says, in Discord's language: a title (the person), the rest of the sentence, and the whole sentence */
+function messageFor(alert: Alert, name: string) {
+    const who = name.trim() || t("alert.someone");
+    const game = alert.game;
+    const key = alert.kind === "online" ? (game ? "alert.onlineGame" : "alert.online")
+        : alert.kind === "offline" ? "alert.offline"
+        : alert.kind === "game" ? (game ? "alert.game" : "alert.gameUnknown")
+        : game ? "alert.streamGame" : "alert.stream";
+    const vars = { name: who, game: game ?? "" };
+    return { title: who, body: t(key, vars), text: t(`${key}.text` as `${typeof key}.text`, vars) };
+}
 
 function config(): AlertConfig {
     const s = ctx!.settings;
@@ -308,11 +355,11 @@ function WatchPanel() {
     return (
         <div>
             <div className="dl-field-text">
-                <div className="dl-label">Watched people</div>
+                <div className="dl-label">{t("panel.watched")}</div>
                 <p className="dl-hint" role="status">
                     {list.length
-                        ? `${list.length} ${list.length === 1 ? "person" : "people"}${all ? ", plus all your friends" : ""}.`
-                        : all ? "All your friends. Right-click anyone else and pick Online Alerts to add them." : "Nobody yet. Right-click someone and pick Online Alerts, or add a user ID here."}
+                        ? t(all ? "panel.countAll" : "panel.count", { count: list.length })
+                        : t(all ? "panel.allFriends" : "panel.nobody")}
                 </p>
             </div>
             {list.length > 0 && (
@@ -328,7 +375,7 @@ function WatchPanel() {
                                 <span className="dl-hint" style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>
                                     {name}{name === userId ? "" : ` (${userId})`}
                                 </span>
-                                <SmallButton danger label={`Stop watching ${name}`} onClick={() => toggle(userId)}>Remove</SmallButton>
+                                <SmallButton danger label={t("panel.stop", { name })} onClick={() => toggle(userId)}>{t("panel.remove")}</SmallButton>
                             </li>
                         );
                     })}
@@ -338,8 +385,8 @@ function WatchPanel() {
                 <input
                     className="dl-input"
                     style={{ flex: 1 }}
-                    aria-label="User ID to watch"
-                    placeholder="User ID"
+                    aria-label={t("panel.userIdLabel")}
+                    placeholder={t("panel.userIdPlaceholder")}
                     inputMode="numeric"
                     value={input}
                     onChange={e => setInput(e.currentTarget.value)}
@@ -347,15 +394,15 @@ function WatchPanel() {
                         if (e.key === "Enter") add();
                     }}
                 />
-                <SmallButton disabled={!valid || list.includes(id)} onClick={add}>Add</SmallButton>
+                <SmallButton disabled={!valid || list.includes(id)} onClick={add}>{t("panel.add")}</SmallButton>
             </div>
 
             <div className="dl-field-row">
                 <div className="dl-field-text">
-                    <div className="dl-label">Recent</div>
-                    <p className="dl-hint">{log.length ? "Since Discord started. Kept in memory only." : "No alerts yet. Kept in memory only."}</p>
+                    <div className="dl-label">{t("panel.recent")}</div>
+                    <p className="dl-hint">{t(log.length ? "panel.recent.some" : "panel.recent.none")}</p>
                 </div>
-                <SmallButton danger disabled={!log.length} onClick={() => { log = []; bump(); }}>Clear</SmallButton>
+                <SmallButton danger disabled={!log.length} onClick={() => { log = []; bump(); }}>{t("panel.clear")}</SmallButton>
             </div>
             {log.length > 0 && (
                 <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -421,8 +468,8 @@ export default definePlugin({
                 <Menu.Group key="evi-foa-group">
                     <Menu.CheckboxItem
                         id="evi-foa-toggle"
-                        label="Online Alerts"
-                        subtext={viaFriends ? "On for all friends" : undefined}
+                        label={t("menu.alerts")}
+                        subtext={viaFriends ? t("menu.alerts.subtext") : undefined}
                         checked={explicit || viaFriends}
                         disabled={viaFriends}
                         action={() => toggle(userId)}

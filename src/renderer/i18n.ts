@@ -43,9 +43,18 @@ function start() {
     if (started) return;
     started = true;
     if (typeof document === "undefined") return;
-    refresh();
-    // Discord updates <html lang> when its language changes, even before its stores exist
-    new MutationObserver(refresh).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+    // Evi can start before <html> exists: watch it once it does
+    const watchLang = () => {
+        refresh();
+        // Discord updates <html lang> when its language changes, even before its stores exist
+        new MutationObserver(refresh).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+    };
+    if (document.documentElement) watchLang();
+    else new MutationObserver((_, observer) => {
+        if (!document.documentElement) return;
+        observer.disconnect();
+        watchLang();
+    }).observe(document, { childList: true });
     waitFor<LocaleStore>(filters.byStoreName("LocaleStore"), store => {
         store.addChangeListener?.(refresh);
         refresh();

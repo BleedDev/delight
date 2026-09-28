@@ -51,3 +51,31 @@ describe("remote themes", () => {
         expect(themeFileName(new URL("https://x.dev/"), { name: "" })).toBe("x.dev.css");
     });
 });
+
+describe("localized theme headers", () => {
+    test("@name:xx and @description:xx become locales", () => {
+        const css = `/**
+ * @name Midnight
+ * @name:de Mitternacht
+ * @name:pt-BR Meia-noite
+ * @description True black
+ * @description:de Tiefschwarz
+ * @author Evi
+ * @author:de ignored
+ * @version 1.0.0
+ */
+body{}`;
+        const meta = parseThemeMeta(css, "midnight.css");
+        expect(meta).toMatchObject({ name: "Midnight", description: "True black", author: "Evi", version: "1.0.0" });
+        expect(meta.locales).toEqual({ de: { name: "Mitternacht", description: "Tiefschwarz" }, "pt-BR": { name: "Meia-noite" } });
+    });
+
+    test("themes without any have no locales, and the shipped themes list every language", () => {
+        expect(parseThemeMeta("/** @name A */", "a.css")).not.toHaveProperty("locales");
+        for (const file of ["aurora.css", "midnight.css"]) {
+            const meta = parseThemeMeta(require("fs").readFileSync(`${import.meta.dir}/../themes/${file}`, "utf8"), file);
+            expect(Object.keys(meta.locales ?? {}).sort()).toEqual(["de", "es", "fr", "ja", "pl", "pt-BR", "ru", "tr"]);
+            for (const l of Object.values(meta.locales!)) expect(l.name && l.description).toBeTruthy();
+        }
+    });
+});

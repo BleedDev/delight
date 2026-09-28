@@ -6,6 +6,7 @@ import { existsSync, FSWatcher, mkdirSync, readdirSync, readFileSync, renameSync
 import { basename, join } from "path";
 
 import { downloadHttps } from "./download";
+import { mt } from "./locale";
 import { DATA_DIR, THEMES_DIR } from "./paths";
 import { SafeMode } from "./safeMode";
 
@@ -109,9 +110,9 @@ export async function addThemeFromUrl(input: string): Promise<AddThemeResult> {
     try {
         css = new TextDecoder("utf-8", { fatal: true }).decode(body);
     } catch {
-        return { ok: false, error: "That file isn't text" };
+        return { ok: false, error: mt("main.backup.notText") };
     }
-    const problem = whyNotCss(css, download.contentType);
+    const problem = whyNotCss(css, download.contentType, mt);
     if (problem) return { ok: false, error: problem };
 
     const file = pickFile(themeFileName(url, parseThemeMeta(css, "")), css);
@@ -139,9 +140,9 @@ function storeThemeFiles() {
  */
 export function saveTheme(input: unknown): ThemeSaveResult {
     const { css, name, file } = (input ?? {}) as Record<string, unknown>;
-    if (typeof css !== "string" || typeof name !== "string") return { ok: false, error: "Nothing to save" };
-    if (new TextEncoder().encode(css).length > MAX_THEME_BYTES) return { ok: false, error: "That theme is too large to save" };
-    const problem = whyNotCss(css, "text/css");
+    if (typeof css !== "string" || typeof name !== "string") return { ok: false, error: mt("themeEditor.nothingToSave") };
+    if (new TextEncoder().encode(css).length > MAX_THEME_BYTES) return { ok: false, error: mt("main.theme.tooLarge") };
+    const problem = whyNotCss(css, "text/css", mt);
     if (problem) return { ok: false, error: problem };
 
     let target: string | undefined;

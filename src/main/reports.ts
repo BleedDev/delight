@@ -34,6 +34,7 @@ import { join } from "path";
 import { onHotfixesAnnounced, onPullsAnnounced } from "./badges";
 import { apiRequest, apiUrl } from "./evirest";
 import { DATA_DIR, PLUGINS_DIR } from "./paths";
+import { mt } from "./locale";
 
 const CACHE_DIR = join(DATA_DIR, "cache");
 
@@ -217,11 +218,11 @@ let reportsSent: number[] = [];
  * refusals ("You already reported this plugin…") are shown as they are.
  */
 async function reportPlugin(id: unknown, input: unknown): Promise<PluginReportResult> {
-    const checked = validatePluginReport(id, input);
+    const checked = validatePluginReport(id, input, mt);
     if ("error" in checked) return { ok: false, error: checked.error };
     const now = Date.now();
     reportsSent = reportsSent.filter(at => now - at < HOUR);
-    if (reportsSent.length >= REPORTS_PER_HOUR) return { ok: false, error: "You've sent a lot of reports in the last hour. Try again later." };
+    if (reportsSent.length >= REPORTS_PER_HOUR) return { ok: false, error: mt("main.rate.reportsSent") };
     reportsSent.push(now);
     const { plugin, ...report } = checked.report;
     try {

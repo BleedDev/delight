@@ -7,8 +7,10 @@
  * evi.rest and comes back in the list, so everyone's Evi shows it.
  */
 import type { BadgeAdminAction, BadgeAdminResult, BadgeInfo, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult } from "@shared/badges";
+import type { EviKey } from "@shared/locales";
 import { isSupporterBadge } from "@shared/supporter";
 
+import { I18n, t } from "./i18n";
 import { Logger } from "./logger";
 import { Native } from "./native";
 
@@ -39,8 +41,19 @@ let shownByUser = new Map<string, readonly Badge[]>();
 let version = 0;
 let timer: ReturnType<typeof setInterval> | undefined;
 let users = 0;
+let stopLocale: (() => void) | undefined;
 
-const sinceFormat = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" });
+const sinceDate = (since: number) => new Intl.DateTimeFormat(I18n.discordLocale, { month: "short", day: "numeric", year: "numeric" }).format(since);
+
+/** A supporter level's name in Discord's language: "Gold" */
+export const levelName = (badgeId: string) => t(`badge.level.${badgeId.slice("supporter-".length)}` as EviKey);
+
+/** The badges Evi's own code knows get their name and line in Discord's language; the rest are as evi.rest has them */
+function localized(id: string, info: BadgeInfo): BadgeInfo {
+    if (id === "plugin-author") return { ...info, name: t("badge.pluginAuthor.name"), description: t("badge.pluginAuthor.description") };
+    if (isSupporterBadge(id)) return { ...info, name: t("badge.supporterLevel", { level: levelName(id) }), description: t("badge.supporter.description") };
+    return info;
+}
 
 export const badgeKey = (id: string) => isSupporterBadge(id) ? "supporter" : id;
 
@@ -94,10 +107,11 @@ function set(next: BadgesDocument) {
         const list = ids.map((id): Badge => {
             const key = badgeKey(id);
             // A supporter's level says since when, like Discord's Nitro badge
-            const description = since && key === "supporter" ? `Supporting Evi since ${sinceFormat.format(since)}` : next.badges[id].description;
+            const info = localized(id, next.badges[id]);
+            const description = since && key === "supporter" ? t("badge.supportingSince", { date: sinceDate(since) }) : info.description;
             // Their own colour, once it's drawn; their level's until then
-            const icon = key === "supporter" && prefs.color ? tintedIcon(next.badges[id].icon, prefs.color) ?? next.badges[id].icon : next.badges[id].icon;
-            return { id, ...next.badges[id], icon, description, key, hidden: hidden.has(key) };
+            const icon = key === "supporter" && prefs.color ? tintedIcon(info.icon, prefs.color) ?? info.icon : info.icon;
+            return { id, ...info, icon, description, key, hidden: hidden.has(key) };
         });
         // Their order where they set one; the rest stay in the order they were given, in front
         const at = (b: Badge) => position.get(b.key) ?? -1;
@@ -132,11 +146,15 @@ export const Badges = {
             // The cached copy shows right away, the live list replaces it when it arrives
             void load(true).then(() => load());
             timer = setInterval(() => void load(), REFRESH_EVERY);
+            // Names and dates are worded in Discord's language: again when it changes
+            stopLocale = I18n.subscribe(() => set(doc));
         }
         return () => {
             if (--users === 0) {
                 clearInterval(timer);
                 timer = undefined;
+                stopLocale?.();
+                stopLocale = undefined;
             }
         };
     },

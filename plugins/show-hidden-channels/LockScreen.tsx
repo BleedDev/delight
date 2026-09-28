@@ -7,15 +7,13 @@ import { Components, Dispatcher, filters, find, React } from "@evi/api";
 import type { ComponentType } from "react";
 
 import { cssClasses, findCached, getContext, Permissions, setting, store } from "./shared";
+import { t } from "./strings";
 
 const enum ChannelFlags {
     REQUIRE_TAG = 1 << 4,
 }
 
 const TYPE_NAMES: Record<number, string> = { 0: "text", 2: "voice", 5: "announcement", 13: "stage", 15: "forum", 16: "media" };
-const SORT_ORDERS: Record<number, string> = { 0: "Latest activity", 1: "Creation date" };
-const FORUM_LAYOUTS: Record<number, string> = { 0: "Not set", 1: "List view", 2: "Gallery view" };
-const VIDEO_QUALITY: Record<number, string> = { 1: "Automatic", 2: "720p" };
 
 /** Discord's picture for a message link you can't open */
 const LOGO = "/assets/433e3ec4319a9d11b0cbe39342614982.svg";
@@ -37,15 +35,15 @@ function formatDuration(amount: number, unit: "seconds" | "minutes") {
         const n = Math.floor(seconds / size);
         if (!n) continue;
         seconds -= n * size;
-        parts.push(`${n} ${name}${n === 1 ? "" : "s"}`);
+        parts.push(t(`duration.${name}`, { count: n }));
     }
-    return parts.join(" ") || "0 seconds";
+    return parts.join(" ") || t("duration.second", { count: 0 });
 }
 
 function Emoji({ id, name }: { id?: string | null; name?: string | null; }) {
     if (name) return <span className="evi-shc-emoji">{name}</span>;
     if (!id) return null;
-    const alt = store("EmojiStore")?.getCustomEmojiById?.(id)?.name ?? "emoji";
+    const alt = store("EmojiStore")?.getCustomEmojiById?.(id)?.name ?? t("emoji");
     return <img className="evi-shc-emoji" src={`https://cdn.discordapp.com/emojis/${id}.webp?size=48`} alt={`:${alt}:`} />;
 }
 
@@ -97,9 +95,9 @@ function LockScreen({ channel }: { channel: any; }) {
                 <img className="evi-shc-logo" src={LOGO} alt="" />
 
                 <div className="evi-shc-heading">
-                    <h2>This is a {hidden ? "hidden" : "locked"} {TYPE_NAMES[type] ?? ""} channel</h2>
+                    <h2>{t(`title.${hidden ? "hidden" : "locked"}.${TYPE_NAMES[type] ?? "other"}` as "title.hidden.other")}</h2>
                     {channel.isNSFW?.() && (
-                        <WithTooltip text="NSFW">
+                        <WithTooltip text={t("nsfw")}>
                             {props => (
                                 <svg {...props} className="evi-shc-nsfw" width="32" height="32" viewBox="0 0 48 48" aria-hidden role="img">
                                     <path fill="currentColor" d="M.7 43.05 24 2.85l23.3 40.2Zm23.55-6.25q.75 0 1.275-.525.525-.525.525-1.275 0-.75-.525-1.3t-1.275-.55q-.8 0-1.325.55-.525.55-.525 1.3t.55 1.275q.55.525 1.3.525Zm-1.85-6.1h3.65V19.4H22.4Z" />
@@ -111,35 +109,35 @@ function LockScreen({ channel }: { channel: any; }) {
 
                 {!isVoice && (
                     <p className="evi-shc-lead">
-                        You can't see the {isForum ? "posts" : "messages"} in this channel.
-                        {isForum && topic && " Its guidelines are below."}
+                        {t(isForum ? "lead.posts" : "lead.messages")}
+                        {isForum && topic && t("lead.guidelines")}
                     </p>
                 )}
 
                 {isForum && topic && <div className="evi-shc-box evi-shc-topic"><Topic channel={channel} /></div>}
 
-                {lastMessageId && <p>Last {isForum ? "post" : "message"}: {formatDate(snowflakeDate(lastMessageId))}</p>}
-                {lastPinTimestamp && <p>Last pin: {formatDate(new Date(lastPinTimestamp))}</p>}
-                {rateLimitPerUser > 0 && <p>Slowmode: {formatDuration(rateLimitPerUser, "seconds")}</p>}
-                {defaultThreadRateLimitPerUser > 0 && <p>Default thread slowmode: {formatDuration(defaultThreadRateLimitPerUser, "seconds")}</p>}
-                {isVoice && bitrate != null && <p>Bitrate: {Math.round(bitrate / 1000)} kbps</p>}
-                {rtcRegion !== undefined && <p>Region: {rtcRegion ?? "Automatic"}</p>}
-                {isVoice && <p>Video quality: {VIDEO_QUALITY[videoQualityMode ?? 1]}</p>}
+                {lastMessageId && <p>{t(isForum ? "last.post" : "last.message", { date: formatDate(snowflakeDate(lastMessageId)) })}</p>}
+                {lastPinTimestamp && <p>{t("last.pin", { date: formatDate(new Date(lastPinTimestamp)) })}</p>}
+                {rateLimitPerUser > 0 && <p>{t("slowmode", { duration: formatDuration(rateLimitPerUser, "seconds") })}</p>}
+                {defaultThreadRateLimitPerUser > 0 && <p>{t("slowmode.thread", { duration: formatDuration(defaultThreadRateLimitPerUser, "seconds") })}</p>}
+                {isVoice && bitrate != null && <p>{t("bitrate", { kbps: Math.round(bitrate / 1000) })}</p>}
+                {rtcRegion !== undefined && <p>{t("region", { region: rtcRegion ?? t("automatic") })}</p>}
+                {isVoice && <p>{t("video.quality", { quality: (videoQualityMode ?? 1) === 2 ? "720p" : t("automatic") })}</p>}
                 {defaultAutoArchiveDuration > 0 && (
-                    <p>{isForum ? "Posts" : "Threads"} archive after {formatDuration(defaultAutoArchiveDuration, "minutes")} of inactivity</p>
+                    <p>{t(isForum ? "archive.posts" : "archive.threads", { duration: formatDuration(defaultAutoArchiveDuration, "minutes") })}</p>
                 )}
-                {defaultForumLayout != null && <p>Default layout: {FORUM_LAYOUTS[defaultForumLayout]}</p>}
-                {defaultSortOrder != null && <p>Default sort order: {SORT_ORDERS[defaultSortOrder]}</p>}
+                {defaultForumLayout != null && <p>{t("layout", { layout: t(`layout.${defaultForumLayout}` as "layout.0") })}</p>}
+                {defaultSortOrder != null && <p>{t("sort", { order: t(`sort.${defaultSortOrder}` as "sort.0") })}</p>}
                 {defaultReactionEmoji != null && (
                     <div className="evi-shc-box evi-shc-row">
-                        <p>Default reaction:</p>
+                        <p>{t("reaction")}</p>
                         <Emoji id={defaultReactionEmoji.emojiId} name={defaultReactionEmoji.emojiName} />
                     </div>
                 )}
-                {channel.hasFlag?.(ChannelFlags.REQUIRE_TAG) && <p>Posts in this forum need a tag.</p>}
+                {channel.hasFlag?.(ChannelFlags.REQUIRE_TAG) && <p>{t("tag.required")}</p>}
                 {availableTags?.length > 0 && (
                     <div className="evi-shc-box">
-                        <h3>Available tags</h3>
+                        <h3>{t("tags")}</h3>
                         <div className="evi-shc-tags">
                             {availableTags.map((tag: any) => (
                                 <span key={tag.id} className="evi-shc-tag">
@@ -153,8 +151,8 @@ function LockScreen({ channel }: { channel: any; }) {
 
                 <div className="evi-shc-box evi-shc-allowed">
                     <div className="evi-shc-row">
-                        <h3>Allowed users and roles</h3>
-                        <WithTooltip text={showAllowed ? "Hide allowed users and roles" : "Show allowed users and roles"}>
+                        <h3>{t("allowed")}</h3>
+                        <WithTooltip text={t(showAllowed ? "allowed.hide" : "allowed.show")}>
                             {props => (
                                 <button {...props} className="evi-shc-toggle" aria-expanded={showAllowed} onClick={() => ctx?.settings.set("showAllowedByDefault", !showAllowed)}>
                                     <svg width="24" height="24" viewBox="0 0 24 24" style={{ transform: showAllowed ? "scaleY(-1)" : undefined }}>
@@ -184,7 +182,7 @@ function getBoundary() {
             getContext()?.logger.error("The hidden channel page crashed", err);
         }
         override render() {
-            return this.state.failed ? <div className="evi-shc-container"><p>Couldn't show this hidden channel.</p></div> : this.props.children;
+            return this.state.failed ? <div className="evi-shc-container"><p>{t("crashed")}</p></div> : this.props.children;
         }
     };
 }

@@ -8,5 +8,79 @@
     "permissions": { "network": ["discord.com"], "readMessages": true },
     "changelog": [{ "version": "1.0.0", "notes": ["First release."] }],
     "minEviVersion": "1.0.0",
-    "enabledByDefault": false
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Wer hat reagiert",
+            "description": "Kleine Avatare der Leute, die reagiert haben, direkt an jeder Reaktion neben der Anzahl, und wie viele weitere es sind, wenn es viele gibt.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Quién reaccionó",
+            "description": "Pequeños avatares de quienes reaccionaron, justo en cada reacción junto a su contador, y cuántas personas más hay cuando son muchas.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Qui a réagi",
+            "description": "De petits avatars de ceux qui ont réagi, directement sur chaque réaction à côté de son compteur, et combien d'autres quand ils sont nombreux.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "リアクションした人",
+            "description": "リアクションした人の小さなアバターを、各リアクションのカウントの横に表示します。人数が多いときは残りの人数も表示します。",
+            "changelog": {
+                "1.0.0": [
+                    "最初のリリースです。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Kto zareagował",
+            "description": "Małe awatary osób, które zareagowały, tuż przy każdej reakcji obok licznika, a gdy jest ich dużo, także ile jeszcze osób zareagowało.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Quem reagiu",
+            "description": "Avatares pequenos de quem reagiu, direto em cada reação ao lado da contagem, e quantas pessoas a mais quando são muitas.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Кто отреагировал",
+            "description": "Маленькие аватары тех, кто отреагировал, прямо на каждой реакции рядом со счётчиком, а если людей много — сколько ещё.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый релиз."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Kim Tepki Verdi",
+            "description": "Tepki verenlerin küçük avatarları, her tepkinin üzerinde sayının yanında görünür; çok kişi olduğunda kaç kişi daha olduğu da gösterilir.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

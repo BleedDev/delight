@@ -19,5 +19,79 @@
         }
     ],
     "permissions": {},
-    "enabledByDefault": false
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "DM-Kategorien",
+            "description": "Sortiere deine DMs in Kategorien wie Freunde, Arbeit oder Gaming, jede ein einklappbarer Bereich oben in deiner DM-Liste. Klicke eine DM oder Gruppen-DM mit der rechten Maustaste an, um sie einer Kategorie hinzuzufügen. Eingeklappte Kategorien zeigen weiterhin die geöffnete DM und alle mit ungelesenen Nachrichten.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Veröffentlichung."
+                ]
+            }
+        },
+        "es": {
+            "name": "Categorías de MD",
+            "description": "Ordena tus MD en categorías como Amigos, Trabajo o Juegos, cada una una sección plegable en la parte superior de tu lista de MD. Haz clic derecho en un MD o MD grupal para añadirlo a una. Las categorías plegadas siguen mostrando el MD que tienes abierto y los que tienen mensajes sin leer.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Catégories de MP",
+            "description": "Range tes MP dans des catégories comme Amis, Travail ou Jeux, chacune étant une section repliable en haut de ta liste de MP. Fais un clic droit sur un MP ou un MP de groupe pour l'ajouter à l'une d'elles. Les catégories repliées affichent toujours le MP ouvert et ceux qui ont des messages non lus.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "DMカテゴリ",
+            "description": "DMを「フレンド」「仕事」「ゲーム」などのカテゴリに分けて、DMリストの上部に折りたたみ式のセクションとして表示します。DMやグループDMを右クリックすると、カテゴリに追加できます。折りたたんだカテゴリでも、開いているDMと未読メッセージのあるDMは表示されたままです。",
+            "changelog": {
+                "1.0.0": [
+                    "最初のリリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Kategorie DM",
+            "description": "Porządkuj swoje DM w kategorie, takie jak Znajomi, Praca czy Gry, z których każda to zwijana sekcja na górze listy DM. Kliknij prawym przyciskiem myszy DM lub grupowy DM, aby dodać go do kategorii. Zwinięte kategorie nadal pokazują otwarty DM oraz te z nieprzeczytanymi wiadomościami.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Categorias de DM",
+            "description": "Organize suas DMs em categorias como Amigos, Trabalho ou Jogos, cada uma uma seção recolhível no topo da sua lista de DMs. Clique com o botão direito em uma DM ou DM em grupo para adicioná-la a uma categoria. Categorias recolhidas continuam mostrando a DM aberta e as que têm mensagens não lidas.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Категории ЛС",
+            "description": "Раскладывайте личные сообщения по категориям вроде «Друзья», «Работа» или «Игры»: каждая из них — сворачиваемый раздел в верхней части списка ЛС. Нажмите правой кнопкой мыши на ЛС или групповой чат, чтобы добавить его в категорию. Свёрнутые категории всё равно показывают открытый чат и чаты с непрочитанными сообщениями.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "DM Kategorileri",
+            "description": "DM'lerini Arkadaşlar, İş veya Oyun gibi kategorilere ayır; her biri DM listenin üstünde daraltılabilir bir bölüm olur. Bir DM'ye ya da grup DM'sine sağ tıklayıp bir kategoriye ekleyebilirsin. Daraltılmış kategoriler yine de açık olan DM'yi ve okunmamış mesajı olanları gösterir.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

@@ -5,6 +5,7 @@
  */
 import { EviSettings, isPluginEnabled, PluginManifest, PluginPayload, PluginSettingsEntry } from "./ipc";
 import { isThemeFile, MAX_THEME_BYTES } from "./themes";
+import { englishTr, Tr } from "./tr";
 
 export const BACKUP_FORMAT = "evi-backup";
 export const BACKUP_VERSION = 1;
@@ -160,21 +161,21 @@ function parsePlugins(value: unknown): BackupPlugin[] {
 }
 
 /** Strictly validates a backup file's text. Everything returned is freshly built, nothing from the file is passed through. */
-export function parseBackup(text: string): ParseResult {
-    if (text.length > MAX_BACKUP_BYTES) return { ok: false, error: `That file is larger than ${MAX_BACKUP_BYTES / 1024 / 1024} MB` };
+export function parseBackup(text: string, tr: Tr = englishTr): ParseResult {
+    if (text.length > MAX_BACKUP_BYTES) return { ok: false, error: tr("main.backup.tooLarge", { mb: MAX_BACKUP_BYTES / 1024 / 1024 }) };
 
     let raw: unknown;
     try {
         raw = JSON.parse(text.replace(/^\uFEFF/, ""));
     } catch {
-        return { ok: false, error: "That file isn't valid JSON" };
+        return { ok: false, error: tr("main.backup.notJson") };
     }
 
     try {
-        if (!isObject(raw) || raw.format !== BACKUP_FORMAT) fail("That file isn't a Evi backup");
-        if (typeof raw.version !== "number" || !Number.isInteger(raw.version)) fail("The backup has no valid version");
-        if (raw.version > BACKUP_VERSION) fail(`The backup was made by a newer Evi (format ${raw.version}), update Evi to restore it`);
-        if (raw.version !== BACKUP_VERSION) fail(`Unsupported backup format ${raw.version}`);
+        if (!isObject(raw) || raw.format !== BACKUP_FORMAT) fail(tr("main.backup.notBackup"));
+        if (typeof raw.version !== "number" || !Number.isInteger(raw.version)) fail(tr("main.backup.noVersion"));
+        if (raw.version > BACKUP_VERSION) fail(tr("main.backup.newer", { version: raw.version }));
+        if (raw.version !== BACKUP_VERSION) fail(tr("main.backup.unsupported", { version: raw.version }));
 
         const createdAt = str(raw.createdAt, "createdAt", 64);
         if (Number.isNaN(Date.parse(createdAt))) fail("createdAt isn't a date");

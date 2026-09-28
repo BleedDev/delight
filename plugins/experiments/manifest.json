@@ -6,5 +6,103 @@
     "authors": ["Evi"],
     "tags": ["developer"],
     "permissions": {},
-    "changelog": [{ "version": "1.0.1", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] }, { "version": "1.0.0", "notes": ["First release."] }]
+    "changelog": [{ "version": "1.0.1", "notes": ["Says what it needs, which is nothing beyond what Discord already shows it, and Evi holds it to that."] }, { "version": "1.0.0", "notes": ["First release."] }],
+    "locales": {
+        "de": {
+            "name": "Experimente",
+            "description": "Schaltet die Reiter „Experimente“ und Entwicklereinstellungen von Discord frei.",
+            "changelog": {
+                "1.0.1": [
+                    "Sagt jetzt, was sie braucht, nämlich nichts, was Discord ihr nicht ohnehin zeigt, und Evi hält sie dazu an."
+                ],
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Experimentos",
+            "description": "Desbloquea las pestañas de Experimentos y de ajustes de desarrollador de Discord.",
+            "changelog": {
+                "1.0.1": [
+                    "Ahora dice lo que necesita, que es nada más allá de lo que Discord ya le muestra, y Evi se lo hace cumplir."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Expériences",
+            "description": "Débloque les onglets Expériences et paramètres développeur de Discord.",
+            "changelog": {
+                "1.0.1": [
+                    "Indique désormais ce dont il a besoin, à savoir rien de plus que ce que Discord lui montre déjà, et Evi l'y tient."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "実験機能",
+            "description": "Discordの「Experiments」タブと開発者向け設定タブを解放します。",
+            "changelog": {
+                "1.0.1": [
+                    "必要な権限を宣言するようになりました。Discordがすでに表示している内容以外は必要なく、Eviがその範囲を守らせます。"
+                ],
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Eksperymenty",
+            "description": "Odblokowuje karty Eksperymentów i ustawień deweloperskich w Discordzie.",
+            "changelog": {
+                "1.0.1": [
+                    "Podaje teraz, czego potrzebuje, czyli niczego ponad to, co Discord już mu pokazuje, a Evi tego pilnuje."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Experimentos",
+            "description": "Libera as abas de Experimentos e de configurações de desenvolvedor do Discord.",
+            "changelog": {
+                "1.0.1": [
+                    "Agora informa o que precisa, que é nada além do que o Discord já mostra a ele, e o Evi garante que ele respeite isso."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Эксперименты",
+            "description": "Открывает вкладки «Эксперименты» и настроек разработчика в Discord.",
+            "changelog": {
+                "1.0.1": [
+                    "Теперь заявляет, что ему нужно, а это ничего сверх того, что Discord и так ему показывает, и Evi следит, чтобы он не выходил за эти рамки."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Deneyler",
+            "description": "Discord'un Deneyler ve geliştirici ayarları sekmelerinin kilidini açar.",
+            "changelog": {
+                "1.0.1": [
+                    "Artık neye ihtiyaç duyduğunu belirtiyor; bu, Discord'un zaten gösterdiğinin ötesinde hiçbir şey değil ve Evi bunu denetliyor."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }

@@ -234,7 +234,7 @@ function PluginCard({ state, query }: { state: PluginState; query: string; }) {
                 <div className="dl-plugin-card-title">
                     <div className="dl-row-title">
                         <Text tag="h3" variant="text-md/semibold" color="text-strong" id={titleId}>{manifest.name}</Text>
-                        {state.source === "dev" && <Badge>Dev</Badge>}
+                        {state.source === "dev" && <Badge>{t("common.dev")}</Badge>}
                         {fromStore && <Badge>{t("common.store")}</Badge>}
                         {manifest.native && <Badge tone="warning">{t("plugins.badge.native")}</Badge>}
                     </div>
@@ -426,7 +426,7 @@ export function InstalledPlugins() {
         { value: "enabled", label: `${t("plugins.filter.enabled")} (${enabledCount})` },
         { value: "disabled", label: `${t("plugins.filter.disabled")} (${plugins.length - enabledCount})` },
         { value: "settings", label: `${t("plugins.filter.settings")} (${count("settings")})` },
-        ...devCount ? [{ value: "dev" as const, label: `Dev (${devCount})` }] : [],
+        ...devCount ? [{ value: "dev" as const, label: `${t("common.dev")} (${devCount})` }] : [],
     ];
 
     return (

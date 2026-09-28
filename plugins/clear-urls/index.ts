@@ -1,5 +1,7 @@
 import { definePlugin, filters } from "@evi/api";
 
+import { t } from "./strings";
+
 const DEFAULT_PARAMS = [
     "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id",
     "fbclid", "gclid", "dclid", "msclkid", "igshid", "mc_eid", "si", "ref_src", "ref_url", "_hsenc", "_hsmi",
@@ -11,9 +13,9 @@ export default definePlugin({
     settings: {
         extraParams: {
             type: "string",
-            label: "Extra parameters to remove",
-            description: "Comma separated, on top of the built-in list of common trackers.",
-            placeholder: "ref, source",
+            get label() { return t("settings.extraParams"); },
+            get description() { return t("settings.extraParams.description"); },
+            get placeholder() { return t("settings.extraParams.placeholder"); },
             default: "",
         },
     },

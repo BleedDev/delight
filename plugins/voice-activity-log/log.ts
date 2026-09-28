@@ -1,4 +1,5 @@
 import type { SourcePatch } from "@evi/api";
+import { format, Vars } from "@shared/i18n";
 
 /**
  * The pure half of Voice Activity Log: no Discord, no DOM, so it's unit tested.
@@ -353,6 +354,53 @@ export class VoiceLog {
 
 // ---- Words --------------------------------------------------------------------------------------
 
+/**
+ * The words the log is described with. English lives here so this file stays pure; strings.ts
+ * spreads it into the English catalog and adds the other languages.
+ */
+export const EN_WORDS = {
+    "duration.s": "{n}s",
+    "duration.m": "{n}m",
+    "duration.h": "{n}h",
+    "duration.hm": "{h}h {m}m",
+    "channel.id": "channel {id}",
+    "channel.other": "another channel",
+    "stay.some": " (stayed {d})",
+    "stay.atLeast": " (stayed at least {d})",
+    "entry.selfJoin": "You joined {channel}",
+    "entry.selfMove": "You moved to {other}{stayed}",
+    "entry.selfLeave": "You left{stayed}",
+    "entry.present": "{n} was already here",
+    "entry.join": "{n} joined",
+    "entry.leave": "{n} left{stayed}",
+    "entry.moveIn": "{n} moved in from {other}",
+    "entry.moveOut": "{n} moved to {other}{stayed}",
+    "entry.streamStart": "{n} started streaming",
+    "entry.streamStop": "{n} stopped streaming",
+    "entry.videoStart": "{n} turned on their camera",
+    "entry.videoStop": "{n} turned off their camera",
+    "entry.mute": "{n} muted",
+    "entry.unmute": "{n} unmuted",
+    "entry.deafen": "{n} deafened",
+    "entry.undeafen": "{n} undeafened",
+    "note.here": "still here · {d}",
+    "note.stillThere": "still there when you left · {d}",
+    "note.atLeast": "stayed at least {d}",
+    "note.stayed": "stayed {d}",
+    "text.now": "now",
+    "text.nothing": "(nothing logged)",
+    "filter.all": "All",
+    "filter.people": "Joins & leaves",
+    "filter.streams": "Streams",
+    "filter.voice": "Mute & deafen",
+} as const;
+
+export type WordKey = keyof typeof EN_WORDS;
+/** Looks a word up in the current language; plain English by default */
+export type Tr = (key: WordKey, vars?: Vars) => string;
+
+const english: Tr = (key, vars) => format(EN_WORDS[key], vars);
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /** 24-hour local clock: "14:02" */
@@ -362,60 +410,49 @@ export function formatClock(ms: number) {
 }
 
 /** "45s", "12m", "1h 5m" */
-export function formatDuration(ms: number) {
+export function formatDuration(ms: number, tr: Tr = english) {
     const s = Math.max(0, Math.floor(ms / 1000));
-    if (s < 60) return `${s}s`;
+    if (s < 60) return tr("duration.s", { n: s });
     const m = Math.floor(s / 60);
-    if (m < 60) return `${m}m`;
+    if (m < 60) return tr("duration.m", { n: m });
     const h = Math.floor(m / 60);
-    return m % 60 ? `${h}h ${m % 60}m` : `${h}h`;
+    return m % 60 ? tr("duration.hm", { h, m: m % 60 }) : tr("duration.h", { n: h });
 }
 
-const channelLabel = (name: string | undefined, id: string | undefined) => name || (id ? `channel ${id}` : "another channel");
+const channelLabel = (name: string | undefined, id: string | undefined, tr: Tr) => name || (id ? tr("channel.id", { id }) : tr("channel.other"));
 
 /** What happened, without the time: "Bob left (stayed 15m)" */
-export function describe(entry: LogEntry, sessionChannelName?: string): string {
+export function describe(entry: LogEntry, sessionChannelName?: string, tr: Tr = english): string {
     const n = entry.name;
-    const stayed = entry.stayed !== undefined ? ` (stayed ${entry.sinceBefore ? "at least " : ""}${formatDuration(entry.stayed)})` : "";
-    const other = channelLabel(entry.otherChannelName, entry.otherChannelId);
+    const stayed = entry.stayed !== undefined ? tr(entry.sinceBefore ? "stay.atLeast" : "stay.some", { d: formatDuration(entry.stayed, tr) }) : "";
+    const other = channelLabel(entry.otherChannelName, entry.otherChannelId, tr);
+    const vars = { n, other, stayed };
     switch (entry.kind) {
-        case "selfJoin": return `You joined ${channelLabel(sessionChannelName, entry.channelId)}`;
-        case "selfLeave": return entry.otherChannelId ? `You moved to ${other}${stayed}` : `You left${stayed}`;
-        case "present": return `${n} was already here`;
-        case "join": return `${n} joined`;
-        case "leave": return `${n} left${stayed}`;
-        case "moveIn": return `${n} moved in from ${other}`;
-        case "moveOut": return `${n} moved to ${other}${stayed}`;
-        case "streamStart": return `${n} started streaming`;
-        case "streamStop": return `${n} stopped streaming`;
-        case "videoStart": return `${n} turned on their camera`;
-        case "videoStop": return `${n} turned off their camera`;
-        case "mute": return `${n} muted`;
-        case "unmute": return `${n} unmuted`;
-        case "deafen": return `${n} deafened`;
-        case "undeafen": return `${n} undeafened`;
+        case "selfJoin": return tr("entry.selfJoin", { channel: channelLabel(sessionChannelName, entry.channelId, tr) });
+        case "selfLeave": return entry.otherChannelId ? tr("entry.selfMove", vars) : tr("entry.selfLeave", vars);
+        default: return tr(`entry.${entry.kind}`, vars);
     }
 }
 
 /** How long an arrival stayed: "stayed 12m", "still here · 5m", "was still there" */
-export function stayNote(entry: LogEntry, now: number): string | undefined {
+export function stayNote(entry: LogEntry, now: number, tr: Tr = english): string | undefined {
     if (!ARRIVALS.has(entry.kind)) return;
-    if (entry.leftAt === undefined) return `still here · ${formatDuration(now - entry.at)}`;
-    const d = formatDuration(entry.leftAt - entry.at);
-    if (entry.stillThere) return `still there when you left · ${d}`;
-    return entry.kind === "present" ? `stayed at least ${d}` : `stayed ${d}`;
+    if (entry.leftAt === undefined) return tr("note.here", { d: formatDuration(now - entry.at, tr) });
+    const d = formatDuration(entry.leftAt - entry.at, tr);
+    if (entry.stillThere) return tr("note.stillThere", { d });
+    return tr(entry.kind === "present" ? "note.atLeast" : "note.stayed", { d });
 }
 
-export const formatLine = (entry: LogEntry, sessionChannelName?: string) => `${formatClock(entry.at)}  ${describe(entry, sessionChannelName)}`;
+export const formatLine = (entry: LogEntry, sessionChannelName?: string, tr: Tr = english) => `${formatClock(entry.at)}  ${describe(entry, sessionChannelName, tr)}`;
 
 /** Plain text for "Copy as text": a header per session, then its entries */
-export function formatSessions(sessions: readonly Pick<Session, "channelName" | "channelId" | "startedAt" | "endedAt" | "entries">[], now = Date.now()): string {
+export function formatSessions(sessions: readonly Pick<Session, "channelName" | "channelId" | "startedAt" | "endedAt" | "entries">[], now = Date.now(), tr: Tr = english): string {
     return sessions.map(s => {
-        const end = s.endedAt !== undefined ? formatClock(s.endedAt) : "now";
+        const end = s.endedAt !== undefined ? formatClock(s.endedAt) : tr("text.now");
         const date = new Date(s.startedAt).toLocaleDateString();
-        const head = `${channelLabel(s.channelName, s.channelId)} · ${date} ${formatClock(s.startedAt)}–${end} (${formatDuration((s.endedAt ?? now) - s.startedAt)})`;
-        const lines = s.entries.map(e => formatLine(e, s.channelName));
-        return [head, ...(lines.length ? lines : ["(nothing logged)"])].join("\n");
+        const head = `${channelLabel(s.channelName, s.channelId, tr)} · ${date} ${formatClock(s.startedAt)}–${end} (${formatDuration((s.endedAt ?? now) - s.startedAt, tr)})`;
+        const lines = s.entries.map(e => formatLine(e, s.channelName, tr));
+        return [head, ...(lines.length ? lines : [tr("text.nothing")])].join("\n");
     }).join("\n\n");
 }
 
@@ -423,11 +460,12 @@ export function formatSessions(sessions: readonly Pick<Session, "channelName" | 
 
 export type KindFilter = "all" | "people" | "streams" | "voice";
 
-export const FILTERS: readonly { value: KindFilter; label: string; }[] = [
-    { value: "all", label: "All" },
-    { value: "people", label: "Joins & leaves" },
-    { value: "streams", label: "Streams" },
-    { value: "voice", label: "Mute & deafen" },
+/** The filter chips: the English label, and the word key for the translated one */
+export const FILTERS: readonly { value: KindFilter; label: string; key: WordKey; }[] = [
+    { value: "all", label: EN_WORDS["filter.all"], key: "filter.all" },
+    { value: "people", label: EN_WORDS["filter.people"], key: "filter.people" },
+    { value: "streams", label: EN_WORDS["filter.streams"], key: "filter.streams" },
+    { value: "voice", label: EN_WORDS["filter.voice"], key: "filter.voice" },
 ];
 
 const GROUPS: Record<Exclude<KindFilter, "all">, ReadonlySet<EntryKind>> = {

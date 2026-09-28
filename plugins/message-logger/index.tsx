@@ -5,6 +5,7 @@ import {
     AttachmentLike, attachmentKey, attachmentsToSave, LoggedMessage, MAX_SAVED_BYTES, MediaCache, mediaKind, MessageLog, MessageRef, PreviousVersion,
     removedAttachments, SavedMedia, shouldLog,
 } from "./log";
+import { t } from "./strings";
 
 /**
  * Deleted messages stay in the chat and edited ones keep their previous versions. No source patches:
@@ -199,7 +200,7 @@ const formatSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 
 function Spoiler({ children }: { children: React.ReactElement; }) {
     const [shown, setShown] = React.useState(false);
     if (shown) return children;
-    return <button type="button" className="dl-ml-spoiler" aria-label="Show spoiler" onClick={() => setShown(true)}>{children}<span>Spoiler</span></button>;
+    return <button type="button" className="dl-ml-spoiler" aria-label={t("spoiler.show")} onClick={() => setShown(true)}>{children}<span>{t("spoiler")}</span></button>;
 }
 
 /** Saved copies: pictures and videos as themselves, sounds with a player, anything else as a download */
@@ -240,14 +241,14 @@ function Logged({ log, message }: { log: MessageLog; message: any; }) {
         <div className={saved ? "dl-ml dl-ml-saved" : "dl-ml"}>
             {saved && <SavedMediaList media={entry.media!} />}
             {entry.edits.length > 0 && (
-                <div className="dl-ml-history" role="group" aria-label="Previous versions">
-                    <div className="dl-ml-caption">Edited from</div>
+                <div className="dl-ml-history" role="group" aria-label={t("versions")}>
+                    <div className="dl-ml-caption">{t("edited.from")}</div>
                     {entry.edits.map((version, i) => <Version key={i} message={message} version={version} />)}
                 </div>
             )}
             {entry.deletedAt !== undefined && (
                 <span className="dl-ml-deleted">
-                    Deleted <time dateTime={new Date(entry.deletedAt).toISOString()}>{formatTime(entry.deletedAt)}</time>
+                    {t("deleted")} <time dateTime={new Date(entry.deletedAt).toISOString()}>{formatTime(entry.deletedAt)}</time>
                 </span>
             )}
         </div>
@@ -269,14 +270,14 @@ function Summary({ runtime }: { runtime: Runtime; }) {
     const { deleted, edited } = runtime.log.counts();
     const Button = Components.Button as any;
     const empty = deleted + edited === 0;
-    const label = "Clear logged messages";
+    const label = t("clear");
 
     return (
         <div className="dl-field-row">
             <div className="dl-field-text">
-                <div className="dl-label">Logged right now</div>
+                <div className="dl-label">{t("summary.title")}</div>
                 <p className="dl-hint" role="status" style={{ fontVariantNumeric: "tabular-nums" }}>
-                    {deleted} deleted, {edited} edited. Kept in memory only.
+                    {t("summary.text", { deleted, edited })}
                 </p>
             </div>
             {Button
@@ -287,21 +288,21 @@ function Summary({ runtime }: { runtime: Runtime; }) {
 }
 
 const settings = {
-    keepDeleted: { type: "boolean", label: "Keep deleted messages", description: "Deleted messages stay in the chat, tinted red and marked Deleted.", default: true },
-    logEdits: { type: "boolean", label: "Keep edit history", description: "Edited messages show what they said before, under the message.", default: true },
-    ignoreOwnDeletes: { type: "boolean", label: "Ignore my own deletes", description: "Messages you delete yourself disappear as usual.", default: true },
-    ignoreSelf: { type: "boolean", label: "Ignore my own messages", description: "Never log your messages, whoever deletes or edits them.", default: false },
-    ignoreBots: { type: "boolean", label: "Ignore bots", description: "Don't log messages from bots and apps.", default: false },
+    keepDeleted: { type: "boolean", get label() { return t("settings.keepDeleted"); }, get description() { return t("settings.keepDeleted.description"); }, default: true },
+    logEdits: { type: "boolean", get label() { return t("settings.logEdits"); }, get description() { return t("settings.logEdits.description"); }, default: true },
+    ignoreOwnDeletes: { type: "boolean", get label() { return t("settings.ignoreOwnDeletes"); }, get description() { return t("settings.ignoreOwnDeletes.description"); }, default: true },
+    ignoreSelf: { type: "boolean", get label() { return t("settings.ignoreSelf"); }, get description() { return t("settings.ignoreSelf.description"); }, default: false },
+    ignoreBots: { type: "boolean", get label() { return t("settings.ignoreBots"); }, get description() { return t("settings.ignoreBots.description"); }, default: false },
     saveMedia: {
         type: "boolean",
-        label: "Keep deleted pictures, videos and files",
-        description: "Saves the attachments in the channel you're looking at as they load (up to 25 MB each, in memory), so a deleted message still shows them.",
+        get label() { return t("settings.saveMedia"); },
+        get description() { return t("settings.saveMedia.description"); },
         default: true,
     },
     limit: {
         type: "number",
-        label: "Messages logged per channel",
-        description: "Past this, the oldest are forgotten, and deleted ones among them disappear for real.",
+        get label() { return t("settings.limit"); },
+        get description() { return t("settings.limit.description"); },
         default: 50,
         min: 10,
         max: 200,
@@ -526,7 +527,7 @@ function install(ctx: Ctx, log: MessageLog, store: any, saver: ReturnType<typeof
 
 /** "3 deleted, 1 edited" */
 function countLabel({ deleted, edited }: { deleted: number; edited: number; }) {
-    return [deleted && `${deleted} deleted`, edited && `${edited} edited`].filter(Boolean).join(", ");
+    return [deleted && t("count.deleted", { count: deleted }), edited && t("count.edited", { count: edited })].filter(Boolean).join(t("count.sep"));
 }
 
 /** A menu group clearing these channels' logs, or nothing when they have none */
@@ -544,7 +545,7 @@ function clearItem(ctx: Ctx, id: string, label: string, channelIds: string[]) {
                 color="danger"
                 action={() => {
                     runtime.clearChannels(channelIds);
-                    ctx.toast(`Cleared ${countLabel(counts)}`, { type: "success" });
+                    ctx.toast(t("cleared", { counts: countLabel(counts) }), { type: "success" });
                 }}
             />
         </Menu.Group>
@@ -593,18 +594,18 @@ export default definePlugin({
         });
 
         ctx.contextMenu(["channel-context", "thread-context", "gdm-context"], (children, props) => {
-            const item = props.channel?.id && clearItem(ctx, "evi-ml-clear-channel", "Clear Logged Messages", [props.channel.id]);
+            const item = props.channel?.id && clearItem(ctx, "evi-ml-clear-channel", t("clear.menu"), [props.channel.id]);
             if (item) children.push(item);
         });
         // A DM in the list: the menu is the other user's, with the DM as its channel
         ctx.contextMenu("user-context", (children, props) => {
             const channel = props.channel;
             if (!channel?.id || channel.guild_id || channel.type !== 1) return;
-            const item = clearItem(ctx, "evi-ml-clear-dm", "Clear Logged Messages", [channel.id]);
+            const item = clearItem(ctx, "evi-ml-clear-dm", t("clear.menu"), [channel.id]);
             if (item) children.push(item);
         });
         ctx.contextMenu("guild-context", (children, props) => {
-            const item = props.guild?.id && clearItem(ctx, "evi-ml-clear-guild", "Clear Logged Messages", guildChannelIds(props.guild.id));
+            const item = props.guild?.id && clearItem(ctx, "evi-ml-clear-guild", t("clear.menu"), guildChannelIds(props.guild.id));
             if (item) children.push(item);
         });
 

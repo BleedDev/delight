@@ -1,5 +1,5 @@
 /** The muted "Last seen 3h ago" line under a name, shared by the member list, friends list and DM list */
-import { Components, React } from "@evi/api";
+import { Components, React, useLocale } from "@evi/api";
 
 import { fullText, lineOf, useUser } from "./state";
 import type { Where } from "./state";
@@ -25,6 +25,7 @@ export const lastSeenLine = () => memoized ??= React.memo(LastSeenLine);
  * only when this person's line changes; the long hover text is only put together on hover.
  */
 function LastSeenLine({ userId, setting, className }: LineProps) {
+    useLocale();
     const text = useUser(userId, () => lineOf(userId, setting));
     const [hovered, setHovered] = React.useState(false);
     if (!text) return null;

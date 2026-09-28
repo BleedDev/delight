@@ -12,5 +12,127 @@
         { "version": "1.0.1", "notes": ["The Add to Server dialog opens and closes with Discord's own animation."] },
         { "version": "1.0.0", "notes": ["First release."] }
     ],
-    "enabledByDefault": false
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Emoji Stealer",
+            "description": "Klicke ein benutzerdefiniertes Emoji, eine Reaktion oder einen Sticker mit der rechten Maustaste an, um es zu einem deiner Server hinzuzufügen, mit Namensprüfung und den freien Plätzen jedes Servers. Kopiert auch Emoji-Links und IDs.",
+            "changelog": {
+                "1.0.2": [
+                    "Sagt, was es braucht (Verbindung zu cdn.discordapp.com und media.discordapp.net), und Evi sorgt dafür, dass es sich daran hält."
+                ],
+                "1.0.1": [
+                    "Der Dialog „Zum Server hinzufügen“ öffnet und schließt sich mit Discords eigener Animation."
+                ],
+                "1.0.0": [
+                    "Erste Veröffentlichung."
+                ]
+            }
+        },
+        "es": {
+            "name": "Emoji Stealer",
+            "description": "Haz clic derecho en un emoji personalizado, una reacción o un sticker para añadirlo a uno de tus servidores, con comprobación del nombre y los espacios que le quedan a cada servidor. También copia enlaces e ID de emojis.",
+            "changelog": {
+                "1.0.2": [
+                    "Indica lo que necesita (conectarse a cdn.discordapp.com y media.discordapp.net), y Evi hace que lo cumpla."
+                ],
+                "1.0.1": [
+                    "El diálogo Añadir al servidor se abre y se cierra con la animación propia de Discord."
+                ],
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Emoji Stealer",
+            "description": "Fais un clic droit sur un émoji personnalisé, une réaction ou un sticker pour l'ajouter à l'un de tes serveurs, avec vérification du nom et des emplacements restants sur chaque serveur. Copie aussi les liens et les ID d'émojis.",
+            "changelog": {
+                "1.0.2": [
+                    "Indique ce dont il a besoin (contacter cdn.discordapp.com et media.discordapp.net), et Evi veille à ce qu'il s'y tienne."
+                ],
+                "1.0.1": [
+                    "La boîte de dialogue « Ajouter au serveur » s'ouvre et se ferme avec l'animation propre à Discord."
+                ],
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "Emoji Stealer",
+            "description": "カスタム絵文字、リアクション、ステッカーを右クリックして、自分のサーバーに追加できます。名前のチェックと、各サーバーの空き枠の表示つき。絵文字のリンクやIDのコピーにも対応しています。",
+            "changelog": {
+                "1.0.2": [
+                    "必要な権限 (cdn.discordapp.com と media.discordapp.net への接続) を明示し、Evi がその範囲内に制限します。"
+                ],
+                "1.0.1": [
+                    "「サーバーに追加」ダイアログが、Discord本来のアニメーションで開閉するようになりました。"
+                ],
+                "1.0.0": [
+                    "最初のリリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Emoji Stealer",
+            "description": "Kliknij prawym przyciskiem myszy niestandardowe emoji, reakcję lub naklejkę, aby dodać je do jednego ze swoich serwerów, ze sprawdzaniem nazwy i liczbą wolnych miejsc na każdym serwerze. Kopiuje też linki i ID emoji.",
+            "changelog": {
+                "1.0.2": [
+                    "Podaje, czego potrzebuje (łączenia z cdn.discordapp.com i media.discordapp.net), a Evi pilnuje, żeby się tego trzymała."
+                ],
+                "1.0.1": [
+                    "Okno „Dodaj do serwera” otwiera się i zamyka z własną animacją Discorda."
+                ],
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Emoji Stealer",
+            "description": "Clique com o botão direito em um emoji personalizado, reação ou figurinha para adicioná-lo a um dos seus servidores, com verificação de nome e as vagas que cada servidor ainda tem. Também copia links e IDs de emojis.",
+            "changelog": {
+                "1.0.2": [
+                    "Informa o que precisa (conectar-se a cdn.discordapp.com e media.discordapp.net), e o Evi garante que ele respeite isso."
+                ],
+                "1.0.1": [
+                    "A janela Adicionar ao servidor abre e fecha com a animação do próprio Discord."
+                ],
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Emoji Stealer",
+            "description": "Нажмите правой кнопкой мыши на кастомное эмодзи, реакцию или стикер, чтобы добавить их на один из ваших серверов, с проверкой названия и количества свободных слотов на каждом сервере. Также копирует ссылки и ID эмодзи.",
+            "changelog": {
+                "1.0.2": [
+                    "Сообщает, что ему нужно (доступ к cdn.discordapp.com и media.discordapp.net), а Evi следит, чтобы он не выходил за эти рамки."
+                ],
+                "1.0.1": [
+                    "Окно «Добавить на сервер» открывается и закрывается со штатной анимацией Discord."
+                ],
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Emoji Stealer",
+            "description": "Özel bir emojiye, tepkiye veya çıkartmaya sağ tıklayıp sunucularından birine ekle; ad denetimi ve her sunucuda kalan yuvalarla birlikte. Emoji bağlantılarını ve kimliklerini de kopyalar.",
+            "changelog": {
+                "1.0.2": [
+                    "İhtiyacını belirtir (cdn.discordapp.com ve media.discordapp.net'e bağlanma) ve Evi onu bunun dışına çıkarmaz."
+                ],
+                "1.0.1": [
+                    "Sunucuya Ekle penceresi Discord'un kendi animasyonuyla açılıp kapanır."
+                ],
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
 }
