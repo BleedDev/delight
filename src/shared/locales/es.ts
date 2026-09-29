@@ -664,6 +664,7 @@ export const es = {
     "inbox.wishUpdated": "Ya está aquí {name} {version}",
     "inbox.wishUpdatedBody": "Algo de tu lista de deseos tiene una versión nueva.",
     "inbox.yesterday": "Ayer",
+    "panel.toggles": "Interruptores de Evi",
     "liveToasts.region": "Notificaciones de Evi",
     "liveToasts.from": "Evi · {time}",
     "liveToasts.fromEvi": "Evi",

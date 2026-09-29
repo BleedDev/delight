@@ -2,6 +2,7 @@ import { defineStrings } from "@evi/api";
 
 export const t = defineStrings({
     en: {
+        "panel.label": "Share game activity",
         "settings.showButton": "User panel button",
         "settings.showButton.description": "A gamepad button next to mute and deafen. /gameactivity works either way.",
         "settings.shortcut": "Shortcut",
@@ -14,6 +15,7 @@ export const t = defineStrings({
         "command.description": "Show or hide the game you're playing",
     },
     de: {
+        "panel.label": "Spielaktivität teilen",
         "settings.showButton": "Button in der Benutzerleiste",
         "settings.showButton.description": "Ein Controller-Button neben Stummschalten und Ton aus. /gameactivity funktioniert in beiden Fällen.",
         "settings.shortcut": "Tastenkürzel",
@@ -26,6 +28,7 @@ export const t = defineStrings({
         "command.description": "Das Spiel, das du gerade spielst, anzeigen oder ausblenden",
     },
     es: {
+        "panel.label": "Compartir actividad de juego",
         "settings.showButton": "Botón del panel de usuario",
         "settings.showButton.description": "Un botón de mando junto a silenciar y ensordecer. /gameactivity funciona con o sin él.",
         "settings.shortcut": "Atajo",
@@ -38,6 +41,7 @@ export const t = defineStrings({
         "command.description": "Muestra u oculta el juego al que estás jugando",
     },
     fr: {
+        "panel.label": "Partager l’activité de jeu",
         "settings.showButton": "Bouton du panneau utilisateur",
         "settings.showButton.description": "Un bouton manette à côté de muet et sourdine. /gameactivity fonctionne dans les deux cas.",
         "settings.shortcut": "Raccourci",
@@ -50,6 +54,7 @@ export const t = defineStrings({
         "command.description": "Affiche ou masque le jeu auquel tu joues",
     },
     ja: {
+        "panel.label": "ゲームアクティビティを共有",
         "settings.showButton": "ユーザーパネルのボタン",
         "settings.showButton.description": "ミュートとスピーカーミュートの横にゲームパッドのボタンを表示します。ボタンがなくても /gameactivity は使えます。",
         "settings.shortcut": "ショートカット",
@@ -62,6 +67,7 @@ export const t = defineStrings({
         "command.description": "プレイ中のゲームの表示と非表示を切り替えます",
     },
     pl: {
+        "panel.label": "Udostępniaj aktywność w grze",
         "settings.showButton": "Przycisk w panelu użytkownika",
         "settings.showButton.description": "Przycisk pada obok wyciszenia mikrofonu i dźwięku. /gameactivity działa tak czy inaczej.",
         "settings.shortcut": "Skrót",
@@ -74,6 +80,7 @@ export const t = defineStrings({
         "command.description": "Pokaż lub ukryj grę, w którą grasz",
     },
     "pt-BR": {
+        "panel.label": "Compartilhar atividade de jogo",
         "settings.showButton": "Botão no painel do usuário",
         "settings.showButton.description": "Um botão de controle ao lado de silenciar e ensurdecer. O /gameactivity funciona de qualquer jeito.",
         "settings.shortcut": "Atalho",
@@ -86,6 +93,7 @@ export const t = defineStrings({
         "command.description": "Mostra ou oculta o jogo que você está jogando",
     },
     ru: {
+        "panel.label": "Показывать игровую активность",
         "settings.showButton": "Кнопка в панели пользователя",
         "settings.showButton.description": "Кнопка с геймпадом рядом с кнопками отключения микрофона и звука. Команда /gameactivity работает и без неё.",
         "settings.shortcut": "Сочетание клавиш",
@@ -98,6 +106,7 @@ export const t = defineStrings({
         "command.description": "Показать или скрыть игру, в которую вы играете",
     },
     tr: {
+        "panel.label": "Oyun etkinliğini paylaş",
         "settings.showButton": "Kullanıcı paneli düğmesi",
         "settings.showButton.description": "Mikrofonu ve sesi kapatma düğmelerinin yanında bir oyun kolu düğmesi. /gameactivity her durumda çalışır.",
         "settings.shortcut": "Kısayol",

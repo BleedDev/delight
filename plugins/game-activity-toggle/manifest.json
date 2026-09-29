@@ -2,7 +2,7 @@
     "id": "game-activity-toggle",
     "name": "Game Activity Toggle",
     "description": "Show or hide the game you're playing with one click: a gamepad button next to mute and deafen, a keyboard shortcut, or /gameactivity.",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "authors": [
         "Evi"
     ],
@@ -13,6 +13,12 @@
         "changeSettings": true
     },
     "changelog": [
+        {
+            "version": "1.4.0",
+            "notes": [
+                "Shares one spot in the user panel with other plugins' switches: with more than one, they fold into a single Evi button with a menu, so your name and Discord's settings gear keep their room."
+            ]
+        },
         {
             "version": "1.3.0",
             "notes": [
@@ -44,13 +50,16 @@
             ]
         }
     ],
-    "minEviVersion": "1.0.0",
+    "minEviVersion": "1.3.1",
     "enabledByDefault": false,
     "locales": {
         "de": {
             "name": "Spielaktivität umschalten",
             "description": "Zeige oder verberge das Spiel, das du spielst, mit einem Klick: ein Controller-Button neben Stummschalten und Ton aus, ein Tastenkürzel oder /gameactivity.",
             "changelog": {
+                "1.4.0": [
+                    "Teilt sich einen Platz in der Benutzerleiste mit den Schaltern anderer Plugins: Sind es mehrere, landen sie in einem Evi-Button mit Menü, damit dein Name und Discords Einstellungen Platz behalten."
+                ],
                 "1.3.0": [
                     "Der Controller-Button sieht jetzt aus wie Discords eigene: gleiche Größe, gleicher Hover und rot, wenn deine Aktivität verborgen ist."
                 ],
@@ -72,6 +81,9 @@
             "name": "Interruptor de actividad de juego",
             "description": "Muestra u oculta el juego al que juegas con un clic: un botón de mando junto a silenciar y ensordecer, un atajo de teclado o /gameactivity.",
             "changelog": {
+                "1.4.0": [
+                    "Comparte un solo sitio del panel de usuario con los interruptores de otros plugins: si hay varios, se juntan en un botón de Evi con menú, así tu nombre y el engranaje de ajustes de Discord conservan su espacio."
+                ],
                 "1.3.0": [
                     "El botón de mando ahora se ve como los de Discord: mismo tamaño, mismo efecto al pasar el ratón y rojo cuando tu actividad está oculta."
                 ],
@@ -93,6 +105,9 @@
             "name": "Bascule d'activité de jeu",
             "description": "Affiche ou masque le jeu auquel tu joues en un clic : un bouton manette à côté de muet et sourdine, un raccourci clavier ou /gameactivity.",
             "changelog": {
+                "1.4.0": [
+                    "Partage une seule place du panneau utilisateur avec les interrupteurs des autres plugins : s’il y en a plusieurs, ils se regroupent dans un bouton Evi avec un menu, pour que ton nom et la roue des paramètres de Discord gardent leur place."
+                ],
                 "1.3.0": [
                     "Le bouton manette ressemble maintenant à ceux de Discord : même taille, même survol, et rouge quand ton activité est masquée."
                 ],
@@ -114,6 +129,9 @@
             "name": "ゲームアクティビティ切り替え",
             "description": "プレイ中のゲームの表示と非表示をワンクリックで切り替えます。ミュートとスピーカーミュートの横のゲームパッドボタン、キーボードショートカット、または /gameactivity で操作できます。",
             "changelog": {
+                "1.4.0": [
+                    "ユーザーパネルの 1 か所を他のプラグインのスイッチと共有します。複数あるときはメニュー付きの Evi ボタン 1 つにまとまるので、名前と Discord の設定ボタンの場所が保たれます。"
+                ],
                 "1.3.0": [
                     "ゲームパッドボタンが Discord 本来のボタンと同じ見た目になりました。サイズやホバーが同じで、アクティビティを隠しているときは赤くなります。"
                 ],
@@ -135,6 +153,9 @@
             "name": "Przełącznik aktywności w grze",
             "description": "Pokazuj lub ukrywaj grę, w którą grasz, jednym kliknięciem: przycisk pada obok wyciszenia mikrofonu i dźwięku, skrót klawiszowy albo /gameactivity.",
             "changelog": {
+                "1.4.0": [
+                    "Dzieli jedno miejsce w panelu użytkownika z przełącznikami innych pluginów: gdy jest ich kilka, trafiają do jednego przycisku Evi z menu, więc Twoja nazwa i zębatka ustawień Discorda zachowują miejsce."
+                ],
                 "1.3.0": [
                     "Przycisk pada wygląda teraz jak przyciski Discorda: ten sam rozmiar, najechanie i czerwony, gdy aktywność jest ukryta."
                 ],
@@ -156,6 +177,9 @@
             "name": "Alternar atividade de jogo",
             "description": "Mostre ou oculte o jogo que você está jogando com um clique: um botão de controle ao lado de silenciar e ensurdecer, um atalho de teclado ou /gameactivity.",
             "changelog": {
+                "1.4.0": [
+                    "Divide um único espaço do painel de usuário com os interruptores de outros plugins: quando há mais de um, eles viram um botão do Evi com menu, e seu nome e a engrenagem de configurações do Discord mantêm o espaço."
+                ],
                 "1.3.0": [
                     "O botão de controle agora parece com os do Discord: mesmo tamanho, mesmo efeito ao passar o mouse e vermelho quando sua atividade está oculta."
                 ],
@@ -177,6 +201,9 @@
             "name": "Переключатель игровой активности",
             "description": "Показывайте или скрывайте игру, в которую играете, одним кликом: кнопка с геймпадом рядом с кнопками отключения микрофона и звука, сочетание клавиш или /gameactivity.",
             "changelog": {
+                "1.4.0": [
+                    "Делит одно место в панели пользователя с переключателями других плагинов: если их несколько, они собираются в одну кнопку Evi с меню, и вашему имени и шестерёнке настроек Discord хватает места."
+                ],
                 "1.3.0": [
                     "Кнопка с геймпадом теперь выглядит как кнопки Discord: тот же размер, наведение и красный цвет, когда активность скрыта."
                 ],
@@ -198,6 +225,9 @@
             "name": "Oyun Etkinliği Anahtarı",
             "description": "Oynadığın oyunu tek tıkla göster veya gizle: mikrofonu ve sesi kapatma düğmelerinin yanındaki oyun kolu düğmesi, klavye kısayolu ya da /gameactivity.",
             "changelog": {
+                "1.4.0": [
+                    "Kullanıcı panelinde tek bir yeri diğer eklentilerin anahtarlarıyla paylaşır: birden fazlaysa menülü tek bir Evi düğmesinde toplanırlar, böylece adın ve Discord'un ayarlar çarkı yerinde kalır."
+                ],
                 "1.3.0": [
                     "Oyun kolu düğmesi artık Discord'un kendi düğmeleri gibi: aynı boyut, aynı üzerine gelme efekti ve etkinliğin gizliyken kırmızı."
                 ],

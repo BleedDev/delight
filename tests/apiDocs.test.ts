@@ -85,7 +85,7 @@ describe("searching the API", () => {
 describe("API changelog", () => {
     test("newest first, dated, and every change says something", () => {
         const versions = API_CHANGELOG.map(r => r.version);
-        expect(versions[0]).toBe("1.1.0");
+        expect(versions[0]).toBe("1.3.1");
         for (let i = 1; i < versions.length; i++) {
             expect(Bun.semver.order(versions[i - 1], versions[i])).toBe(1);
         }
@@ -99,8 +99,12 @@ describe("API changelog", () => {
         }
     });
 
+    test("1.3.1 adds panel switches", () => {
+        expect(API_CHANGELOG[0].changes.map(c => c.symbol)).toContain("ctx.panelToggle");
+    });
+
     test("1.1.0 lists translations for plugins", () => {
-        expect(API_CHANGELOG[0].changes.map(c => c.symbol)).toEqual(expect.arrayContaining(["locales", "settings"]));
+        expect(API_CHANGELOG.find(r => r.version === "1.1.0")!.changes.map(c => c.symbol)).toEqual(expect.arrayContaining(["locales", "settings"]));
     });
 
     test("1.0.0 lists what plugins gained", () => {

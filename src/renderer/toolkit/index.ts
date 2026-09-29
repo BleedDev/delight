@@ -5,6 +5,7 @@
 import { builtInCommandsFilter, getRegisteredCommands, isCommandsHooked } from "./commands";
 import { ensureMenuArgsPatch, isMenuHooked, menuFilter, resolveMenuComponents } from "./contextMenu";
 import { injectMenuArgs } from "./menuArgs";
+import { ensurePanelPatch } from "./panel";
 import { showToastFilter } from "./toasts";
 
 /**
@@ -13,6 +14,7 @@ import { showToastFilter } from "./toasts";
  */
 export function registerToolkitPatches(enabledPluginCode: string[]) {
     if (enabledPluginCode.some(code => /\bcontextMenu\(|addContextMenuPatch\(/.test(code))) ensureMenuArgsPatch();
+    if (enabledPluginCode.some(code => /\bpanelToggle\(/.test(code))) ensurePanelPatch();
 }
 
 /** For tests and debugging */

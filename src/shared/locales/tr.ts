@@ -664,6 +664,7 @@ export const tr = {
     "inbox.wishUpdated": "{name} {version} çıktı",
     "inbox.wishUpdatedBody": "İstek listendeki bir öğenin yeni sürümü var.",
     "inbox.yesterday": "Dün",
+    "panel.toggles": "Evi anahtarları",
     "liveToasts.region": "Evi bildirimleri",
     "liveToasts.from": "Evi · {time}",
     "liveToasts.fromEvi": "Evi",

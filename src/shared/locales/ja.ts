@@ -661,6 +661,7 @@ export const ja = {
     "inbox.wishUpdated": "{name} {version}が公開されました",
     "inbox.wishUpdatedBody": "ウィッシュリストのアイテムに新しいバージョンが出ました。",
     "inbox.yesterday": "昨日",
+    "panel.toggles": "Evi のスイッチ",
     "liveToasts.region": "Evi の通知",
     "liveToasts.from": "Evi · {time}",
     "liveToasts.fromEvi": "Evi",

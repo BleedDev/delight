@@ -26,6 +26,7 @@ import { QuickCss } from "./styles";
 import { Themes } from "./themes";
 import { registerToolkitPatches, Toolkit } from "./toolkit";
 import { installLayerStyles } from "./toolkit/layer";
+import { renderPanelSlot } from "./toolkit/panel";
 import { installHotkey, SettingsUI } from "./ui";
 import { whenAppReady } from "./ui/appReady";
 import { startAccountSync } from "./accountSync";
@@ -74,6 +75,8 @@ const Evi = {
     },
     /** Target of $self in source patches */
     $: PluginManager.self,
+    /** What the user panel calls for plugins' switches (toolkit/panel.tsx) */
+    panelSlot: renderPanelSlot,
 };
 
 function boot() {

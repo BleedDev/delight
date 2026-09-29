@@ -22,6 +22,7 @@ export type { ContextMenuCallback, MenuComponents, MenuItemProps } from "../rend
 export { exitDone, openLayer } from "../renderer/toolkit/layer";
 export type { CloseLayer, LayerOptions } from "../renderer/toolkit/layer";
 export { showToast } from "../renderer/toolkit/toasts";
+export type { PanelIconProps, PanelToggle } from "../renderer/toolkit/panel";
 export type { ToastOptions, ToastType } from "../renderer/toolkit/toasts";
 export { lazy, unlazy } from "../renderer/utils/lazy";
 export { findInTree } from "../renderer/utils/tree";

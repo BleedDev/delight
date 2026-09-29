@@ -2,7 +2,7 @@
     "id": "fake-deafen",
     "name": "Fake Deafen",
     "description": "Appear deafened and muted to everyone in voice while you still hear them. A ghost button next to deafen, a keyboard shortcut, or /fakedeafen.",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "authors": [
         "Evi"
     ],
@@ -12,6 +12,12 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.2.0",
+            "notes": [
+                "Shares one spot in the user panel with other plugins' switches: with more than one, they fold into a single Evi button with a menu, so your name and Discord's settings gear keep their room."
+            ]
+        },
         {
             "version": "1.1.1",
             "notes": [
@@ -31,13 +37,16 @@
             ]
         }
     ],
-    "minEviVersion": "1.0.0",
+    "minEviVersion": "1.3.1",
     "enabledByDefault": false,
     "locales": {
         "de": {
             "name": "Fake Deafen",
             "description": "Wirke im Sprachkanal taub und stummgeschaltet, während du alle weiter hörst. Ein Geist-Button neben Ton aus, ein Tastenkürzel oder /fakedeafen.",
             "changelog": {
+                "1.2.0": [
+                    "Teilt sich einen Platz in der Benutzerleiste mit den Schaltern anderer Plugins: Sind es mehrere, landen sie in einem Evi-Button mit Menü, damit dein Name und Discords Einstellungen Platz behalten."
+                ],
                 "1.1.1": [
                     "Für alle kostenlos: nicht mehr nur für Unterstützer."
                 ],
@@ -53,6 +62,9 @@
             "name": "Ensordecido falso",
             "description": "Aparece ensordecido y silenciado ante todos en voz mientras los sigues oyendo. Un botón de fantasma junto a ensordecer, un atajo de teclado o /fakedeafen.",
             "changelog": {
+                "1.2.0": [
+                    "Comparte un solo sitio del panel de usuario con los interruptores de otros plugins: si hay varios, se juntan en un botón de Evi con menú, así tu nombre y el engranaje de ajustes de Discord conservan su espacio."
+                ],
                 "1.1.1": [
                     "Gratis para todos: ya no es solo para quienes apoyan."
                 ],
@@ -68,6 +80,9 @@
             "name": "Fausse sourdine",
             "description": "Apparais en sourdine et muet pour tout le monde en vocal tout en les entendant. Un bouton fantôme à côté de sourdine, un raccourci clavier ou /fakedeafen.",
             "changelog": {
+                "1.2.0": [
+                    "Partage une seule place du panneau utilisateur avec les interrupteurs des autres plugins : s’il y en a plusieurs, ils se regroupent dans un bouton Evi avec un menu, pour que ton nom et la roue des paramètres de Discord gardent leur place."
+                ],
                 "1.1.1": [
                     "Gratuit pour tout le monde : plus réservé aux soutiens."
                 ],
@@ -83,6 +98,9 @@
             "name": "フェイクスピーカーミュート",
             "description": "全員の声を聞きながら、ボイスチャンネルではスピーカーミュートとマイクミュート中に見せます。スピーカーミュートの横のおばけボタン、キーボードショートカット、または /fakedeafen で操作できます。",
             "changelog": {
+                "1.2.0": [
+                    "ユーザーパネルの 1 か所を他のプラグインのスイッチと共有します。複数あるときはメニュー付きの Evi ボタン 1 つにまとまるので、名前と Discord の設定ボタンの場所が保たれます。"
+                ],
                 "1.1.1": [
                     "誰でも使えるようになりました。サポーター限定ではなくなりました。"
                 ],
@@ -98,6 +116,9 @@
             "name": "Udawane wyciszenie",
             "description": "Wyglądaj na kanale głosowym, jakbyś miał wyciszony dźwięk i mikrofon, nadal wszystkich słysząc. Przycisk ducha obok wyciszenia dźwięku, skrót klawiszowy albo /fakedeafen.",
             "changelog": {
+                "1.2.0": [
+                    "Dzieli jedno miejsce w panelu użytkownika z przełącznikami innych pluginów: gdy jest ich kilka, trafiają do jednego przycisku Evi z menu, więc Twoja nazwa i zębatka ustawień Discorda zachowują miejsce."
+                ],
                 "1.1.1": [
                     "Dla wszystkich za darmo: już nie tylko dla wspierających."
                 ],
@@ -113,6 +134,9 @@
             "name": "Ensurdecer falso",
             "description": "Apareça ensurdecido e silenciado para todos na voz enquanto continua ouvindo. Um botão de fantasma ao lado de ensurdecer, um atalho de teclado ou /fakedeafen.",
             "changelog": {
+                "1.2.0": [
+                    "Divide um único espaço do painel de usuário com os interruptores de outros plugins: quando há mais de um, eles viram um botão do Evi com menu, e seu nome e a engrenagem de configurações do Discord mantêm o espaço."
+                ],
                 "1.1.1": [
                     "Grátis para todos: não é mais só para apoiadores."
                 ],
@@ -128,6 +152,9 @@
             "name": "Фальшивое отключение звука",
             "description": "Для всех в голосовом канале у вас выключены звук и микрофон, а вы продолжаете их слышать. Кнопка с призраком рядом с выключением звука, сочетание клавиш или /fakedeafen.",
             "changelog": {
+                "1.2.0": [
+                    "Делит одно место в панели пользователя с переключателями других плагинов: если их несколько, они собираются в одну кнопку Evi с меню, и вашему имени и шестерёнке настроек Discord хватает места."
+                ],
                 "1.1.1": [
                     "Бесплатно для всех: больше не только для спонсоров."
                 ],
@@ -143,6 +170,9 @@
             "name": "Sahte Ses Kapatma",
             "description": "Herkesi duymaya devam ederken seste sesin ve mikrofonun kapalı görünsün. Sesi kapatma düğmesinin yanında bir hayalet düğmesi, klavye kısayolu ya da /fakedeafen.",
             "changelog": {
+                "1.2.0": [
+                    "Kullanıcı panelinde tek bir yeri diğer eklentilerin anahtarlarıyla paylaşır: birden fazlaysa menülü tek bir Evi düğmesinde toplanırlar, böylece adın ve Discord'un ayarlar çarkı yerinde kalır."
+                ],
                 "1.1.1": [
                     "Herkese ücretsiz: artık yalnızca destekçilere özel değil."
                 ],

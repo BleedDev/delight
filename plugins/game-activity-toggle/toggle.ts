@@ -34,15 +34,4 @@ export const PATCHES = {
             with: "$self?.captureSetting?.($1);",
         },
     },
-    /**
-     * The user panel's button row: <div className style children:[<Mute/>, <Deafen/>, <Settings/>]>.
-     * Ours goes first, left of the microphone.
-     */
-    userPanel: {
-        find: "handleOpenSettingsContextMenu",
-        replace: {
-            match: /children:\[(?=\(0,\i\.jsx\)\(\i,\{accountContainerRef:)/,
-            with: "children:[$self?.renderButton?.(arguments[0]),",
-        },
-    },
 } satisfies Record<string, SourcePatch>;

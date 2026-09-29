@@ -35,6 +35,15 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.3.1",
+        date: "2026-09-30",
+        sections: {
+            fixed: [
+                "**The user panel keeps its room.** With Game Activity Toggle and Fake Deafen both on, their switches share one Evi button with a menu, so your name and Discord's settings gear aren't pushed out.",
+            ],
+        },
+    },
+    {
         version: "1.3.0",
         date: "2026-09-29",
         sections: {

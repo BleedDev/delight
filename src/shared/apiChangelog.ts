@@ -21,6 +21,17 @@ export interface ApiRelease {
 /** Newest first */
 export const API_CHANGELOG: ApiRelease[] = [
     {
+        version: "1.3.1",
+        date: "2026-09-30",
+        changes: [
+            {
+                kind: "added",
+                symbol: "ctx.panelToggle",
+                description: "A switch in the user panel, beside mute and deafen: { label, tooltip, icon, isChecked, subscribe, alert, toggle }. One plugin's switch gets Discord's panel button of its own; with several, they share one Evi button that opens a menu of them, so the panel never grows by more than one icon. Use it instead of patching the panel yourself.",
+            },
+        ],
+    },
+    {
         version: "1.1.0",
         date: "2026-09-28",
         changes: [

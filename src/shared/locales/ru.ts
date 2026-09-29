@@ -721,6 +721,7 @@ export const ru = {
     "inbox.wishUpdated": "Вышла версия {name} {version}",
     "inbox.wishUpdatedBody": "У чего-то из вашего списка желаемого новая версия.",
     "inbox.yesterday": "Вчера",
+    "panel.toggles": "Переключатели Evi",
     "liveToasts.region": "Уведомления Evi",
     "liveToasts.from": "Evi · {time}",
     "liveToasts.fromEvi": "Evi",

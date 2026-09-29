@@ -11,6 +11,11 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.3.1": {
+            fixed: [
+                "**Die Benutzerleiste behält ihren Platz.** Sind Game Activity Toggle und Fake Deafen beide an, teilen sich ihre Schalter einen Evi-Button mit Menü, damit dein Name und Discords Einstellungen nicht verdrängt werden.",
+            ],
+        },
         "1.3.0": {
             added: [
                 "**Live-Benachrichtigungen.** Bewertungen, Freigaben, Evi-Updates und Neues von Autoren, denen du folgst, erscheinen beim Eintreffen in der Ecke. Fahre darüber, um sie zu behalten, klicke, um hinzugehen, oder schalte sie im Posteingang aus.",
@@ -250,6 +255,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.3.1": {
+            fixed: [
+                "**El panel de usuario conserva su espacio.** Con Game Activity Toggle y Fake Deafen activados, sus interruptores comparten un botón de Evi con menú, así tu nombre y el engranaje de ajustes de Discord no quedan fuera.",
+            ],
+        },
         "1.3.0": {
             added: [
                 "**Notificaciones en vivo.** Reseñas, aprobaciones, actualizaciones de Evi y novedades de autores que sigues aparecen en la esquina al llegar. Pasa el cursor para mantenerlas, haz clic para ir o desactívalas en la bandeja.",
@@ -489,6 +499,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.3.1": {
+            fixed: [
+                "**Le panneau utilisateur garde sa place.** Avec Game Activity Toggle et Fake Deafen activés, leurs interrupteurs partagent un bouton Evi avec un menu : ton nom et la roue des paramètres de Discord ne sont plus poussés dehors.",
+            ],
+        },
         "1.3.0": {
             added: [
                 "**Notifications en direct.** Avis, validations, mises à jour d’Evi et nouveautés des auteurs que tu suis apparaissent dans le coin dès leur arrivée. Survole-en une pour la garder, clique pour y aller, ou désactive-les dans la boîte de réception.",
@@ -728,6 +743,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.3.1": {
+            fixed: [
+                "**ユーザーパネルの場所が保たれます。** Game Activity Toggle と Fake Deafen を両方オンにすると、スイッチがメニュー付きの Evi ボタン 1 つにまとまり、名前と Discord の設定ボタンが押し出されません。",
+            ],
+        },
         "1.3.0": {
             added: [
                 "**ライブ通知。** レビュー、承認、Evi の更新、フォロー中の作者のお知らせが届くと隅にポップアップします。ホバーで保持、クリックで移動、受信箱でオフにもできます。",
@@ -967,6 +987,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.3.1": {
+            fixed: [
+                "**Panel użytkownika zachowuje miejsce.** Gdy Game Activity Toggle i Fake Deafen są włączone, ich przełączniki dzielą jeden przycisk Evi z menu, więc Twoja nazwa i zębatka ustawień Discorda nie są wypychane.",
+            ],
+        },
         "1.3.0": {
             added: [
                 "**Powiadomienia na żywo.** Recenzje, akceptacje, aktualizacje Evi i nowości od obserwowanych autorów pojawiają się w rogu, gdy przychodzą. Najedź, by je zatrzymać, kliknij, by przejść, albo wyłącz je w skrzynce.",
@@ -1206,6 +1231,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.3.1": {
+            fixed: [
+                "**O painel de usuário mantém o espaço.** Com Game Activity Toggle e Fake Deafen ligados, os interruptores dividem um botão do Evi com menu, e seu nome e a engrenagem de configurações do Discord não são empurrados para fora.",
+            ],
+        },
         "1.3.0": {
             added: [
                 "**Notificações ao vivo.** Avaliações, aprovações, atualizações do Evi e novidades de autores que você segue aparecem no canto quando chegam. Passe o mouse para mantê-las, clique para ir até lá ou desative na caixa de entrada.",
@@ -1445,6 +1475,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.3.1": {
+            fixed: [
+                "**Панель пользователя сохраняет место.** Когда включены Game Activity Toggle и Fake Deafen, их переключатели делят одну кнопку Evi с меню, и ваше имя и шестерёнка настроек Discord не выталкиваются.",
+            ],
+        },
         "1.3.0": {
             added: [
                 "**Живые уведомления.** Отзывы, одобрения, обновления Evi и новости авторов, на которых вы подписаны, всплывают в углу, как только приходят. Наведите, чтобы задержать, нажмите, чтобы перейти, или отключите их во входящих.",
@@ -1684,6 +1719,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.3.1": {
+            fixed: [
+                "**Kullanıcı paneli yerini korur.** Game Activity Toggle ve Fake Deafen ikisi de açıkken anahtarları menülü tek bir Evi düğmesini paylaşır, böylece adın ve Discord'un ayarlar çarkı dışarı itilmez.",
+            ],
+        },
         "1.3.0": {
             added: [
                 "**Canlı bildirimler.** Değerlendirmeler, onaylar, Evi güncellemeleri ve takip ettiğin yazarların haberleri geldikleri anda köşede belirir. Tutmak için üstüne gel, gitmek için tıkla ya da Gelen Kutusu'ndan kapat.",

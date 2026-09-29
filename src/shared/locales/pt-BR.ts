@@ -664,6 +664,7 @@ export const ptBR = {
     "inbox.wishUpdated": "{name} {version} saiu",
     "inbox.wishUpdatedBody": "Algo na sua lista de desejos tem uma nova versão.",
     "inbox.yesterday": "Ontem",
+    "panel.toggles": "Interruptores do Evi",
     "liveToasts.region": "Notificações do Evi",
     "liveToasts.from": "Evi · {time}",
     "liveToasts.fromEvi": "Evi",

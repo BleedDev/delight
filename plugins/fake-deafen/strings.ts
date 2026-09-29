@@ -2,6 +2,7 @@ import { defineStrings } from "@evi/api";
 
 export const t = defineStrings({
     en: {
+        "panel.label": "Fake deafen",
         "settings.deafen": "Appear deafened",
         "settings.deafen.description": "Others see you deafened while you still hear them. Deafened also shows as muted, like Discord does.",
         "settings.mute": "Appear muted",
@@ -20,6 +21,7 @@ export const t = defineStrings({
         "command.description": "Appear deafened while you still hear everyone",
     },
     de: {
+        "panel.label": "Fake Deafen",
         "settings.deafen": "Als taub angezeigt werden",
         "settings.deafen.description": "Andere sehen dich mit Ton aus, während du sie weiter hörst. Ton aus zeigt dich auch als stummgeschaltet, wie bei Discord.",
         "settings.mute": "Als stummgeschaltet angezeigt werden",
@@ -38,6 +40,7 @@ export const t = defineStrings({
         "command.description": "Mit Ton aus angezeigt werden und trotzdem alle hören",
     },
     es: {
+        "panel.label": "Ensordecido falso",
         "settings.deafen": "Aparecer ensordecido",
         "settings.deafen.description": "Los demás te ven ensordecido mientras tú los sigues oyendo. Ensordecido también aparece como silenciado, como en Discord.",
         "settings.mute": "Aparecer silenciado",
@@ -56,6 +59,7 @@ export const t = defineStrings({
         "command.description": "Aparece ensordecido mientras sigues oyendo a todos",
     },
     fr: {
+        "panel.label": "Fausse sourdine",
         "settings.deafen": "Apparaître en sourdine",
         "settings.deafen.description": "Les autres te voient en sourdine alors que tu les entends toujours. La sourdine s'affiche aussi comme muet, comme sur Discord.",
         "settings.mute": "Apparaître muet",
@@ -74,6 +78,7 @@ export const t = defineStrings({
         "command.description": "Apparaître en sourdine tout en entendant tout le monde",
     },
     ja: {
+        "panel.label": "フェイクスピーカーミュート",
         "settings.deafen": "スピーカーミュート中に見せる",
         "settings.deafen.description": "相手の声は聞こえたまま、他の人にはスピーカーミュート中に見えます。Discordと同じく、スピーカーミュートはマイクミュートとしても表示されます。",
         "settings.mute": "マイクミュート中に見せる",
@@ -92,6 +97,7 @@ export const t = defineStrings({
         "command.description": "全員の声を聞きながらスピーカーミュート中に見せる",
     },
     pl: {
+        "panel.label": "Udawane wyciszenie",
         "settings.deafen": "Wyglądaj na wyciszonego",
         "settings.deafen.description": "Inni widzą, że masz wyciszony dźwięk, a ty nadal ich słyszysz. Wyciszony dźwięk pokazuje też wyciszony mikrofon, jak w Discordzie.",
         "settings.mute": "Wyglądaj na wyciszony mikrofon",
@@ -110,6 +116,7 @@ export const t = defineStrings({
         "command.description": "Wyglądaj na wyciszonego, nadal słysząc wszystkich",
     },
     "pt-BR": {
+        "panel.label": "Ensurdecer falso",
         "settings.deafen": "Aparecer ensurdecido",
         "settings.deafen.description": "Os outros te veem ensurdecido enquanto você continua ouvindo. Ensurdecido também aparece como silenciado, como no Discord.",
         "settings.mute": "Aparecer silenciado",
@@ -128,6 +135,7 @@ export const t = defineStrings({
         "command.description": "Apareça ensurdecido enquanto continua ouvindo todos",
     },
     ru: {
+        "panel.label": "Фальшивое отключение звука",
         "settings.deafen": "Казаться без звука",
         "settings.deafen.description": "Другие видят, что у вас выключен звук, а вы продолжаете их слышать. Выключенный звук также показывается как выключенный микрофон, как в Discord.",
         "settings.mute": "Казаться без микрофона",
@@ -146,6 +154,7 @@ export const t = defineStrings({
         "command.description": "Казаться без звука, продолжая всех слышать",
     },
     tr: {
+        "panel.label": "Sahte ses kapatma",
         "settings.deafen": "Sesi kapalı görün",
         "settings.deafen.description": "Sen herkesi duymaya devam ederken diğerleri sesini kapalı görür. Discord'daki gibi, ses kapalıyken mikrofon da kapalı görünür.",
         "settings.mute": "Mikrofonu kapalı görün",

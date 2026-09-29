@@ -1,4 +1,4 @@
-import { Components, definePlugin, filters, getStore, React } from "@evi/api";
+import { definePlugin, filters, getStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
 import { t } from "./strings";
@@ -91,7 +91,6 @@ function subscribe(onChange: () => void) {
     return () => void listeners.delete(onChange);
 }
 
-const useEnabled = () => React.useSyncExternalStore(subscribe, () => enabled);
 
 interface IconProps { width?: number; height?: number; }
 
@@ -111,81 +110,51 @@ function GhostIconOn(props: IconProps) {
     return <span className="dl-fake-deafen-on"><GhostIcon {...props} /></span>;
 }
 
-/** Discord's user panel button (the one mute and deafen use), handed over by waitFor */
-let PanelButton: React.ComponentType<any> | undefined;
 
-function FakeDeafenButton({ nameplate }: { nameplate?: unknown; }) {
-    const { showButton } = context!.settings.use();
-    const on = useEnabled();
-    if (!showButton) return null;
-
-    const label = t(on ? "button.off" : "button.on");
-    if (PanelButton) {
-        return (
-            <PanelButton
-                tooltipText={label}
-                icon={on ? GhostIconOn : GhostIcon}
-                role="switch"
-                aria-checked={on}
-                redGlow={on}
-                plated={nameplate != null}
-                onClick={toggle}
-            />
-        );
-    }
-    const button = (
-        <button
-            type="button"
-            className="dl-fake-deafen-button"
-            data-on={on || undefined}
-            onClick={toggle}
-            aria-label={label}
-            aria-pressed={on}
-        >
-            <GhostIcon />
-        </button>
-    );
-    const Tooltip = Components.Tooltip;
-    return Tooltip ? <Tooltip text={label} position="top">{button}</Tooltip> : React.cloneElement(button, { title: label });
+/** Its switch in the user panel, while the showButton setting is on */
+function panelSwitch(ctx: PluginContext<Settings>) {
+    let remove: (() => void) | undefined;
+    const sync = () => {
+        const want = ctx.settings.get("showButton");
+        if (want && !remove) {
+            remove = ctx.panelToggle({
+                label: () => t("panel.label"),
+                tooltip: on => t(on ? "button.off" : "button.on"),
+                icon: on => on ? GhostIconOn : GhostIcon,
+                isChecked: () => enabled,
+                subscribe,
+                alert: on => on,
+                toggle,
+            });
+        } else if (!want && remove) {
+            remove();
+            remove = undefined;
+        }
+    };
+    sync();
+    ctx.settings.onChange(sync);
 }
 
 export default definePlugin({
     settings,
 
-    patches: [PATCHES.committer, PATCHES.userPanel],
+    patches: [PATCHES.committer],
 
     /** Called by the patched voice state committer's constructor */
     captureCommitter(value: unknown) {
         if (value && typeof (value as any).forceUpdate === "function") committer = value as VoiceCommitter;
     },
 
-    /** Called by the patched user panel, right after the deafen button, with the panel's props */
-    renderButton(props?: { nameplate?: unknown; }) {
-        if (!context) return null;
-        return <FakeDeafenButton key="evi-fake-deafen" nameplate={props?.nameplate} />;
-    },
-
     toggle,
     isEnabled: () => enabled,
 
     css: `
-        .dl-fake-deafen-button { display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
-            width: 32px; height: 32px; padding: 0; border: 0; border-radius: var(--radius-sm, 8px); cursor: pointer;
-            background: transparent; color: var(--interactive-normal, var(--interactive-icon-default));
-            transition: background-color 0.1s ease-out, color 0.1s ease-out; }
-        .dl-fake-deafen-button:hover { background: var(--background-modifier-hover, var(--interactive-background-hover));
-            color: var(--interactive-hover, var(--interactive-icon-hover)); }
-        .dl-fake-deafen-button:active { background: var(--background-modifier-active, var(--interactive-background-active));
-            color: var(--interactive-active, var(--interactive-icon-active)); }
-        .dl-fake-deafen-button[data-on], .dl-fake-deafen-on { color: var(--status-danger, #da373c); }
-        .dl-fake-deafen-on { display: contents; }
-        .dl-fake-deafen-button:focus-visible { outline: 2px solid var(--focus-primary, #5865f2); outline-offset: -2px; }
-        @media (prefers-reduced-motion: reduce) { .dl-fake-deafen-button { transition: none; } }
+        .dl-fake-deafen-on { display: contents; color: var(--status-danger, #da373c); }
     `,
 
     start(ctx) {
         context = ctx;
-        if (!PanelButton) ctx.waitFor(filters.byCode(".GREEN,positionKeyStemOverride:"), c => void (PanelButton = c as React.ComponentType<any>));
+        panelSwitch(ctx);
 
         ctx.waitFor<{ getSocket(): GatewaySocket | undefined; }>(filters.byStoreName("GatewayConnectionStore"), store => {
             const found = store.getSocket?.();

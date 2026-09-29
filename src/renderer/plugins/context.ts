@@ -20,6 +20,7 @@ import { fixedLookup } from "./hotfixes";
 import { diagnoseLookups, isLookupProblem, LOOKUP_GRACE_MS, trackLookup, untrackLookup } from "./lookups";
 import type { SettingsSchema, SettingsValues } from "./types";
 import { PluginUsage } from "./usage";
+import { addPanelToggle, ensurePanelPatch, PanelToggle } from "../toolkit/panel";
 
 export class PluginSettings<S extends SettingsSchema> {
     constructor(
@@ -272,6 +273,15 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     command(definition: CommandDefinition) {
         PluginUsage.add(this.id, "commands", definition.name);
         return this.onDispose(registerCommand(this.guard.command(definition), this.id));
+    }
+
+    /**
+     * A switch in the user panel, beside mute and deafen. One plugin's switch gets a button of its
+     * own; with several, they share one Evi button that opens a menu of them. Removed on stop.
+     */
+    panelToggle(toggle: PanelToggle) {
+        ensurePanelPatch();
+        return this.onDispose(addPanelToggle(this.id, toggle));
     }
 
     /**

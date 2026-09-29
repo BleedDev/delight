@@ -54,16 +54,4 @@ export const PATCHES = {
             with: "$1,$self?.captureCommitter?.(this)",
         },
     },
-    /**
-     * The user panel's button row: <div className style children:[<Mute/>, <Deafen {selfDeaf,serverDeaf,...}/>, <Settings/>]>.
-     * The panel's props go along (arguments[0]: the nameplate decides the buttons' look).
-     * Ours goes right after deafen. Game Activity Toggle's goes first, so the two never meet.
-     */
-    userPanel: {
-        find: "handleOpenSettingsContextMenu",
-        replace: {
-            match: /(?<=\(0,\i\.jsx\)\(\i,\{selfDeaf:\i,serverDeaf:\i,[^{}]*\}\)),/,
-            with: "$&$self?.renderButton?.(arguments[0]),",
-        },
-    },
 } satisfies Record<string, SourcePatch>;

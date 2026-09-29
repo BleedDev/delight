@@ -664,6 +664,7 @@ export const de = {
     "inbox.wishUpdated": "{name} {version} ist da",
     "inbox.wishUpdatedBody": "Etwas auf deiner Wunschliste hat eine neue Version.",
     "inbox.yesterday": "Gestern",
+    "panel.toggles": "Evi-Schalter",
     "liveToasts.region": "Evi-Benachrichtigungen",
     "liveToasts.from": "Evi · {time}",
     "liveToasts.fromEvi": "Evi",

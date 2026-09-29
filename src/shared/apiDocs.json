@@ -302,6 +302,18 @@
         "example": "showToast(\"Copied\", { type: \"success\" });"
     },
     {
+        "name": "PanelIconProps",
+        "kind": "interface",
+        "signature": "interface PanelIconProps {\n    width?: number;\n    height?: number;\n}",
+        "doc": ""
+    },
+    {
+        "name": "PanelToggle",
+        "kind": "interface",
+        "signature": "interface PanelToggle {\n    label(): string;\n    tooltip(checked: boolean): string;\n    icon(checked: boolean): ComponentType<PanelIconProps>;\n    isChecked(): boolean;\n    subscribe(onChange: () => void): () => void;\n    alert(checked: boolean): boolean;\n    toggle(): void;\n}",
+        "doc": ""
+    },
+    {
         "name": "ToastOptions",
         "kind": "interface",
         "signature": "interface ToastOptions {\n    type?: ToastType;\n    duration?: number;\n    position?: \"top\" | \"bottom\";\n}",
@@ -658,6 +670,12 @@
         "signature": "ctx.command(definition: CommandDefinition)",
         "doc": "Registers a slash command that runs locally, listed with Discord's built-ins. Removed on stop.",
         "example": "ctx.command({\n    name: \"shrug\",\n    description: \"Sends a shrug\",\n    execute: () => ({ content: \"¯\\\\_(ツ)_/¯\" }),\n});"
+    },
+    {
+        "name": "ctx.panelToggle",
+        "kind": "method",
+        "signature": "ctx.panelToggle(toggle: PanelToggle)",
+        "doc": "A switch in the user panel, beside mute and deafen. One plugin's switch gets a button of its own; with several, they share one Evi button that opens a menu of them. Removed on stop."
     },
     {
         "name": "ctx.profileBadges",

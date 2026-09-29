@@ -3,12 +3,10 @@ import { describe, expect, test } from "bun:test";
 import type { Replacement } from "../src/renderer/patching/source";
 import { canonicalizeMatch, matchesFind } from "../src/renderer/patching/source";
 import { fakeState, PATCHES } from "../plugins/fake-deafen/voice";
-import { PATCHES as GAME_ACTIVITY_PATCHES } from "../plugins/game-activity-toggle/toggle";
 
 // Verbatim from Discord's web build (test-results/chunks), trimmed to the patched spots
 const SOURCES = {
     committer: 'H=new class extends M{socket;constructor(e){super(),this.socket=e}get guildId(){return this.getState().guildId}get channelId(){return this.getState().channelId}computeVoiceFlags(){return 0}}(B);',
-    userPanel: 'function lT(e){let{selfDeaf:t,selfMute:n,awaitingRemote:a,serverMute:s,serverDeaf:r,suppress:o,shouldShowSpeakingWhileMutedTooltip:d,webBuildOverride:c,handleMouseEnterMute:u,handleMouseLeaveMute:m,handleToggleSelfDeaf:h,handleToggleSelfMute:f,handleInputAudioContextMenu:p,handleOutputAudioContextMenu:g,handleOpenAccountSettings:A,handleOpenSettingsContextMenu:x,dismissibleContents:v,occluded:E,nameplate:C,accountContainerRef:_,deviceChangedTooltipType:I,dismissTooltips:b,speaking:S}=e,j=(0,en.K)(C);function T(){let e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:[];return(0,i.jsx)(lv,{webBuildOverride:c,onClick:A,onContextMenu:x,dismissibleContents:[...v.settings,...e],iconForeground:null!=C?lE.t4:void 0,nameplate:C})}return(0,i.jsxs)("div",{className:lE.Uo,style:j,children:[(0,i.jsx)(ls,{accountContainerRef:_,selfMute:n,serverMute:s,suppress:o,awaitingRemote:a,onMouseEnter:u,onMouseLeave:m,onClick:f,onContextMenu:p,iconForeground:null!=C?lE.t4:void 0,nameplate:C,shouldShowSpeakingWhileMutedTooltip:d,shouldShowInputDeviceChangedTooltip:!d&&"input"===I,dismissTooltips:b,speaking:S}),(0,i.jsx)(i5,{selfDeaf:t,serverDeaf:r,onClick:h,onContextMenu:g,awaitingRemote:a,iconForeground:null!=C?lE.t4:void 0,nameplate:C,shouldShowOutputDeviceChangedTooltip:"output"===I,dismissTooltips:b}),T()]})}',
 };
 
 type AnyPatch = { find: string; replace: Replacement | Replacement[]; };
@@ -57,19 +55,5 @@ describe("patches", () => {
         const H = new Function("M", "B", "S", `let ${out} return H;`)(class { }, "socket", S);
         expect(captured).toBe(H);
         expect(captured.socket).toBe("socket");
-    });
-
-    test("user panel: button goes right after deafen", () => {
-        const out = apply(PATCHES.userPanel, SOURCES.userPanel);
-        expect(out).toContain('dismissTooltips:b}),S?.renderButton?.(arguments[0]),T()]})}');
-        expect(() => new Function(out)).not.toThrow();
-    });
-
-    test("user panel: works alongside Game Activity Toggle, in either order", () => {
-        const both = apply(PATCHES.userPanel, apply(GAME_ACTIVITY_PATCHES.userPanel, SOURCES.userPanel, "G"));
-        const reversed = apply(GAME_ACTIVITY_PATCHES.userPanel, apply(PATCHES.userPanel, SOURCES.userPanel), "G");
-        expect(both).toBe(reversed);
-        expect(both).toContain("children:[G?.renderButton?.(arguments[0]),(0,i.jsx)(ls,");
-        expect(both).toContain("dismissTooltips:b}),S?.renderButton?.(arguments[0]),T()]");
     });
 });

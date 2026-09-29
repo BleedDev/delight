@@ -1,4 +1,4 @@
-import { Components, definePlugin, filters, find, findStore, React } from "@evi/api";
+import { definePlugin, find, findStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
 import { t } from "./strings";
@@ -10,7 +10,9 @@ import { PATCHES, readShowCurrentGame } from "./toggle";
  * PreloadedUserSettings proto). Source patches:
  *  - capture Discord's own setting object ({ getSetting, updateSetting, useSetting }) when its
  *    module defines it, so writes go through the same path as the settings page;
- *  - put a gamepad button first in the user panel's button row, left of mute and deafen.
+ *
+ * The switch sits in the user panel through Evi (ctx.panelToggle): a gamepad button of its own, or
+ * a line in Evi's menu there when other plugins add switches too.
  *
  * The button reads the setting on every UserSettingsProtoStore change, so flipping it in
  * Discord's settings (or on another device) updates the icon too. If the setting object wasn't
@@ -56,6 +58,12 @@ async function writeFallback(value: boolean) {
     }, 0);
 }
 
+function subscribe(onChange: () => void) {
+    const store = protoStore();
+    store?.addChangeListener?.(onChange);
+    return () => store?.removeChangeListener?.(onChange);
+}
+
 let busy = false;
 /** Flips the setting and toasts the result */
 async function toggle() {
@@ -74,13 +82,6 @@ async function toggle() {
     }
 }
 
-function subscribe(onChange: () => void) {
-    const store = protoStore();
-    store?.addChangeListener?.(onChange);
-    return () => store?.removeChangeListener?.(onChange);
-}
-
-const useShown = () => React.useSyncExternalStore(subscribe, isShown);
 
 function GamepadIcon({ off }: { off: boolean; }) {
     return (
@@ -100,54 +101,42 @@ function GamepadIcon({ off }: { off: boolean; }) {
     );
 }
 
+
 interface IconProps { width?: number; height?: number; }
 
 /** Hidden: crossed out and red, like Discord's own mute and deafen icons */
 const GamepadOff = (_: IconProps) => <span className="dl-game-activity-off"><GamepadIcon off /></span>;
 const GamepadOn = (_: IconProps) => <GamepadIcon off={false} />;
 
-/** Discord's user panel button (the one mute and deafen use), handed over by waitFor */
-let PanelButton: React.ComponentType<any> | undefined;
-
-function GameActivityButton({ nameplate }: { nameplate?: unknown; }) {
-    const { showButton } = context!.settings.use();
-    const shown = useShown();
-    if (!showButton) return null;
-
-    const label = t(shown ? "button.hide" : "button.show");
-    if (PanelButton) {
-        return (
-            <PanelButton
-                tooltipText={label}
-                icon={shown ? GamepadOn : GamepadOff}
-                role="switch"
-                aria-checked={!shown}
-                redGlow={!shown}
-                plated={nameplate != null}
-                onClick={toggle}
-            />
-        );
-    }
-    const button = (
-        <button
-            type="button"
-            className="dl-game-activity-button"
-            data-hidden={!shown || undefined}
-            onClick={toggle}
-            aria-label={label}
-            aria-pressed={!shown}
-        >
-            <GamepadIcon off={!shown} />
-        </button>
-    );
-    const Tooltip = Components.Tooltip;
-    return Tooltip ? <Tooltip text={label} position="top">{button}</Tooltip> : React.cloneElement(button, { title: label });
+/** Its switch in the user panel, while the showButton setting is on */
+function panelSwitch(ctx: PluginContext<Settings>) {
+    let remove: (() => void) | undefined;
+    const sync = () => {
+        const want = ctx.settings.get("showButton");
+        if (want && !remove) {
+            remove = ctx.panelToggle({
+                label: () => t("panel.label"),
+                tooltip: shown => t(shown ? "button.hide" : "button.show"),
+                icon: shown => shown ? GamepadOn : GamepadOff,
+                isChecked: isShown,
+                subscribe,
+                // Hidden is the state to notice, like being muted
+                alert: shown => !shown,
+                toggle: () => void toggle(),
+            });
+        } else if (!want && remove) {
+            remove();
+            remove = undefined;
+        }
+    };
+    sync();
+    ctx.settings.onChange(sync);
 }
 
 export default definePlugin({
     settings,
 
-    patches: [PATCHES.setting, PATCHES.userPanel],
+    patches: [PATCHES.setting],
 
     /** Called by the patched settings module with Discord's showCurrentGame setting */
     captureSetting(setting: unknown) {
@@ -156,33 +145,16 @@ export default definePlugin({
         }
     },
 
-    /** Called by the patched user panel, first in its button row, with the panel's props */
-    renderButton(props?: { nameplate?: unknown; }) {
-        if (!context) return null;
-        return <GameActivityButton key="evi-game-activity" nameplate={props?.nameplate} />;
-    },
-
     toggle,
     isShown,
 
     css: `
-        .dl-game-activity-button { display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
-            width: 32px; height: 32px; padding: 0; border: 0; border-radius: var(--radius-sm, 8px); cursor: pointer;
-            background: transparent; color: var(--interactive-normal, var(--interactive-icon-default));
-            transition: background-color 0.1s ease-out, color 0.1s ease-out; }
-        .dl-game-activity-button:hover { background: var(--background-modifier-hover, var(--interactive-background-hover));
-            color: var(--interactive-hover, var(--interactive-icon-hover)); }
-        .dl-game-activity-button:active { background: var(--background-modifier-active, var(--interactive-background-active));
-            color: var(--interactive-active, var(--interactive-icon-active)); }
-        .dl-game-activity-button[data-hidden], .dl-game-activity-off { color: var(--status-danger, #da373c); }
-        .dl-game-activity-off { display: contents; }
-        .dl-game-activity-button:focus-visible { outline: 2px solid var(--focus-primary, #5865f2); outline-offset: -2px; }
-        @media (prefers-reduced-motion: reduce) { .dl-game-activity-button { transition: none; } }
+        .dl-game-activity-off { display: contents; color: var(--status-danger, #da373c); }
     `,
 
     start(ctx) {
         context = ctx;
-        if (!PanelButton) ctx.waitFor(filters.byCode(".GREEN,positionKeyStemOverride:"), c => void (PanelButton = c as React.ComponentType<any>));
+        panelSwitch(ctx);
         ctx.onDispose(() => void (context = undefined));
 
         ctx.keybind("shortcut", () => void toggle());

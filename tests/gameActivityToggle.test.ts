@@ -7,9 +7,6 @@ import { buttonLabel, PATCHES, readShowCurrentGame, toggledMessage } from "../pl
 // Verbatim from Discord's web build (test-results/chunks), trimmed to the patched spots
 const SOURCES = {
     setting: 'f("textAndImages","dmSpamFilter",e=>e?.value??N.uH.NON_FRIENDS,e=>l.ZQ.create({value:e}));let eL=f("textAndImages","dmSpamFilterV2",e=>e??s.he.DEFAULT_UNSET,e=>e),ey=f("status","showCurrentGame",e=>e?.value??!0,e=>l._t.create({value:e}));f("privacy","recentGamesEnabled",e=>e?.value??!0,e=>l._t.create({value:e}));let eD=f("privacy","profileVisibility",e=>null==e||e===s.KP.UNSET?s.KP.FRIENDS_AND_ALL_GUILDS:e,e=>e);',
-    userPanel: 'function lT(e){let{selfDeaf:t,selfMute:n,awaitingRemote:a,serverMute:s,serverDeaf:r,suppress:o,shouldShowSpeakingWhileMutedTooltip:d,webBuildOverride:c,handleMouseEnterMute:u,handleMouseLeaveMute:m,handleToggleSelfDeaf:h,handleToggleSelfMute:f,handleInputAudioContextMenu:p,handleOutputAudioContextMenu:g,handleOpenAccountSettings:A,handleOpenSettingsContextMenu:x,dismissibleContents:v,occluded:E,nameplate:C,accountContainerRef:_,deviceChangedTooltipType:I,dismissTooltips:b,speaking:S}=e,j=(0,en.K)(C);function T(){let e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:[];return(0,i.jsx)(lv,{webBuildOverride:c,onClick:A,onContextMenu:x,dismissibleContents:[...v.settings,...e],iconForeground:null!=C?lE.t4:void 0,nameplate:C})}return(0,i.jsxs)("div",{className:lE.Uo,style:j,children:[(0,i.jsx)(ls,{accountContainerRef:_,selfMute:n,serverMute:s,suppress:o,awaitingRemote:a,onMouseEnter:u,onMouseLeave:m,onClick:f,onContextMenu:p,iconForeground:null!=C?lE.t4:void 0,nameplate:C,shouldShowSpeakingWhileMutedTooltip:d,shouldShowInputDeviceChangedTooltip:!d&&"input"===I,dismissTooltips:b,speaking:S}),(0,i.jsx)(i5,{selfDeaf:t,serverDeaf:r,onClick:h,onContextMenu:g,awaitingRemote:a,iconForeground:null!=C?lE.t4:void 0,nameplate:C,shouldShowOutputDeviceChangedTooltip:"output"===I,dismissTooltips:b}),T()]})}',
-    /** The panel's class component also passes accountContainerRef, but not first in a children array */
-    panelRender: 'children:[(0,i.jsx)(el.A,{nameplate:t,hovered:r,placement:ei.u.ACCOUNT}),this.renderNameZone(e),(0,i.jsx)(lT,{...this.props,...this.state,accountContainerRef:this.containerRef,handleOpenSettingsContextMenu:this.handleOpenSettingsContextMenu})]',
 };
 
 function apply(key: keyof typeof PATCHES, code: string = SOURCES[key], self = "S") {
@@ -58,16 +55,5 @@ describe("patches", () => {
         const f = (group: string, name: string) => ({ group, name });
         new Function("f", "l", "N", "s", "S", out)(f, {}, { uH: {} }, { he: {}, KP: {} }, { captureSetting: (v: any) => (captured = v) });
         expect(captured).toEqual({ group: "status", name: "showCurrentGame" });
-    });
-
-    test("user panel: button goes first in the button row", () => {
-        const out = apply("userPanel");
-        expect(out).toContain('children:[S?.renderButton?.(arguments[0]),(0,i.jsx)(ls,{accountContainerRef:_');
-        expect(() => new Function(out)).not.toThrow();
-    });
-
-    test("user panel: leaves the class component's render alone", () => {
-        const re = canonicalizeMatch(PATCHES.userPanel.replace.match) as RegExp;
-        expect(re.test(SOURCES.panelRender)).toBe(false);
     });
 });
