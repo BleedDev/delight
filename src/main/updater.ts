@@ -17,8 +17,7 @@
  * A dev build (the loader points at a repo's dist/) updates with git; it only checks.
  */
 import { IPC } from "@shared/ipc";
-import { CORE_ASSET, EXE_ASSET, fetchReleaseApi, Flavor, flavorOf, isNewerRelease, parseRelease, pickRelease, releaseApis, ReleaseInfo, UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/release";
-import { isReleaseDownloadUrl, verifyAsset } from "@shared/releaseSignature";
+import { EXE_ASSET, fetchReleaseApi, Flavor, flavorOf, isNewerRelease, parseRelease, pickRelease, releaseApis, ReleaseInfo, UpdateInstallResult, UpdateProgress, UpdateStatus } from "@shared/release";
 import { installerArgs, installerCommandLine, isStagedRelevant, parseStaged, shouldApplyOnQuit, shouldStage, StagedUpdate } from "@shared/silentUpdate";
 import { execFile, execFileSync, spawn } from "child_process";
 import { createHash } from "crypto";
@@ -164,11 +163,8 @@ export function checkForUpdate(force = false): Promise<UpdateStatus> {
 
 // ---- downloading --------------------------------------------------------------------------------
 
-/** A release file, from GitHub only (redirects included): the release JSON may come from the mirror */
 async function fetchBytes(url: string, max: number, onProgress?: (done: number, total: number) => void) {
-    if (!isReleaseDownloadUrl(url)) throw new Error(mt("main.update.downloadFailed", { status: new URL(url).hostname }));
-    const res = await net.fetch(url, { headers: { "User-Agent": HEADERS["User-Agent"] }, cache: "no-store", credentials: "omit" });
-    if (res.url && !isReleaseDownloadUrl(res.url)) throw new Error(mt("main.update.downloadFailed", { status: new URL(res.url).hostname }));
+    const res = await net.fetch(url, { headers: { "User-Agent": HEADERS["User-Agent"] }, cache: "no-store" });
     if (!res.ok || !res.body) throw new Error(mt("main.update.downloadFailed", { status: res.status }));
     const total = Number(res.headers.get("content-length")) || 0;
     if (total > max) throw new Error(mt("main.update.tooLarge"));
@@ -197,24 +193,19 @@ function download(release: ReleaseInfo, report?: (progress: UpdateProgress) => v
         report?.({ phase: "downloading", done: 0 });
         // Evi's files alone when the release has them, else the whole installer
         const core = !!(release.coreUrl && release.coreChecksumUrl);
-        const [url, checksumUrl, signatureUrl, asset, target, max] = core
-            ? [release.coreUrl!, release.coreChecksumUrl!, release.coreSignatureUrl, CORE_ASSET, CORE_PENDING, MAX_CORE_BYTES]
-            : [release.exeUrl, release.checksumUrl, release.exeSignatureUrl, EXE_ASSET, PENDING, MAX_EXE_BYTES];
-        // Signed by release CI with a key evi.rest never holds: whoever serves the release can't forge it
-        if (!signatureUrl) throw new Error(mt("main.update.unsigned", { version: release.version }));
-        const signature = (await fetchBytes(signatureUrl, 4096)).toString("utf8");
+        const [url, checksumUrl, target, max] = core
+            ? [release.coreUrl!, release.coreChecksumUrl!, CORE_PENDING, MAX_CORE_BYTES]
+            : [release.exeUrl, release.checksumUrl, PENDING, MAX_EXE_BYTES];
         const checksum = (await fetchBytes(checksumUrl, 4096)).toString("utf8").match(/\b[a-f0-9]{64}\b/i)?.[0].toLowerCase();
         if (!checksum) throw new Error(mt("main.update.noChecksum"));
         const staged = { version: release.version, sha256: checksum };
 
-        const already = stagedFile(checksum);
-        if (!already || !verifyAsset(release.tag, asset, readFileSync(already), signature)) {
+        if (!stagedFile(checksum)) {
             rmSync(target, { force: true });
             const bytes = await fetchBytes(url, max, (done, total) => report?.({ phase: "downloading", done, total }));
             report?.({ phase: "verifying" });
             const actual = createHash("sha256").update(bytes).digest("hex");
             if (actual !== checksum) throw new Error(mt("main.update.mismatch"));
-            if (!verifyAsset(release.tag, asset, bytes, signature)) throw new Error(mt("main.update.badSignature"));
             if (core) parseCorePayload(bytes.toString("utf8"));
             mkdirSync(DATA_DIR, { recursive: true });
             // Written beside, then renamed: a half-written file is never taken for the update

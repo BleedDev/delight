@@ -1,25 +1,17 @@
 //! Evi's releases on GitHub. The installer doesn't carry Evi itself: it downloads the release's
 //! evi-core.json (the core and official plugins, what the CLI embeds as dist/embed.json) and checks it
-//! against evi-core.json.sha256 and the release key's signature (evi-core.json.sig), the same scheme
-//! as src/cli/update.ts and src/shared/releaseSignature.ts.
+//! against evi-core.json.sha256, the same scheme as src/cli/update.ts.
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use base64::Engine;
-use ed25519_dalek::{Signature, VerifyingKey};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 pub const REPO: &str = "BleedDev/evi";
 pub const CORE_ASSET: &str = "evi-core.json";
 pub const CHECKSUM_ASSET: &str = "evi-core.json.sha256";
-pub const SIGNATURE_ASSET: &str = "evi-core.json.sig";
-/// Raw Ed25519 public key, base64: RELEASE_PUBLIC_KEY in src/shared/releaseSignature.ts
-const RELEASE_PUBLIC_KEY: &str = "4wknmFSHVQlpnQ19IpYgq+0NKs7IacOIoEq1Ye9tgXA=";
-/// GitHub's release downloads and the hosts they redirect to, like isReleaseDownloadUrl
-const DOWNLOAD_HOSTS: [&str; 3] = ["github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"];
 const MAX_CORE_BYTES: u64 = 64 * 1024 * 1024;
 
 /// Everything an install lays down. retired lists official plugins that became part of Evi itself.
@@ -38,8 +30,6 @@ pub struct Release {
     pub version: String,
     pub core_url: Option<String>,
     pub checksum_url: Option<String>,
-    /// Missing on releases from before 1.2.1: those can't be installed by this installer
-    pub signature_url: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -174,7 +164,7 @@ fn fetch_from(apis: &[String], path: &str) -> Result<Option<Release>, String> {
         return Ok(None);
     }
     let asset = |name: &str| data.assets.iter().find(|a| a.name == name).map(|a| a.browser_download_url.clone());
-    Ok(Some(Release { version: clean_version(&data.tag_name), core_url: asset(CORE_ASSET), checksum_url: asset(CHECKSUM_ASSET), signature_url: asset(SIGNATURE_ASSET), tag: data.tag_name }))
+    Ok(Some(Release { version: clean_version(&data.tag_name), core_url: asset(CORE_ASSET), checksum_url: asset(CHECKSUM_ASSET), tag: data.tag_name }))
 }
 
 /// The latest published release, or None if nothing has been published yet. Drafts and prereleases never show up here.
@@ -187,49 +177,7 @@ pub fn by_version(version: &str) -> Result<Option<Release>, String> {
     fetch_from(&apis(), &format!("releases/tags/v{version}"))
 }
 
-/// Tests serve fake releases from a local server (EVI_UPDATE_API): its files count as GitHub's, and they're
-/// signed with the key in EVI_RELEASE_PUBLIC_KEY. Only together, like src/shared/releaseSignature.ts.
-fn test_api() -> Option<String> {
-    std::env::var("EVI_UPDATE_API").ok().map(|s| s.trim().trim_end_matches('/').to_string()).filter(|s| !s.is_empty())
-}
-
-fn is_download_url(url: &str, test_api: Option<&str>) -> bool {
-    if let Some(api) = test_api {
-        let origin = |u: &str| format!("{}://{}", u.split("://").next().unwrap_or(""), host(u));
-        if origin(url) == origin(api) {
-            return true;
-        }
-    }
-    url.starts_with("https://") && DOWNLOAD_HOSTS.contains(&host(url))
-}
-
-/// What a signature covers: the tag and asset too, so a genuine file can't pass for another release
-fn signed_message(tag: &str, asset: &str, sha256: &str) -> String {
-    format!("evi-release/v1\n{tag}\n{asset}\n{sha256}")
-}
-
-fn verify_signature(key_b64: &str, message: &[u8], signature_b64: &str) -> bool {
-    let b64 = base64::engine::general_purpose::STANDARD;
-    let (Ok(key), Ok(sig)) = (b64.decode(key_b64.trim()), b64.decode(signature_b64.trim())) else {
-        return false;
-    };
-    let (Ok(key), Ok(sig)) = (<[u8; 32]>::try_from(key.as_slice()), <[u8; 64]>::try_from(sig.as_slice())) else {
-        return false;
-    };
-    let Ok(key) = VerifyingKey::from_bytes(&key) else {
-        return false;
-    };
-    key.verify_strict(message, &Signature::from_bytes(&sig)).is_ok()
-}
-
-fn release_key() -> String {
-    test_api().and_then(|_| std::env::var("EVI_RELEASE_PUBLIC_KEY").ok()).unwrap_or_else(|| RELEASE_PUBLIC_KEY.to_string())
-}
-
 fn download(url: &str, max: u64, timeout: u64) -> Result<Vec<u8>, String> {
-    if !is_download_url(url, test_api().as_deref()) {
-        return Err(format!("Refusing to download from {}: releases only come from GitHub", host(url)));
-    }
     let mut res = get(url, timeout)?;
     let status = res.status().as_u16();
     if !(200..300).contains(&status) {
@@ -239,18 +187,14 @@ fn download(url: &str, max: u64, timeout: u64) -> Result<Vec<u8>, String> {
 }
 
 pub fn has_core(release: &Release) -> bool {
-    release.core_url.is_some() && release.checksum_url.is_some() && release.signature_url.is_some()
+    release.core_url.is_some() && release.checksum_url.is_some()
 }
 
-/// Downloads a release's evi-core.json and checks it against the published SHA-256 and the release key's signature
+/// Downloads a release's evi-core.json and checks it against the published SHA-256
 pub fn download_core(release: &Release, on_verify: impl FnOnce()) -> Result<CorePayload, String> {
     let (Some(core_url), Some(checksum_url)) = (&release.core_url, &release.checksum_url) else {
         return Err(format!("Release {} doesn’t include {CORE_ASSET}", release.tag));
     };
-    let Some(signature_url) = &release.signature_url else {
-        return Err(format!("Evi {} isn’t signed, so it wasn’t installed.", release.version));
-    };
-    let signature = String::from_utf8_lossy(&download(signature_url, 4096, 30)?).into_owned();
     let checksum_text = String::from_utf8_lossy(&download(checksum_url, 4096, 30)?).into_owned();
     let expected = checksum_text
         .split(|c: char| !c.is_ascii_hexdigit())
@@ -262,9 +206,6 @@ pub fn download_core(release: &Release, on_verify: impl FnOnce()) -> Result<Core
     let actual = Sha256::digest(&bytes).iter().map(|b| format!("{b:02x}")).collect::<String>();
     if actual != expected {
         return Err("The download doesn’t match the release’s checksum. Nothing was changed.".into());
-    }
-    if !verify_signature(&release_key(), signed_message(&release.tag, CORE_ASSET, &actual).as_bytes(), &signature) {
-        return Err("The download isn’t signed by Evi’s release key. Nothing was changed.".into());
     }
     parse_core(&bytes)
 }
@@ -291,31 +232,6 @@ mod tests {
         assert!(!is_newer("v0.4.0", "0.5.0"));
         assert!(!is_newer("v0.5.0-beta.1", "0.5.0"));
         assert_eq!(clean_version("v1.2.3-beta.1+x"), "1.2.3-beta.1");
-    }
-
-    /// Signed by src/shared/releaseSignature.ts (Node) with a throwaway key: both sides sign the same message
-    #[test]
-    fn checks_signatures_like_the_app() {
-        const KEY: &str = "vJKceAzJL2MRXRSYzgA4+L+6AfG87O7Qvn6kz8s+ank=";
-        const SIG: &str = "ASPyN1PwLslaoBZ4FiUnf+OMt186rTrG3sKiUkX6p/Y1Ek7mxtFCMuxs9Ex8wXu2cG1mI4V5niloFrh1UtAhDg==";
-        let sha = "a".repeat(64);
-        assert!(verify_signature(KEY, signed_message("v1.2.1", CORE_ASSET, &sha).as_bytes(), SIG));
-        assert!(!verify_signature(KEY, signed_message("v1.2.2", CORE_ASSET, &sha).as_bytes(), SIG));
-        assert!(!verify_signature(KEY, signed_message("v1.2.1", "evi.exe", &sha).as_bytes(), SIG));
-        assert!(!verify_signature(KEY, signed_message("v1.2.1", CORE_ASSET, &"b".repeat(64)).as_bytes(), SIG));
-        assert!(!verify_signature(RELEASE_PUBLIC_KEY, signed_message("v1.2.1", CORE_ASSET, &sha).as_bytes(), SIG));
-        assert!(!verify_signature(KEY, b"anything", "not base64"));
-    }
-
-    #[test]
-    fn downloads_only_from_github() {
-        assert!(is_download_url("https://github.com/BleedDev/evi/releases/download/v1.2.1/evi-core.json", None));
-        assert!(is_download_url("https://objects.githubusercontent.com/x", None));
-        assert!(!is_download_url("https://evi.rest/evi-core.json", None));
-        assert!(!is_download_url("http://github.com/x", None));
-        assert!(!is_download_url("https://github.com.evil.example/x", None));
-        assert!(is_download_url("http://127.0.0.1:5000/download/x", Some("http://127.0.0.1:5000")));
-        assert!(!is_download_url("http://127.0.0.1:6000/download/x", Some("http://127.0.0.1:5000")));
     }
 
     #[test]
@@ -354,7 +270,7 @@ mod tests {
         format!("http://{}", listener.local_addr().unwrap())
     }
 
-    const RELEASE: &str = r#"{"tag_name":"v0.6.0","draft":false,"assets":[{"name":"evi-core.json","browser_download_url":"https://x/evi-core.json"},{"name":"evi-core.json.sha256","browser_download_url":"https://x/evi-core.json.sha256"},{"name":"evi-core.json.sig","browser_download_url":"https://x/evi-core.json.sig"}]}"#;
+    const RELEASE: &str = r#"{"tag_name":"v0.6.0","draft":false,"assets":[{"name":"evi-core.json","browser_download_url":"https://x/evi-core.json"},{"name":"evi-core.json.sha256","browser_download_url":"https://x/evi-core.json.sha256"}]}"#;
 
     #[test]
     fn falls_back_to_github_when_the_mirror_fails() {

@@ -117,12 +117,9 @@ export interface ReleaseInfo {
     prerelease: boolean;
     exeUrl: string;
     checksumUrl: string;
-    /** The installer's signature (shared/releaseSignature.ts). Missing on releases from before 1.2.1 */
-    exeSignatureUrl?: string;
     /** evi-core.json and its checksum: updating needs only these. Missing on releases from before Evi Setup */
     coreUrl?: string;
     coreChecksumUrl?: string;
-    coreSignatureUrl?: string;
 }
 
 function isGithubPage(url: unknown): url is string {
@@ -151,9 +148,7 @@ export function parseRelease(json: any): ReleaseInfo | { error: string; } | unde
         prerelease: json.prerelease === true || isPrerelease(json.tag_name),
         exeUrl,
         checksumUrl,
-        ...typeof asset(`${EXE_ASSET}.sig`) === "string" && { exeSignatureUrl: asset(`${EXE_ASSET}.sig`) },
         ...typeof asset(CORE_ASSET) === "string" && typeof asset(CORE_CHECKSUM_ASSET) === "string" && { coreUrl: asset(CORE_ASSET), coreChecksumUrl: asset(CORE_CHECKSUM_ASSET) },
-        ...typeof asset(`${CORE_ASSET}.sig`) === "string" && { coreSignatureUrl: asset(`${CORE_ASSET}.sig`) },
     };
 }
 

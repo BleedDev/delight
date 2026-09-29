@@ -14,7 +14,6 @@ import { basename, join, resolve } from "path";
 import pkg from "../package.json";
 import type { PluginManifest } from "../src/shared/ipc";
 import { RELEASE_ASSETS } from "../src/shared/release";
-import { signAsset, SIGNATURE_SUFFIX } from "../src/shared/releaseSignature";
 import { RETIRED_PLUGINS } from "../src/shared/store";
 
 const ROOT = resolve(import.meta.dir, "..");
@@ -226,31 +225,16 @@ async function compileCli() {
     for (const { asset } of builds) {
         if (RELEASE) {
             if (asset.startsWith("evi-macos-")) adhocSign(join(DIST, asset));
-            writeChecksum(asset);
+            const hash = new Bun.CryptoHasher("sha256").update(readFileSync(join(DIST, asset))).digest("hex");
+            writeFileSync(join(DIST, `${asset}.sha256`), `${hash}  ${asset}\n`);
         }
         console.log(`✓ dist/${asset}`);
     }
 }
 
-/**
- * The release key (shared/releaseSignature.ts): the EVI_RELEASE_KEY secret in CI, or the .pem file
- * EVI_RELEASE_KEY_FILE names for a local release build. A release never goes out unsigned.
- */
-function releaseKey() {
-    const pem = process.env.EVI_RELEASE_KEY || (process.env.EVI_RELEASE_KEY_FILE && readFileSync(process.env.EVI_RELEASE_KEY_FILE, "utf8"));
-    if (!pem) {
-        console.error("✗ A release build needs the signing key: set EVI_RELEASE_KEY, or EVI_RELEASE_KEY_FILE to its .pem");
-        process.exit(1);
-    }
-    return pem;
-}
-
-/** Its .sha256, and on a release build its .sig */
 function writeChecksum(asset: string) {
-    const bytes = readFileSync(join(DIST, asset));
-    const hash = new Bun.CryptoHasher("sha256").update(bytes).digest("hex");
+    const hash = new Bun.CryptoHasher("sha256").update(readFileSync(join(DIST, asset))).digest("hex");
     writeFileSync(join(DIST, `${asset}.sha256`), `${hash}  ${asset}\n`);
-    if (RELEASE) writeFileSync(join(DIST, `${asset}${SIGNATURE_SUFFIX}`), `${signAsset(releaseKey(), `v${pkg.version}`, asset, bytes)}\n`);
 }
 
 /** What Evi Setup installs: the same as dist/embed.json, plus the plugins it should delete as retired */

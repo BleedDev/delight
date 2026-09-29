@@ -972,8 +972,6 @@ export const es = {
     "main.update.tooLarge": "La descarga es más grande de lo esperado",
     "main.update.noChecksum": "El archivo de suma de verificación de la versión no contiene ningún SHA-256",
     "main.update.mismatch": "La descarga no coincide con la suma de verificación de la versión. No se cambió nada.",
-    "main.update.unsigned": "Evi {version} no está firmado, así que no se instaló.",
-    "main.update.badSignature": "La descarga no está firmada con la clave de versiones de Evi. No se cambió nada.",
     "main.update.damaged": "La actualización descargada falta o está dañada. Busca actualizaciones para descargarla de nuevo.",
     "main.update.rootOwned": "La carpeta de Discord pertenece a root, así que Evi no puede actualizarla desde aquí. Ejecuta sudo evi update en una terminal.",
     "main.update.already": "Ya se está actualizando",

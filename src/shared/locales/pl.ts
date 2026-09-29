@@ -974,8 +974,6 @@ export const pl = {
     "main.update.tooLarge": "Pobierany plik jest większy niż oczekiwano",
     "main.update.noChecksum": "W pliku sumy kontrolnej wydania nie ma SHA-256",
     "main.update.mismatch": "Pobrany plik nie zgadza się z sumą kontrolną wydania. Nic nie zostało zmienione.",
-    "main.update.unsigned": "Evi {version} nie jest podpisane, więc nie zostało zainstalowane.",
-    "main.update.badSignature": "Pobrany plik nie jest podpisany kluczem wydań Evi. Nic nie zostało zmienione.",
     "main.update.damaged": "Pobrana aktualizacja nie istnieje lub jest uszkodzona. Sprawdź aktualizacje, aby pobrać ją ponownie.",
     "main.update.rootOwned": "Folder Discorda należy do roota, więc Evi nie może go stąd zaktualizować. Uruchom sudo evi update w terminalu.",
     "main.update.already": "Aktualizacja już trwa",

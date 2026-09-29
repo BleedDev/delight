@@ -5,13 +5,11 @@
  *
  *   bun scripts/test-installer.ts
  */
-import { generateKeyPairSync } from "crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 
 import pkg from "../package.json";
 import { createAsar, readAsarFile } from "../src/shared/asar";
-import { signAsset } from "../src/shared/releaseSignature";
 import { createShimAsar, ORIGINAL_ASAR, SHIM_MARKER } from "../src/shared/shim";
 
 const ROOT = resolve(import.meta.dir, "..");
@@ -45,14 +43,7 @@ const embed = JSON.parse(readFileSync(join(ROOT, "dist", "embed.json"), "utf8"))
 const payload = (version: string) => Buffer.from(JSON.stringify({ ...embed, version, core: { ...embed.core, "main.js": embed.core["main.js"].replace(/\[Evi\] v\$\{"[^"]+"\}/, `[Evi] v\${"${version}"}`) }, retired: ["badges", "old-thing"] }));
 const sha256 = (data: Uint8Array) => new Bun.CryptoHasher("sha256").update(data).digest("hex");
 
-// Releases here are signed with a throwaway key the installer is told about (EVI_RELEASE_PUBLIC_KEY,
-// which it only honours together with EVI_UPDATE_API)
-const testKey = generateKeyPairSync("ed25519");
-const TEST_PUBLIC_KEY = testKey.publicKey.export({ type: "spki", format: "der" }).subarray(12).toString("base64");
-const TEST_PRIVATE_KEY = testKey.privateKey.export({ type: "pkcs8", format: "pem" }).toString();
-
-/** `signedAs`: the tag its signature names, when it isn't the release's own */
-interface FakeRelease { tag: string; core?: Buffer; checksum?: string; signedAs?: string; }
+interface FakeRelease { tag: string; core?: Buffer; checksum?: string; }
 const releases: Record<string, FakeRelease> = {};
 let latest: string | undefined;
 let downloads = 0;
@@ -65,7 +56,7 @@ const server = Bun.serve({
         const describe = (r: FakeRelease) => Response.json({
             tag_name: r.tag,
             draft: false,
-            assets: r.core ? ["evi-core.json", "evi-core.json.sha256", "evi-core.json.sig"].map(name => ({ name, browser_download_url: `${origin}/download/${r.tag}/${name}` })) : [],
+            assets: r.core ? ["evi-core.json", "evi-core.json.sha256"].map(name => ({ name, browser_download_url: `${origin}/download/${r.tag}/${name}` })) : [],
         });
         if (pathname === "/repos/BleedDev/evi/releases/latest") return latest ? describe(releases[latest]) : new Response("{}", { status: 404 });
         const tag = pathname.match(/^\/repos\/BleedDev\/evi\/releases\/tags\/(.+)$/)?.[1];
@@ -77,7 +68,6 @@ const server = Bun.serve({
                 downloads++;
                 return new Response(new Uint8Array(r.core!));
             }
-            if (asset[2] === "evi-core.json.sig") return new Response(`${signAsset(TEST_PRIVATE_KEY, r.signedAs ?? r.tag, "evi-core.json", r.core!)}\n`);
             return new Response(`${r.checksum ?? sha256(r.core!)}  evi-core.json\n`);
         }
         return new Response("Not Found", { status: 404 });
@@ -94,7 +84,7 @@ function addRelease(version: string, withCore = true) {
 /** Async so the fake server in this process can answer while the exe runs */
 async function setup(...args: string[]) {
     const proc = Bun.spawn([EXE, "--headless", ...args], {
-        env: { ...process.env, LOCALAPPDATA: LOCAL, APPDATA: ROAMING, EVI_UPDATE_API: API, EVI_RELEASE_PUBLIC_KEY: TEST_PUBLIC_KEY },
+        env: { ...process.env, LOCALAPPDATA: LOCAL, APPDATA: ROAMING, EVI_UPDATE_API: API },
         stdout: "pipe",
         stderr: "pipe",
     });
@@ -131,12 +121,6 @@ check("…and changes nothing", readFileSync(asar).equals(discordAsar) && !exist
 addRelease(pkg.version).checksum = "0".repeat(64);
 r = await setup("install", "--no-restart");
 check("checksum mismatch is refused", r.code === 1 && /doesn’t match the release’s checksum/.test(r.json?.error), r.log);
-check("…and changes nothing", readFileSync(asar).equals(discordAsar) && !existsSync(original) && !existsSync(join(DATA, "core")));
-
-// A genuine evi-core.json signed for another release (an old one passed off as this one) is refused too
-addRelease(pkg.version).signedAs = "v0.0.1";
-r = await setup("install", "--no-restart");
-check("a signature for another release is refused", r.code === 1 && /isn’t signed by Evi’s release key/.test(r.json?.error), r.log);
 check("…and changes nothing", readFileSync(asar).equals(discordAsar) && !existsSync(original) && !existsSync(join(DATA, "core")));
 
 // The installer's own release

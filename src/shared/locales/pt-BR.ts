@@ -972,8 +972,6 @@ export const ptBR = {
     "main.update.tooLarge": "O download é maior do que o esperado",
     "main.update.noChecksum": "O arquivo de checksum da versão não tem nenhum SHA-256",
     "main.update.mismatch": "O download não corresponde ao checksum da versão. Nada foi alterado.",
-    "main.update.unsigned": "O Evi {version} não está assinado, então não foi instalado.",
-    "main.update.badSignature": "O download não está assinado pela chave de versões do Evi. Nada foi alterado.",
     "main.update.damaged": "A atualização baixada está faltando ou danificada. Procure atualizações para baixá-la de novo.",
     "main.update.rootOwned": "A pasta do Discord pertence ao root, então o Evi não pode atualizá-la daqui. Execute sudo evi update em um terminal.",
     "main.update.already": "Já está atualizando",

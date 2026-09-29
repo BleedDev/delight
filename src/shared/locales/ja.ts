@@ -969,8 +969,6 @@ export const ja = {
     "main.update.tooLarge": "ダウンロードが想定より大きいサイズです",
     "main.update.noChecksum": "リリースのチェックサムファイルに SHA-256 が含まれていません",
     "main.update.mismatch": "ダウンロードしたファイルがリリースのチェックサムと一致しません。何も変更されていません。",
-    "main.update.unsigned": "Evi {version} は署名されていないため、インストールしませんでした。",
-    "main.update.badSignature": "ダウンロードしたファイルは Evi のリリース鍵で署名されていません。何も変更されていません。",
     "main.update.damaged": "ダウンロードした更新ファイルが見つからないか、破損しています。更新を確認して、もう一度ダウンロードしてください。",
     "main.update.rootOwned": "Discord のフォルダーは root の所有のため、ここから Evi を更新できません。ターミナルで sudo evi update を実行してください。",
     "main.update.already": "すでに更新中です",

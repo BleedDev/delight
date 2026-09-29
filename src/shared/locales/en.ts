@@ -975,8 +975,6 @@ export const en = {
     "main.update.tooLarge": "The download is larger than expected",
     "main.update.noChecksum": "The release's checksum file has no SHA-256 in it",
     "main.update.mismatch": "The download doesn’t match the release’s checksum. Nothing was changed.",
-    "main.update.unsigned": "Evi {version} isn’t signed, so it wasn’t installed.",
-    "main.update.badSignature": "The download isn’t signed by Evi’s release key. Nothing was changed.",
     "main.update.damaged": "The downloaded update is missing or damaged. Check for updates to download it again.",
     "main.update.rootOwned": "Discord’s folder belongs to root, so Evi can’t update it from here. Run sudo evi update in a terminal.",
     "main.update.already": "Already updating",

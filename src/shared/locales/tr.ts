@@ -972,8 +972,6 @@ export const tr = {
     "main.update.tooLarge": "İndirme beklenenden büyük",
     "main.update.noChecksum": "Sürümün sağlama dosyasında SHA-256 yok",
     "main.update.mismatch": "İndirilen dosya sürümün sağlama toplamıyla eşleşmiyor. Hiçbir şey değişmedi.",
-    "main.update.unsigned": "Evi {version} imzalı değil, bu yüzden yüklenmedi.",
-    "main.update.badSignature": "İndirilen dosya Evi’nin sürüm anahtarıyla imzalanmamış. Hiçbir şey değişmedi.",
     "main.update.damaged": "İndirilen güncelleme eksik veya bozuk. Yeniden indirmek için güncellemeleri denetle.",
     "main.update.rootOwned": "Discord’un klasörü root’a ait, bu yüzden Evi buradan güncelleyemez. Bir terminalde sudo evi update çalıştır.",
     "main.update.already": "Zaten güncelleniyor",

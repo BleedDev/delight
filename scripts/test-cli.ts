@@ -4,13 +4,11 @@
  *   bun scripts/test-cli.ts          test the source CLI
  *   bun scripts/test-cli.ts --exe    test the compiled dist/evi.exe
  */
-import { generateKeyPairSync } from "crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 
 import pkg from "../package.json";
 import { createAsar, readAsarFile } from "../src/shared/asar";
-import { signAsset } from "../src/shared/releaseSignature";
 import { ORIGINAL_ASAR, SHIM_MARKER } from "../src/shared/shim";
 
 const ROOT = resolve(import.meta.dir, "..");
@@ -95,12 +93,6 @@ let latest: { status: number; tag?: string; } = { status: 404 };
 let asset = new Uint8Array();
 let checksum = "";
 let downloads = 0;
-// Releases here are signed with a throwaway key the CLI is told about (EVI_RELEASE_PUBLIC_KEY, which
-// it only honours together with EVI_UPDATE_API)
-const testKey = generateKeyPairSync("ed25519");
-const TEST_PUBLIC_KEY = testKey.publicKey.export({ type: "spki", format: "der" }).subarray(12).toString("base64");
-const TEST_PRIVATE_KEY = testKey.privateKey.export({ type: "pkcs8", format: "pem" }).toString();
-let signature = "";
 
 const server = Bun.serve({
     port: 0,
@@ -114,7 +106,7 @@ const server = Bun.serve({
                 html_url: `${origin}/releases/${latest.tag}`,
                 draft: false,
                 prerelease: false,
-                assets: ["evi.exe", "evi.exe.sha256", "evi.exe.sig"].map(name => ({ name, browser_download_url: `${origin}/download/${name}` })),
+                assets: ["evi.exe", "evi.exe.sha256"].map(name => ({ name, browser_download_url: `${origin}/download/${name}` })),
             });
         }
         if (pathname === "/download/evi.exe") {
@@ -122,7 +114,6 @@ const server = Bun.serve({
             return new Response(asset);
         }
         if (pathname === "/download/evi.exe.sha256") return new Response(`${checksum}  evi.exe\n`);
-        if (pathname === "/download/evi.exe.sig") return new Response(`${signature}\n`);
         return new Response("Not Found", { status: 404 });
     },
 });
@@ -140,7 +131,7 @@ if (EXE) {
 async function update(args: string[], api = API) {
     const cmd = EXE ? [exeCopy, ...args] : ["bun", join(ROOT, "src", "cli", "index.ts"), ...args];
     const proc = Bun.spawn(cmd, {
-        env: { ...process.env, LOCALAPPDATA: LOCAL, APPDATA: ROAMING, NO_COLOR: "1", EVI_UPDATE_API: api, EVI_RELEASE_PUBLIC_KEY: TEST_PUBLIC_KEY },
+        env: { ...process.env, LOCALAPPDATA: LOCAL, APPDATA: ROAMING, NO_COLOR: "1", EVI_UPDATE_API: api },
         stdout: "pipe",
         stderr: "pipe",
     });
@@ -204,13 +195,6 @@ if (!EXE) {
     rmSync(join(ROAMING, "Evi", "core"), { recursive: true, force: true });
 
     checksum = new Bun.CryptoHasher("sha256").update(asset).digest("hex");
-    // A genuine file signed for another release: an old one offered as the newest
-    signature = signAsset(TEST_PRIVATE_KEY, "v98.0.0", "evi.exe", asset);
-    r = await update(["update"]);
-    check("update: a signature for another release is rejected", r.code === 1 && r.out.includes("isn't signed by Evi's release key"), r.out);
-    check("update: exe untouched after a bad signature", readFileSync(exeCopy).equals(original) && !existsSync(`${exeCopy}.old`) && !existsSync(`${exeCopy}.new`));
-
-    signature = signAsset(TEST_PRIVATE_KEY, "v99.0.0", "evi.exe", asset);
     r = await update(["update"]);
     check("update: succeeds with a valid checksum", r.code === 0 && r.out.includes("Updated") && r.out.includes("99.0.0"), r.out);
     check("update: exe replaced by the download", readFileSync(exeCopy).equals(asset));

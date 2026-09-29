@@ -16,7 +16,6 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Live-Benachrichtigungen.** Bewertungen, Freigaben, Evi-Updates und Neues von Autoren, denen du folgst, erscheinen beim Eintreffen in der Ecke. Fahre darüber, um sie zu behalten, klicke, um hinzugehen, oder schalte sie im Posteingang aus.",
             ],
             improved: [
-                "**Signierte Updates.** Jede Evi-Version ist signiert, und Evi prüft die Signatur vor der Installation, damit dich nur Evis eigene Versionen aktualisieren können.",
                 "**Plugins bleiben getrennt.** Ein Plugin kann den Vollzugriff eines anderen nicht nutzen, und eine wiederhergestellte Sicherung fragt, bevor sie ein Plugin mit Vollzugriff einschaltet.",
                 "**Nachfragen, wenn es zählt.** Ändert ein Update den Vollzugriffs-Teil eines deiner Plugins, fragt Evi vor der Installation.",
             ],
@@ -256,7 +255,6 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Notificaciones en vivo.** Reseñas, aprobaciones, actualizaciones de Evi y novedades de autores que sigues aparecen en la esquina al llegar. Pasa el cursor para mantenerlas, haz clic para ir o desactívalas en la bandeja.",
             ],
             improved: [
-                "**Actualizaciones firmadas.** Cada versión de Evi está firmada y Evi comprueba la firma antes de instalarla, así que solo las versiones de Evi pueden actualizarte.",
                 "**Plugins separados.** Un plugin no puede usar el acceso total de otro, y restaurar una copia pregunta antes de activar un plugin con acceso total.",
                 "**Pregunta cuando importa.** Si una actualización cambia la parte con acceso total de un plugin que tienes, Evi pregunta antes de instalarla.",
             ],
@@ -496,7 +494,6 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Notifications en direct.** Avis, validations, mises à jour d’Evi et nouveautés des auteurs que tu suis apparaissent dans le coin dès leur arrivée. Survole-en une pour la garder, clique pour y aller, ou désactive-les dans la boîte de réception.",
             ],
             improved: [
-                "**Mises à jour signées.** Chaque version d’Evi est signée, et Evi vérifie la signature avant de l’installer : seules les versions d’Evi peuvent te mettre à jour.",
                 "**Les plugins restent séparés.** Un plugin ne peut pas utiliser l’accès complet d’un autre, et restaurer une sauvegarde demande avant d’activer un plugin à accès complet.",
                 "**Une question quand ça compte.** Quand une mise à jour change la partie à accès complet d’un de tes plugins, Evi demande avant de l’installer.",
             ],
@@ -736,7 +733,6 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**ライブ通知。** レビュー、承認、Evi の更新、フォロー中の作者のお知らせが届くと隅にポップアップします。ホバーで保持、クリックで移動、受信箱でオフにもできます。",
             ],
             improved: [
-                "**署名付きアップデート。** Evi の各リリースには署名があり、Evi はインストール前に署名を確認します。Evi 自身のリリースだけが更新できます。",
                 "**プラグインを分離。** 他のプラグインのフルアクセスは使えず、バックアップの復元でもフルアクセスのプラグインをオンにする前に確認します。",
                 "**大事なときは確認。** 更新でプラグインのフルアクセス部分が変わるとき、Evi はインストール前に確認します。",
             ],
@@ -976,7 +972,6 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Powiadomienia na żywo.** Recenzje, akceptacje, aktualizacje Evi i nowości od obserwowanych autorów pojawiają się w rogu, gdy przychodzą. Najedź, by je zatrzymać, kliknij, by przejść, albo wyłącz je w skrzynce.",
             ],
             improved: [
-                "**Podpisane aktualizacje.** Każde wydanie Evi jest podpisane, a Evi sprawdza podpis przed instalacją, więc zaktualizować cię mogą tylko wydania Evi.",
                 "**Pluginy są od siebie oddzielone.** Plugin nie może użyć pełnego dostępu innego, a przywrócenie kopii pyta przed włączeniem pluginu z pełnym dostępem.",
                 "**Pytanie, gdy to ważne.** Gdy aktualizacja zmienia część pluginu z pełnym dostępem, Evi pyta przed instalacją.",
             ],
@@ -1216,7 +1211,6 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Notificações ao vivo.** Avaliações, aprovações, atualizações do Evi e novidades de autores que você segue aparecem no canto quando chegam. Passe o mouse para mantê-las, clique para ir até lá ou desative na caixa de entrada.",
             ],
             improved: [
-                "**Atualizações assinadas.** Toda versão do Evi é assinada, e o Evi confere a assinatura antes de instalar, então só versões do próprio Evi podem te atualizar.",
                 "**Plugins separados.** Um plugin não pode usar o acesso total de outro, e restaurar um backup pergunta antes de ativar um plugin com acesso total.",
                 "**Pergunta quando importa.** Quando uma atualização muda a parte com acesso total de um plugin seu, o Evi pergunta antes de instalar.",
             ],
@@ -1456,7 +1450,6 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Живые уведомления.** Отзывы, одобрения, обновления Evi и новости авторов, на которых вы подписаны, всплывают в углу, как только приходят. Наведите, чтобы задержать, нажмите, чтобы перейти, или отключите их во входящих.",
             ],
             improved: [
-                "**Подписанные обновления.** Каждый релиз Evi подписан, и Evi проверяет подпись перед установкой, так что обновить вас могут только релизы Evi.",
                 "**Плагины отделены друг от друга.** Плагин не может использовать полный доступ другого, а восстановление копии спрашивает, прежде чем включить плагин с полным доступом.",
                 "**Вопрос, когда это важно.** Если обновление меняет часть плагина с полным доступом, Evi спросит перед установкой.",
             ],
@@ -1696,7 +1689,6 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
                 "**Canlı bildirimler.** Değerlendirmeler, onaylar, Evi güncellemeleri ve takip ettiğin yazarların haberleri geldikleri anda köşede belirir. Tutmak için üstüne gel, gitmek için tıkla ya da Gelen Kutusu'ndan kapat.",
             ],
             improved: [
-                "**İmzalı güncellemeler.** Her Evi sürümü imzalıdır ve Evi yüklemeden önce imzayı kontrol eder; seni yalnızca Evi'nin kendi sürümleri güncelleyebilir.",
                 "**Eklentiler birbirinden ayrı.** Bir eklenti başkasının tam erişimini kullanamaz, yedeği geri yüklemek de tam erişimli bir eklentiyi açmadan önce sorar.",
                 "**Önemli olduğunda sorar.** Bir güncelleme eklentinin tam erişimli kısmını değiştirirse Evi yüklemeden önce sorar.",
             ],
