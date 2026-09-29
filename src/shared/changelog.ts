@@ -35,6 +35,23 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.3.0",
+        date: "2026-09-29",
+        sections: {
+            added: [
+                "**Live notifications.** Reviews, approvals, Evi updates and news from authors you follow pop up in the corner as they arrive. Hover one to keep it, click it to go there, or turn them off in the Inbox.",
+            ],
+            improved: [
+                "**Signed updates.** Every Evi release is signed, and Evi checks the signature before installing one, so only Evi's own releases can update you.",
+                "**Plugins are kept apart.** A plugin can't use another plugin's full access, and a restored backup asks before turning on a plugin with full access.",
+                "**Asked again when it matters.** When an update changes the full-access part of a plugin you have, Evi asks before installing it.",
+            ],
+            fixed: [
+                "**Your wallpaper stays out of your games.** Discord's in-game overlay showed it over the whole game.",
+            ],
+        },
+    },
+    {
         version: "1.2.0",
         date: "2026-09-29",
         sections: {

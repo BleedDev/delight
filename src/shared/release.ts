@@ -117,9 +117,22 @@ export interface ReleaseInfo {
     prerelease: boolean;
     exeUrl: string;
     checksumUrl: string;
+    /** The installer's signature (shared/releaseSignature.ts). Missing on releases from before 1.2.1 */
+    exeSignatureUrl?: string;
     /** evi-core.json and its checksum: updating needs only these. Missing on releases from before Evi Setup */
     coreUrl?: string;
     coreChecksumUrl?: string;
+    coreSignatureUrl?: string;
+}
+
+function isGithubPage(url: unknown): url is string {
+    if (typeof url !== "string") return false;
+    try {
+        const u = new URL(url);
+        return u.protocol === "https:" && u.hostname === "github.com";
+    } catch {
+        return false;
+    }
 }
 
 /** One release as GitHub's API describes it, or undefined if it isn't a usable release */
@@ -131,13 +144,16 @@ export function parseRelease(json: any): ReleaseInfo | { error: string; } | unde
     return {
         tag: json.tag_name,
         version: cleanVersion(json.tag_name),
-        url: typeof json.html_url === "string" ? json.html_url : `https://github.com/${RELEASE_REPO}/releases`,
+        // Shown as a link: only ever a page on GitHub, whatever the mirror sent
+        url: isGithubPage(json.html_url) ? json.html_url : `https://github.com/${RELEASE_REPO}/releases`,
         notes: typeof json.body === "string" ? json.body.trim().slice(0, 4000) : "",
         publishedAt: typeof json.published_at === "string" ? json.published_at : null,
         prerelease: json.prerelease === true || isPrerelease(json.tag_name),
         exeUrl,
         checksumUrl,
+        ...typeof asset(`${EXE_ASSET}.sig`) === "string" && { exeSignatureUrl: asset(`${EXE_ASSET}.sig`) },
         ...typeof asset(CORE_ASSET) === "string" && typeof asset(CORE_CHECKSUM_ASSET) === "string" && { coreUrl: asset(CORE_ASSET), coreChecksumUrl: asset(CORE_CHECKSUM_ASSET) },
+        ...typeof asset(`${CORE_ASSET}.sig`) === "string" && { coreSignatureUrl: asset(`${CORE_ASSET}.sig`) },
     };
 }
 

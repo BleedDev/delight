@@ -1,12 +1,12 @@
 import { backupFileName, BackupSource, buildBackup, EviBackup, ImportMode, MAX_BACKUP_BYTES, parseBackup, planImport } from "@shared/backup";
-import { BackupApplyResult, BackupExportResult, BackupOpenResult, IPC } from "@shared/ipc";
+import { BackupApplyResult, BackupExportResult, BackupOpenResult, EviSettings, IPC } from "@shared/ipc";
 import { randomUUID } from "crypto";
-import { app, BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent, webContents } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent, WebContents, webContents } from "electron";
 import { existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "fs";
 import { basename, join } from "path";
 
 import { QUICK_CSS_FILE, THEMES_DIR } from "./paths";
-import { getPluginPayloads } from "./plugins";
+import { askToEnable, enablesNeedingConsent, getPluginPayloads } from "./plugins";
 import { saveSettings, settings } from "./settings";
 import { getThemePayloads, reloadTheme } from "./themes";
 import { mt } from "./locale";
@@ -111,9 +111,22 @@ function commitFiles(writes: { path: string; data: string; }[]) {
     };
 }
 
-export function applyBackup(backup: EviBackup, mode: ImportMode): BackupApplyResult {
+/** `base` with plugin `id` switched as `previous` had it */
+function keepSwitch(base: EviSettings, previous: EviSettings, id: string, enabled?: boolean): EviSettings {
+    const entry = { ...base.plugins[id] };
+    const was = enabled ?? previous.plugins[id]?.enabled;
+    if (was === undefined) delete entry.enabled;
+    else entry.enabled = was;
+    return { ...base, plugins: { ...base.plugins, [id]: entry } };
+}
+
+export async function applyBackup(backup: EviBackup, mode: ImportMode, sender?: WebContents): Promise<BackupApplyResult> {
     const previousSettings = structuredClone(settings);
     const plan = planImport(currentState(), backup, mode);
+    // A backup is a file anyone could have made: plugins it turns on that reach beyond the page
+    // (native code, Chromium switches) stay as they were until the user says yes, as for any save
+    const held = enablesNeedingConsent(previousSettings, plan.settings);
+    for (const manifest of held) plan.settings = keepSwitch(plan.settings, previousSettings, manifest.id);
 
     const writes = plan.themes.map(t => ({ path: join(THEMES_DIR, basename(t.file)), data: t.css }));
     if (plan.quickCss !== null) writes.push({ path: QUICK_CSS_FILE, data: plan.quickCss });
@@ -132,6 +145,12 @@ export function applyBackup(backup: EviBackup, mode: ImportMode): BackupApplyRes
             saveSettings(previousSettings);
         } catch { }
         return { ok: false, error: mt("main.backup.settingsFailed", { error: errorOf(err) }) };
+    }
+
+    for (const manifest of held) {
+        if (!await askToEnable(manifest, sender)) continue;
+        plan.settings = keepSwitch(plan.settings, previousSettings, manifest.id, true);
+        saveSettings(plan.settings);
     }
 
     // Don't wait for the watchers, the renderer should have everything when this resolves
@@ -183,12 +202,12 @@ export function initBackup() {
         }
     });
 
-    ipcMain.handle(IPC.BACKUP_APPLY, (_, token: string, mode: ImportMode): BackupApplyResult => {
+    ipcMain.handle(IPC.BACKUP_APPLY, (e, token: string, mode: ImportMode): Promise<BackupApplyResult> | BackupApplyResult => {
         if (!pending || pending.token !== token) return { ok: false, error: mt("main.backup.closed") };
         if (mode !== "merge" && mode !== "replace") return { ok: false, error: "Unknown import mode" };
         const { backup } = pending;
         pending = undefined;
         // Planned again against the current state, in case something changed since the preview
-        return applyBackup(backup, mode);
+        return applyBackup(backup, mode, e.sender);
     });
 }

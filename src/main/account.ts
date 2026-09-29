@@ -25,7 +25,8 @@ async function link(): Promise<AccountLinkResult> {
         if (typeof code !== "string" || !CODE_RE.test(code) || typeof url !== "string") return { ok: false, error: "The server sent something unexpected" };
         // Only ever a web page, never another kind of link the server could slip in
         const page = new URL(url);
-        if (page.protocol !== "https:" && page.hostname !== "localhost") return { ok: false, error: "The server sent a link that isn't https" };
+        const web = page.protocol === "https:" || (page.protocol === "http:" && page.hostname === "localhost");
+        if (!web) return { ok: false, error: "The server sent a link that isn't https" };
         await shell.openExternal(page.toString());
         return { ok: true, code };
     } catch (err) {

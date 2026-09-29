@@ -10,6 +10,7 @@ import { setLocale } from "./locale";
 import { initBackup } from "./backup";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
+import { guardIpc } from "./ipcGuard";
 import { applyChromiumSwitches, askToEnable, enablesNeedingConsent, getPluginPayloads, initPlugins } from "./plugins";
 import { SafeMode } from "./safeMode";
 import { saveSettings, settings } from "./settings";
@@ -196,6 +197,8 @@ function enableDevTools() {
 function setup() {
     console.log(`[Evi] v${EVI_VERSION} starting, data at ${DATA_DIR}`);
 
+    // Before any handler is registered: they all get its sender check
+    guardIpc();
     registerIpc();
     SafeMode.watchCrashes();
     enableDevTools();

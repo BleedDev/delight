@@ -92,6 +92,13 @@ function sameValues(a: Record<string, unknown>, b: Record<string, unknown>) {
 }
 
 /**
+ * Contexts the plugin manager started for a plugin with a native module. Plugin code can build its
+ * own PluginContext (`new ctx.constructor(...)`) with any id; only these may call main.
+ */
+const nativeGrants = new WeakSet<PluginContext<any>>();
+export const grantNative = (ctx: PluginContext<any>) => void nativeGrants.add(ctx);
+
+/**
  * Everything a plugin registers goes through its context, which undoes all of it on stop.
  * That's what makes disabling and hot-reloading a plugin safe without a Discord reload.
  */
@@ -102,8 +109,18 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     private lookupCheck?: ReturnType<typeof setTimeout>;
     /** Holds what it registers to the permissions it declares (guard.ts) */
     private readonly guard: PluginGuard;
+    /**
+     * Who this context speaks for, fixed at start. Plugin code gets the context, and a `readonly`
+     * field is writable at runtime: without this, swapping `manifest` would let a plugin call another
+     * plugin's native module under its id.
+     */
+    readonly #id: string;
+    declare readonly manifest: PluginManifest;
 
-    constructor(readonly manifest: PluginManifest, schema: S) {
+    constructor(manifest: PluginManifest, schema: S) {
+        manifest = Object.freeze({ ...manifest });
+        Object.defineProperty(this, "manifest", { value: manifest, enumerable: true });
+        this.#id = manifest.id;
         this.logger = new Logger(manifest.name);
         this.guard = new PluginGuard(manifest);
         this.settings = new PluginSettings(manifest.id, schema, fn => this.onDispose(fn));
@@ -112,7 +129,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
     }
 
     get id() {
-        return this.manifest.id;
+        return this.#id;
     }
 
     /** Register cleanup to run when the plugin stops */
@@ -218,7 +235,7 @@ export class PluginContext<S extends SettingsSchema = SettingsSchema> {
 
     readonly native = {
         call: <T = unknown>(method: string, ...args: unknown[]): Promise<T> => {
-            if (!this.manifest.native) throw new Error(`${this.id} has no native module`);
+            if (!nativeGrants.has(this)) throw new Error(`${this.id} has no native module`);
             // Which full-access method it ran, never the arguments (activity.ts)
             const settle = PluginActivity.nativeCall(this.id, String(method));
             const pending: Promise<T> = Native.callNative(this.id, method, args);

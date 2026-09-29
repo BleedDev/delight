@@ -61,3 +61,15 @@ export function mergeNotifications(...lists: EviNotification[][]): EviNotificati
 }
 
 export const unreadCount = (list: EviNotification[]) => list.filter(n => !n.read).length;
+
+/** How old a notification may be and still pop up when it arrives: older ones only wait in the inbox */
+export const FRESH_FOR = 15 * 60 * 1000;
+
+/**
+ * What in `list` should pop up now (ui/LiveToasts.tsx): unread, not seen by the caller before, and
+ * recent, so a backlog from while Discord was closed never floods the corner. Oldest first, the order
+ * they happened in.
+ */
+export function freshArrivals(list: EviNotification[], seen: ReadonlySet<string>, now = Date.now()): EviNotification[] {
+    return list.filter(n => !n.read && !seen.has(n.id) && now - n.at <= FRESH_FOR).sort((a, b) => a.at - b.at);
+}

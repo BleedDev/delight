@@ -84,8 +84,9 @@ jobs:
         with:
           workspaces: installer
 
-      # Every installer and its .sha256, plus evi-core.json (what Evi Setup downloads) and Evi-Setup.exe.
-      # Bun downloads the other systems' runtimes and moves them
+      # Every installer and its .sha256 and .sig, plus evi-core.json (what Evi Setup downloads) and
+      # Evi-Setup.exe. The .sig files are signed with EVI_RELEASE_KEY, which evi.rest never holds
+      # (src/shared/releaseSignature.ts). Bun downloads the other systems' runtimes and moves them
       # into its cache; on the runner the checkout is on D: and the cache and temp on C:, and those
       # moves fail ("Failed to extract executable"). Keep all of it on the checkout's drive.
       - run: bun scripts/build.ts --release --installer
@@ -93,6 +94,7 @@ jobs:
           BUN_INSTALL_CACHE_DIR: ${{ runner.temp }}/bun-cache
           TEMP: ${{ runner.temp }}
           TMP: ${{ runner.temp }}
+          EVI_RELEASE_KEY: ${{ secrets.EVI_RELEASE_KEY }}
       - run: bun scripts/test-cli.ts --exe
       - run: bun scripts/test-installer.ts
       - run: cat dist/*.sha256
@@ -111,7 +113,7 @@ jobs:
           flags=(--latest)
           if [[ "$VERSION" == *-* ]]; then flags=(--prerelease --latest=false); fi
           # Named one by one: evi-linux-* would also match the .sha256 files, uploading them twice
-          gh release create "$TAG" dist/evi.exe dist/evi-macos-{arm64,x64} dist/evi-linux-{x64,arm64} dist/evi-core.json dist/Evi-Setup.exe dist/*.sha256 \
+          gh release create "$TAG" dist/evi.exe dist/evi-macos-{arm64,x64} dist/evi-linux-{x64,arm64} dist/evi-core.json dist/Evi-Setup.exe dist/*.sha256 dist/*.sig \
             "${flags[@]}" \
             --target "$GITHUB_SHA" \
             --title "Evi $VERSION" \

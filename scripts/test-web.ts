@@ -86,9 +86,12 @@ plugins.push({
 
 const boot: BootData = {
     version: "test",
+    // Evi.plugins is the plugin manager itself here: the test drives plugins through their contexts
+    testHooks: true,
     dataDir: "C:/fake",
     // Last saw an older Evi: What's new shows once at startup
-    settings: { quickCss: true, plugins: { experiments: { enabled: true } }, enabledThemes: [], lastSeenVersion: "0.0.1", pluginVersionsSeen: { "clear-urls": "0.9.0", "no-track": "0.9.0" } },
+    // Live toasts stay out of the other checks' way until their own turn
+    settings: { quickCss: true, liveToasts: false, plugins: { experiments: { enabled: true } }, enabledThemes: [], lastSeenVersion: "0.0.1", pluginVersionsSeen: { "clear-urls": "0.9.0", "no-track": "0.9.0" } },
     plugins,
     pulled,
     quickCss: "",
@@ -749,11 +752,7 @@ check("switching channels writes a pending draft right away", JSON.stringify(dra
 
 // ---- native bridge ------------------------------------------------------------------------------
 
-const native = await page.evaluate(async () => {
-    const state = (window as any).Evi.plugins.get("no-track");
-    return { result: await state.ctx.native.call("getBlockedCount"), calls: (window as any).__test.nativeCalls };
-});
-check("ctx.native.call reaches the bridge", native.result === 42 && native.calls[0]?.[0] === "no-track", native);
+// That Evi.plugins hands out no contexts outside this test is checked in test-electron.ts
 
 // ---- toolkit: toasts, context menus, slash commands ---------------------------------------------
 
@@ -1768,6 +1767,18 @@ const afterEscape = await page.evaluate(() => ({ dialog: !!document.querySelecto
 check("plugin settings open in a dialog and the list doesn't move", dialog.open && dialog.fields > 0 && dialog.focused && JSON.stringify(dialog.before) === JSON.stringify(dialog.after), dialog);
 check("Escape closes the settings dialog, not the Evi panel", !afterEscape.dialog && afterEscape.panel, afterEscape);
 
+// No Track's settings show a count its native module keeps: ctx.native.call reaches the bridge
+await findPlugin("no-track");
+const native = await page.evaluate(async () => {
+    const row = document.querySelector('li[aria-labelledby="dl-plugin-no-track"]') as HTMLElement;
+    (row.querySelector('[aria-label="No Track settings"]') as HTMLElement).click();
+    await new Promise(r => setTimeout(r, 400));
+    return { calls: (window as any).__test.nativeCalls, text: document.querySelector("#dl-plugin-no-track-settings")?.textContent ?? "" };
+});
+check("ctx.native.call reaches the bridge", native.calls.some((c: unknown[]) => c[0] === "no-track" && c[1] === "getBlockedCount") && native.text.includes("42"), native);
+await page.keyboard.press("Escape");
+await page.waitForSelector("#dl-plugin-no-track-settings", { state: "detached", timeout: 2000 }).catch(() => { });
+
 // Inside Discord's settings screen, Discord's focus lock pulls focus back whenever it leaves. The
 // dialog is rendered into <body>, outside it: without its own focus layer a dropdown lost focus as
 // it opened and closed again. Discord's real lock goes on the panel here, standing in for its settings.
@@ -2475,6 +2486,40 @@ check("store themes show a Store badge in the Themes tab", themeRow.includes("Mi
     await page.waitForTimeout(200);
     const read = await page.evaluate(() => ({ sent: (window as any).__test.inboxRead, count: document.querySelector("#dl-subtab-plugins-inbox .dl-tabbar-count")?.textContent ?? "" }));
     check("Mark all as read tells evi.rest and clears the count", read.sent === true && !read.count, read);
+
+    // A notification arriving now pops up in the corner; one that arrived earlier doesn't
+    await page.evaluate(() => {
+        const D = (window as any).Evi;
+        D.settings.update((d: any) => void (d.liveToasts = true));
+        D.settings.update((d: any) => void (d.localNotifications = [
+            { id: "local:toast-test", kind: "wishlist", title: "Message Clock 2.0.0 is out", body: "Something on your wishlist has a new version.", link: { kind: "plugin", id: "store-clock" }, at: Date.now(), read: false },
+            { id: "local:toast-old", kind: "fixed", title: "An old one", body: "Arrived an hour ago", at: Date.now() - 3_600_000, read: false },
+            ...(d.localNotifications ?? []),
+        ]));
+    });
+    await page.waitForSelector(".dl-live-toast", { timeout: 3000 }).catch(() => { });
+    await page.waitForTimeout(400);
+    const toast = await page.evaluate(() => {
+        const toasts = [...document.querySelectorAll(".dl-live-toast")];
+        const box = toasts[0]?.getBoundingClientRect();
+        return {
+            count: toasts.length,
+            text: toasts.map(t => t.textContent ?? ""),
+            role: toasts[0]?.getAttribute("role"),
+            corner: !!box && innerWidth - box.right <= 24 && innerHeight - box.bottom <= 24,
+        };
+    });
+    check("a new notification pops up as a toast in the corner, an old one doesn't",
+        toast.count === 1 && toast.text[0].includes("Message Clock 2.0.0 is out") && toast.role === "status" && toast.corner, toast);
+    await page.screenshot({ path: join(OUT, "ui-live-toast.png") });
+    // Hovering holds it; closing plays its exit, then it's gone
+    await page.hover(".dl-live-toast-main");
+    const held = await page.evaluate(() => getComputedStyle(document.querySelector(".dl-live-toast-timer")!).animationPlayState);
+    await page.getByRole("button", { name: "Dismiss Message Clock 2.0.0 is out" }).click();
+    await page.waitForSelector(".dl-live-toast", { state: "detached", timeout: 2000 }).catch(() => { });
+    const gone = await page.evaluate(() => document.querySelectorAll(".dl-live-toast").length);
+    check("hovering a toast holds its timer, and its close button takes it away", held === "paused" && gone === 0, { held, gone });
+    await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.liveToasts = false)));
 
     await openTab("advanced", "devtools");
     await page.waitForSelector("#dl-dt-flux", { timeout: 5000 }).catch(() => { });

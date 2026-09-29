@@ -15,7 +15,7 @@ import { Native } from "./native";
 import { diagnosePatches } from "./patching/diagnose";
 import { Perf } from "./perf";
 import { diagnoseLookups } from "./plugins/lookups";
-import { PluginManager } from "./plugins/manager";
+import { PluginManager, PublicPlugins } from "./plugins/manager";
 import { startPullNotices } from "./pulls";
 import { SafeMode } from "./safeMode";
 import { Settings } from "./settings";
@@ -35,6 +35,7 @@ import { startUpdateChecks } from "./ui/UpdatesTab";
 import { Inbox } from "./inbox";
 import { startPluginChangelogs } from "./ui/PluginChangelog";
 import { showCrashDetective } from "./ui/CrashDetective";
+import { startLiveToasts } from "./ui/LiveToasts";
 import { showSafeModeNotice } from "./ui/SafeModeNotice";
 import { installSettingsEntry } from "./ui/settingsEntry";
 import { showWhatsNewIfUpdated } from "./ui/WhatsNew";
@@ -53,7 +54,7 @@ declare global {
 const Evi = {
     version: EVI_VERSION,
     api,
-    plugins: PluginManager,
+    plugins: PublicPlugins,
     settings: Settings,
     themes: Themes,
     backup: Backup,
@@ -85,6 +86,7 @@ function boot() {
     interceptWebpack();
 
     const data = Native.boot();
+    if (data.testHooks) (Evi as { plugins: unknown; }).plugins = PluginManager;
     // Main words its own dialogs and errors in Discord's language too
     Native.setLocale?.(I18n.locale);
     I18n.subscribe(() => Native.setLocale?.(I18n.locale));
@@ -133,7 +135,11 @@ function boot() {
             // Plugins Evi turned off: a toast each, once
             whenAppReady(startPullNotices);
             // The store's inbox: the account's notifications, and news about hearted and broken plugins
-            whenAppReady(() => Inbox.start());
+            whenAppReady(() => {
+                Inbox.start();
+                // New notifications pop up in the corner as they arrive
+                startLiveToasts();
+            });
             // So a font's first use (opening settings, an italic in chat) doesn't relayout all text
             whenAppReady(warmUiFonts);
         }

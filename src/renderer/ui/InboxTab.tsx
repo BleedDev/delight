@@ -6,8 +6,9 @@ import type { EviNotification, NotificationKind } from "@shared/notifications";
 
 import { Inbox } from "../inbox";
 import { I18n, t, timeAgo as ago } from "../i18n";
+import { Settings } from "../settings";
 import { React } from "../webpack/common";
-import { Button, EmptyState, Icon, IconName, IconButton, Notice, Status, Text, useStore } from "./components";
+import { Button, EmptyState, Icon, IconName, IconButton, Notice, Status, SwitchRow, Text, useStore } from "./components";
 import { openStore, showTab } from "./nav";
 
 const kindIcon: Record<NotificationKind, IconName> = {
@@ -76,6 +77,7 @@ export function InboxTab() {
         else days.push({ label, items: [n] });
     }
     const unread = list.filter(n => !n.read).length;
+    const liveToasts = useStore(Settings.subscribe, () => Settings.data.liveToasts !== false);
 
     return (
         <div className="dl-tab dl-tab-compact">
@@ -102,6 +104,13 @@ export function InboxTab() {
             ) : !state.loading && (
                 <EmptyState icon="bell" title={t("inbox.emptyTitle")}>{t("inbox.emptyBody")}</EmptyState>
             )}
+            <SwitchRow
+                id="dl-live-toasts"
+                label={t("liveToasts.setting")}
+                description={t("liveToasts.settingHint")}
+                checked={liveToasts}
+                onChange={on => Settings.update(d => void (d.liveToasts = on))}
+            />
         </div>
     );
 }

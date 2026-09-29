@@ -16,6 +16,7 @@ import type { StarKind, StarResult, StarsResult } from "@shared/stars";
 import type { StorePreviewResult } from "@shared/pluginPermissions";
 import type { StoreImageResult, StoreListing, StoreProgress, StoreResult } from "@shared/store";
 import type { ThemeSubmissionInput } from "@shared/themeSubmissions";
+import { isDiscordAppUrl } from "@shared/appHosts";
 import { contextBridge, ipcRenderer, webFrame } from "electron";
 
 /** The bridge the renderer uses to reach the main process. Mirrored by src/renderer/native.ts */
@@ -125,10 +126,7 @@ const EviNative = {
 export type EviNativeApi = typeof EviNative;
 
 // Session preloads run in every frame of every window, only boot in Discord's app frame
-const isDiscordApp =
-    window === window.top
-    && location.protocol === "https:"
-    && /(^|\.)discord\.com$/.test(location.hostname);
+const isDiscordApp = window === window.top && isDiscordAppUrl(location.href);
 
 /**
  * Hands the bridge to Evi's renderer, and to nothing else in the page.

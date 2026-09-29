@@ -3915,3 +3915,135 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 }
 
 .dl-supporters-banner-text > * { margin: 0; }
+
+/* ==== live notifications (LiveToasts.tsx) ==================================================== */
+
+.dl-live-toasts {
+    position: fixed;
+    inset-block-end: 16px;
+    inset-inline-end: 16px;
+    /* Above Evi's own panel and dialogs, so a toast is never stuck underneath one */
+    z-index: 10002;
+    display: flex;
+    flex-direction: column;
+    inline-size: min(360px, calc(100vw - 32px));
+    /* The corner stays clickable between and around the toasts */
+    pointer-events: none;
+}
+
+/* A row that opens as its toast arrives and folds shut as it leaves, so the others glide */
+.dl-live-toast-slot {
+    display: grid;
+    grid-template-rows: 1fr;
+    padding-block-start: 8px;
+}
+
+.dl-live-toast-slot[data-closing] { pointer-events: none; }
+
+.dl-live-toast {
+    position: relative;
+    display: flex;
+    min-block-size: 0;
+    overflow: hidden;
+    border: 1px solid var(--dl-border-divider);
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-bg-modal);
+    box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
+    pointer-events: auto;
+    --dl-toast-shift: 32px;
+}
+
+.dl-live-toast:dir(rtl) { --dl-toast-shift: -32px; }
+
+.dl-live-toast-main {
+    display: flex;
+    flex: 1;
+    gap: 12px;
+    align-items: flex-start;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 12px;
+    /* Room for the close button */
+    padding-inline-end: 44px;
+    border: 0;
+    border-radius: calc(var(--dl-radius-group) - 1px);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    transition: scale 200ms ease-out;
+}
+
+@media (hover: hover) {
+    .dl-live-toast-main:hover { background: var(--dl-bg-hover); }
+}
+
+.dl-live-toast-main:active { scale: 0.98; }
+
+.dl-live-toast-main:focus-visible {
+    outline: 2px solid var(--dl-focus-ring);
+    outline-offset: -2px;
+}
+
+.dl-live-toast-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+
+.dl-live-toast-title { overflow-wrap: anywhere; text-wrap: pretty; }
+
+.dl-live-toast-body {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+}
+
+.dl-live-toast-close {
+    position: absolute;
+    inset-block-start: 8px;
+    inset-inline-end: 8px;
+}
+
+/* The toast's clock: it leaves when this bar runs out, and holds while you're on it or away */
+.dl-live-toast-timer {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: 0;
+    block-size: 2px;
+    background: var(--dl-brand);
+    opacity: 0.7;
+    transform-origin: left;
+    animation: dl-live-toast-timer 6s linear forwards;
+    pointer-events: none;
+}
+
+.dl-live-toast-timer:dir(rtl) { transform-origin: right; }
+
+.dl-live-toast:is(:hover, :focus-within) .dl-live-toast-timer,
+.dl-live-toasts[data-paused] .dl-live-toast-timer {
+    animation-play-state: paused;
+}
+
+/* Closing by hand: the clock stops counting, so only the exit is waited for */
+.dl-live-toast-slot[data-closing] .dl-live-toast-timer { animation: none; }
+
+@keyframes dl-live-toast-timer { to { scale: 0 1; } }
+
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-live-toast-slot { animation: dl-live-toast-open 240ms ease-out; }
+    :root:not(.reduce-motion) .dl-live-toast { animation: dl-live-toast-in 320ms var(--evi-spring-in, ease-out); }
+    :root:not(.reduce-motion) .dl-live-toast-slot[data-closing] { animation: dl-live-toast-close 200ms ease-in 60ms forwards; }
+    :root:not(.reduce-motion) .dl-live-toast-slot[data-closing] > .dl-live-toast { animation: dl-live-toast-out 160ms ease-in forwards; }
+}
+
+@keyframes dl-live-toast-open { from { grid-template-rows: 0fr; padding-block-start: 0; } }
+@keyframes dl-live-toast-close { to { grid-template-rows: 0fr; padding-block-start: 0; } }
+@keyframes dl-live-toast-in { from { opacity: 0; translate: var(--dl-toast-shift) 0; scale: 0.96; } }
+@keyframes dl-live-toast-out { to { opacity: 0; translate: calc(var(--dl-toast-shift) / 2) 0; scale: 0.98; } }

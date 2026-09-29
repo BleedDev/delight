@@ -58,6 +58,9 @@ let lastKey = "";
 const motionQuery = matchMedia("(prefers-reduced-motion: reduce)");
 const reducedMotion = () => motionQuery.matches || document.documentElement.classList.contains("reduce-motion");
 
+/** Discord's in-game overlay loads discord.com/overlay in its own window */
+const isOverlay = () => /^\/overlay(\/|$)/.test(location.pathname);
+
 function set(next: Partial<WallpaperState>) {
     state = { ...state, ...next };
     for (const listener of listeners) listener();
@@ -233,6 +236,8 @@ function apply(force = false) {
 export const Wallpaper = {
     init() {
         if (SafeMode.active || !Native.readWallpaper) return;
+        // The in-game overlay is a see-through window over the game: a wallpaper there hides the game
+        if (isOverlay()) return;
         Settings.subscribe(() => apply());
         motionQuery.addEventListener("change", updatePlayback);
         // A main older than this renderer (dev, after Ctrl+R) has none of these

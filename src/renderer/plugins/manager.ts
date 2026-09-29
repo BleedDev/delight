@@ -16,7 +16,7 @@ import { Settings } from "../settings";
 import { React, ReactDOM } from "../webpack/common";
 import { wreq } from "../webpack/runtime";
 import { PluginActivity } from "./activity";
-import { PluginContext } from "./context";
+import { grantNative, PluginContext } from "./context";
 import { PluginGuard } from "./guard";
 import { AppliedHotfixes } from "./hotfixes";
 import type { PluginDefinition } from "./types";
@@ -197,6 +197,7 @@ async function start(state: PluginState) {
     if (!definition || state.running) return;
 
     const ctx = new PluginContext(state.manifest, definition.settings ?? {});
+    if (state.manifest.native) grantNative(ctx);
     state.ctx = ctx;
     state.running = true;
     state.error = undefined;
@@ -500,4 +501,25 @@ export const PluginManager = {
         const definition = plugins.get(id)?.definition;
         return definition && Perf.measuredSelf(id, definition);
     },
+};
+
+/** A plugin's state as page code sees it: without its context, definition or code */
+export type PublicPluginState = Omit<PluginState, "ctx" | "definition" | "code"> & { evaluated: boolean; };
+const publicState = (state: PluginState | undefined): PublicPluginState | undefined => {
+    if (!state) return undefined;
+    const { ctx: _ctx, definition: _definition, code: _code, ...rest } = state;
+    return { ...rest, evaluated: !!_definition };
+};
+
+/**
+ * `window.Evi.plugins`. Every plugin shares the page with every other, so what's here is what any of
+ * them can reach: never a context (its native bridge, settings, patches) or a definition.
+ */
+export const PublicPlugins = {
+    get: (id: string) => publicState(PluginManager.get(id)),
+    whenLoaded: (id: string, timeoutMs?: number) => PluginManager.whenLoaded(id, timeoutMs).then(publicState),
+    getSnapshot: () => PluginManager.getSnapshot().map(s => publicState(s)!),
+    subscribe: PluginManager.subscribe,
+    setEnabled: PluginManager.setEnabled,
+    pulls: PluginManager.pulls,
 };

@@ -83,7 +83,8 @@ const server = Bun.serve({
                         { "manifest.json": JSON.stringify({ id: "store-tampered", name: "Tampered" }), "index.js": tamperedIndex.replace("true", "\"pwned\"") }),
                     registryEntry("store-native", "1.0.0", {
                         "manifest.json": nativeManifest,
-                        "index.js": "module.exports = { default: { start() { window.__storeNative = true; } } };",
+                        // Hands its context to the test: page code can't reach a plugin's context otherwise
+                        "index.js": "module.exports = { default: { start(ctx) { window.__storeNative = true; window.__storeNativeCtx = ctx; } } };",
                         "native.js": "module.exports = { ping: () => \"pong\" };",
                     }, { native: true }),
                     // Invalid entries are dropped, the rest still load
@@ -108,9 +109,13 @@ async function storeStepInstall() {
     const nativeRefusedListed = !!D.plugins.get("store-native");
     const native = await D.store.install("store-native", { allowNative: true });
     const nativeState = D.plugins.get("store-native");
-    const nativePing = nativeState ? await nativeState.ctx.native.call("ping") : null;
+    const nativeCtx = (window as any).__storeNativeCtx;
+    const nativePing = nativeCtx ? await nativeCtx.native.call("ping") : null;
+    // A context page code builds itself, under the native plugin's id, can't call main
+    const forged = nativeCtx
+        ? await (async () => new nativeCtx.constructor({ id: "store-native", name: "Forged", native: "native.js" }, {}).native.call("ping"))().then((r: unknown) => `answered ${r}`, (e: Error) => `refused: ${e.message}`)
+        : null;
     // Switched off, its native side answers nobody, not even a ctx kept from when it ran
-    const nativeCtx = nativeState?.ctx;
     const nativeRunning = nativeState?.running === true;
     if (nativeState) await D.plugins.setEnabled("store-native", false);
     const nativeOffCall = nativeCtx ? await nativeCtx.native.call("ping").then((r: unknown) => `answered ${r}`, (e: Error) => `refused: ${e.message}`) : null;
@@ -122,7 +127,7 @@ async function storeStepInstall() {
         good, goodRan: (window as any).__storeGood, goodRunning: goodState?.running === true, goodSource: goodState?.source,
         tampered, tamperedListed: !!D.plugins.get("store-tampered"), tamperedRan: "__tampered" in window,
         nativeRefused, nativeRefusedListed,
-        native, nativeRunning, nativePing, nativeOffCall,
+        native, nativeRunning, nativePing, nativeOffCall, forged, stateHasCtx: !!nativeState && "ctx" in nativeState,
         manual, lateStillThere: !!D.plugins.get("late-plugin"),
         devRemoved, devStillThere: !!D.plugins.get("timezones"),
     };
@@ -177,7 +182,6 @@ app.whenReady().then(() => {
             if (!D) return { evi: false, discordNative: !!window.__fakeDiscordPreload };
             const blockedFetch = await fetch("https://discord.com/api/v9/science", { method: "POST", body: "{}" })
                 .then(r => "status " + r.status, e => "blocked: " + e.message);
-            const noTrack = D.plugins.get("no-track");
             // Discord's own stylesheet makes a real https CSS file to download
             const sheet = [...document.querySelectorAll("link[rel=stylesheet]")].map(l => l.href).find(h => h.startsWith("https://discord.com/assets/"));
             return {
@@ -188,7 +192,6 @@ app.whenReady().then(() => {
                 running: D.plugins.getSnapshot().filter(p => p.running).map(p => p.manifest.id),
                 isDeveloper: D.api.getStore("DeveloperExperimentStore").isDeveloper,
                 blockedFetch,
-                blockedCount: await noTrack.ctx.native.call("getBlockedCount"),
                 latePlugin: window.__late === true,
                 themes: D.themes.getSnapshot().map(t => t.name),
                 bootTheme: css("--evi-boot-theme"),
@@ -214,7 +217,7 @@ app.whenReady().then(() => {
 
         // Reports, asked for the way a page still holding the bridge would: straight at main's handlers
         // (Electron's own table of them; the page can't reach them any more, that's the point)
-        const invoke = (channel, ...args) => require("electron").ipcMain._invokeHandlers.get(channel)({ sender: win.webContents }, ...args);
+        const invoke = (channel, ...args) => require("electron").ipcMain._invokeHandlers.get(channel)({ sender: win.webContents, senderFrame: win.webContents.mainFrame }, ...args);
         const crash = (plugin, version) => invoke("evi:crash-report-send", { plugin, version, eviVersion: "0.0.0", discordBuild: "test", report: "Error: test" });
         try {
             console.log("REPORTS " + JSON.stringify({
@@ -431,7 +434,7 @@ check("the bridge is gone from the page once Evi's renderer claimed it", r.bridg
 check("Discord's own preload still ran", r.discordNative === true);
 check("plugins from the dev build started", ["clear-urls", "experiments", "no-track"].every(id => r.running?.includes(id)), r.running);
 check("source patch works in Electron", r.isDeveloper === true);
-check("no-track native module blocks /science", String(r.blockedFetch).startsWith("blocked") && r.blockedCount >= 1, { fetch: r.blockedFetch, count: r.blockedCount });
+check("no-track native module blocks /science", String(r.blockedFetch).startsWith("blocked"), { fetch: r.blockedFetch });
 check("plugin dropped into the folder loads live", r.latePlugin === true);
 check("auto-injected into the updated app-1.0.1", existsSync(join(updated, ORIGINAL_ASAR, "index.js"))
     && readFileSync(join(updated, "app.asar")).equals(readFileSync(shimAsar)));
@@ -512,6 +515,8 @@ else {
     check("store: native plugin refused without the user's confirmation", i.nativeRefused?.ok === false && /full access/.test(i.nativeRefused.error) && !i.nativeRefusedListed, i.nativeRefused);
     check("store: native plugin installs once confirmed, its native side works", i.native?.ok === true && i.nativeRunning && i.nativePing === "pong" && d1.native, { result: i.native, ping: i.nativePing });
     check("store: main refuses native calls for a plugin that's switched off", /^refused: .*turned off/.test(i.nativeOffCall ?? ""), i.nativeOffCall);
+    check("store: a context built by page code can't call a plugin's native side, and Evi.plugins hands none out",
+        /^refused: .*no native module/.test(i.forged ?? "") && i.stateHasCtx === false, { forged: i.forged, stateHasCtx: i.stateHasCtx });
     check("reports: a crash report about another version than the store installed is refused", i.crashOtherVersion?.ok === false && /isn't installed from the store/.test(i.crashOtherVersion.error), i.crashOtherVersion);
     check("store: removes a plugin it didn't install, and remembers it so updates don't bring it back", i.manual?.ok === true && !i.lateStillThere && !d1.late && d1.removed.includes("late-plugin"), { result: i.manual, removed: d1.removed });
     check("store: a dev build plugin is hidden (its files are the repo's) and remembered too", i.devRemoved?.ok === true && !i.devStillThere && d1.removed.includes("timezones"), { result: i.devRemoved, removed: d1.removed });

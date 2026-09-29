@@ -1,6 +1,7 @@
 import { renameSync, rmSync, writeFileSync } from "fs";
 
 import { CHECKSUM_ASSET, cleanVersion, EXE_ASSET, fetchReleaseApi, isNewerRelease, pickRelease, releaseApis } from "../shared/release";
+import { isReleaseDownloadUrl, SIGNATURE_SUFFIX, verifyAsset } from "../shared/releaseSignature";
 
 export { CHECKSUM_ASSET, cleanVersion, EXE_ASSET };
 export const REPO = "BleedDev/evi";
@@ -17,6 +18,8 @@ export interface Release {
     url: string;
     exeUrl: string;
     checksumUrl: string;
+    /** Missing on releases from before 1.2.1: those can't be installed by this one */
+    signatureUrl?: string;
 }
 
 interface GitHubRelease {
@@ -58,11 +61,14 @@ export async function fetchLatestRelease(beta = false): Promise<Release | null> 
     const checksumUrl = asset(CHECKSUM_ASSET);
     if (!exeUrl || !checksumUrl) throw new UpdateError(`Release ${data.tag_name} is missing ${exeUrl ? CHECKSUM_ASSET : EXE_ASSET}`);
 
-    return { tag: data.tag_name, version: cleanVersion(data.tag_name), url: data.html_url, exeUrl, checksumUrl };
+    return { tag: data.tag_name, version: cleanVersion(data.tag_name), url: data.html_url, exeUrl, checksumUrl, signatureUrl: asset(`${EXE_ASSET}${SIGNATURE_SUFFIX}`) };
 }
 
+/** A release file, from GitHub only (redirects included): the release JSON may come from the mirror */
 async function download(url: string, timeout: number) {
+    if (!isReleaseDownloadUrl(url)) throw new UpdateError(`Refusing to download from ${url}: releases only come from GitHub`);
     const res = await request(url, timeout);
+    if (res.url && !isReleaseDownloadUrl(res.url)) throw new UpdateError(`Refusing a download redirected to ${res.url}`);
     if (!res.ok) throw new UpdateError(`Download failed: ${res.status} ${res.statusText} (${url})`);
     try {
         return new Uint8Array(await res.arrayBuffer());
@@ -71,8 +77,13 @@ async function download(url: string, timeout: number) {
     }
 }
 
-/** Downloads the release's installer for this system and checks it against the published SHA-256 */
+/**
+ * Downloads the release's installer for this system and checks it against the published SHA-256 and
+ * the release key's signature (shared/releaseSignature.ts)
+ */
 export async function downloadVerified(release: Release) {
+    if (!release.signatureUrl) throw new UpdateError(`Evi ${release.version} isn't signed, so it wasn't installed`);
+    const signature = new TextDecoder().decode(await download(release.signatureUrl, 30_000));
     const checksumText = new TextDecoder().decode(await download(release.checksumUrl, 30_000));
     const expected = checksumText.match(/\b[a-f0-9]{64}\b/i)?.[0].toLowerCase();
     if (!expected) throw new UpdateError(`${CHECKSUM_ASSET} doesn't contain a SHA-256 hash`);
@@ -80,6 +91,7 @@ export async function downloadVerified(release: Release) {
     const exe = await download(release.exeUrl, 10 * 60_000);
     const actual = new Bun.CryptoHasher("sha256").update(exe).digest("hex");
     if (actual !== expected) throw new UpdateError(`Checksum mismatch, the download was not installed.\n  expected ${expected}\n  got      ${actual}`);
+    if (!verifyAsset(release.tag, EXE_ASSET, exe, signature)) throw new UpdateError("The download isn't signed by Evi's release key, so it was not installed");
     return exe;
 }
 

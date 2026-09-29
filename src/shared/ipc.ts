@@ -270,6 +270,8 @@ export interface EviSettings {
     shareUsage?: boolean;
     /** Evi's own notifications for this install (wishlist, fixes, updates), shown with the account's */
     localNotifications?: EviNotification[];
+    /** New notifications pop up over Discord as they arrive (ui/LiveToasts.tsx). Missing: on */
+    liveToasts?: boolean;
     /** Plugins you have or hearted that evi.rest said were broken, so a fix is told once */
     brokenSeen?: string[];
 }
@@ -306,6 +308,11 @@ export interface BootData {
     pulled?: PulledPlugins;
     /** Evi's fixes for plugins a Discord update broke, as evi.rest last said: applied before their patches register */
     hotfixes?: Hotfix[];
+    /**
+     * Only the web test's fake bridge sets this: `Evi.plugins` is then the plugin manager itself,
+     * contexts and all, so the test can drive plugins. Main never does.
+     */
+    testHooks?: boolean;
 }
 
 /**

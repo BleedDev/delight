@@ -39,7 +39,8 @@ export async function downloadHttps(input: string, max: number, { what = mt("mai
 
     let res: Response;
     try {
-        res = await net.fetch(url.href, { signal: AbortSignal.timeout(20_000), cache });
+        // Discord's session holds Discord's cookies: none of them go to a URL someone pasted
+        res = await net.fetch(url.href, { signal: AbortSignal.timeout(20_000), cache, credentials: "omit" });
     } catch (err) {
         return { ok: false, error: mt("main.dl.failed", { error: (err as Error).message }) };
     }

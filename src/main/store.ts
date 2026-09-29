@@ -39,6 +39,7 @@ import {
     whyNotStoreUrl,
 } from "@shared/store";
 import { MAX_THEME_BYTES, whyNotCss } from "@shared/themes";
+import { createHash } from "crypto";
 import { ipcMain, WebContents } from "electron";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
 import { basename, dirname, join, resolve } from "path";
@@ -69,6 +70,15 @@ export function getRegistryUrl() {
         if (typeof registryUrl === "string" && registryUrl.trim()) return registryUrl.trim();
     } catch { }
     return DEFAULT_REGISTRY_URL;
+}
+
+/** SHA-256 of the native.js a store install has on disk, or undefined without one */
+function installedNativeHash(dir: string) {
+    try {
+        return createHash("sha256").update(readFileSync(join(dir, "native.js"))).digest("hex");
+    } catch {
+        return undefined;
+    }
 }
 
 function readMarker(dir: string): StoreMarker | undefined {
@@ -224,9 +234,17 @@ async function install(id: string, sender: WebContents, pageAllowed: { native: b
     // Full access is the user's call, asked from main: the page could be a plugin saying yes for them.
     // An update of a store install they already trusted doesn't ask again.
     const trusted = existing && readMarker(dir)?.native === true;
-    const confirmed = entry.native && !trusted;
+    // ...unless the update changes its full-access part: that's new code with the same access, and
+    // the registry saying who made it proves nothing, so the user decides again
+    const nativeChanged = trusted && entry.native && entry.files["native.js"]?.sha256.toLowerCase() !== installedNativeHash(dir);
+    const confirmed = entry.native && (!trusted || nativeChanged);
     if (confirmed) {
-        if (!await confirmWithUser(sender, {
+        if (!await confirmWithUser(sender, nativeChanged ? {
+            message: mt("main.nativeChanged.message", { name: entry.name, version: entry.version }),
+            detail: mt("main.nativeChanged.detail", { name: entry.name, authors: entry.authors.join(mt("common.listSeparator")) }),
+            confirm: mt("common.update"),
+            pageSaid: pageAllowed.native,
+        } : {
             message: mt("main.installNative.message", { name: entry.name }),
             detail: mt("main.installNative.detail", { name: entry.name, authors: entry.authors.join(mt("common.listSeparator")) }),
             confirm: mt("common.install"),

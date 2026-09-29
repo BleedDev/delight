@@ -537,12 +537,6 @@
         "doc": "Discord's __webpack_require__, undefined until the runtime has loaded"
     },
     {
-        "name": "ctx.manifest",
-        "kind": "property",
-        "signature": "ctx.manifest: PluginManifest",
-        "doc": ""
-    },
-    {
         "name": "ctx.logger",
         "kind": "property",
         "signature": "ctx.logger: Logger",
@@ -552,6 +546,12 @@
         "name": "ctx.settings",
         "kind": "property",
         "signature": "ctx.settings: PluginSettings<S>",
+        "doc": ""
+    },
+    {
+        "name": "ctx.manifest",
+        "kind": "property",
+        "signature": "ctx.manifest: PluginManifest",
         "doc": ""
     },
     {
