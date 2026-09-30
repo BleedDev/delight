@@ -35,6 +35,21 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.4.0",
+        date: "2026-10-01",
+        sections: {
+            added: [
+                "**Spotify Player in the store.** A small player on top of your user panel with the song, its cover, play and pause, previous and next, and where you are in it.",
+            ],
+            improved: [
+                "**Store search finds what you mean.** Every word you type counts, in any order, a typo is forgiven, the best match comes first, and a plugin's English name finds it in every language.",
+            ],
+            fixed: [
+                "**Updates keep working** with releases that no longer carry the command-line installer.",
+            ],
+        },
+    },
+    {
         version: "1.3.1",
         date: "2026-09-30",
         sections: {

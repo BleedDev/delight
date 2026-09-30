@@ -195,7 +195,7 @@ function download(release: ReleaseInfo, report?: (progress: UpdateProgress) => v
         const core = !!(release.coreUrl && release.coreChecksumUrl);
         const [url, checksumUrl, target, max] = core
             ? [release.coreUrl!, release.coreChecksumUrl!, CORE_PENDING, MAX_CORE_BYTES]
-            : [release.exeUrl, release.checksumUrl, PENDING, MAX_EXE_BYTES];
+            : [release.exeUrl!, release.checksumUrl!, PENDING, MAX_EXE_BYTES];
         const checksum = (await fetchBytes(checksumUrl, 4096)).toString("utf8").match(/\b[a-f0-9]{64}\b/i)?.[0].toLowerCase();
         if (!checksum) throw new Error(mt("main.update.noChecksum"));
         const staged = { version: release.version, sha256: checksum };

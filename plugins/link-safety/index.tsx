@@ -149,7 +149,7 @@ const css = `
 .evi-lsafe-sub { color: var(--text-default, #dbdee1); }
 .evi-lsafe-domain { background: none; color: var(--evi-lsafe-accent); font-weight: 700; }
 .evi-lsafe-hint { margin-top: 6px; font-size: 12px; color: var(--text-muted, #949ba4); overflow-wrap: anywhere; }
-.evi-lsafe-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 20px; background: var(--modal-footer-background, rgba(0,0,0,.08)); }
+.evi-lsafe-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 4px 20px 20px; }
 .evi-lsafe-actions button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
 .evi-lsafe-back { background: var(--button-filled-brand-background, var(--brand-500, #5865f2)); color: var(--white, #fff); }
 .evi-lsafe-back:hover { background: var(--button-filled-brand-background-hover, var(--brand-560, #4752c4)); }

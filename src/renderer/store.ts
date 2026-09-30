@@ -179,6 +179,10 @@ let autoTimer: ReturnType<typeof setInterval> | undefined;
 const AUTO_UPDATE_EVERY = 6 * 60 * 60 * 1000;
 
 export const Store = {
+    /** An entry's name and description as the registry has them, before translation: search matches those too */
+    original(kind: StoreKind, id: string): { name: string; description?: string; } | undefined {
+        return (kind === "theme" ? raw?.themes : raw?.plugins)?.find(e => e.id === id);
+    },
     /** Downloads the registry (main does the fetching and validation) */
     async refresh() {
         listen();

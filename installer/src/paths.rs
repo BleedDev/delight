@@ -2,30 +2,61 @@
 
 use std::path::{Path, PathBuf};
 
-/// Running as root through sudo: Linux installs live in root-owned folders, so that's the usual way there
-pub fn is_sudo() -> bool {
+/// Who ran us through sudo, or through pkexec (Evi Setup asks for the password that way on Linux)
+#[cfg_attr(not(unix), allow(dead_code))]
+pub struct InvokingUser {
+    pub name: String,
+    pub uid: u32,
+    pub gid: u32,
+    pub home: PathBuf,
+}
+
+pub fn is_root() -> bool {
+    uid() == 0
+}
+
+pub fn uid() -> u32 {
     #[cfg(unix)]
     {
-        let root = unsafe { libc::getuid() } == 0;
-        root && matches!(std::env::var("SUDO_USER"), Ok(user) if !user.is_empty() && user != "root")
+        unsafe { libc::getuid() }
     }
     #[cfg(not(unix))]
     {
-        false
+        u32::MAX
     }
+}
+
+/// /etc/passwd's entry for the user who ran us as root. None when we weren't run as root for someone
+pub fn invoking_user() -> Option<InvokingUser> {
+    if !is_root() {
+        return None;
+    }
+    let by_name = std::env::var("SUDO_USER").ok().filter(|u| !u.is_empty() && u != "root");
+    let by_uid = std::env::var("PKEXEC_UID").ok().and_then(|v| v.parse::<u32>().ok()).filter(|&u| u != 0);
+    if by_name.is_none() && by_uid.is_none() {
+        return None;
+    }
+    let passwd = std::fs::read_to_string("/etc/passwd").ok()?;
+    passwd.lines().find_map(|line| {
+        let f: Vec<&str> = line.split(':').collect();
+        if f.len() < 6 {
+            return None;
+        }
+        let uid = f[2].parse::<u32>().ok()?;
+        let matches = by_name.as_deref() == Some(f[0]) || by_uid == Some(uid);
+        matches.then(|| InvokingUser { name: f[0].to_string(), uid, gid: f[3].parse().unwrap_or(uid), home: PathBuf::from(f[5]) })
+    })
+}
+
+/// Running as root for a user (sudo, pkexec): Linux installs live in root-owned folders, so that's the usual way there
+pub fn is_sudo() -> bool {
+    invoking_user().is_some()
 }
 
 /// The home of whoever ran us, not root's under sudo: that's where their Discord keeps Evi's data
 pub fn user_home() -> PathBuf {
-    if is_sudo() {
-        if let (Ok(user), Ok(passwd)) = (std::env::var("SUDO_USER"), std::fs::read_to_string("/etc/passwd")) {
-            let prefix = format!("{user}:");
-            if let Some(home) = passwd.lines().find(|l| l.starts_with(&prefix)).and_then(|l| l.split(':').nth(5)) {
-                if !home.is_empty() {
-                    return PathBuf::from(home);
-                }
-            }
-        }
+    if let Some(user) = invoking_user().filter(|u| !u.home.as_os_str().is_empty()) {
+        return user.home;
     }
     let var = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
     std::env::var_os(var).map(PathBuf::from).unwrap_or_default()
@@ -67,11 +98,7 @@ pub fn migrate_legacy_data_dir() {
 pub fn give_back_to_user(path: &Path) {
     #[cfg(unix)]
     {
-        if !is_sudo() {
-            return;
-        }
-        let parse = |name: &str| std::env::var(name).ok().and_then(|v| v.parse::<u32>().ok());
-        let (Some(uid), Some(gid)) = (parse("SUDO_UID"), parse("SUDO_GID")) else { return };
+        let Some(user) = invoking_user() else { return };
         fn walk(p: &Path, uid: u32, gid: u32) {
             if std::os::unix::fs::chown(p, Some(uid), Some(gid)).is_err() {
                 return;
@@ -84,7 +111,7 @@ pub fn give_back_to_user(path: &Path) {
                 }
             }
         }
-        walk(path, uid, gid);
+        walk(path, user.uid, user.gid);
     }
     #[cfg(not(unix))]
     let _ = path;

@@ -18,11 +18,17 @@ describe("Evi's releases", () => {
         });
     });
 
+    test("a release without the CLI, only Evi Setup and evi-core.json, still updates", () => {
+        const release = parseRelease({ tag_name: "v1.5.0", assets: [asset("Evi-Setup.exe"), asset("evi-core.json"), asset("evi-core.json.sha256")] });
+        expect(release).toMatchObject({ version: "1.5.0", coreUrl: asset("evi-core.json").browser_download_url, coreChecksumUrl: asset("evi-core.json.sha256").browser_download_url });
+        expect(release).not.toHaveProperty("exeUrl");
+    });
+
     test("drafts and junk aren't releases; a missing file is said plainly", () => {
         expect(parseRelease({ tag_name: "v0.3.0", draft: true, assets: [] })).toBeUndefined();
         expect(parseRelease(null)).toBeUndefined();
         expect(parseRelease({ tag_name: "v0.3.0", assets: [asset("evi.exe")] })).toEqual({ error: "Release v0.3.0 is missing evi.exe.sha256" });
-        expect(parseRelease({ tag_name: "v0.3.0", assets: [] })).toEqual({ error: "Release v0.3.0 is missing evi.exe" });
+        expect(parseRelease({ tag_name: "v0.3.0", assets: [] })).toEqual({ error: "Release v0.3.0 is missing evi-core.json" });
     });
 
     test("versions", () => {

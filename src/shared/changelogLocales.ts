@@ -11,6 +11,17 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.4.0": {
+            added: [
+                "**Spotify Player im Store.** Ein kleiner Player über deiner Benutzerleiste mit Song, Cover, Abspielen und Pause, Zurück und Weiter und wo du im Song bist.",
+            ],
+            improved: [
+                "**Die Store-Suche findet, was du meinst.** Jedes Wort zählt, in beliebiger Reihenfolge, Tippfehler werden verziehen, der beste Treffer steht oben, und der englische Name eines Plugins findet es in jeder Sprache.",
+            ],
+            fixed: [
+                "**Updates funktionieren weiter** mit Releases, die das Kommandozeilen-Installationsprogramm nicht mehr enthalten.",
+            ],
+        },
         "1.3.1": {
             fixed: [
                 "**Die Benutzerleiste behält ihren Platz.** Sind Game Activity Toggle und Fake Deafen beide an, teilen sich ihre Schalter einen Evi-Button mit Menü, damit dein Name und Discords Einstellungen nicht verdrängt werden.",
@@ -255,6 +266,17 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.4.0": {
+            added: [
+                "**Spotify Player en la tienda.** Un pequeño reproductor sobre tu panel de usuario con la canción, su portada, reproducir y pausar, anterior y siguiente, y en qué parte vas.",
+            ],
+            improved: [
+                "**La búsqueda de la tienda entiende lo que buscas.** Cuenta cada palabra, en cualquier orden, perdona las erratas, muestra primero la mejor coincidencia, y el nombre en inglés de un plugin lo encuentra en cualquier idioma.",
+            ],
+            fixed: [
+                "**Las actualizaciones siguen funcionando** con versiones que ya no incluyen el instalador de línea de comandos.",
+            ],
+        },
         "1.3.1": {
             fixed: [
                 "**El panel de usuario conserva su espacio.** Con Game Activity Toggle y Fake Deafen activados, sus interruptores comparten un botón de Evi con menú, así tu nombre y el engranaje de ajustes de Discord no quedan fuera.",
@@ -499,6 +521,17 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.4.0": {
+            added: [
+                "**Spotify Player dans la boutique.** Un petit lecteur au-dessus de votre panneau utilisateur avec le morceau, sa pochette, lecture et pause, précédent et suivant, et où vous en êtes.",
+            ],
+            improved: [
+                "**La recherche de la boutique trouve ce que vous cherchez.** Chaque mot compte, dans n'importe quel ordre, les fautes de frappe sont pardonnées, le meilleur résultat vient en premier, et le nom anglais d'un plugin le trouve dans toutes les langues.",
+            ],
+            fixed: [
+                "**Les mises à jour continuent de fonctionner** avec les versions qui n'incluent plus l'installateur en ligne de commande.",
+            ],
+        },
         "1.3.1": {
             fixed: [
                 "**Le panneau utilisateur garde sa place.** Avec Game Activity Toggle et Fake Deafen activés, leurs interrupteurs partagent un bouton Evi avec un menu : ton nom et la roue des paramètres de Discord ne sont plus poussés dehors.",
@@ -743,6 +776,17 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.4.0": {
+            added: [
+                "**ストアにSpotify Playerが登場。** ユーザーパネルの上に小さなプレーヤーを表示します。曲名、ジャケット、再生と一時停止、前へと次へ、再生位置がわかります。",
+            ],
+            improved: [
+                "**ストア検索が意図をくみ取るように。** 入力した単語はすべて順不同で使われ、打ち間違いも許容され、いちばん合う結果が先頭に来ます。プラグインの英語名でもどの言語からでも見つかります。",
+            ],
+            fixed: [
+                "**コマンドラインのインストーラーを含まないリリースでも、アップデートが引き続き動作します。**",
+            ],
+        },
         "1.3.1": {
             fixed: [
                 "**ユーザーパネルの場所が保たれます。** Game Activity Toggle と Fake Deafen を両方オンにすると、スイッチがメニュー付きの Evi ボタン 1 つにまとまり、名前と Discord の設定ボタンが押し出されません。",
@@ -987,6 +1031,17 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.4.0": {
+            added: [
+                "**Spotify Player w sklepie.** Mały odtwarzacz nad panelem użytkownika: utwór, okładka, odtwarzanie i pauza, poprzedni i następny oraz miejsce w utworze.",
+            ],
+            improved: [
+                "**Wyszukiwanie w sklepie rozumie, o co ci chodzi.** Liczy się każde słowo, w dowolnej kolejności, literówki są wybaczane, najlepsze dopasowanie jest pierwsze, a angielska nazwa pluginu znajduje go w każdym języku.",
+            ],
+            fixed: [
+                "**Aktualizacje nadal działają** z wydaniami, które nie zawierają już instalatora wiersza poleceń.",
+            ],
+        },
         "1.3.1": {
             fixed: [
                 "**Panel użytkownika zachowuje miejsce.** Gdy Game Activity Toggle i Fake Deafen są włączone, ich przełączniki dzielą jeden przycisk Evi z menu, więc Twoja nazwa i zębatka ustawień Discorda nie są wypychane.",
@@ -1231,6 +1286,17 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.4.0": {
+            added: [
+                "**Spotify Player na loja.** Um pequeno player acima do seu painel de usuário com a música, a capa, tocar e pausar, anterior e próxima, e em que ponto você está.",
+            ],
+            improved: [
+                "**A busca da loja entende o que você procura.** Toda palavra conta, em qualquer ordem, erros de digitação são perdoados, o melhor resultado vem primeiro, e o nome em inglês de um plugin o encontra em qualquer idioma.",
+            ],
+            fixed: [
+                "**As atualizações continuam funcionando** com versões que não trazem mais o instalador de linha de comando.",
+            ],
+        },
         "1.3.1": {
             fixed: [
                 "**O painel de usuário mantém o espaço.** Com Game Activity Toggle e Fake Deafen ligados, os interruptores dividem um botão do Evi com menu, e seu nome e a engrenagem de configurações do Discord não são empurrados para fora.",
@@ -1475,6 +1541,17 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.4.0": {
+            added: [
+                "**Spotify Player в магазине.** Небольшой плеер над панелью пользователя: трек, обложка, воспроизведение и пауза, предыдущий и следующий, и позиция в треке.",
+            ],
+            improved: [
+                "**Поиск в магазине понимает, что вы ищете.** Учитывается каждое слово в любом порядке, опечатки прощаются, лучшее совпадение идёт первым, а английское название плагина находит его на любом языке.",
+            ],
+            fixed: [
+                "**Обновления продолжают работать** с выпусками, в которых больше нет установщика для командной строки.",
+            ],
+        },
         "1.3.1": {
             fixed: [
                 "**Панель пользователя сохраняет место.** Когда включены Game Activity Toggle и Fake Deafen, их переключатели делят одну кнопку Evi с меню, и ваше имя и шестерёнка настроек Discord не выталкиваются.",
@@ -1719,6 +1796,17 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.4.0": {
+            added: [
+                "**Spotify Player mağazada.** Kullanıcı panelinin üstünde küçük bir oynatıcı: şarkı, kapağı, oynat ve duraklat, önceki ve sonraki, ve şarkıda nerede olduğun.",
+            ],
+            improved: [
+                "**Mağaza araması ne aradığını anlıyor.** Yazdığın her kelime sayılır, sıra fark etmez, yazım hataları affedilir, en iyi eşleşme önce gelir ve bir eklentinin İngilizce adı onu her dilde bulur.",
+            ],
+            fixed: [
+                "**Güncellemeler çalışmaya devam ediyor**, artık komut satırı yükleyicisini içermeyen sürümlerle de.",
+            ],
+        },
         "1.3.1": {
             fixed: [
                 "**Kullanıcı paneli yerini korur.** Game Activity Toggle ve Fake Deafen ikisi de açıkken anahtarları menülü tek bir Evi düğmesini paylaşır, böylece adın ve Discord'un ayarlar çarkı dışarı itilmez.",

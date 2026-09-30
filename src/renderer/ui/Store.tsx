@@ -11,6 +11,7 @@ import { entriesBetween } from "@shared/pluginChangelog";
 import type { PulledPlugin } from "@shared/pulls";
 import type { EviKey } from "@shared/locales";
 import { sharePluginUrl } from "@shared/share";
+import { Searchable, searchItems } from "@shared/storeSearch";
 import { ListingInfo, ListingSort, RegistryEntry, sortListings, ThemeEntry } from "@shared/store";
 
 import { I18n, t, timeAgo as ago, tNodes } from "../i18n";
@@ -671,6 +672,21 @@ const tagLabel = (tag: string) => {
     return text === key ? tag[0].toUpperCase() + tag.slice(1) : text;
 };
 
+/** What search matches for an entry: as shown, as the registry wrote it, and in every translation */
+function searchable(kind: StoreKind, entry: ListingInfo & { locales?: RegistryEntry["locales"]; }): Searchable {
+    const original = Store.original(kind, entry.id);
+    const translations = Object.values(entry.locales ?? {});
+    return {
+        id: entry.id,
+        name: entry.name,
+        description: entry.description,
+        tags: entry.tags,
+        authors: entry.authors,
+        alsoNamed: [original?.name, ...translations.map(l => l.name)].filter((n): n is string => !!n),
+        alsoDescribed: [original?.description, ...translations.map(l => l.description)].filter((d): d is string => !!d),
+    };
+}
+
 function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, category, setCategory, sort, setSort, topRef, listRef, onOpen, onAuthor }: {
     kind: StoreKind;
     state: ReturnType<typeof Store.getSnapshot>;
@@ -701,13 +717,14 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
     const inCategory = (i: Item) => category === "all" || i.entry.tags.includes(category);
     const count = (f: Filter) => items.filter(i => tests[f](i) && inCategory(i)).length;
 
-    const q = query.trim().toLowerCase();
-    const matches = (i: Item) => !q || [i.entry.id, i.entry.name, i.entry.description, ...i.entry.authors, ...i.entry.tags].join(" ").toLowerCase().includes(q);
+    const q = query.trim();
     const score = (id: string) => sort === "rating" ? Store.ratingScore(kind, id) : sort === "trending" ? Store.trendingScore(kind, id) : Store.stars(kind, id);
     const order = new Map(sortListings(items.map(i => i.entry), sort, e => score(e.id)).map((e, n) => [e.id, n]));
     // The front page is for browsing: it steps aside once you search, filter or pick a category
     const showHome = !q && filter === "all" && category === "all" && !!state.home;
-    const visible = items.filter(i => tests[filter](i) && inCategory(i) && matches(i)).sort((a, b) => order.get(a.entry.id)! - order.get(b.entry.id)!);
+    // Sorted as chosen, then while searching the best matches first (ties keep the chosen order)
+    const sorted = items.filter(i => tests[filter](i) && inCategory(i)).sort((a, b) => order.get(a.entry.id)! - order.get(b.entry.id)!);
+    const visible = searchItems(sorted, q, i => searchable(kind, i.entry));
     const paged = usePages(visible, PAGE_SIZE, [filter, category, q, sort].join("\n"));
     const categories = [{ value: "all", label: t("store.allCategories") }, ...tags.map(tag => ({ value: tag, label: tagLabel(tag) }))];
 

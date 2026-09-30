@@ -1243,14 +1243,23 @@ const logger = await page.evaluate(async () => {
         rowBackground: getComputedStyle(host.firstElementChild!).backgroundColor,
     };
 
+    // A kept (deleted) message, to render once the plugin is off
+    const keptMessage = store.getMessage(channelId, rest[0]);
     await plugins.setEnabled("message-logger", false);
     await sleep(100);
     const handlersNow = handlersOf();
+    // Evi's own share card hooks the same renderer for good (since 1.1.2), so it stays hooked:
+    // what matters is that nothing of the logger's comes out of it any more
+    // (Looked for in the elements, not rendered: Discord's own accessories need a real channel)
+    const hasLogView = (el: any): boolean => !!el && typeof el === "object"
+        && (!!(el.props?.log && el.props?.message) || [el.props?.children].flat().some(hasLogView));
+    const afterStop = accessories?.exports[accessories.key]({ channelMessageProps: { message: keptMessage, channel: { id: channelId } } });
+    const accessoriesClean = !!accessories && hasLogView(surviving) && !hasLogView(afterStop);
     const stopped = {
         keptGone: rest.every(id => !store.getMessage(channelId, id)),
         unhooked: handlersNow.MESSAGE_DELETE === originals.del && handlersNow.MESSAGE_DELETE_BULK === originals.bulk && handlersNow.MESSAGE_UPDATE === originals.update,
         purgeHandlerRemoved: !Object.keys(handlersNow).some(k => k.startsWith("EVI_")),
-        accessoriesRestored: !!accessories && api.getUnhooked(accessories.exports[accessories.key]) === accessories.exports[accessories.key],
+        accessoriesClean,
         logCleared: log.counts(),
         renderedGone: !host.querySelector(".dl-ml"),
         rowBackground: getComputedStyle(host.firstElementChild!).backgroundColor,
@@ -1286,7 +1295,7 @@ check("deleted message renders its tag, row tint and edit history", /Edited from
     && logger.render.rowBackground !== "rgba(0, 0, 0, 0)" && logger.render.rowShadow !== "none", logger.render);
 check("old versions go through Discord's markdown renderer and markup class", logger.render.bold === "once" && /markup_/.test(logger.render.markup ?? ""), { bold: logger.render.bold, markup: logger.render.markup });
 check("per-channel cap evicts the oldest, evicted deleted messages really go", logger.caps.logged.deleted === 10 && logger.caps.evictedGoneFromStore.every(Boolean) && logger.caps.newestKept, logger.caps);
-check("disabling deletes kept messages for real and restores MessageStore's handlers", logger.stopped.keptGone && logger.stopped.unhooked && logger.stopped.purgeHandlerRemoved && logger.stopped.accessoriesRestored, logger.stopped);
+check("disabling deletes kept messages for real and restores MessageStore's handlers", logger.stopped.keptGone && logger.stopped.unhooked && logger.stopped.purgeHandlerRemoved && logger.stopped.accessoriesClean, logger.stopped);
 check("disabling clears the log, unmounts tags and history, removes the tint", logger.beforeStop.rendered && logger.beforeStop.rowBackground !== "rgba(0, 0, 0, 0)" && logger.stopped.renderedGone && logger.stopped.logCleared.deleted + logger.stopped.logCleared.edited === 0
     && logger.stopped.rowBackground === "rgba(0, 0, 0, 0)" && !logger.stopped.style, { before: logger.beforeStop, after: logger.stopped });
 check("with the plugin off, deletes behave like stock Discord", logger.stockDelete);
@@ -2159,7 +2168,8 @@ check("native plugins carry a badge", storeList.rpc.includes("Native") && !store
         const h = document.querySelector(".dl-home");
         return { text: h?.textContent ?? "", hero: h?.querySelector(".dl-home-row[data-hero] h3")?.textContent ?? "", tiles: h?.querySelectorAll(".dl-home-tile").length ?? 0 };
     });
-    check("Store front page: staff picks first, then trending and new this week", home.hero === "Staff picks" && home.text.includes("Trending") && home.text.includes("New this week") && home.tiles >= 4, home);
+    // "New this week" left the front page in 1.2.0
+    check("Store front page: staff picks first, then trending", home.hero === "Staff picks" && home.text.includes("Trending") && !home.text.includes("New this week") && home.tiles >= 4, home);
     await page.locator(".dl-home").screenshot({ path: join(OUT, "ui-store-home.png") }).catch(() => { });
     const clock = await storeCard("store-clock");
     check("Store cards show a plugin's rating", clock.includes("4.5") && clock.includes("(2)"), clock);
@@ -2267,6 +2277,11 @@ await page.fill("#dl-plugin-store-search", "privacy");
 await page.waitForTimeout(150);
 const searched = await page.evaluate(() => [...document.querySelectorAll("[data-store-id]")].map(e => e.getAttribute("data-store-id")));
 check("Store search matches tags", JSON.stringify(searched) === '["store-quiet"]', searched);
+// Typos and word order are forgiven, and results come while typing
+await page.fill("#dl-plugin-store-search", "clok mesage");
+await page.waitForTimeout(150);
+const forgiving = await page.evaluate(() => [...document.querySelectorAll("[data-store-id]")].map(e => e.getAttribute("data-store-id")));
+check("Store search forgives typos and word order", JSON.stringify(forgiving) === '["store-clock"]', forgiving);
 await page.fill("#dl-plugin-store-search", "");
 
 const storeButton = (id: string, name: string) => page.locator(`[data-store-id="${id}"]`).getByRole("button", { name, exact: true });
@@ -2515,7 +2530,8 @@ check("store themes show a Store badge in the Themes tab", themeRow.includes("Mi
     // Hovering holds it; closing plays its exit, then it's gone
     await page.hover(".dl-live-toast-main");
     const held = await page.evaluate(() => getComputedStyle(document.querySelector(".dl-live-toast-timer")!).animationPlayState);
-    await page.getByRole("button", { name: "Dismiss Message Clock 2.0.0 is out" }).click();
+    // The Inbox lists the same notification with its own Dismiss: this one is the toast's
+    await page.getByRole("region", { name: "Evi notifications" }).getByRole("button", { name: "Dismiss Message Clock 2.0.0 is out" }).click();
     await page.waitForSelector(".dl-live-toast", { state: "detached", timeout: 2000 }).catch(() => { });
     const gone = await page.evaluate(() => document.querySelectorAll(".dl-live-toast").length);
     check("hovering a toast holds its timer, and its close button takes it away", held === "paused" && gone === 0, { held, gone });

@@ -115,8 +115,9 @@ export interface ReleaseInfo {
     publishedAt: string | null;
     /** A beta: marked as a prerelease on GitHub, or a version like 0.5.0-beta.1 */
     prerelease: boolean;
-    exeUrl: string;
-    checksumUrl: string;
+    /** The evi CLI for this system and its checksum. Releases from 1.5.0 on don't carry it: Evi Setup replaced it */
+    exeUrl?: string;
+    checksumUrl?: string;
     /** evi-core.json and its checksum: updating needs only these. Missing on releases from before Evi Setup */
     coreUrl?: string;
     coreChecksumUrl?: string;
@@ -137,7 +138,11 @@ export function parseRelease(json: any): ReleaseInfo | { error: string; } | unde
     if (!json || typeof json !== "object" || typeof json.tag_name !== "string" || json.draft) return;
     const asset = (name: string) => Array.isArray(json.assets) ? json.assets.find((a: any) => a?.name === name)?.browser_download_url : undefined;
     const exeUrl = asset(EXE_ASSET), checksumUrl = asset(CHECKSUM_ASSET);
-    if (typeof exeUrl !== "string" || typeof checksumUrl !== "string") return { error: `Release ${json.tag_name} is missing ${exeUrl ? CHECKSUM_ASSET : EXE_ASSET}` };
+    const coreUrl = asset(CORE_ASSET), coreChecksumUrl = asset(CORE_CHECKSUM_ASSET);
+    const hasCore = typeof coreUrl === "string" && typeof coreChecksumUrl === "string";
+    const hasExe = typeof exeUrl === "string" && typeof checksumUrl === "string";
+    // Updating needs evi-core.json; releases from before it had only the CLI
+    if (!hasCore && !hasExe) return { error: `Release ${json.tag_name} is missing ${exeUrl ? CHECKSUM_ASSET : coreUrl ? CORE_CHECKSUM_ASSET : CORE_ASSET}` };
     return {
         tag: json.tag_name,
         version: cleanVersion(json.tag_name),
@@ -146,9 +151,8 @@ export function parseRelease(json: any): ReleaseInfo | { error: string; } | unde
         notes: typeof json.body === "string" ? json.body.trim().slice(0, 4000) : "",
         publishedAt: typeof json.published_at === "string" ? json.published_at : null,
         prerelease: json.prerelease === true || isPrerelease(json.tag_name),
-        exeUrl,
-        checksumUrl,
-        ...typeof asset(CORE_ASSET) === "string" && typeof asset(CORE_CHECKSUM_ASSET) === "string" && { coreUrl: asset(CORE_ASSET), coreChecksumUrl: asset(CORE_CHECKSUM_ASSET) },
+        ...hasExe && { exeUrl, checksumUrl },
+        ...hasCore && { coreUrl, coreChecksumUrl },
     };
 }
 

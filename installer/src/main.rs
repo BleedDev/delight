@@ -1,12 +1,18 @@
-//! Evi Setup: a small window that installs Evi into Discord, updates it and removes it.
-//! The same work as the evi CLI (src/cli), which stays for terminals and Linux/sudo.
+//! Evi Setup: a small window that installs Evi into Discord, updates it and removes it, on Windows,
+//! macOS and Linux. The evi CLI (src/cli) does the same work, and is only for developing Evi now.
 //!
 //!   Evi-Setup.exe                                   the window
 //!   Evi-Setup.exe --headless status                 no window: print what it found (used by scripts/test-installer.ts)
 //!   Evi-Setup.exe --headless install|uninstall [--flavor stable,ptb|all] [--latest] [--no-restart]
+//!
+//! And for itself, on macOS and Linux:
+//!   --headless relink --flavor <f> --core <main.js>   what the watcher runs after a Discord update (autorepair.rs)
+//!   --headless swap --flavor <f> --core <main.js>     the root part of an install, through pkexec
+//!   --headless unswap --flavor <f>                    the root part of an uninstall, through pkexec
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod asar;
+mod autorepair;
 mod discord;
 mod ops;
 mod paths;
@@ -140,7 +146,26 @@ fn headless(args: &[String], version: &str) -> i32 {
         .map(|v| v.split(',').map(str::to_string).collect())
         .unwrap_or_else(|| vec!["stable".into()]);
     let print = |value: serde_json::Value| println!("{value}");
+    let value = |name: &str| args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned().unwrap_or_default();
+    let done = |result: Result<(), String>| match result {
+        Ok(()) => 0,
+        Err(e) => {
+            eprintln!("{e}");
+            1
+        }
+    };
     match action {
+        "relink" => match ops::relink(&value("--flavor"), &value("--core")) {
+            Ok(changed) => {
+                if changed {
+                    println!("Put Evi back into Discord {}", value("--flavor"));
+                }
+                0
+            }
+            Err(e) => done(Err(e)),
+        },
+        "swap" => done(ops::elevated_swap(&value("--flavor"), &value("--core"))),
+        "unswap" => done(ops::elevated_unswap(&value("--flavor"))),
         "status" => {
             print(serde_json::to_value(scan_now(version)).unwrap());
             0

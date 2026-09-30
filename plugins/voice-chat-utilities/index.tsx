@@ -201,7 +201,7 @@ const css = `
 .evi-vcu-content { padding: 20px 20px 16px; }
 .evi-vcu-content h2 { margin: 0 0 8px; font-size: 20px; line-height: 24px; font-weight: 600; color: var(--text-strong, var(--header-primary, #f2f3f5)); }
 .evi-vcu-content p { margin: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
-.evi-vcu-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 20px; background: var(--modal-footer-background, rgba(0,0,0,.08)); }
+.evi-vcu-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 4px 20px 20px; }
 .evi-vcu-actions button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
 .evi-vcu-cancel { background: none; color: var(--text-default, #dbdee1); }
 .evi-vcu-cancel:hover { text-decoration: underline; }

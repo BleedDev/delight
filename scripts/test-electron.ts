@@ -171,7 +171,7 @@ app.whenReady().then(() => {
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(path.join(dir, "index.js"), "module.exports = { default: { start() { window.__late = true; } } };");
         fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({ id: "late-plugin", name: "Late", enabledByDefault: true }));
-        // And a theme, enabled in settings before it existed
+        // And a theme: it shows up in the list, and stays off while another one is on
         fs.writeFileSync(path.join(process.env.EVI_DATA_DIR, "themes", "late.css"), "/** @name Late Theme */ :root { --evi-late-theme: live; }");
     }, 12000);
 
@@ -202,7 +202,9 @@ app.whenReady().then(() => {
                 addHttp: await D.themes.addFromUrl("http://example.com/theme.css"),
                 addHtml: await D.themes.addFromUrl("https://discord.com/login"),
                 addCss: sheet ? await D.themes.addFromUrl(sheet) : "no stylesheet on the page",
-                addedStyles: [...document.head.querySelectorAll("style[id^=evi-theme-]")].length,
+                // One theme at a time (since 1.2.0): the downloaded one takes over from the boot theme
+                addedStyles: [...document.head.querySelectorAll("style[id^=evi-theme-]")].map(s => s.id),
+                bootAfterAdd: css("--evi-boot-theme"),
                 // Healthy starts are reported a few seconds after plugins start, wait for it
                 reportedOk: await new Promise(resolve => {
                     const deadline = Date.now() + 15000;
@@ -282,6 +284,7 @@ function importPhase(win) {
                     lateTheme: css("--evi-late-theme"),
                     order: css("--evi-order"),
                     mine: css("--evi-mine"),
+                    themeStyles: [...document.head.querySelectorAll("style[id^=evi-theme-]")].map(s => s.id),
                 },
                 again: again.ok ? { merge: again.previews.merge.changes, replace: again.previews.replace.changes } : again,
             };
@@ -378,7 +381,7 @@ writeFileSync(join(DATA, "package.json"), JSON.stringify({ type: "commonjs" }));
 writeFileSync(join(DATA, "settings.json"), JSON.stringify({
     quickCss: true,
     plugins: { experiments: { enabled: true, settings: { marker: "from-a" } }, "gpu-boost": { enabled: true } },
-    enabledThemes: ["boot.css", "late.css"],
+    enabledThemes: ["boot.css"],
 }));
 mkdirSync(join(DATA, "themes"));
 writeFileSync(join(DATA, "themes", "boot.css"), `/**
@@ -441,9 +444,10 @@ check("auto-injected into the updated app-1.0.1", existsSync(join(updated, ORIGI
 check("enabled theme applied at startup", r.bootTheme === "applied", r.bootTheme);
 check("theme header parsed, disabled theme listed but not applied", ["Boot Theme", "off"].every(n => r.themes?.includes(n)) && r.offTheme === "", { themes: r.themes, off: r.offTheme });
 check("Quick CSS comes after themes and wins", r.cssOrder === "quick" && r.styleOrder?.at(-1) === "evi-quickcss", { value: r.cssOrder, order: r.styleOrder });
-check("theme dropped into the folder applies live", r.lateTheme === "live" && r.themes?.includes("Late Theme"), r.lateTheme);
+check("theme dropped into the folder is listed live, and stays off while another is on", r.themes?.includes("Late Theme") && r.lateTheme === "", { themes: r.themes, late: r.lateTheme });
 check("remote themes: http refused, web pages refused", r.addHttp?.ok === false && /https/.test(r.addHttp.error) && r.addHtml?.ok === false && /web page|html/i.test(r.addHtml.error), { http: r.addHttp, html: r.addHtml });
-check("remote theme downloaded into the themes folder and turned on", r.addCss?.ok === true && existsSync(join(DATA, "themes", r.addCss.file)) && r.addedStyles === 3, { result: r.addCss, styles: r.addedStyles });
+check("remote theme downloaded into the themes folder and turned on instead of the one that was on", r.addCss?.ok === true && existsSync(join(DATA, "themes", r.addCss.file))
+    && r.addedStyles?.length === 1 && r.addedStyles[0].includes(r.addCss.file) && r.bootAfterAdd === "", { result: r.addCss, styles: r.addedStyles, boot: r.bootAfterAdd });
 check("settings were read from the data folder", existsSync(join(DATA, "settings.json")));
 check("enabled plugin's chromium switches applied at startup", stdout.includes("gpu-boost: --enable-zero-copy"));
 const firstState = JSON.parse(readFileSync(join(DATA, "safe-mode.json"), "utf8"));
@@ -493,8 +497,11 @@ check("restore: theme files and Quick CSS round-trip on disk", !!backup
     && backup.themes.every(t => readFileSync(join(DATA_B, "themes", t.file), "utf8") === t.css)
     && readFileSync(join(DATA_B, "quick.css"), "utf8") === backup.quickCss
     && existsSync(join(DATA_B, "themes", "mine.css")));
-check("restore: applies live, no reload (plugins, themes, Quick CSS)", rb.after?.running.includes("experiments")
-    && rb.after.bootTheme === "applied" && rb.after.lateTheme === "live" && rb.after.order === "quick" && rb.after.mine === "", rb.after && { ...rb.after, settings: undefined });
+// The backup was taken with the downloaded theme on: that one comes back on, and the profile's own goes off
+const restoredTheme = backup?.settings.enabledThemes[0];
+check("restore: applies live, no reload (plugins, themes, Quick CSS)", rb.after?.running.includes("experiments") && !!restoredTheme
+    && rb.after.themeStyles.length === 1 && rb.after.themeStyles[0].includes(restoredTheme)
+    && rb.after.bootTheme === "" && rb.after.lateTheme === "" && rb.after.order === "quick" && rb.after.mine === "", rb.after && { ...rb.after, settings: undefined });
 check("restore: opening the same backup again changes nothing", rb.again?.merge === 0 && rb.again.replace === 0, rb.again);
 if (failed > failedBefore) printLogs(b.stdout, b.stderr);
 

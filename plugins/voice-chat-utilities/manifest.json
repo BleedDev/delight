@@ -2,7 +2,7 @@
     "id": "voice-chat-utilities",
     "name": "Voice Chat Utilities",
     "description": "Right-click a voice channel to disconnect, move, server mute or server deafen everyone in it. Only what you're allowed to do in that channel shows up.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "authors": [
         "Evi"
     ],
@@ -12,6 +12,12 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Its dialog's buttons sit on the dialog itself: with a wallpaper, the strip behind them showed in a different colour."
+            ]
+        },
         {
             "version": "1.0.1",
             "notes": [
@@ -32,6 +38,9 @@
             "name": "Sprachchat-Werkzeuge",
             "description": "Rechtsklick auf einen Sprachkanal: alle trennen, verschieben, serverweit stummschalten oder den Ton ausschalten. Es erscheint nur, was du in dem Kanal darfst.",
             "changelog": {
+                "1.0.2": [
+                    "Die Buttons des Dialogs sitzen jetzt auf dem Dialog selbst: Mit einem Hintergrundbild hatte der Streifen dahinter eine andere Farbe."
+                ],
                 "1.0.1": [
                     "Verschiebt, trennt, schaltet stumm und taub jetzt wirklich: Es meldete Erfolg, aber seine Anfragen kamen nie bei Discord an. Außerdem steht es im Menü bei Discords eigenen Sprach-Einträgen."
                 ],
@@ -44,6 +53,9 @@
             "name": "Utilidades de chat de voz",
             "description": "Clic derecho en un canal de voz: desconecta, mueve, silencia o ensordece a todos en el servidor. Solo aparece lo que tienes permiso para hacer en ese canal.",
             "changelog": {
+                "1.0.2": [
+                    "Los botones del diálogo están sobre el propio diálogo: con un fondo de pantalla, la franja detrás de ellos se veía de otro color."
+                ],
                 "1.0.1": [
                     "Ahora sí mueve, desconecta, silencia y ensordece: decía que lo hacía, pero sus peticiones nunca llegaban a Discord. Además está junto a las opciones de voz de Discord en el menú."
                 ],
@@ -56,6 +68,9 @@
             "name": "Outils de salon vocal",
             "description": "Clic droit sur un salon vocal : déconnecte, déplace, rends muet ou mets en sourdine tout le monde sur le serveur. Seul ce que tu as le droit de faire dans ce salon s'affiche.",
             "changelog": {
+                "1.0.2": [
+                    "Les boutons de la fenêtre sont posés sur la fenêtre elle-même : avec un fond d'écran, la bande derrière eux s'affichait d'une autre couleur."
+                ],
                 "1.0.1": [
                     "Déplace, déconnecte, rend muet et met en sourdine pour de vrai : il disait l’avoir fait, mais ses requêtes n’arrivaient jamais à Discord. Il est aussi rangé avec les options vocales de Discord dans le menu."
                 ],
@@ -68,6 +83,9 @@
             "name": "ボイスチャットツール",
             "description": "ボイスチャンネルを右クリックして、全員を切断、移動、サーバーミュート、サーバースピーカーミュートできます。そのチャンネルで許可されている操作だけが表示されます。",
             "changelog": {
+                "1.0.2": [
+                    "ダイアログのボタンがダイアログと同じ背景に並ぶようになりました。壁紙を使っていると、ボタンの後ろの帯だけ色が違って見えていました。"
+                ],
                 "1.0.1": [
                     "移動・切断・ミュート・スピーカーミュートが実際に動作するようになりました。成功と表示されていましたが、リクエストが Discord に届いていませんでした。メニューでは Discord のボイス項目の隣に表示されます。"
                 ],
@@ -80,6 +98,9 @@
             "name": "Narzędzia czatu głosowego",
             "description": "Kliknij prawym przyciskiem kanał głosowy: rozłącz, przenieś, wycisz lub wyłącz dźwięk wszystkim na serwerze. Widać tylko to, na co masz uprawnienia na tym kanale.",
             "changelog": {
+                "1.0.2": [
+                    "Przyciski okna leżą teraz na samym oknie: z tapetą pasek za nimi miał inny kolor."
+                ],
                 "1.0.1": [
                     "Teraz naprawdę przenosi, rozłącza, wycisza i ogłusza: zgłaszał sukces, ale jego żądania nigdy nie docierały do Discorda. W menu jest też obok głosowych opcji Discorda."
                 ],
@@ -92,6 +113,9 @@
             "name": "Utilitários de chat de voz",
             "description": "Clique com o botão direito num canal de voz: desconecte, mova, silencie ou ensurdeça todos no servidor. Só aparece o que você tem permissão para fazer nesse canal.",
             "changelog": {
+                "1.0.2": [
+                    "Os botões da janela ficam na própria janela: com um papel de parede, a faixa atrás deles aparecia em outra cor."
+                ],
                 "1.0.1": [
                     "Agora move, desconecta, silencia e ensurdece de verdade: dizia que tinha feito, mas as requisições nunca chegavam ao Discord. Também fica junto das opções de voz do Discord no menu."
                 ],
@@ -104,6 +128,9 @@
             "name": "Инструменты голосового чата",
             "description": "Правый клик по голосовому каналу: отключить, переместить, заглушить или отключить звук всем на сервере. Показывается только то, на что у вас есть права в этом канале.",
             "changelog": {
+                "1.0.2": [
+                    "Кнопки окна теперь лежат на самом окне: с обоями полоса за ними была другого цвета."
+                ],
                 "1.0.1": [
                     "Теперь действительно перемещает, отключает, заглушает и лишает звука: он сообщал об успехе, но его запросы не доходили до Discord. В меню он теперь рядом с голосовыми пунктами Discord."
                 ],
@@ -116,6 +143,9 @@
             "name": "Sesli Sohbet Araçları",
             "description": "Bir ses kanalına sağ tıkla: herkesin bağlantısını kes, herkesi taşı, sunucuda sustur ya da sesini kapat. Yalnızca o kanalda iznin olanlar görünür.",
             "changelog": {
+                "1.0.2": [
+                    "Pencerenin düğmeleri artık pencerenin kendisinde duruyor: duvar kâğıdıyla arkalarındaki şerit farklı renkte görünüyordu."
+                ],
                 "1.0.1": [
                     "Artık gerçekten taşıyor, bağlantı kesiyor, susturuyor ve sağırlaştırıyor: başarılı diyordu ama istekleri Discord'a hiç ulaşmıyordu. Menüde de Discord'un kendi ses seçeneklerinin yanında duruyor."
                 ],
