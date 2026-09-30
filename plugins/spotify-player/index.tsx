@@ -187,18 +187,25 @@ function Player() {
     );
 }
 
-/** A crash in the player leaves Discord's user panel alone */
-class Boundary extends React.Component<{ children: React.ReactNode; }, { failed: boolean; }> {
-    override state = { failed: false };
-    static getDerivedStateFromError() {
-        return { failed: true };
-    }
-    override componentDidCatch(error: unknown) {
-        logger?.error("The player crashed", error);
-    }
-    override render() {
-        return this.state.failed ? null : this.props.children;
-    }
+/**
+ * A crash in the player leaves Discord's user panel alone. Made on first use: React is Discord's, and
+ * isn't there yet when the plugin loads at startup.
+ */
+let boundary: React.ComponentType<{ children: React.ReactNode; }> | undefined;
+function Boundary(props: { children: React.ReactNode; }) {
+    boundary ??= class extends React.Component<{ children: React.ReactNode; }, { failed: boolean; }> {
+        override state = { failed: false };
+        static getDerivedStateFromError() {
+            return { failed: true };
+        }
+        override componentDidCatch(error: unknown) {
+            logger?.error("The player crashed", error);
+        }
+        override render() {
+            return this.state.failed ? null : this.props.children;
+        }
+    };
+    return React.createElement(boundary, props);
 }
 
 const css = `
