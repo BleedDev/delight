@@ -1,0 +1,96 @@
+{
+    "id": "quest-blocker",
+    "name": "Quest Blocker",
+    "description": "Removes the quest popup that sits on top of your profile at the bottom left. Quests stay on their own page if you ever want them.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "utility"
+    ],
+    "permissions": {},
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Quest-Blocker",
+            "description": "Blendet das Quest-Popup über deinem Profil unten links aus. Quests bleiben auf ihrer eigenen Seite, falls du sie doch willst.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Bloqueador de misiones",
+            "description": "Quita la ventana de misiones que aparece sobre tu perfil, abajo a la izquierda. Las misiones siguen en su propia página por si las quieres.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Bloqueur de quêtes",
+            "description": "Retire la fenêtre des quêtes qui apparaît au-dessus de votre profil, en bas à gauche. Les quêtes restent sur leur propre page si vous les voulez.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "クエストブロッカー",
+            "description": "左下のプロフィールの上に出るクエストのポップアップを消します。クエスト自体は専用ページから引き続き見られます。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Bloker zadań",
+            "description": "Usuwa okienko z zadaniami (Quests), które pojawia się nad twoim profilem w lewym dolnym rogu. Zadania nadal są na swojej stronie, jeśli ich chcesz.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Bloqueador de missões",
+            "description": "Remove o popup de missões que aparece acima do seu perfil, no canto inferior esquerdo. As missões continuam na página delas, se você quiser.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Блокировщик заданий",
+            "description": "Убирает всплывающее окно с заданиями над вашим профилем в левом нижнем углу. Сами задания остаются на своей странице, если они вам нужны.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Görev Engelleyici",
+            "description": "Sol altta profilinin üstünde açılan görev (Quests) penceresini kaldırır. Görevler istersen kendi sayfalarında durmaya devam eder.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}
