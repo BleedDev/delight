@@ -13,7 +13,7 @@ import { createAsar, readAsarFile } from "../src/shared/asar";
 import { createShimAsar, ORIGINAL_ASAR, SHIM_MARKER } from "../src/shared/shim";
 
 const ROOT = resolve(import.meta.dir, "..");
-const EXE = join(ROOT, "dist", process.platform === "win32" ? "Evi-Setup.exe" : `Evi-Setup-${process.platform === "darwin" ? "macos" : "linux"}-${process.arch}`);
+const EXE = join(ROOT, "dist", process.platform === "win32" ? "Evi-Setup.exe" : process.platform === "darwin" ? "Evi Setup.app/Contents/MacOS/evi-setup" : `Evi-Setup-linux-${process.arch}`);
 const BASE = join(ROOT, "test-results", "installer-e2e");
 const LOCAL = join(BASE, "local");
 const ROAMING = join(BASE, "roaming");

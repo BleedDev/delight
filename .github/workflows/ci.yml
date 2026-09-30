@@ -11,6 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Evi Setup for macOS and Linux, built and checked on those systems
+  setup:
+    uses: ./.github/workflows/setup-builds.yml
+
   test:
     # The installer, the fake Discord install and the browser paths are all Windows-specific
     runs-on: windows-latest

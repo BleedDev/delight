@@ -1,0 +1,102 @@
+# Evi Setup (installer/, Rust + Tauri) for macOS and Linux. It links each system's own webview, so it
+# can't be cross-built like the CLI: every build runs on its own system, Linux on each processor.
+# CI runs this on every push; the release workflow runs it and attaches what it makes.
+#
+#   Evi-Setup-macos.zip        Evi Setup.app for Apple Silicon and Intel, signed ad hoc
+#   Evi-Setup-linux-x64        the app itself; needs WebKitGTK 4.1, which desktops have
+#   Evi-Setup-linux-arm64
+#
+# Each with its .sha256, as artifacts named setup-<system>.
+name: Evi Setup (macOS, Linux)
+
+on:
+  workflow_call:
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+
+      - name: Rust for Apple Silicon and Intel
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: installer
+
+      - name: Unit tests
+        working-directory: installer
+        run: cargo test --locked
+
+      - name: Build
+        run: bun scripts/build.ts --installer
+
+      # What people get: unzipped as Safari or Finder would, both processors in it, the signature intact
+      - name: Check the app
+        run: |
+          mkdir -p "$RUNNER_TEMP/unzipped"
+          ditto -x -k dist/Evi-Setup-macos.zip "$RUNNER_TEMP/unzipped"
+          app="$RUNNER_TEMP/unzipped/Evi Setup.app"
+          lipo -archs "$app/Contents/MacOS/evi-setup" | tee /dev/stderr | grep -q "x86_64 arm64"
+          codesign --verify --deep --strict "$app"
+          "$app/Contents/MacOS/evi-setup" --headless status | tee /dev/stderr | grep -q '"installs"'
+          cat dist/Evi-Setup-macos.zip.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: setup-macos
+          path: dist/Evi-Setup-macos.zip*
+          if-no-files-found: error
+
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+
+      # Tauri's webview (WebKitGTK 4.1) and what it builds against
+      - name: System libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libssl-dev pkg-config build-essential
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: installer
+
+      - name: Unit tests
+        working-directory: installer
+        run: cargo test --locked
+
+      - name: Build
+        run: bun scripts/build.ts --installer
+
+      - name: Check the app
+        run: |
+          file dist/Evi-Setup-linux-${{ matrix.arch }}
+          dist/Evi-Setup-linux-${{ matrix.arch }} --headless status | tee /dev/stderr | grep -q '"installs"'
+          cat dist/Evi-Setup-linux-${{ matrix.arch }}.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: setup-linux-${{ matrix.arch }}
+          path: dist/Evi-Setup-linux-${{ matrix.arch }}*
+          if-no-files-found: error

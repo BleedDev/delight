@@ -34,7 +34,8 @@ const INSTALLER_ONLY = INSTALLER && !CLI && !WATCH;
 
 /** Release assets next to the CLI's: what Evi Setup downloads, and Evi Setup itself */
 const CORE_ASSET = "evi-core.json";
-const INSTALLER_ASSET = process.platform === "win32" ? "Evi-Setup.exe" : `Evi-Setup-${process.platform === "darwin" ? "macos" : "linux"}-${process.arch}`;
+// macOS gets one app for Apple Silicon and Intel, zipped; Linux one file per processor
+const INSTALLER_ASSET = process.platform === "win32" ? "Evi-Setup.exe" : process.platform === "darwin" ? "Evi-Setup-macos.zip" : `Evi-Setup-linux-${process.arch}`;
 
 /** Bun cross-compiles, so every installer builds from any machine */
 const TARGETS: Record<typeof RELEASE_ASSETS[number], string> = {
@@ -253,11 +254,63 @@ async function compileInstaller() {
         process.exit(1);
     }
     const dir = join(ROOT, "installer");
-    const code = await Bun.spawn([cargo, "build", "--release", "--locked"], { cwd: dir, stdio: ["inherit", "inherit", "inherit"] }).exited;
-    if (code !== 0) process.exit(code);
-    copyFileSync(join(dir, "target", "release", process.platform === "win32" ? "evi-setup.exe" : "evi-setup"), join(DIST, INSTALLER_ASSET));
-    if (RELEASE) writeChecksum(INSTALLER_ASSET);
+    if (process.platform === "darwin") await compileMacApp(cargo, dir);
+    else {
+        await run([cargo, "build", "--release", "--locked"], dir);
+        copyFileSync(join(dir, "target", "release", process.platform === "win32" ? "evi-setup.exe" : "evi-setup"), join(DIST, INSTALLER_ASSET));
+    }
+    // The macOS and Linux builds are made on their own CI runners, each by itself: always with its checksum
+    if (RELEASE || process.platform !== "win32") writeChecksum(INSTALLER_ASSET);
     console.log(`✓ dist/${INSTALLER_ASSET} (${(statSync(join(DIST, INSTALLER_ASSET)).size / 1024 / 1024).toFixed(1)} MB)`);
+}
+
+async function run(cmd: string[], cwd = ROOT) {
+    const code = await Bun.spawn(cmd, { cwd, stdio: ["inherit", "inherit", "inherit"] }).exited;
+    if (code !== 0) {
+        console.error(`✗ ${cmd.join(" ")} failed (${code})`);
+        process.exit(code);
+    }
+}
+
+/**
+ * Evi Setup.app for Apple Silicon and Intel in one: both builds joined with lipo, the bundle put
+ * together here (Tauri's bundler would need its CLI for three files), signed ad hoc, which Apple
+ * Silicon needs to run it at all, and zipped with ditto so the bundle survives the download.
+ * Unnotarized: macOS asks once, and the download page says where to click Open Anyway.
+ */
+async function compileMacApp(cargo: string, dir: string) {
+    const targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"];
+    for (const target of targets) await run([cargo, "build", "--release", "--locked", "--target", target], dir);
+
+    const app = join(DIST, "Evi Setup.app");
+    rmSync(app, { recursive: true, force: true });
+    mkdirSync(join(app, "Contents", "MacOS"), { recursive: true });
+    mkdirSync(join(app, "Contents", "Resources"), { recursive: true });
+    await run(["lipo", "-create", "-output", join(app, "Contents", "MacOS", "evi-setup"), ...targets.map(t => join(dir, "target", t, "release", "evi-setup"))]);
+    copyFileSync(join(dir, "icons", "icon.icns"), join(app, "Contents", "Resources", "icon.icns"));
+    writeFileSync(join(app, "Contents", "Info.plist"), `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleDisplayName</key><string>Evi Setup</string>
+    <key>CFBundleExecutable</key><string>evi-setup</string>
+    <key>CFBundleIconFile</key><string>icon.icns</string>
+    <key>CFBundleIdentifier</key><string>rest.evi.setup</string>
+    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+    <key>CFBundleName</key><string>Evi Setup</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>${pkg.version}</string>
+    <key>CFBundleVersion</key><string>${pkg.version}</string>
+    <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
+    <key>LSMinimumSystemVersion</key><string>10.15</string>
+    <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>
+`);
+    await run(["codesign", "--force", "--deep", "--sign", "-", app]);
+    rmSync(join(DIST, INSTALLER_ASSET), { force: true });
+    await run(["ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", app, join(DIST, INSTALLER_ASSET)]);
 }
 
 function debounce(fn: () => void, ms = 100) {

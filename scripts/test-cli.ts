@@ -211,13 +211,21 @@ server.stop(true);
 const workflow = Bun.YAML.parse(readFileSync(join(ROOT, ".github", "workflows", "release.yml"), "utf8")) as any;
 const triggers = Object.keys(workflow?.on ?? {}).sort().join(",");
 check("release.yml parses, triggers only on manual runs and v* tags", triggers === "push,workflow_dispatch" && JSON.stringify(workflow.on.push) === JSON.stringify({ tags: ["v*"] }), triggers);
-const releaseStep = workflow?.jobs?.release?.steps?.find((s: any) => /gh release create/.test(s.run ?? ""));
+// Windows builds and tests; Evi Setup for macOS and Linux builds and tests on those systems; the
+// publish job waits for both, so nothing goes out that wasn't built and tested
+const releaseStep = workflow?.jobs?.publish?.steps?.find((s: any) => /gh release create/.test(s.run ?? ""));
 const steps: any[] = workflow?.jobs?.release?.steps ?? [];
 const stepIndex = (re: RegExp) => steps.findIndex((s: any) => re.test(s.run ?? ""));
+const uploadIndex = steps.findIndex((s: any) => /upload-artifact/.test(s.uses ?? ""));
 check("release.yml publishes with notes from the changelog, after the installers are tested",
-    /--notes-file notes\.md/.test(releaseStep?.run ?? "") && !/--draft\b/.test(releaseStep?.run ?? "")
+    /--notes-file notes\.md/.test(releaseStep?.run ?? "") && !/--draft/.test(releaseStep?.run ?? "")
     && stepIndex(/release-notes\.ts/) >= 0 && stepIndex(/release-notes\.ts/) < stepIndex(/scripts\/build\.ts --release/)
-    && stepIndex(/test-installer\.ts/) < stepIndex(/gh release create/) && stepIndex(/test-cli\.ts --exe/) < stepIndex(/gh release create/),
+    && stepIndex(/test-installer\.ts/) >= 0 && stepIndex(/test-installer\.ts/) < uploadIndex && stepIndex(/test-cli\.ts --exe/) < uploadIndex
+    && JSON.stringify(workflow?.jobs?.publish?.needs) === JSON.stringify(["release", "setup"])
+    && /setup-builds\.yml$/.test(workflow?.jobs?.setup?.uses ?? ""),
+    releaseStep?.run);
+check("release.yml attaches Evi Setup for every system, and the CLI files older Evi updates from",
+    ["Evi-Setup.exe", "Evi-Setup-macos.zip", "Evi-Setup-linux-{x64,arm64}", "evi.exe", "evi-core.json"].every(f => (releaseStep?.run ?? "").includes(f)),
     releaseStep?.run);
 
 // Upgrading an install from before the rename to Evi: an old "// delight-shim" loader and data in %APPDATA%\Delight
