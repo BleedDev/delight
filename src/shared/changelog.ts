@@ -35,6 +35,15 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.4.1",
+        date: "2026-10-01",
+        sections: {
+            added: [
+                "**Evi Setup for macOS and Linux.** Install, update and remove Evi from a window on every system, no terminal. On Linux it asks for your password when Discord's folder needs it, and on macOS and Linux it puts Evi back by itself after Discord updates.",
+            ],
+        },
+    },
+    {
         version: "1.4.0",
         date: "2026-10-01",
         sections: {

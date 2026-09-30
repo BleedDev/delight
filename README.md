@@ -18,20 +18,10 @@
 
 ## Get started
 
-**Windows:** download **Evi Setup** from [evi.rest/download](https://evi.rest/download), run it, tick your Discord and click **Install Evi**. That's it: Discord restarts with Evi in it.
+Download **Evi Setup** for your system from [evi.rest/download](https://evi.rest/download), open it, tick your Discord and click **Install Evi**. That's it: Discord restarts with Evi in it.
 
-**macOS and Linux:** download the file for your system from [the latest release](https://github.com/BleedDev/evi/releases/latest), then in a terminal:
-
-```sh
-# macOS (evi-macos-x64 on Intel Macs)
-chmod +x evi-macos-arm64
-xattr -d com.apple.quarantine evi-macos-arm64
-./evi-macos-arm64 install
-
-# Linux (evi-linux-arm64 on ARM)
-chmod +x evi-linux-x64
-sudo ./evi-linux-x64 install
-```
+- **macOS:** the first time, macOS says it can't verify Evi Setup. Open System Settings → Privacy & Security and click **Open Anyway**. If it then says Evi Setup was prevented from modifying apps, allow it under **App Management**.
+- **Linux:** allow the download to run as a program first (right-click → Properties). Discord's folder usually belongs to the system, so Evi Setup asks for your password. It needs WebKitGTK, which most desktops have.
 
 Then open Discord and press **Ctrl+Shift+D**, or find **Evi** in Discord's settings. Turn on the plugins you like, and you're done.
 
@@ -117,10 +107,10 @@ Client mods are against Discord's Terms of Service. In practice Discord doesn't 
 If Discord keeps crashing, Evi starts in safe mode on its own: no plugins, themes or custom CSS until you say so. You can also start Discord with `--evi-safe` for that, or `--vanilla` to skip Evi once. A store plugin's crash report can go straight to its author from Evi's settings.
 
 **How do I remove it?**
-Run Evi Setup and click **Uninstall Evi**, or run `evi uninstall`. Discord goes back exactly as it was.
+Run Evi Setup and click **Uninstall Evi**. Discord goes back exactly as it was.
 
 **Discord updated and Evi is gone.**
-Evi puts itself back when Discord updates. On Linux, after a package upgrade, run the install command again.
+Evi puts itself back when Discord updates, on every system. If it ever doesn't, open Evi Setup and click **Install Evi** again.
 
 ## Make your own
 

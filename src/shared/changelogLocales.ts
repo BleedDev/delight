@@ -11,6 +11,11 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.4.1": {
+            added: [
+                "**Evi Setup für macOS und Linux.** Installiere, aktualisiere und entferne Evi auf jedem System in einem Fenster, ohne Terminal. Unter Linux fragt es nach deinem Passwort, wenn Discords Ordner es braucht, und unter macOS und Linux bringt es Evi nach Discord-Updates von selbst zurück.",
+            ],
+        },
         "1.4.0": {
             added: [
                 "**Spotify Player im Store.** Ein kleiner Player über deiner Benutzerleiste mit Song, Cover, Abspielen und Pause, Zurück und Weiter und wo du im Song bist.",
@@ -266,6 +271,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.4.1": {
+            added: [
+                "**Evi Setup para macOS y Linux.** Instala, actualiza y quita Evi desde una ventana en cualquier sistema, sin terminal. En Linux pide tu contraseña cuando la carpeta de Discord lo necesita, y en macOS y Linux vuelve a poner Evi por sí solo tras las actualizaciones de Discord.",
+            ],
+        },
         "1.4.0": {
             added: [
                 "**Spotify Player en la tienda.** Un pequeño reproductor sobre tu panel de usuario con la canción, su portada, reproducir y pausar, anterior y siguiente, y en qué parte vas.",
@@ -521,6 +531,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.4.1": {
+            added: [
+                "**Evi Setup pour macOS et Linux.** Installez, mettez à jour et retirez Evi depuis une fenêtre sur tous les systèmes, sans terminal. Sous Linux, il demande votre mot de passe quand le dossier de Discord l'exige, et sous macOS et Linux il remet Evi en place tout seul après les mises à jour de Discord.",
+            ],
+        },
         "1.4.0": {
             added: [
                 "**Spotify Player dans la boutique.** Un petit lecteur au-dessus de votre panneau utilisateur avec le morceau, sa pochette, lecture et pause, précédent et suivant, et où vous en êtes.",
@@ -776,6 +791,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.4.1": {
+            added: [
+                "**macOSとLinux向けのEvi Setup。** どのシステムでも、ターミナルを使わずにウィンドウからEviをインストール、更新、削除できます。LinuxではDiscordのフォルダに必要なときだけパスワードを求め、macOSとLinuxではDiscordの更新後にEviを自動で元に戻します。",
+            ],
+        },
         "1.4.0": {
             added: [
                 "**ストアにSpotify Playerが登場。** ユーザーパネルの上に小さなプレーヤーを表示します。曲名、ジャケット、再生と一時停止、前へと次へ、再生位置がわかります。",
@@ -1031,6 +1051,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.4.1": {
+            added: [
+                "**Evi Setup dla macOS i Linuxa.** Instaluj, aktualizuj i usuwaj Evi z okna na każdym systemie, bez terminala. Na Linuxie pyta o hasło, gdy folder Discorda tego wymaga, a na macOS i Linuxie sam przywraca Evi po aktualizacjach Discorda.",
+            ],
+        },
         "1.4.0": {
             added: [
                 "**Spotify Player w sklepie.** Mały odtwarzacz nad panelem użytkownika: utwór, okładka, odtwarzanie i pauza, poprzedni i następny oraz miejsce w utworze.",
@@ -1286,6 +1311,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.4.1": {
+            added: [
+                "**Evi Setup para macOS e Linux.** Instale, atualize e remova o Evi por uma janela em qualquer sistema, sem terminal. No Linux ele pede sua senha quando a pasta do Discord exige, e no macOS e no Linux ele recoloca o Evi sozinho depois das atualizações do Discord.",
+            ],
+        },
         "1.4.0": {
             added: [
                 "**Spotify Player na loja.** Um pequeno player acima do seu painel de usuário com a música, a capa, tocar e pausar, anterior e próxima, e em que ponto você está.",
@@ -1541,6 +1571,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.4.1": {
+            added: [
+                "**Evi Setup для macOS и Linux.** Устанавливайте, обновляйте и удаляйте Evi через окно на любой системе, без терминала. В Linux он спрашивает пароль, когда этого требует папка Discord, а в macOS и Linux сам возвращает Evi после обновлений Discord.",
+            ],
+        },
         "1.4.0": {
             added: [
                 "**Spotify Player в магазине.** Небольшой плеер над панелью пользователя: трек, обложка, воспроизведение и пауза, предыдущий и следующий, и позиция в треке.",
@@ -1796,6 +1831,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.4.1": {
+            added: [
+                "**macOS ve Linux için Evi Setup.** Evi'yi her sistemde terminal olmadan bir pencereden kur, güncelle ve kaldır. Linux'ta Discord'un klasörü gerektirdiğinde şifreni sorar; macOS ve Linux'ta Discord güncellemelerinden sonra Evi'yi kendiliğinden geri getirir.",
+            ],
+        },
         "1.4.0": {
             added: [
                 "**Spotify Player mağazada.** Kullanıcı panelinin üstünde küçük bir oynatıcı: şarkı, kapağı, oynat ve duraklat, önceki ve sonraki, ve şarkıda nerede olduğun.",
