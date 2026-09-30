@@ -1,19 +1,27 @@
 import { definePlugin, Filter, find, getStore, Logger, React, showToast } from "@evi/api";
 
-import { artistLine, artUrl, formatTime, fromApi, fromEvent, livePosition, Playback, trackUrl, withPlaying } from "./player";
+import { artistLine, artUrl, choose, EVI_APP_ID, formatTime, fromApi, fromEvent, fromEviApp, fromEviPresence, livePosition, Playback, trackUrl, withPlaying } from "./player";
 import { t } from "./strings";
 
 /**
- * A small Spotify player on top of the user panel, above Voice Connected: the song, its cover, play
- * and pause, previous and next, and where you are in it. It shows while Spotify is playing (or paused)
- * on your connected account, and goes away when it stops.
+ * A small music player on top of the user panel, above Voice Connected: the song, its cover, play
+ * and pause, previous and next, and where you are in it. It shows while Spotify or Evi (the music
+ * player at evi.wtf) is playing or paused, and goes away when both stop. What plays wins (choose()).
  *
+ * Spotify:
  * - What's playing comes from Discord's own SPOTIFY_PLAYER_STATE events, which Spotify pushes to
  *   Discord for your connected account. SpotifyStore forgets the track the moment it pauses, so the
  *   plugin keeps its own copy (player.ts).
  * - The buttons call Spotify's player API with the access token Discord already holds for that
  *   account. When Spotify says it expired, Discord's own Spotify client refreshes it, then we retry.
  *   Controlling playback is a Spotify Premium feature: without it the player only shows the song.
+ *
+ * Evi:
+ * - Evi's desktop app serves what's playing on 127.0.0.1 (its electron/control.js): a live event
+ *   stream, commands, and the cover (Discord's page only shows images from a few sites, so the cover
+ *   comes as bytes and is shown from a blob). It only answers Discord's own pages.
+ * - An Evi app without that still shows "Listening to" through Discord's rich presence: that's shown
+ *   too, without buttons, until the app connects.
  */
 
 const API = "https://api.spotify.com/v1";
@@ -28,12 +36,20 @@ interface Socket { accountId: string; accessToken: string; isPremium?: boolean; 
 
 let running = false;
 let logger: Logger | undefined;
+/** Each source's latest, and the one shown */
+const sources: { spotify: Playback | null; eviApp: Playback | null; eviPresence: Playback | null; } = { spotify: null, eviApp: null, eviPresence: null };
 let playback: Playback | null = null;
 const listeners = new Set<() => void>();
 const subscribe = (l: () => void) => (listeners.add(l), () => void listeners.delete(l));
-function set(next: Playback | null) {
-    playback = next;
+function update(source: keyof typeof sources, next: Playback | null) {
+    sources[source] = next;
+    playback = choose(sources.eviApp, sources.spotify, sources.eviPresence);
     for (const l of listeners) l();
+}
+/** The one shown changed here (play, pause, seek right away): it goes back to its source */
+function set(next: Playback | null) {
+    if (!next) return;
+    update(next.source === "spotify" ? "spotify" : next.controls ? "eviApp" : "eviPresence", next);
 }
 
 /** The connected account Spotify is playing on, from Discord's SpotifyStore */
@@ -65,27 +81,119 @@ async function request(method: "GET" | "PUT" | "POST", path: string, query: Reco
 
 type Action = "play" | "pause" | "previous" | "next" | "seek";
 
+async function spotifyControl(action: Action, before: Playback, position?: number) {
+    const device: Record<string, string> = before.deviceId ? { device_id: before.deviceId } : {};
+    if (action === "play") await request("PUT", "/me/player/play", device);
+    else if (action === "pause") await request("PUT", "/me/player/pause", device);
+    else if (action === "next") await request("POST", "/me/player/next", device);
+    else if (action === "previous") await request("POST", "/me/player/previous", device);
+    else await request("PUT", "/me/player/seek", { ...device, position_ms: String(Math.round(position ?? 0)) });
+}
+
+async function eviControl(action: Action, before: Playback, position?: number) {
+    const body = action === "seek"
+        ? { action, value: before.track.duration ? Math.min(1, Math.max(0, (position ?? 0) / before.track.duration)) : 0 }
+        : { action: action === "play" || action === "pause" ? "toggle" : action };
+    const res = await fetch(`http://127.0.0.1:${evi.port}/v1/control`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`Evi answered ${res.status}`);
+}
+
 async function control(action: Action, position?: number) {
     const before = playback;
+    if (!before?.controls) return;
     const now = Date.now();
-    const device: Record<string, string> = before?.deviceId ? { device_id: before.deviceId } : {};
     try {
-        // Play, pause and seek show straight away; Spotify's own report follows and corrects it
-        if (before && action === "play") set(withPlaying(before, true, now));
-        if (before && action === "pause") set(withPlaying(before, false, now));
-        if (before && action === "seek") set(withPlaying(before, before.isPlaying, now, position));
-
-        if (action === "play") await request("PUT", "/me/player/play", device);
-        else if (action === "pause") await request("PUT", "/me/player/pause", device);
-        else if (action === "next") await request("POST", "/me/player/next", device);
-        else if (action === "previous") await request("POST", "/me/player/previous", device);
-        else await request("PUT", "/me/player/seek", { ...device, position_ms: String(Math.round(position ?? 0)) });
+        // Play, pause and seek show straight away; the player's own report follows and corrects it
+        if (action === "play") set(withPlaying(before, true, now));
+        if (action === "pause") set(withPlaying(before, false, now));
+        if (action === "seek") set(withPlaying(before, before.isPlaying, now, position));
+        await (before.source === "spotify" ? spotifyControl : eviControl)(action, before, position);
     } catch (e) {
-        if (playback !== before && before) set(before);
-        const kind = e instanceof SpotifyError ? e.kind : "failed";
-        if (kind === "failed") logger?.warn(`${action} failed`, e);
+        if (playback !== before) set(before);
+        const kind = before.source === "evi" ? "evi" : e instanceof SpotifyError ? e.kind : "failed";
+        if (kind === "failed" || kind === "evi") logger?.warn(`${action} failed`, e);
         showToast(t(`error.${kind}`), { type: "failure" });
     }
+}
+
+// ---- Evi's desktop app --------------------------------------------------------------------------
+
+/** Where its electron/control.js listens: the first of these that was free */
+const EVI_PORTS = [38519, 38520, 38521];
+/** Looking for the app again this often while it isn't running; its presence appearing looks at once */
+const EVI_RETRY_MS = 60_000;
+
+const evi: { port: number; stream?: EventSource; retry?: ReturnType<typeof setTimeout>; cover?: { key: string; url?: string; }; } = { port: 0 };
+
+function eviDisconnect() {
+    evi.stream?.close();
+    evi.stream = undefined;
+    clearTimeout(evi.retry);
+    if (evi.cover?.url) URL.revokeObjectURL(evi.cover.url);
+    evi.cover = undefined;
+}
+
+/** Tries each port once; while the app isn't there, tries again after a while */
+function eviConnect(i = 0) {
+    if (!running || evi.stream) return;
+    clearTimeout(evi.retry);
+    if (i >= EVI_PORTS.length) {
+        evi.retry = setTimeout(eviConnect, EVI_RETRY_MS);
+        return;
+    }
+    const port = EVI_PORTS[i];
+    const stream = new EventSource(`http://127.0.0.1:${port}/v1/events`);
+    let opened = false;
+    evi.stream = stream;
+    stream.onopen = () => {
+        opened = true;
+        evi.port = port;
+    };
+    stream.onmessage = e => {
+        try {
+            eviMessage(JSON.parse(e.data));
+        } catch (err) {
+            logger?.warn("Evi sent something unreadable", err);
+        }
+    };
+    stream.onerror = () => {
+        // EventSource would keep retrying every few seconds on its own: we pace it instead
+        stream.close();
+        if (evi.stream !== stream) return;
+        evi.stream = undefined;
+        if (opened) {
+            update("eviApp", null);
+            evi.retry = setTimeout(eviConnect, 3000);
+        } else eviConnect(i + 1);
+    };
+}
+
+function eviMessage(msg: any) {
+    const key = typeof msg?.cover === "string" ? msg.cover : "";
+    if (key !== evi.cover?.key) {
+        if (evi.cover?.url) URL.revokeObjectURL(evi.cover.url);
+        evi.cover = { key };
+        if (key) void eviFetchCover(key);
+    }
+    update("eviApp", fromEviApp(msg, Date.now(), evi.cover?.url));
+}
+
+async function eviFetchCover(key: string) {
+    try {
+        const res = await fetch(`http://127.0.0.1:${evi.port}/v1/cover`);
+        const blob = res.ok ? await res.blob() : null;
+        if (!blob?.type.startsWith("image/") || evi.cover?.key !== key) return;
+        evi.cover.url = URL.createObjectURL(blob);
+        if (sources.eviApp) update("eviApp", { ...sources.eviApp, art: evi.cover.url });
+    } catch { }
+}
+
+/** Evi's "Listening to" presence, for an app that doesn't serve the control connection */
+function readEviPresence() {
+    const activity = getStore("LocalActivityStore")?.getApplicationActivity?.(EVI_APP_ID);
+    update("eviPresence", fromEviPresence(activity, Date.now()));
+    // The app is running: it may have the control connection too
+    if (activity && !evi.stream) eviConnect();
 }
 
 /** What's playing when the plugin starts: Discord only reports changes */
@@ -94,7 +202,7 @@ function seed() {
     if (!socket) return;
     request("GET", "/me/player", { additional_types: "episode" })
         .then(body => {
-            if (running && !playback) set(fromApi(body, socket.accountId, Date.now()));
+            if (running && !sources.spotify) update("spotify", fromApi(body, socket.accountId, Date.now()));
         })
         .catch(() => { });
 }
@@ -132,9 +240,9 @@ function Player() {
     const { track } = view;
     const duration = track.duration;
     const position = drag ?? livePosition(view, Date.now());
-    const canControl = activeSocket()?.isPremium !== false;
-    const link = trackUrl(track);
-    const art = artUrl(track);
+    const canControl = view.controls && (view.source !== "spotify" || activeSocket()?.isPremium !== false);
+    const link = trackUrl(view);
+    const art = artUrl(view);
     const artists = artistLine(track);
     const commit = () => {
         if (drag === null) return;
@@ -143,12 +251,12 @@ function Player() {
     };
 
     return (
-        <div className="evi-sp" role="group" aria-label={t("player")} data-leaving={!current || undefined}>
+        <div className="evi-sp" role="group" aria-label={view.source === "evi" ? t("player.evi") : t("player")} data-leaving={!current || undefined}>
             <div className="evi-sp-row">
                 {art ? <img className="evi-sp-art" src={art} alt="" width={40} height={40} /> : <div className="evi-sp-art" />}
                 <div className="evi-sp-info">
                     {link
-                        ? <a className="evi-sp-title" href={link} target="_blank" rel="noreferrer noopener" title={t("open", { name: track.name })}>{track.name}</a>
+                        ? <a className="evi-sp-title" href={link} target="_blank" rel="noreferrer noopener" title={view.source === "evi" ? t("open.evi", { name: track.name }) : t("open", { name: track.name })}>{track.name}</a>
                         : <span className="evi-sp-title" title={track.name}>{track.name}</span>}
                     {artists && <span className="evi-sp-artist" title={artists}>{artists}</span>}
                 </div>
@@ -260,7 +368,7 @@ export default definePlugin({
 
     renderPlayer() {
         try {
-            return running ? <Boundary key="evi-spotify-player"><Player /></Boundary> : null;
+            return running ? <Boundary key="evi-music-player"><Player /></Boundary> : null;
         } catch (e) {
             logger?.error("Couldn't render the player", e);
             return null;
@@ -269,10 +377,14 @@ export default definePlugin({
 
     flux: {
         SPOTIFY_PLAYER_STATE(action: any) {
-            set(fromEvent(action, Date.now()));
+            update("spotify", fromEvent(action, Date.now()));
         },
         SPOTIFY_ACCOUNT_ACCESS_TOKEN_REVOKE() {
-            set(null);
+            update("spotify", null);
+        },
+        LOCAL_ACTIVITY_UPDATE(action: any) {
+            // Read once LocalActivityStore has it
+            if (action?.applicationId === EVI_APP_ID) setTimeout(readEviPresence, 0);
         },
     },
 
@@ -281,10 +393,15 @@ export default definePlugin({
         logger = ctx.logger;
         ctx.addStyle(css);
         seed();
+        readEviPresence();
+        eviConnect();
     },
 
     stop() {
         running = false;
-        set(null);
+        eviDisconnect();
+        update("spotify", null);
+        update("eviApp", null);
+        update("eviPresence", null);
     },
 });
