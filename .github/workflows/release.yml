@@ -145,6 +145,8 @@ jobs:
           flags=(--latest)
           if [[ "$VERSION" == *-* ]]; then flags=(--prerelease --latest=false); fi
           cd out
+          # The Windows job's files arrive in dist/ (its upload kept the folder next to notes.md)
+          if [ -d dist ]; then mv dist/* . && rmdir dist; fi
           ls -l
           # The CLI files stay for Evi up to 1.3.1, which won't update from a release without them
           gh release create "$TAG" evi.exe evi-macos-{arm64,x64} evi-linux-{x64,arm64} evi-core.json             Evi-Setup.exe Evi-Setup-macos.zip Evi-Setup-linux-{x64,arm64} *.sha256             "${flags[@]}"             --target "$GITHUB_SHA"             --title "Evi $VERSION"             --notes-file notes.md
