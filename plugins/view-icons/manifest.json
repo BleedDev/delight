@@ -2,7 +2,7 @@
     "id": "view-icons",
     "name": "View Icons",
     "description": "Download avatars and banners from someone's profile. Click their avatar or banner to open it full size, then Download sits next to zoom.",
-    "version": "2.1.1",
+    "version": "2.2.0",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
         "utility"
     ],
     "changelog": [
+        {
+            "version": "2.2.0",
+            "notes": [
+                "Profile details: a button on every profile banner shows the profile's theme gradient, banner colour, display name style (effect, font and colours) and nameplate. Click a colour to copy it. Hovering a banner now darkens it with a pointer, like the avatar does."
+            ]
+        },
         {
             "version": "2.1.1",
             "notes": [
@@ -51,6 +57,9 @@
             "name": "Profilbilder ansehen",
             "description": "Lade Avatare und Banner aus dem Profil anderer herunter. Klicke auf einen Avatar oder ein Banner, um es in voller Größe zu öffnen, und neben dem Zoom findest du „Herunterladen“.",
             "changelog": {
+                "2.2.0": [
+                    "Profildetails: Ein Button auf jedem Profilbanner zeigt den Farbverlauf des Profildesigns, die Bannerfarbe, den Stil des Anzeigenamens (Effekt, Schriftart und Farben) und das Namensschild. Klicke auf eine Farbe, um sie zu kopieren. Beim Darüberfahren wird ein Banner jetzt wie der Avatar abgedunkelt, mit Zeiger."
+                ],
                 "2.1.1": [
                     "Wird nach einem Discord-Update nicht mehr als defekt angezeigt, obwohl es funktioniert: Der Bildbetrachter lädt erst, wenn du ihn zum ersten Mal öffnest, und das wurde als Problem gezählt."
                 ],
@@ -71,6 +80,9 @@
             "name": "Ver iconos",
             "description": "Descarga avatares y banners del perfil de cualquier persona. Haz clic en su avatar o banner para abrirlo a tamaño completo y verás Descargar junto al zoom.",
             "changelog": {
+                "2.2.0": [
+                    "Detalles del perfil: un botón en cada banner muestra el degradado del tema, el color del banner, el estilo del nombre (efecto, fuente y colores) y la placa de nombre. Haz clic en un color para copiarlo. Al pasar el cursor, el banner ahora se oscurece con un puntero, como el avatar."
+                ],
                 "2.1.1": [
                     "Ya no aparece como roto tras una actualización de Discord cuando funciona: el visor de imágenes se carga solo al abrirlo por primera vez, y eso contaba como un problema."
                 ],
@@ -91,6 +103,9 @@
             "name": "Voir les icônes",
             "description": "Télécharge les avatars et les bannières du profil de quelqu'un. Clique sur son avatar ou sa bannière pour l'ouvrir en taille réelle, et Télécharger apparaît à côté du zoom.",
             "changelog": {
+                "2.2.0": [
+                    "Détails du profil : un bouton sur chaque bannière montre le dégradé du thème, la couleur de la bannière, le style du pseudo (effet, police et couleurs) et la plaque de nom. Cliquez sur une couleur pour la copier. Au survol, la bannière s'assombrit désormais avec un pointeur, comme l'avatar."
+                ],
                 "2.1.1": [
                     "N’apparaît plus comme cassé après une mise à jour de Discord alors qu’il marche : la visionneuse d’images ne se charge qu’à sa première ouverture, et ça comptait comme un problème."
                 ],
@@ -111,6 +126,9 @@
             "name": "アイコンを表示",
             "description": "相手のプロフィールからアバターやバナーをダウンロードできます。アバターやバナーをクリックして原寸で開くと、ズームの隣にダウンロードが表示されます。",
             "changelog": {
+                "2.2.0": [
+                    "プロフィールの詳細:各プロフィールバナーのボタンから、テーマのグラデーション、バナーの色、表示名のスタイル(エフェクト、フォント、色)、ネームプレートを確認できます。色をクリックするとコピーされます。バナーにカーソルを合わせると、アバターと同じように暗くなりポインターが表示されます。"
+                ],
                 "2.1.1": [
                     "動作しているのに、Discord のアップデート後に不具合ありと表示されることがなくなりました。画像ビューアーは最初に開いたときに読み込まれるため、それが問題として数えられていました。"
                 ],
@@ -131,6 +149,9 @@
             "name": "Podgląd ikon",
             "description": "Pobieraj awatary i banery z profilu innych osób. Kliknij awatar lub baner, aby otworzyć go w pełnym rozmiarze, a obok powiększenia znajdziesz przycisk Pobierz.",
             "changelog": {
+                "2.2.0": [
+                    "Szczegóły profilu: przycisk na każdym banerze pokazuje gradient motywu, kolor banera, styl nazwy (efekt, czcionkę i kolory) oraz tabliczkę. Kliknij kolor, aby go skopiować. Po najechaniu baner przyciemnia się teraz ze wskaźnikiem, jak awatar."
+                ],
                 "2.1.1": [
                     "Nie jest już oznaczany jako zepsuty po aktualizacji Discorda, gdy działa: przeglądarka obrazów ładuje się dopiero przy pierwszym otwarciu, a to liczyło się jako problem."
                 ],
@@ -151,6 +172,9 @@
             "name": "Ver ícones",
             "description": "Baixe avatares e banners do perfil de qualquer pessoa. Clique no avatar ou no banner para abrir em tamanho real e o botão Baixar aparece ao lado do zoom.",
             "changelog": {
+                "2.2.0": [
+                    "Detalhes do perfil: um botão em cada banner mostra o degradê do tema, a cor do banner, o estilo do nome (efeito, fonte e cores) e a placa de nome. Clique numa cor para copiá-la. Ao passar o mouse, o banner agora escurece com um ponteiro, como o avatar."
+                ],
                 "2.1.1": [
                     "Não aparece mais como quebrado depois de uma atualização do Discord quando está funcionando: o visualizador de imagens só carrega quando você o abre pela primeira vez, e isso contava como problema."
                 ],
@@ -171,6 +195,9 @@
             "name": "Просмотр значков",
             "description": "Скачивайте аватары и баннеры из чужих профилей. Щёлкните по аватару или баннеру, чтобы открыть его в полном размере, и рядом с увеличением появится кнопка «Скачать».",
             "changelog": {
+                "2.2.0": [
+                    "Детали профиля: кнопка на каждом баннере показывает градиент темы, цвет баннера, стиль имени (эффект, шрифт и цвета) и табличку. Нажмите на цвет, чтобы скопировать его. При наведении баннер теперь затемняется с указателем, как аватар."
+                ],
                 "2.1.1": [
                     "Больше не отмечается как сломанный после обновления Discord, когда он работает: просмотрщик изображений загружается только при первом открытии, и это считалось проблемой."
                 ],
@@ -191,6 +218,9 @@
             "name": "Simgeleri Görüntüle",
             "description": "Birinin profilindeki avatarları ve banner'ları indir. Avatarına veya banner'ına tıklayıp tam boyutta aç, İndir düğmesi yakınlaştırmanın yanında olacak.",
             "changelog": {
+                "2.2.0": [
+                    "Profil ayrıntıları: her profil afişindeki bir düğme temanın renk geçişini, afiş rengini, görünen ad stilini (efekt, yazı tipi ve renkler) ve isim plakasını gösterir. Kopyalamak için bir renge tıkla. Afişin üzerine gelince artık avatar gibi kararıyor ve işaretçi çıkıyor."
+                ],
                 "2.1.1": [
                     "Çalıştığı hâlde Discord güncellemesinden sonra bozuk görünmüyor: resim görüntüleyici yalnızca ilk açtığında yükleniyor ve bu bir sorun olarak sayılıyordu."
                 ],

@@ -5,16 +5,20 @@
  * zoom button. Source patches add:
  *  - a Download button next to zoom, for avatars, banners and server icons (any Discord CDN link
  *    icons.ts recognises), saving the original through the desktop app's save dialog;
- *  - a click on a profile banner (popout and full profile) that opens it in the same viewer.
+ *  - a click on a profile banner (popout and full profile) that opens it in the same viewer, with
+ *    the same darkening on hover as the avatar;
+ *  - a Profile details button on the banner: the profile's theme gradient, banner colour, display
+ *    name style and nameplate, each colour copyable (details.ts).
  *
  * The viewer's own button component is captured when its module loads, so Download looks and
  * behaves like zoom. If Discord renames it, a plain button with the same icon stands in.
  */
-import { Components, definePlugin, filters, find, getStore, React } from "@evi/api";
-import type { PluginContext, SourcePatch } from "@evi/api";
+import { Components, definePlugin, filters, find, getStore, openLayer, React } from "@evi/api";
+import type { CloseLayer, PluginContext, SourcePatch } from "@evi/api";
 import type { MouseEvent, ReactNode } from "react";
 
 import { t } from "./strings";
+import { gradient, hasDetails, profileDetails, ProfileDetails } from "./details";
 import { fileName, fitSize, LinkedPicture, linkedPicture, Picture, pictureFromUrl } from "./icons";
 
 /** How long to wait for a picture's real size before going by its usual shape */
@@ -49,12 +53,16 @@ const PATCHES = {
             },
         ],
     },
-    /** A profile banner: <Banner bannerSrc overlay …/>. Ours sits under the overlay, filling the banner */
+    /**
+     * A profile banner, checked 2026-10-01:
+     *   function N(e){let{user:t,displayProfile:n,…}=e;…return(0,i.jsx)(T.A,{…,bannerSrc:B,…,overlay:N,onInteractionStart:…})}
+     * Ours sits under the overlay, filling the banner, with the Profile details button.
+     */
     banner: {
         find: /pendingAccentColor:\w+,animateOnHoverOrFocusOnly:/,
         replace: {
-            match: /(?<=\{user:(\i),displayProfile:[^]{0,1500}?)bannerSrc:(\i),([^]{0,300}?)overlay:(\i),(?=onInteractionStart:)/,
-            with: "bannerSrc:$2,$3overlay:$self?.renderBanner?.($1,$2,$4)??$4,",
+            match: /(?<=\{user:(\i),displayProfile:(\i),[^]{0,1500}?)bannerSrc:(\i),([^]{0,300}?)overlay:(\i),(?=onInteractionStart:)/,
+            with: "bannerSrc:$3,$4overlay:$self?.renderBanner?.($1,$3,$5,$2)??$5,",
         },
     },
 } satisfies Record<string, SourcePatch>;
@@ -181,6 +189,149 @@ function DownloadButton({ picture }: { picture: Picture; }) {
     return Tooltip ? <Tooltip text={t("download")} position="bottom">{button}</Tooltip> : button;
 }
 
+// ---- Profile details ----------------------------------------------------------------------------
+
+let closeDetails: CloseLayer | undefined;
+
+async function copy(text: string) {
+    try {
+        const native = (window as any).DiscordNative?.clipboard;
+        if (typeof native?.copy === "function") native.copy(text);
+        else await navigator.clipboard.writeText(text);
+        ctx?.toast(t("details.copied", { value: text }), { type: "success" });
+    } catch (err) {
+        ctx?.logger.warn("Copying failed", err);
+    }
+}
+
+function Swatch({ color, label }: { color: string; label: string; }) {
+    return (
+        <button type="button" className="evi-vi-chip" onClick={() => void copy(color)} aria-label={t("details.copy", { value: `${label} ${color}` })}>
+            <span className="evi-vi-chip-dot" style={{ background: color }} aria-hidden="true" />
+            <span className="evi-vi-chip-label">{label}</span>
+            <span className="evi-vi-chip-value">{color}</span>
+        </button>
+    );
+}
+
+function Row({ title, children }: { title: string; children: ReactNode; }) {
+    return (
+        <section className="evi-vi-row">
+            <h3 className="evi-vi-row-title">{title}</h3>
+            {children}
+        </section>
+    );
+}
+
+function DetailsDialog({ name, username, details, onClose }: { name: string; username: string; details: ProfileDetails; onClose(): void; }) {
+    const closeRef = React.useRef<HTMLButtonElement>(null);
+    React.useEffect(() => {
+        const previous = document.activeElement as HTMLElement | null;
+        closeRef.current?.focus();
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== "Escape") return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            onClose();
+        };
+        window.addEventListener("keydown", onKey, true);
+        return () => {
+            window.removeEventListener("keydown", onKey, true);
+            previous?.focus?.();
+        };
+    }, []);
+    const { theme, bannerColor, nameStyle, nameplate } = details;
+    const nameColors = nameStyle?.colors ?? [];
+
+    return (
+        // Mouse downs stay in here: Discord would take one for a click outside its profile popout and close it
+        <div className="evi-vi-scrim evi-scrim" onMouseDown={e => { e.stopPropagation(); if (e.target === e.currentTarget) onClose(); }}>
+            <div className="evi-vi-modal evi-modal" role="dialog" aria-modal="true" aria-labelledby="evi-vi-details-title">
+                <header className="evi-vi-head">
+                    <div>
+                        <h2 id="evi-vi-details-title">{t("details.title")}</h2>
+                        <p>{name !== username ? `${name} · @${username}` : `@${username}`}</p>
+                    </div>
+                    <button type="button" ref={closeRef} className="evi-vi-close" aria-label={t("details.close")} onClick={onClose}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" /></svg>
+                    </button>
+                </header>
+                <div className="evi-vi-body">
+                    {theme && (
+                        <Row title={t("details.theme")}>
+                            <div className="evi-vi-preview evi-vi-theme" style={{ background: gradient([theme.primary, theme.accent]) }} aria-hidden="true" />
+                            <div className="evi-vi-chips">
+                                <Swatch color={theme.primary} label={t("details.primary")} />
+                                <Swatch color={theme.accent} label={t("details.accent")} />
+                            </div>
+                        </Row>
+                    )}
+                    {bannerColor && (
+                        <Row title={t("details.bannerColor")}>
+                            <div className="evi-vi-chips"><Swatch color={bannerColor} label={t("kind.banner")} /></div>
+                        </Row>
+                    )}
+                    {nameStyle && (
+                        <Row title={t("details.nameStyle")}>
+                            {nameColors.length > 0 && (
+                                <p className="evi-vi-name" style={{ backgroundImage: gradient(nameColors.length > 1 ? nameColors : [nameColors[0], nameColors[0]], 90) }}>{name}</p>
+                            )}
+                            <dl className="evi-vi-facts">
+                                {nameStyle.effect && <><dt>{t("details.effect")}</dt><dd>{nameStyle.effect}</dd></>}
+                                {nameStyle.font && <><dt>{t("details.font")}</dt><dd>{nameStyle.font}</dd></>}
+                            </dl>
+                            {nameColors.length > 0 && (
+                                <div className="evi-vi-chips">
+                                    {nameColors.map((c, i) => <Swatch key={i} color={c} label={t("details.color", { n: i + 1 })} />)}
+                                </div>
+                            )}
+                        </Row>
+                    )}
+                    {nameplate && (
+                        <Row title={t("details.nameplate")}>
+                            <p className="evi-vi-plain">{nameplate.name}</p>
+                        </Row>
+                    )}
+                    {!hasDetails(details) && <p className="evi-vi-plain evi-vi-empty">{t("details.none")}</p>}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function openDetails(user: any, displayProfile: any) {
+    closeDetails?.();
+    const details = profileDetails(user, displayProfile);
+    const username = String(user?.username ?? "");
+    const name = String(user?.globalName || username);
+    const close = openLayer(close => <DetailsDialog name={name} username={username} details={details} onClose={() => close()} />, {
+        onClosed: () => void (closeDetails === close && (closeDetails = undefined)),
+    });
+    closeDetails = close;
+}
+
+function DetailsButton({ user, displayProfile }: { user: any; displayProfile: any; }) {
+    const button = (
+        <button
+            type="button"
+            className="evi-vi-details"
+            aria-label={t("details.open")}
+            aria-haspopup="dialog"
+            ref={fillParent}
+            onClick={e => {
+                e.stopPropagation();
+                openDetails(user, displayProfile);
+            }}
+        >
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A4.6 4.6 0 0 0 22 10.8C22 5.9 17.5 2 12 2ZM6.5 13a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" />
+            </svg>
+        </button>
+    );
+    const Tooltip = Components.Tooltip;
+    return Tooltip ? <Tooltip text={t("details.open")} position="bottom">{button}</Tooltip> : button;
+}
+
 /** The button fills the banner, so the banner has to be what it's positioned against */
 function fillParent(button: HTMLButtonElement | null) {
     const banner = button?.parentElement;
@@ -203,6 +354,7 @@ const css = `
 .evi-vi-download:hover { background: var(--background-modifier-hover); color: var(--interactive-hover); }
 .evi-vi-download:focus-visible { outline: 2px solid var(--focus-primary); }
 .evi-vi-download[aria-busy] { opacity: .6; cursor: progress; }
+/* Like the avatar's in the same profile: a pointer, and black at 40% fading in over it */
 .evi-vi-banner {
     position: absolute;
     inset: 0;
@@ -210,10 +362,73 @@ const css = `
     height: 100%;
     padding: 0;
     border: 0;
+    border-radius: inherit;
     background: none;
-    cursor: zoom-in;
+    cursor: pointer;
 }
+.evi-vi-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-color: var(--opacity-black-40, rgb(0 0 0 / .4));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+}
+.evi-vi-banner:hover::after, .evi-vi-banner:focus-visible::after { opacity: 1; }
 .evi-vi-banner:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: -2px; }
+
+.evi-vi-details {
+    position: absolute;
+    inset-block-start: 12px;
+    inset-inline-start: 12px;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(0 0 0 / .48);
+    color: var(--white, #fff);
+    cursor: pointer;
+    transition: background-color .15s ease-out, scale .2s ease-out;
+}
+@media (hover: hover) { .evi-vi-details:hover { background: rgb(0 0 0 / .64); } }
+.evi-vi-details:active { scale: .96; }
+.evi-vi-details:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: 2px; }
+
+.evi-vi-scrim { position: fixed; inset: 0; z-index: 10001; display: grid; place-items: center; background: rgb(0 0 0 / .7); }
+.evi-vi-modal { width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 64px); display: flex; flex-direction: column; border-radius: 12px; overflow: hidden;
+    background: var(--modal-background, var(--background-base-low, #313338)); color: var(--text-default, #dbdee1); border: 1px solid var(--border-subtle, transparent);
+    box-shadow: var(--shadow-high, 0 8px 24px rgb(0 0 0 / .4)); font-family: var(--font-primary); }
+.evi-vi-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 20px 8px; }
+.evi-vi-head h2 { margin: 0; font-size: 20px; line-height: 24px; font-weight: 600; color: var(--text-strong, #f2f3f5); }
+.evi-vi-head p { margin: 4px 0 0; font-size: 14px; line-height: 18px; color: var(--text-muted, #949ba4); overflow-wrap: anywhere; }
+.evi-vi-close { flex: none; display: grid; place-items: center; width: 32px; height: 32px; margin: -4px -6px 0 0; padding: 0; border: 0; border-radius: 8px; background: none;
+    color: var(--interactive-icon-default, var(--interactive-normal)); cursor: pointer; }
+@media (hover: hover) { .evi-vi-close:hover { background: var(--background-mod-subtle, var(--background-modifier-hover)); color: var(--interactive-icon-hover, var(--interactive-hover)); } }
+.evi-vi-close:focus-visible { outline: 2px solid var(--focus-primary); }
+.evi-vi-body { overflow-y: auto; padding: 8px 20px 20px; display: flex; flex-direction: column; gap: 20px; }
+.evi-vi-row-title { margin: 0 0 8px; font-size: 12px; line-height: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted, #949ba4); }
+.evi-vi-preview { height: 72px; border-radius: 8px; outline: 1px solid rgb(255 255 255 / .08); outline-offset: -1px; margin-bottom: 8px; }
+.evi-vi-name { margin: 0 0 8px; font-size: 24px; line-height: 30px; font-weight: 700; -webkit-background-clip: text; background-clip: text; color: transparent; overflow-wrap: anywhere; }
+.evi-vi-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 8px; font-size: 14px; line-height: 18px; }
+.evi-vi-facts dt { color: var(--text-muted, #949ba4); }
+.evi-vi-facts dd { margin: 0; color: var(--text-default, #dbdee1); }
+.evi-vi-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.evi-vi-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px 0 6px; border: 1px solid var(--border-subtle, rgb(255 255 255 / .08)); border-radius: 8px;
+    background: var(--background-base-lower, rgb(0 0 0 / .12)); color: var(--text-default, #dbdee1); font: inherit; font-size: 13px; cursor: pointer; transition: scale .2s ease-out; }
+@media (hover: hover) { .evi-vi-chip:hover { background: var(--background-mod-subtle, var(--background-modifier-hover)); } }
+.evi-vi-chip:active { scale: .97; }
+.evi-vi-chip:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: 2px; }
+.evi-vi-chip-dot { width: 20px; height: 20px; border-radius: 50%; outline: 1px solid rgb(255 255 255 / .16); outline-offset: -1px; }
+.evi-vi-chip-label { color: var(--text-muted, #949ba4); white-space: nowrap; }
+.evi-vi-chip-value { font-family: var(--font-code, monospace); text-transform: uppercase; }
+.evi-vi-plain { margin: 0; font-size: 14px; line-height: 18px; }
+.evi-vi-empty { color: var(--text-muted, #949ba4); }
 `;
 
 export default definePlugin({
@@ -221,7 +436,10 @@ export default definePlugin({
 
     start(context) {
         ctx = context;
-        context.onDispose(() => void (ctx = undefined));
+        context.onDispose(() => {
+            closeDetails?.({ instant: true });
+            ctx = undefined;
+        });
         context.addStyle(css);
     },
 
@@ -239,19 +457,20 @@ export default definePlugin({
         return <DownloadButton key="evi-vi-download" picture={linkedPicture(linked, ownerName(linked))} />;
     },
 
-    /** Called by a profile banner with what it shows; returns its overlay with our button under it */
-    renderBanner(user: any, src: string | null, overlay: ReactNode) {
-        const linked = ctx && pictureFromUrl(src);
-        if (!linked) return overlay;
-        const picture = linkedPicture(linked, user?.username || user?.globalName || ownerName(linked));
+    /** Called by a profile banner with what it shows; returns its overlay with our buttons under it */
+    renderBanner(user: any, src: string | null, overlay: ReactNode, displayProfile?: any) {
+        if (!ctx || !user) return overlay;
+        const linked = pictureFromUrl(src);
+        const picture = linked && linkedPicture(linked, user?.username || user?.globalName || ownerName(linked));
         const open = (e: MouseEvent) => {
             e.stopPropagation();
-            void openViewer(picture);
+            if (picture) void openViewer(picture);
         };
         return (
             <>
-                <button type="button" className="evi-vi-banner" aria-label={t("viewBanner")} onClick={open} ref={fillParent} />
+                {picture && <button type="button" className="evi-vi-banner" aria-label={t("viewBanner")} onClick={open} ref={fillParent} />}
                 {overlay}
+                <DetailsButton user={user} displayProfile={displayProfile} />
             </>
         );
     },
