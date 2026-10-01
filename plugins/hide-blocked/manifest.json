@@ -11,6 +11,7 @@
         "privacy",
         "messages"
     ],
+    "minEviVersion": "1.1.0",
     "permissions": {
         "readMessages": true
     },
