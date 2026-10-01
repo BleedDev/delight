@@ -76,6 +76,9 @@ export const pl = {
 
     // ---- Safe mode ----
     "safeMode.title": "Evi działa w trybie awaryjnym",
+    "safeMode.settingTitle": "Tryb awaryjny",
+    "safeMode.setting": "Włączaj tryb awaryjny sam, gdy Discord ciągle się zawiesza",
+    "safeMode.settingHint": "Gdy Discord kilka razy z rzędu ulegnie awarii, Evi uruchamia go bez pluginów, motywów i Quick CSS, dopóki tego nie zmienisz. Po wyłączeniu dzieje się to tylko przy uruchomieniu Discorda z --evi-safe.",
     "safeMode.hide": "Ukryj powiadomienie o trybie awaryjnym",
     "safeMode.reason.crashLoop": {
         one: "Discord nie uruchomił się poprawnie ostatnim razem, więc Evi włączył go bez wtyczek, motywów i Quick CSS.",

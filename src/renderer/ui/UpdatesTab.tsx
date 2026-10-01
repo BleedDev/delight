@@ -5,6 +5,7 @@
 import { isPrerelease, UpdateProgress, UpdateStatus } from "@shared/release";
 
 import { t, useLocale } from "../i18n";
+import { Settings } from "../settings";
 import { Updates } from "../updates";
 import { createRoot, React } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
@@ -64,6 +65,7 @@ function Notes({ text }: { text: string; }) {
 
 export function UpdatesTab() {
     const { status, checking, installing, error } = useStore(Updates.subscribe, Updates.getSnapshot);
+    const settings = useStore(Settings.subscribe, () => Settings.data);
     const [autoCheck, setAutoCheck] = React.useState(Updates.autoCheck);
     const [beta, setBeta] = React.useState(Updates.beta);
     const [silent, setSilent] = React.useState(Updates.silent);
@@ -135,6 +137,17 @@ export function UpdatesTab() {
                         setBeta(on);
                         void Updates.setBeta(on);
                     }}
+                />
+            </Section>
+            <Section title={t("safeMode.settingTitle")}>
+                <SwitchRow
+                    id="dl-auto-safe-mode"
+                    label={t("safeMode.setting")}
+                    description={t("safeMode.settingHint")}
+                    checked={settings.autoSafeMode !== false}
+                    onChange={on => Settings.update(d => {
+                        d.autoSafeMode = on;
+                    })}
                 />
             </Section>
             <Credits />

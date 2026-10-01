@@ -76,6 +76,9 @@ export const es = {
 
     // ---- Safe mode ----
     "safeMode.title": "Evi está en modo seguro",
+    "safeMode.settingTitle": "Modo seguro",
+    "safeMode.setting": "Activar el modo seguro solo cuando Discord se cierra una y otra vez",
+    "safeMode.settingHint": "Si Discord falla varias veces seguidas, Evi lo inicia sin plugins, temas ni Quick CSS hasta que digas lo contrario. Desactivado, solo ocurre al iniciar Discord con --evi-safe.",
     "safeMode.hide": "Ocultar aviso de modo seguro",
     "safeMode.reason.crashLoop": {
         one: "Discord no terminó de arrancar la última vez, así que Evi lo inició sin plugins, temas ni Quick CSS.",

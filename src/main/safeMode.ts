@@ -22,6 +22,10 @@ import { readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { DATA_DIR } from "./paths";
+import { settings } from "./settings";
+
+/** Whether crashes may turn safe mode on (General, Updates). Read when it matters, so a change counts at once */
+const autoSafe = () => settings.autoSafeMode !== false;
 
 export const SAFE_FLAG = "--evi-safe";
 const STATE_FILE = join(DATA_DIR, "safe-mode.json");
@@ -96,7 +100,9 @@ export const SafeMode = {
     begin(): StartupMode {
         const flag = process.argv.includes(SAFE_FLAG);
         const failures = state.pendingStarts;
-        const mode = startupMode(state, flag);
+        const mode = startupMode(state, flag, autoSafe());
+        // Turned off: what crashes left behind doesn't keep safe mode on either
+        if (!autoSafe() && state.forceSafe) delete state.forceSafe;
 
         if (mode === "vanilla") {
             console.warn(`[Evi] Discord failed to start ${failures} times in a row, even in safe mode. Starting it without Evi once.`);
@@ -198,7 +204,7 @@ export const SafeMode = {
             const now = Date.now();
             crashes = [...crashes.filter(t => now - t < CRASH_WINDOW_MS), now];
             console.error(`[Evi] Discord's window crashed (${details.reason}), ${crashes.length} time(s) within ${CRASH_WINDOW_MS / 1000}s`);
-            if (crashes.length >= RENDERER_CRASHES && !info) {
+            if (crashes.length >= RENDERER_CRASHES && !info && autoSafe()) {
                 enter("renderer-crash", crashes.length);
                 save();
             }

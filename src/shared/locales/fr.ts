@@ -76,6 +76,9 @@ export const fr = {
 
     // ---- Safe mode ----
     "safeMode.title": "Evi est en mode sans échec",
+    "safeMode.settingTitle": "Mode sans échec",
+    "safeMode.setting": "Activer le mode sans échec de lui-même quand Discord plante à répétition",
+    "safeMode.settingHint": "Quand Discord plante plusieurs fois de suite, Evi le démarre sans plugins, thèmes ni Quick CSS jusqu'à ce que vous le décidiez. Désactivé, cela n'arrive qu'en lançant Discord avec --evi-safe.",
     "safeMode.hide": "Masquer l’avis du mode sans échec",
     "safeMode.reason.crashLoop": {
         one: "Discord n’a pas fini de démarrer la dernière fois, alors Evi l’a lancé sans plugins, thèmes ni Quick CSS.",

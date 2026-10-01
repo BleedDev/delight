@@ -76,6 +76,9 @@ export const ru = {
 
     // ---- Safe mode ----
     "safeMode.title": "Evi в безопасном режиме",
+    "safeMode.settingTitle": "Безопасный режим",
+    "safeMode.setting": "Включать безопасный режим самостоятельно, если Discord постоянно падает",
+    "safeMode.settingHint": "Если Discord падает несколько раз подряд, Evi запускает его без плагинов, тем и Quick CSS, пока вы не решите иначе. Если выключено, это происходит только при запуске Discord с --evi-safe.",
     "safeMode.hide": "Скрыть уведомление о безопасном режиме",
     "safeMode.reason.crashLoop": {
         one: "Discord не смог запуститься {count} раз подряд, поэтому он запущен без плагинов, тем и Quick CSS.",

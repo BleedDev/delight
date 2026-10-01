@@ -272,6 +272,8 @@ export interface EviSettings {
     localNotifications?: EviNotification[];
     /** New notifications pop up over Discord as they arrive (ui/LiveToasts.tsx). Missing: on */
     liveToasts?: boolean;
+    /** `false`: crashes don't turn safe mode on; only starting Discord with --evi-safe does. Missing: on */
+    autoSafeMode?: boolean;
     /** Plugins you have or hearted that evi.rest said were broken, so a fix is told once */
     brokenSeen?: string[];
 }

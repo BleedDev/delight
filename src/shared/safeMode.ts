@@ -48,9 +48,14 @@ export function parseState(raw: unknown): StartupState {
 }
 
 /** What this start should be, given the state left by the previous ones */
-export function startupMode(state: StartupState, flag: boolean): StartupMode {
+/**
+ * @param auto whether crashes turn safe mode on (EviSettings.autoSafeMode). Off, only --evi-safe does;
+ *   Discord failing to start at all still gets one start without Evi, so it can't lock you out.
+ */
+export function startupMode(state: StartupState, flag: boolean, auto = true): StartupMode {
     if (state.pendingStarts >= VANILLA_STARTS) return "vanilla";
-    if (flag || state.forceSafe || state.pendingStarts >= CRASH_LOOP_STARTS) return "safe";
+    if (flag) return "safe";
+    if (auto && (state.forceSafe || state.pendingStarts >= CRASH_LOOP_STARTS)) return "safe";
     return "normal";
 }
 

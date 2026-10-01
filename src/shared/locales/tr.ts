@@ -76,6 +76,9 @@ export const tr = {
 
     // ---- Safe mode ----
     "safeMode.title": "Evi güvenli modda",
+    "safeMode.settingTitle": "Güvenli mod",
+    "safeMode.setting": "Discord sürekli çöktüğünde güvenli modu kendiliğinden aç",
+    "safeMode.settingHint": "Discord art arda birkaç kez çöktüğünde Evi onu eklentiler, temalar ve Quick CSS kapalı olarak başlatır, sen aksini söyleyene kadar. Kapalıyken bu yalnızca Discord --evi-safe ile başlatıldığında olur.",
     "safeMode.hide": "Güvenli mod bildirimini gizle",
     "safeMode.reason.crashLoop": {
         one: "Discord son açılışında başlatmayı tamamlayamadı, bu yüzden Evi onu eklentiler, temalar ve Quick CSS olmadan başlattı.",

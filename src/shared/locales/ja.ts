@@ -76,6 +76,9 @@ export const ja = {
 
     // ---- Safe mode ----
     "safeMode.title": "Eviはセーフモードです",
+    "safeMode.settingTitle": "セーフモード",
+    "safeMode.setting": "Discordのクラッシュが続いたら自動でセーフモードにする",
+    "safeMode.settingHint": "Discordが続けてクラッシュすると、Eviはプラグイン、テーマ、Quick CSSをオフにして起動します。オフにすると、--evi-safeで起動したときだけセーフモードになります。",
     "safeMode.hide": "セーフモードのお知らせを非表示",
     "safeMode.reason.crashLoop": "直近{count}回、Discordの起動が完了しなかったため、Eviはプラグイン、テーマ、Quick CSSなしで起動しました。",
     "safeMode.reason.rendererCrash": "Discordが続けて何度かクラッシュしたため、Eviはプラグイン、テーマ、Quick CSSをオフにしました。",

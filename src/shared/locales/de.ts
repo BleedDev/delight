@@ -76,6 +76,9 @@ export const de = {
 
     // ---- Safe mode ----
     "safeMode.title": "Evi ist im abgesicherten Modus",
+    "safeMode.settingTitle": "Abgesicherter Modus",
+    "safeMode.setting": "Abgesicherten Modus von selbst einschalten, wenn Discord wiederholt abstürzt",
+    "safeMode.settingHint": "Stürzt Discord mehrmals hintereinander ab, startet Evi es ohne Plugins, Designs und Quick CSS, bis du es anders sagst. Ausgeschaltet geschieht das nur beim Start von Discord mit --evi-safe.",
     "safeMode.hide": "Hinweis zum abgesicherten Modus ausblenden",
     "safeMode.reason.crashLoop": {
         one: "Discord ist beim letzten Mal nicht fertig gestartet, deshalb hat Evi es ohne Plugins, Themes und Quick CSS gestartet.",

@@ -88,3 +88,11 @@ test("Discord's in-game overlay is told apart from its window", () => {
     expect(isOverlayUrl("not a url")).toBe(false);
     expect(isDiscordAppUrl("https://discord.com/overlay")).toBe(true);
 });
+
+test("with safe mode turned off in settings, crashes don't turn it on; --evi-safe and the last resort still work", () => {
+    const crashed = { pendingStarts: 2, forceSafe: "renderer-crash" as const, changes: [] };
+    expect(startupMode(crashed, false, false)).toBe("normal");
+    expect(startupMode(crashed, true, false)).toBe("safe");
+    expect(startupMode(crashed, false, true)).toBe("safe");
+    expect(startupMode({ pendingStarts: 99, changes: [] }, false, false)).toBe("vanilla");
+});

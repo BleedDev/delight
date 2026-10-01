@@ -76,6 +76,9 @@ export const ptBR = {
 
     // ---- Safe mode ----
     "safeMode.title": "O Evi está no modo de segurança",
+    "safeMode.settingTitle": "Modo seguro",
+    "safeMode.setting": "Ativar o modo seguro sozinho quando o Discord trava várias vezes",
+    "safeMode.settingHint": "Quando o Discord trava várias vezes seguidas, o Evi o inicia sem plugins, temas e Quick CSS até você decidir. Desativado, isso só acontece ao iniciar o Discord com --evi-safe.",
     "safeMode.hide": "Ocultar aviso do modo de segurança",
     "safeMode.reason.crashLoop": {
         one: "O Discord não terminou de abrir da última vez, então o Evi o iniciou sem plugins, temas nem Quick CSS.",

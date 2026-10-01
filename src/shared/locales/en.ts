@@ -79,6 +79,9 @@ export const en = {
 
     // ---- Safe mode ----
     "safeMode.title": "Evi is in safe mode",
+    "safeMode.settingTitle": "Safe mode",
+    "safeMode.setting": "Turn on safe mode by itself when Discord keeps crashing",
+    "safeMode.settingHint": "When Discord crashes several times in a row, Evi starts it with plugins, themes and Quick CSS off until you say so. Off, only starting Discord with --evi-safe does.",
     "safeMode.hide": "Hide safe mode notice",
     "safeMode.reason.crashLoop": {
         one: "Discord didn’t finish starting the last time, so Evi started it without plugins, themes or Quick CSS.",
