@@ -18,6 +18,8 @@ export interface NameStyle {
     font?: string;
     effect?: string;
     colors: string[];
+    /** As Discord has it, for drawing the name with Discord's own component and applying it */
+    raw: { fontId: number; effectId: number; colors: number[]; };
 }
 
 export interface ProfileDetails {
@@ -26,7 +28,7 @@ export interface ProfileDetails {
     /** The plain banner colour shown without a banner picture */
     bannerColor?: string;
     nameStyle?: NameStyle;
-    nameplate?: { name: string; };
+    nameplate?: { name: string; skuId?: string; };
 }
 
 /** 0xRRGGBB as an int (how Discord stores profile colours) to "#rrggbb" */
@@ -44,7 +46,8 @@ export function nameStyleOf(styles: any): NameStyle | undefined {
     const font = FONTS[fontId] ?? (fontId > 0 ? `Font ${fontId}` : undefined);
     const effect = EFFECTS[effectId] ?? (effectId > 0 ? `Effect ${effectId}` : undefined);
     if (!colors.length && !font && !effect) return undefined;
-    return { font, effect, colors };
+    const raw = { fontId: fontId || 0, effectId: effectId || 0, colors: (Array.isArray(styles.colors) ? styles.colors : []).filter((c: unknown) => hex(c) !== undefined) };
+    return { font, effect, colors, raw };
 }
 
 export function profileDetails(user: any, displayProfile: any): ProfileDetails {
@@ -59,7 +62,8 @@ export function profileDetails(user: any, displayProfile: any): ProfileDetails {
     // The label is the nameplate's name; older ones only have an asset path like "nameplates/koi_pond/"
     const plateName = typeof plate?.label === "string" && plate.label && !/^[A-Z0-9_]+$/.test(plate.label) ? plate.label
         : typeof plate?.asset === "string" ? titleCase(plate.asset.split("/").filter(Boolean).pop() ?? "") : "";
-    if (plateName) details.nameplate = { name: plateName };
+    const skuId = plate?.skuId ?? plate?.sku_id;
+    if (plateName) details.nameplate = { name: plateName, ...(typeof skuId === "string" || typeof skuId === "number") && /^\d+$/.test(String(skuId)) && { skuId: String(skuId) } };
     return details;
 }
 
@@ -70,3 +74,9 @@ export function gradient(colors: string[], angle = 180) {
     if (colors.length <= 1) return colors[0] ?? "transparent";
     return `linear-gradient(${angle}deg, ${colors.join(", ")})`;
 }
+
+/** What a colour copies as: without the #, which Discord's colour fields add themselves */
+export const copyText = (color: string) => color.replace(/^#/, "");
+
+/** "#rrggbb" back to the int Discord stores */
+export const toInt = (color: string) => parseInt(color.replace(/^#/, ""), 16);

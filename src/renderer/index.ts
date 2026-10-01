@@ -83,6 +83,9 @@ const Evi = {
 function boot() {
     // Only handed over where our preload decided to load us
     if (!Native) return;
+    // Discord's in-game overlay: a see-through window over the game that clicks go through. Nothing
+    // of Evi's runs there: no plugin, theme or popup (an update notice there can't be clicked away)
+    if (isOverlayUrl(location.href)) return;
     if (window.Evi) return logger.warn("Already loaded, skipping");
     Object.defineProperty(window, "Evi", { value: Evi, configurable: false, writable: false });
 
@@ -120,9 +123,6 @@ function boot() {
         if (!SafeMode.active) startBadges();
         if (!SafeMode.active) startAccountSync();
         if (!SafeMode.active) startPluginShare();
-        // The in-game overlay is see-through and clicks go through it: nothing may float there, update
-        // notices included (Discord's own window has them)
-        if (isOverlayUrl(location.href)) return;
         // Even in safe mode: a new version may be the fix
         startUpdateChecks();
         if (SafeMode.active) {

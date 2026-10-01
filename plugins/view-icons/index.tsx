@@ -13,12 +13,12 @@
  * The viewer's own button component is captured when its module loads, so Download looks and
  * behaves like zoom. If Discord renames it, a plain button with the same icon stands in.
  */
-import { Components, definePlugin, filters, find, getStore, openLayer, React } from "@evi/api";
+import { Components, definePlugin, exitDone, filters, find, findComponent, getStore, openLayer, React } from "@evi/api";
 import type { CloseLayer, PluginContext, SourcePatch } from "@evi/api";
 import type { MouseEvent, ReactNode } from "react";
 
 import { t } from "./strings";
-import { gradient, hasDetails, profileDetails, ProfileDetails } from "./details";
+import { copyText, gradient, hasDetails, NameStyle, profileDetails, ProfileDetails, toInt } from "./details";
 import { fileName, fitSize, LinkedPicture, linkedPicture, Picture, pictureFromUrl } from "./icons";
 
 /** How long to wait for a picture's real size before going by its usual shape */
@@ -193,7 +193,8 @@ function DownloadButton({ picture }: { picture: Picture; }) {
 
 let closeDetails: CloseLayer | undefined;
 
-async function copy(text: string) {
+async function copy(color: string) {
+    const text = copyText(color);
     try {
         const native = (window as any).DiscordNative?.clipboard;
         if (typeof native?.copy === "function") native.copy(text);
@@ -204,14 +205,100 @@ async function copy(text: string) {
     }
 }
 
-function Swatch({ color, label }: { color: string; label: string; }) {
+/**
+ * Discord's API client: exactly { get, post, put, patch, del }. The HTTP library under it (superagent)
+ * has those too, plus Request and getXHR, and never reaches the API given Discord's options: skipped.
+ */
+const http = (): any => find(v => typeof v?.patch === "function" && typeof v?.del === "function"
+    && typeof v?.post === "function" && !("getXHR" in v) && !("Request" in v));
+
+/** Saves a change to your own profile the way Discord's profile editor does */
+async function applyToProfile(url: "/users/@me/profile" | "/users/@me", body: Record<string, unknown>) {
+    const client = http();
+    if (!client) {
+        ctx?.logger.error("Discord's HTTP client wasn't found");
+        return void ctx?.toast(t("details.applyFailed"), { type: "failure" });
+    }
+    try {
+        await client.patch({ url, body });
+        ctx?.toast(t("details.applied"), { type: "success" });
+    } catch (err: any) {
+        ctx?.logger.warn("Applying to your profile failed", err);
+        // Profile themes and name styles are Nitro's
+        const nitro = err?.status === 403 || err?.body?.code === 50035;
+        ctx?.toast(t(nitro ? "details.needsNitro" : "details.applyFailed"), { type: "failure" });
+    }
+}
+
+interface Action { label: string; run(): void; }
+
+/** A colour: clicking it opens what you can do with it, copy first */
+function Swatch({ color, label, actions = [] }: { color: string; label: string; actions?: Action[]; }) {
+    const [open, setOpen] = React.useState(false);
+    const [closing, setClosing] = React.useState(false);
+    const menuRef = React.useRef<HTMLDivElement>(null);
+    const wrapRef = React.useRef<HTMLDivElement>(null);
+    const close = () => {
+        if (!open || closing) return;
+        setClosing(true);
+        void exitDone(menuRef.current).then(() => {
+            setOpen(false);
+            setClosing(false);
+        });
+    };
+    React.useEffect(() => {
+        if (!open) return;
+        const outside = (e: Event) => {
+            if (!wrapRef.current?.contains(e.target as Node)) close();
+        };
+        const key = (e: KeyboardEvent) => {
+            if (e.key !== "Escape") return;
+            e.stopImmediatePropagation();
+            close();
+        };
+        document.addEventListener("mousedown", outside, true);
+        window.addEventListener("keydown", key, true);
+        menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+        return () => {
+            document.removeEventListener("mousedown", outside, true);
+            window.removeEventListener("keydown", key, true);
+        };
+    }, [open, closing]);
+    const items: Action[] = [{ label: t("details.copy", { value: copyText(color) }), run: () => void copy(color) }, ...actions];
+
     return (
-        <button type="button" className="evi-vi-chip" onClick={() => void copy(color)} aria-label={t("details.copy", { value: `${label} ${color}` })}>
-            <span className="evi-vi-chip-dot" style={{ background: color }} aria-hidden="true" />
-            <span className="evi-vi-chip-label">{label}</span>
-            <span className="evi-vi-chip-value">{color}</span>
-        </button>
+        <div className="evi-vi-chip-wrap" ref={wrapRef}>
+            <button type="button" className="evi-vi-chip" aria-haspopup="menu" aria-expanded={open} onClick={() => (open ? close() : setOpen(true))}>
+                <span className="evi-vi-chip-dot" style={{ background: color }} aria-hidden="true" />
+                <span className="evi-vi-chip-label">{label}</span>
+                <span className="evi-vi-chip-value">{copyText(color)}</span>
+                <svg className="evi-vi-chip-caret" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5.3 9.3a1 1 0 0 1 1.4 0l5.3 5.29 5.3-5.3a1 1 0 1 1 1.4 1.42l-6 6a1 1 0 0 1-1.4 0l-6-6a1 1 0 0 1 0-1.42Z" /></svg>
+            </button>
+            {open && (
+                <div ref={menuRef} className="evi-vi-menu evi-popout" role="menu" data-closing={closing || undefined}>
+                    {items.map(item => (
+                        <button key={item.label} type="button" role="menuitem" className="evi-vi-menu-item" onClick={() => { item.run(); close(); }}>{item.label}</button>
+                    ))}
+                </div>
+            )}
+        </div>
     );
+}
+
+/** The name as Discord draws it in profiles: its font, effect and colours, animated */
+function StyledName({ name, style }: { name: string; style: NameStyle; }) {
+    const Discord = findComponent('"UserNameWithEffects"');
+    const fallback = <p className="evi-vi-name" style={{ backgroundImage: gradient(style.colors.length > 1 ? style.colors : [style.colors[0] ?? "currentColor", style.colors[0] ?? "currentColor"], 90) }}>{name}</p>;
+    if (!Discord) return fallback;
+    // effectDisplayType 2: animated, as on a profile you're looking at
+    return <div className="evi-vi-styled-name"><Discord userName={name} displayNameStyles={style.raw} effectDisplayType={2} inProfile loop /></div>;
+}
+
+/** Opens a nameplate in Discord's Shop */
+function openShop(skuId: string) {
+    const go = find(filters.byCode("transitionTo - Transitioning to"));
+    if (typeof go === "function") go(`/shop#itemSkuId=${skuId}`);
+    else window.open(`https://discord.com/shop#itemSkuId=${skuId}`, "_blank", "noopener,noreferrer");
 }
 
 function Row({ title, children }: { title: string; children: ReactNode; }) {
@@ -241,6 +328,11 @@ function DetailsDialog({ name, username, details, onClose }: { name: string; use
         };
     }, []);
     const { theme, bannerColor, nameStyle, nameplate } = details;
+    // Your own profile's colours: changing one end of the theme keeps the other
+    const mine = () => {
+        const me = getStore("UserStore")?.getCurrentUser?.();
+        return me ? profileDetails(me, getStore("UserProfileStore")?.getUserProfile?.(me.id)) : undefined;
+    };
     const nameColors = nameStyle?.colors ?? [];
 
     return (
@@ -261,35 +353,48 @@ function DetailsDialog({ name, username, details, onClose }: { name: string; use
                         <Row title={t("details.theme")}>
                             <div className="evi-vi-preview evi-vi-theme" style={{ background: gradient([theme.primary, theme.accent]) }} aria-hidden="true" />
                             <div className="evi-vi-chips">
-                                <Swatch color={theme.primary} label={t("details.primary")} />
-                                <Swatch color={theme.accent} label={t("details.accent")} />
+                                <Swatch color={theme.primary} label={t("details.primary")} actions={[
+                                    { label: t("details.useTop"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(mine()?.theme?.accent ?? theme.accent)] }) },
+                                    { label: t("details.useTheme"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(theme.accent)] }) },
+                                ]} />
+                                <Swatch color={theme.accent} label={t("details.accent")} actions={[
+                                    { label: t("details.useBottom"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(mine()?.theme?.primary ?? theme.primary), toInt(theme.accent)] }) },
+                                    { label: t("details.useTheme"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(theme.accent)] }) },
+                                ]} />
                             </div>
                         </Row>
                     )}
                     {bannerColor && (
                         <Row title={t("details.bannerColor")}>
-                            <div className="evi-vi-chips"><Swatch color={bannerColor} label={t("kind.banner")} /></div>
+                            <div className="evi-vi-chips"><Swatch color={bannerColor} label={t("kind.banner")} actions={[
+                                { label: t("details.useBanner"), run: () => void applyToProfile("/users/@me/profile", { accent_color: toInt(bannerColor) }) },
+                            ]} /></div>
                         </Row>
                     )}
                     {nameStyle && (
                         <Row title={t("details.nameStyle")}>
-                            {nameColors.length > 0 && (
-                                <p className="evi-vi-name" style={{ backgroundImage: gradient(nameColors.length > 1 ? nameColors : [nameColors[0], nameColors[0]], 90) }}>{name}</p>
-                            )}
+                            <StyledName name={name} style={nameStyle} />
                             <dl className="evi-vi-facts">
                                 {nameStyle.effect && <><dt>{t("details.effect")}</dt><dd>{nameStyle.effect}</dd></>}
                                 {nameStyle.font && <><dt>{t("details.font")}</dt><dd>{nameStyle.font}</dd></>}
                             </dl>
                             {nameColors.length > 0 && (
                                 <div className="evi-vi-chips">
-                                    {nameColors.map((c, i) => <Swatch key={i} color={c} label={t("details.color", { n: i + 1 })} />)}
+                                    {nameColors.map((c, i) => <Swatch key={i} color={c} label={t("details.color", { n: i + 1 })} actions={[
+                                        { label: t("details.useNameStyle"), run: () => void applyToProfile("/users/@me", { display_name_font_id: nameStyle.raw.fontId, display_name_effect_id: nameStyle.raw.effectId, display_name_colors: nameStyle.raw.colors }) },
+                                    ]} />)}
                                 </div>
                             )}
                         </Row>
                     )}
                     {nameplate && (
                         <Row title={t("details.nameplate")}>
-                            <p className="evi-vi-plain">{nameplate.name}</p>
+                            <div className="evi-vi-plate">
+                                <p className="evi-vi-plain">{nameplate.name}</p>
+                                {nameplate.skuId && (
+                                    <button type="button" className="evi-vi-shop" onClick={() => { onClose(); openShop(nameplate.skuId!); }}>{t("details.inShop")}</button>
+                                )}
+                            </div>
                         </Row>
                     )}
                     {!hasDetails(details) && <p className="evi-vi-plain evi-vi-empty">{t("details.none")}</p>}
@@ -401,7 +506,7 @@ const css = `
 .evi-vi-details:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: 2px; }
 
 .evi-vi-scrim { position: fixed; inset: 0; z-index: 10001; display: grid; place-items: center; background: rgb(0 0 0 / .7); }
-.evi-vi-modal { width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 64px); display: flex; flex-direction: column; border-radius: 12px; overflow: hidden;
+.evi-vi-modal { width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 64px); display: flex; flex-direction: column; border-radius: 12px; overflow: hidden;
     background: var(--modal-background, var(--background-base-low, #313338)); color: var(--text-default, #dbdee1); border: 1px solid var(--border-subtle, transparent);
     box-shadow: var(--shadow-high, 0 8px 24px rgb(0 0 0 / .4)); font-family: var(--font-primary); }
 .evi-vi-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 20px 8px; }
@@ -419,6 +524,20 @@ const css = `
 .evi-vi-facts dt { color: var(--text-muted, #949ba4); }
 .evi-vi-facts dd { margin: 0; color: var(--text-default, #dbdee1); }
 .evi-vi-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.evi-vi-chip-wrap { position: relative; }
+.evi-vi-chip-caret { color: var(--text-muted, #949ba4); margin-inline-start: -2px; }
+.evi-vi-menu { position: absolute; z-index: 2; inset-block-start: calc(100% + 4px); inset-inline-start: 0; min-width: 220px; display: flex; flex-direction: column; padding: 6px;
+    border-radius: 8px; background: var(--background-surface-higher, var(--background-floating, #111214)); border: 1px solid var(--border-subtle, rgb(255 255 255 / .08));
+    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / .24)); }
+.evi-vi-menu-item { padding: 8px 10px; border: 0; border-radius: 4px; background: none; color: var(--interactive-text-default, var(--text-default, #dbdee1)); font: inherit; font-size: 14px; line-height: 18px; text-align: start; cursor: pointer; }
+.evi-vi-menu-item:hover, .evi-vi-menu-item:focus-visible { background: var(--background-mod-subtle, var(--background-modifier-hover)); color: var(--interactive-text-hover, #fff); outline: none; }
+.evi-vi-styled-name { margin: 0 0 8px; font-size: 24px; line-height: 30px; font-weight: 700; }
+.evi-vi-plate { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.evi-vi-shop { flex: none; min-height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--button-filled-brand-background, var(--brand-500, #5865f2)); color: var(--white, #fff);
+    font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; transition: scale .2s ease-out; }
+@media (hover: hover) { .evi-vi-shop:hover { background: var(--button-filled-brand-background-hover, var(--brand-560, #4752c4)); } }
+.evi-vi-shop:active { scale: .97; }
+.evi-vi-shop:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: 2px; }
 .evi-vi-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px 0 6px; border: 1px solid var(--border-subtle, rgb(255 255 255 / .08)); border-radius: 8px;
     background: var(--background-base-lower, rgb(0 0 0 / .12)); color: var(--text-default, #dbdee1); font: inherit; font-size: 13px; cursor: pointer; transition: scale .2s ease-out; }
 @media (hover: hover) { .evi-vi-chip:hover { background: var(--background-mod-subtle, var(--background-modifier-hover)); } }
@@ -459,7 +578,8 @@ export default definePlugin({
 
     /** Called by a profile banner with what it shows; returns its overlay with our buttons under it */
     renderBanner(user: any, src: string | null, overlay: ReactNode, displayProfile?: any) {
-        if (!ctx || !user) return overlay;
+        // A banner being edited (a data: or blob: preview in the profile editor) gets nothing of ours
+        if (!ctx || !user || (typeof src === "string" && /^(data|blob):/.test(src))) return overlay;
         const linked = pictureFromUrl(src);
         const picture = linked && linkedPicture(linked, user?.username || user?.globalName || ownerName(linked));
         const open = (e: MouseEvent) => {
