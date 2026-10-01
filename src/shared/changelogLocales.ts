@@ -11,6 +11,12 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.4.3": {
+            fixed: [
+                "**Dein Discord-Farbdesign hält sich aus Evis raus.** Mit einem Evi-Design zeigten Teile, die es nicht einfärbt (etwa die Fußzeile eines Dialogs), die Tönung deines Discord-Farbdesigns.",
+                "**Kein Streifen mehr unter Dialogen mit Hintergrundbild.** Die Fußzeilen von Dialogen zeigten das Hintergrundbild doppelt durch, in einer anderen Farbe.",
+            ],
+        },
         "1.4.2": {
             improved: [
                 "**Den abgesicherten Modus schaltest du.** Unter Allgemein → Updates gibt es „Abgesicherten Modus von selbst einschalten“: Ausgeschaltet lösen Abstürze ihn nie aus.",
@@ -279,6 +285,12 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.4.3": {
+            fixed: [
+                "**Tu tema de color de Discord ya no se mezcla con el de Evi.** Con un tema de Evi, las partes que no colorea (como el pie de un diálogo) mostraban el tinte de tu tema de Discord.",
+                "**Sin franja bajo los diálogos con fondo de pantalla.** El pie de los diálogos dejaba ver el fondo dos veces, de otro color.",
+            ],
+        },
         "1.4.2": {
             improved: [
                 "**El modo seguro lo decides tú.** En General → Actualizaciones está «Activar el modo seguro solo»: desactivado, los fallos nunca lo activan.",
@@ -547,6 +559,12 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.4.3": {
+            fixed: [
+                "**Ton thème de couleur Discord ne se mêle plus de celui d'Evi.** Avec un thème Evi, les parties qu'il ne colore pas (comme le pied d'une fenêtre) prenaient la teinte de ton thème Discord.",
+                "**Plus de bande sous les fenêtres avec un fond d'écran.** Le pied des fenêtres laissait voir le fond d'écran deux fois, d'une autre couleur.",
+            ],
+        },
         "1.4.2": {
             improved: [
                 "**Le mode sans échec, c'est vous qui décidez.** Général → Mises à jour propose « Activer le mode sans échec de lui-même » : désactivé, les plantages ne l'activent jamais.",
@@ -815,6 +833,12 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.4.3": {
+            fixed: [
+                "**Discordのカラーテーマが Evi のテーマに混ざらなくなりました。** Evi のテーマを使っていると、テーマが色を付けない部分(ダイアログの下部など)に Discord のカラーテーマの色味が出ていました。",
+                "**壁紙使用時、ダイアログの下に帯が出なくなりました。** ダイアログの下部で壁紙が二重に透けて、別の色に見えていました。",
+            ],
+        },
         "1.4.2": {
             improved: [
                 "**セーフモードをオフにできるように。** 一般 → アップデートの「自動でセーフモードにする」をオフにすると、クラッシュしてもセーフモードになりません。",
@@ -1083,6 +1107,12 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.4.3": {
+            fixed: [
+                "**Twój motyw kolorów Discorda nie miesza się z motywem Evi.** Z motywem Evi części, których nie koloruje (jak stopka okna), miały odcień twojego motywu Discorda.",
+                "**Bez pasa pod oknami z tapetą.** Stopki okien pokazywały tapetę dwa razy, w innym kolorze.",
+            ],
+        },
         "1.4.2": {
             improved: [
                 "**Tryb awaryjny możesz wyłączyć.** W Ogólne → Aktualizacje jest „Włączaj tryb awaryjny sam”: po wyłączeniu awarie nigdy go nie włączają.",
@@ -1351,6 +1381,12 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.4.3": {
+            fixed: [
+                "**Seu tema de cores do Discord não se mistura mais ao do Evi.** Com um tema do Evi, partes que ele não colore (como o rodapé de uma janela) mostravam o tom do seu tema do Discord.",
+                "**Sem faixa sob as janelas com papel de parede.** O rodapé das janelas mostrava o papel de parede duas vezes, em outra cor.",
+            ],
+        },
         "1.4.2": {
             improved: [
                 "**O modo seguro é você quem decide.** Em Geral → Atualizações tem \"Ativar o modo seguro sozinho\": desativado, travamentos nunca o ativam.",
@@ -1619,6 +1655,12 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.4.3": {
+            fixed: [
+                "**Цветовая тема Discord больше не смешивается с темой Evi.** С темой Evi части, которые она не окрашивает (например, низ окна), принимали оттенок вашей темы Discord.",
+                "**Без полосы под окнами с обоями.** Низ окон показывал обои дважды, другим цветом.",
+            ],
+        },
         "1.4.2": {
             improved: [
                 "**Безопасный режим теперь можно отключить.** В Общие → Обновления есть «Включать безопасный режим самостоятельно»: если выключить, сбои его не включают.",
@@ -1887,6 +1929,12 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.4.3": {
+            fixed: [
+                "**Discord renk temanın Evi'nin temasına karışması bitti.** Bir Evi temasıyla, temanın renklendirmediği yerler (bir pencerenin alt kısmı gibi) Discord renk temanın tonunu alıyordu.",
+                "**Duvar kâğıdıyla pencerelerin altında şerit yok.** Pencerelerin alt kısmı duvar kâğıdını iki kez, farklı bir renkte gösteriyordu.",
+            ],
+        },
         "1.4.2": {
             improved: [
                 "**Güvenli modu kapatmak senin elinde.** Genel → Güncellemeler'de \"Güvenli modu kendiliğinden aç\" var: kapalıyken çökmeler onu hiç açmaz.",

@@ -35,6 +35,16 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.4.3",
+        date: "2026-10-01",
+        sections: {
+            fixed: [
+                "**Your Discord colour theme stays out of Evi's.** With an Evi theme on, parts it doesn't colour (like a dialog's footer) showed your Discord colour theme's tint.",
+                "**No band under dialogs with a wallpaper.** Dialog footers showed the wallpaper through twice, in a different colour.",
+            ],
+        },
+    },
+    {
         version: "1.4.2",
         date: "2026-10-01",
         sections: {
