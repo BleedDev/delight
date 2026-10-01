@@ -44,6 +44,18 @@ const { values } = parseArgs({
     },
 });
 
+/** Author slugs of an official plugin's co-authors: every name after "Evi" in its manifest */
+function coAuthorSlugs(dir: string): string[] {
+    try {
+        const authors: unknown = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8")).authors;
+        if (!Array.isArray(authors)) return [];
+        return authors.slice(1).filter((a): a is string => typeof a === "string")
+            .map(a => a.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")).filter(Boolean);
+    } catch {
+        return [];
+    }
+}
+
 function fail(message: string): never {
     console.error(`✗ ${message}`);
     process.exit(1);
@@ -93,8 +105,9 @@ for (const id of ids) {
         today,
         eviVersion: pkg.version,
         source: official.has(id) ? `${SOURCE}/plugins/${id}` : undefined,
-        // Official plugins are published by Evi's own author profile on evi.rest
-        authorIds: official.has(id) ? ["evi"] : undefined,
+        // Official plugins are published by Evi's own author profile on evi.rest; co-authors after it
+        // ("authors": ["Evi", "Lodestone"]) link to theirs, by the slug their name makes
+        authorIds: official.has(id) ? ["evi", ...coAuthorSlugs(dir)] : undefined,
     });
     if ("error" in built) fail(`${id}: ${built.error}`);
     entries.push(built.entry);

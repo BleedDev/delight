@@ -1,11 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
+import { PLUGIN_LANGUAGES } from "../src/shared/pluginTranslations";
 import { checkSubmission, hiddenCharacter, PLACEHOLDER_DESCRIPTION } from "../src/shared/submissionChecks";
 
 const store = { officialIds: new Set(["read-all"]), officialNames: new Set(["read all"]) };
 const manifest = (extra: Record<string, unknown> = {}) => ({
     id: "my-plugin", name: "My Plugin", description: "Does a thing.", version: "1.0.0", tags: ["social"],
-    permissions: {}, changelog: [{ version: "1.0.0", notes: ["First release."] }], main: "index.js", ...extra,
+    permissions: {}, changelog: [{ version: "1.0.0", notes: ["First release."] }], main: "index.js",
+    locales: Object.fromEntries(PLUGIN_LANGUAGES.map(l => [l, { name: "My Plugin", description: "…", changelog: { "1.0.0": ["…"] } }])),
+    ...extra,
 });
 const check = (m: unknown, code = "module.exports = {};", extra: { nativeCode?: string; publishedVersion?: string; } = {}) =>
     checkSubmission({ manifest: m, code, nativeCode: extra.nativeCode }, { ...store, publishedVersion: extra.publishedVersion });
@@ -15,6 +18,12 @@ const warnings = (findings: ReturnType<typeof check>) => findings.filter(f => f.
 describe("what an upload is refused for", () => {
     test("a complete plugin passes", () => {
         expect(check(manifest())).toEqual([]);
+    });
+
+    test("everything has to be translated into every language Evi speaks", () => {
+        const [problem] = errors(check(manifest({ locales: undefined })));
+        expect(problem).toStartWith("Translate everything into de, es, fr, ja, pl, pt-BR, ru, tr too:");
+        expect(errors(check(manifest(), `const s = { a: { type: "boolean", label: "Show the thing" } };`))[0]).toContain("English only");
     });
 
     test("permissions must be declared, and declared right", () => {
@@ -33,7 +42,10 @@ describe("what an upload is refused for", () => {
 
     test("a version must be newer than the store's", () => {
         expect(errors(check(manifest({ version: "1.0.0" }), undefined, { publishedVersion: "1.0.0" }))).toEqual(["Version 1.0.0 isn't newer than the published 1.0.0"]);
-        expect(errors(check(manifest({ version: "1.1.0", changelog: [{ version: "1.1.0", notes: ["x"] }] }), undefined, { publishedVersion: "1.0.0" }))).toEqual([]);
+        // A new version's notes are translated like the rest
+        const notes = (version: string) => Object.fromEntries(Object.entries(manifest().locales).map(([l, v]) => [l, { ...v, changelog: { [version]: ["x"] } }]));
+        expect(errors(check(manifest({ version: "1.1.0", changelog: [{ version: "1.1.0", notes: ["x"] }], locales: notes("1.1.0") }), undefined, { publishedVersion: "1.0.0" }))).toEqual([]);
+        expect(errors(check(manifest({ version: "1.1.0", changelog: [{ version: "1.1.0", notes: ["x"] }] }), undefined, { publishedVersion: "1.0.0" }))[0]).toContain("(1.1.0 notes)");
         expect(errors(check(manifest({ version: "one" })))[0]).toContain("version like 1.0.0");
     });
 

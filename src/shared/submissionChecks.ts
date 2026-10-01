@@ -8,6 +8,7 @@
  */
 import { hostAllowed, isMessageAction, isMessageStore, readPermissions, whyNotPermissions } from "./declaredPermissions";
 import { scanBundle } from "./pluginPermissions";
+import { missingTranslations, PLUGIN_LANGUAGES } from "./pluginTranslations";
 import { compareVersions, isPluginId, isVersion, MAX_FILE_BYTES, RETIRED_PLUGINS } from "./store";
 
 /** The description `bun run new-plugin` writes, for the author to replace */
@@ -91,6 +92,12 @@ export function checkSubmission(files: SubmissionFiles, store: StoreContext): Fi
     } else {
         const bad = whyNotPermissions(m.permissions);
         if (bad) error(`manifest.json: ${bad}`);
+    }
+
+    // Every plugin speaks every language Evi does
+    const untranslated = missingTranslations(m, files.code);
+    if (untranslated.length) {
+        error(`Translate everything into ${PLUGIN_LANGUAGES.join(", ")} too: ${untranslated.join(". ")}.`);
     }
 
     // Not refused, but a reviewer would ask

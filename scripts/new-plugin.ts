@@ -64,13 +64,48 @@ const manifest = {
     tags: ["social"],
     permissions: {},
     changelog: [{ version: "1.0.0", notes: ["First release."] }],
-    // Name, description and changelog in other languages, shown when Discord is set to one of them.
-    // English stays in the fields above. Add a language per block ("de", "pt-BR"...): docs/plugins.md, "Translations"
+    // Name, description and changelog in every language Evi speaks, shown when Discord is set to it.
+    // English stays in the fields above. The store refuses a plugin missing any: docs/plugins.md, "Translations"
     locales: {
+        de: {
+            name,
+            description: "Sag, was jemand davon hat, in ein oder zwei Sätzen.",
+            changelog: { "1.0.0": ["Erste Version."] },
+        },
         es: {
             name,
             description: "Di qué obtiene alguien con él, en una o dos frases.",
             changelog: { "1.0.0": ["Primera versión."] },
+        },
+        fr: {
+            name,
+            description: "Dis ce qu'on y gagne, en une ou deux phrases.",
+            changelog: { "1.0.0": ["Première version."] },
+        },
+        ja: {
+            name,
+            description: "使うと何ができるかを、1〜2文で書いてください。",
+            changelog: { "1.0.0": ["初回リリース。"] },
+        },
+        pl: {
+            name,
+            description: "Napisz w jednym lub dwóch zdaniach, co ktoś z tego ma.",
+            changelog: { "1.0.0": ["Pierwsze wydanie."] },
+        },
+        "pt-BR": {
+            name,
+            description: "Diga o que alguém ganha com ele, em uma ou duas frases.",
+            changelog: { "1.0.0": ["Primeira versão."] },
+        },
+        ru: {
+            name,
+            description: "Скажите в одном-двух предложениях, что это даёт.",
+            changelog: { "1.0.0": ["Первый выпуск."] },
+        },
+        tr: {
+            name,
+            description: "Bir iki cümleyle, kullanan kişiye ne kazandırdığını yaz.",
+            changelog: { "1.0.0": ["İlk sürüm."] },
         },
     },
     minEviVersion: pkg.version,
@@ -131,9 +166,8 @@ export default definePlugin({
 const strings = `import { defineStrings } from "@evi/api";
 
 /**
- * Everything ${name} shows, by Discord language. English is required, it's the source of the keys and
- * the fallback for anything another language leaves out. Add a language as a block of its own
- * ("de", "es", "pt-BR"...); a plural is { one: "{count} thing", other: "{count} things" }.
+ * Everything ${name} shows, in every language Evi speaks: the store refuses a plugin missing any key
+ * in any of them. English is the source of the keys; a plural is { one: "{count} thing", other: "{count} things" }.
  * See docs/plugins.md, "Translations". Use it as t("key", { name: "value" }).
  */
 export const t = defineStrings({
@@ -145,6 +179,14 @@ export const t = defineStrings({
         "command.description": "Say the greeting",
         "command.nameOption": "Who to greet",
     },
+    de: {
+        "settings.greeting": "Begrüßung",
+        "settings.greeting.description": "Was /${command} und das Tastenkürzel sagen.",
+        "settings.shortcut": "Tastenkürzel",
+        "settings.shortcut.description": "Zeigt die Begrüßung als Hinweis, überall in Discord.",
+        "command.description": "Die Begrüßung sagen",
+        "command.nameOption": "Wen begrüßen",
+    },
     es: {
         "settings.greeting": "Saludo",
         "settings.greeting.description": "Lo que dicen /${command} y el atajo.",
@@ -152,6 +194,54 @@ export const t = defineStrings({
         "settings.shortcut.description": "Dice el saludo como aviso, en cualquier parte de Discord.",
         "command.description": "Decir el saludo",
         "command.nameOption": "A quién saludar",
+    },
+    fr: {
+        "settings.greeting": "Salutation",
+        "settings.greeting.description": "Ce que disent /${command} et le raccourci.",
+        "settings.shortcut": "Raccourci",
+        "settings.shortcut.description": "Affiche la salutation en notification, partout dans Discord.",
+        "command.description": "Dire la salutation",
+        "command.nameOption": "Qui saluer",
+    },
+    ja: {
+        "settings.greeting": "あいさつ",
+        "settings.greeting.description": "/${command}とショートカットで表示する言葉。",
+        "settings.shortcut": "ショートカット",
+        "settings.shortcut.description": "Discordのどこでもあいさつを通知で表示します。",
+        "command.description": "あいさつする",
+        "command.nameOption": "あいさつする相手",
+    },
+    pl: {
+        "settings.greeting": "Powitanie",
+        "settings.greeting.description": "Co mówią /${command} i skrót.",
+        "settings.shortcut": "Skrót",
+        "settings.shortcut.description": "Pokazuje powitanie jako powiadomienie, wszędzie w Discordzie.",
+        "command.description": "Powiedz powitanie",
+        "command.nameOption": "Kogo powitać",
+    },
+    "pt-BR": {
+        "settings.greeting": "Saudação",
+        "settings.greeting.description": "O que /${command} e o atalho dizem.",
+        "settings.shortcut": "Atalho",
+        "settings.shortcut.description": "Mostra a saudação como aviso, em qualquer lugar do Discord.",
+        "command.description": "Dizer a saudação",
+        "command.nameOption": "Quem saudar",
+    },
+    ru: {
+        "settings.greeting": "Приветствие",
+        "settings.greeting.description": "Что говорят /${command} и сочетание клавиш.",
+        "settings.shortcut": "Сочетание клавиш",
+        "settings.shortcut.description": "Показывает приветствие уведомлением где угодно в Discord.",
+        "command.description": "Сказать приветствие",
+        "command.nameOption": "Кого поприветствовать",
+    },
+    tr: {
+        "settings.greeting": "Selamlama",
+        "settings.greeting.description": "/${command} ve kısayolun söylediği.",
+        "settings.shortcut": "Kısayol",
+        "settings.shortcut.description": "Selamlamayı Discord'un her yerinde bildirim olarak gösterir.",
+        "command.description": "Selamlamayı söyle",
+        "command.nameOption": "Kimi selamlayacağın",
     },
 });
 `;

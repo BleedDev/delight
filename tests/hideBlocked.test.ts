@@ -337,3 +337,43 @@ describe.if(haveChunks)("hide blocked: cached Discord build", () => {
         });
     }
 });
+
+import { filterAction, filterDmIds } from "../plugins/hide-blocked/filter";
+
+describe("hide blocked: everything else (from Erase Blocked Users)", () => {
+    const hidden = (id: string | undefined) => id === "b";
+    const on = { active: true, ignored: true, replies: false, voice: true };
+
+    test("their reactions and Mentions-inbox entries are dropped, others' kept", () => {
+        expect(filterAction({ type: "MESSAGE_REACTION_ADD", userId: "b" }, hidden, on)).toBeNull();
+        const keep = { type: "MESSAGE_REACTION_ADD", userId: "a" };
+        expect(filterAction(keep, hidden, on)).toBe(keep);
+        const inbox = filterAction({ type: "LOAD_RECENT_MENTIONS_SUCCESS", messages: [{ author: { id: "a" } }, { author: { id: "b" } }] }, hidden, on);
+        expect(inbox.messages).toEqual([{ author: { id: "a" } }]);
+    });
+
+    test("voice: their states, speaking and soundboard go, and each dropped state is remembered", () => {
+        const seen: unknown[] = [];
+        const out = filterAction({ type: "VOICE_STATE_UPDATES", guildId: "g", voiceStates: [{ userId: "a", channelId: "c" }, { userId: "b", channelId: "c" }] }, hidden, on, s => seen.push(s));
+        expect(out.voiceStates).toEqual([{ userId: "a", channelId: "c" }]);
+        expect(seen).toEqual([{ userId: "b", channelId: "c" }]);
+        expect(filterAction({ type: "SPEAKING", userId: "b" }, hidden, on)).toBeNull();
+        expect(filterAction({ type: "VOICE_CHANNEL_EFFECT_SEND", userId: "b" }, hidden, on)).toBeNull();
+    });
+
+    test("with voice off, or the plugin off, events pass untouched", () => {
+        const speaking = { type: "SPEAKING", userId: "b" };
+        expect(filterAction(speaking, hidden, { ...on, voice: false })).toBe(speaking);
+        const reaction = { type: "MESSAGE_REACTION_ADD", userId: "b" };
+        expect(filterAction(reaction, hidden, { ...on, active: false })).toBe(reaction);
+    });
+
+    test("DMs with them leave the list; the same array comes back when nothing changes", () => {
+        const ids = ["1", "2", "3"];
+        const recipient = (id: string) => ({ 1: "a", 2: "b", 3: undefined } as Record<string, string | undefined>)[id];
+        expect(filterDmIds(ids, recipient, hidden)).toEqual(["1", "3"]);
+        expect(filterDmIds(["1", "3"], recipient, hidden)).toEqual(["1", "3"]);
+        const same = ["1"];
+        expect(filterDmIds(same, recipient, hidden)).toBe(same);
+    });
+});

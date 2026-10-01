@@ -29,7 +29,7 @@ bun test userplugins/my-plugin        # its test
 bun run preview-plugin my-plugin --open   # its store page, and what the store would say about it
 ```
 
-`new-plugin` writes a manifest (with a `locales` example), an `index.tsx` with a setting, a keyboard shortcut and a slash command, a `strings.ts` with its text in English and Spanish (see "Translations"), a pure `greeting.ts` and its test, all following this guide. Turn it on in Evi (`Ctrl+Shift+D`, Plugins), try its command, then make it yours. Options: `--name "My Plugin"`, `--author "You"`, and `--official` for a plugin in `plugins/` with its test in `tests/`.
+`new-plugin` writes a manifest (with a `locales` example), an `index.tsx` with a setting, a keyboard shortcut and a slash command, a `strings.ts` with its text in every language Evi speaks (see "Translations"), a pure `greeting.ts` and its test, all following this guide. Turn it on in Evi (`Ctrl+Shift+D`, Plugins), try its command, then make it yours. Options: `--name "My Plugin"`, `--author "You"`, and `--official` for a plugin in `plugins/` with its test in `tests/`.
 
 ## 1. Anatomy
 
@@ -406,7 +406,15 @@ Put injected UI into Discord's tree through a source patch that calls a `$self` 
 
 ### Translations
 
-Evi's own UI follows Discord's language (the one picked in Discord's Language settings) and switches live when it changes. Your plugin can do the same with `defineStrings`: English is required and is the fallback for anything another language doesn't have.
+Evi's own UI follows Discord's language (the one picked in Discord's Language settings) and switches live when it changes, and so does every plugin in the store.
+
+**The store requires every string in every language Evi speaks:** English, German (`de`), Spanish (`es`), French (`fr`), Japanese (`ja`), Polish (`pl`), Portuguese (`pt-BR`), Russian (`ru`) and Turkish (`tr`). An upload is refused, with what's missing, when:
+
+- the code's text isn't in `defineStrings`: settings labels and descriptions written as plain strings count as English only;
+- a `defineStrings` language lacks a key `en` has, or a language is missing altogether;
+- `manifest.json`'s `locales` lacks a language's `name`, `description`, or this version's changelog notes.
+
+`bun run preview-plugin` runs the same check (`src/shared/pluginTranslations.ts`) before you upload. Reviewers also look for text the check can't see, like a toast written as a plain string, and send it back.
 
 ```tsx
 import { defineStrings, useLocale } from "@evi/api";
@@ -426,7 +434,7 @@ function Counter({ n }: { n: number; }) {
 }
 ```
 
-- Keys come from `en`; other languages can only use those keys (TypeScript checks it) and may leave some out.
+- Keys come from `en`; other languages can only use those keys (TypeScript checks it), and for the store each one needs all of them.
 - `{name}` is filled from the second argument. A plural is an object keyed by [plural category](https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html) (`one`, `few`, `many`, `other`...), picked by `count`; `other` is required.
 - Languages are Discord's tags. `pt-BR` matches exactly; `es` also covers `es-ES` and `es-419`. `I18n.discordLocale` is Discord's tag, `I18n.locale` the one Evi uses for its own UI.
 - Settings are read when they're drawn, so give them getters: `{ type: "boolean", get label() { return t("settings.sound"); }, default: true }`.

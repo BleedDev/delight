@@ -206,3 +206,58 @@ export const PATCHES = {
         },
     },
 } satisfies Record<string, SourcePatch>;
+
+// ---- Everything else they'd leave behind (from Lodestone's Erase Blocked Users) -----------------
+
+/** What a voice state needs to put a user back in a channel (VOICE_STATE_UPDATES' fields) */
+export const VOICE_FIELDS = ["channelId", "deaf", "mute", "requestToSpeakTimestamp", "selfDeaf", "selfMute", "selfStream",
+    "selfVideo", "sessionId", "suppress", "userId", "discoverable", "connectedAt"] as const;
+
+export interface ExtraOptions extends HideOptions {
+    /** Leave them out of voice: channel rows, call tiles, speaking rings, join sounds and soundboard */
+    voice: boolean;
+}
+
+interface VoiceStateLike { userId?: string; channelId?: string | null; guildId?: string | null; }
+
+/**
+ * Discord's events, before any store sees them: returns the event unchanged, a copy without what's
+ * hidden, or null to drop it. `hidden` says whether a user is someone we hide; `onHiddenVoice` hears
+ * each voice state dropped, so it can be put back when they're shown again.
+ */
+export function filterAction(action: any, hidden: (userId: string | undefined) => boolean, options: ExtraOptions, onHiddenVoice?: (state: VoiceStateLike, guildId: string | null) => void): any {
+    if (!options.active || action == null || typeof action !== "object") return action;
+    switch (action.type) {
+        case "MESSAGE_REACTION_ADD":
+            return hidden(action.userId) ? null : action;
+        // The inbox's Mentions tab, loaded from Discord's servers
+        case "LOAD_RECENT_MENTIONS_SUCCESS": {
+            if (!Array.isArray(action.messages)) return action;
+            const kept = action.messages.filter((m: any) => !hidden(m?.author?.id));
+            return kept.length === action.messages.length ? action : { ...action, messages: kept };
+        }
+        case "VOICE_STATE_UPDATES":
+        case "PASSIVE_UPDATE_V2": {
+            const states = action.voiceStates;
+            if (!options.voice || !Array.isArray(states)) return action;
+            let kept: VoiceStateLike[] | null = null;
+            states.forEach((s: VoiceStateLike, i: number) => {
+                if (!hidden(s?.userId)) return void kept?.push(s);
+                onHiddenVoice?.(s, action.guildId ?? s.guildId ?? null);
+                kept ??= states.slice(0, i);
+            });
+            return kept == null ? action : { ...action, voiceStates: kept };
+        }
+        case "SPEAKING":
+        case "VOICE_CHANNEL_EFFECT_SEND":
+            return options.voice && hidden(action.userId) ? null : action;
+        default:
+            return action;
+    }
+}
+
+/** DM list ids without DMs with someone hidden. Same array back when nothing is left out */
+export function filterDmIds(ids: readonly string[], recipientOf: (channelId: string) => string | undefined, hidden: (userId: string | undefined) => boolean): readonly string[] {
+    const out = ids.filter(id => !hidden(recipientOf(id)));
+    return out.length === ids.length ? ids : out;
+}
