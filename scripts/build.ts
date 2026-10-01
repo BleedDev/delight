@@ -2,8 +2,9 @@
  *   bun scripts/build.ts            build core + plugins into dist/
  *   bun scripts/build.ts --watch    rebuild on change; running Discord hot-reloads plugins, Ctrl+R picks up core
  *   bun scripts/build.ts --cli      also compile the installer into dist/evi.exe
- *   bun scripts/build.ts --release  compile the installer for every system a release carries, each with its .sha256,
- *                                   plus evi-core.json (the core and official plugins Evi Setup downloads)
+ *   bun scripts/build.ts --release  evi-core.json (the core and official plugins Evi Setup and updates download) and
+ *                                   its .sha256; with --installer, Evi Setup's .sha256 too. With --cli as well, the evi CLI
+ *                                   for every system (releases stopped carrying it at 1.5.0; it's for developing Evi)
  *   bun scripts/build.ts --installer  compile Evi Setup, the small window installer in installer/ (Rust + Tauri), into
  *                                   dist/Evi-Setup.exe. On its own it only does that and leaves core and plugins alone
  */
@@ -28,7 +29,7 @@ const PLUGIN_ROOTS = [join(ROOT, "plugins"), join(ROOT, "userplugins")];
 const args = new Set(process.argv.slice(2));
 const WATCH = args.has("--watch");
 const RELEASE = args.has("--release");
-const CLI = args.has("--cli") || RELEASE;
+const CLI = args.has("--cli");
 const INSTALLER = args.has("--installer");
 const INSTALLER_ONLY = INSTALLER && !CLI && !WATCH;
 

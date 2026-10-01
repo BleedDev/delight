@@ -1,5 +1,6 @@
-# Builds the installers (evi.exe, macOS and Linux, Evi Setup for all three), tests them and publishes
-# the release. Evi Setup for macOS and Linux builds on those systems (setup-builds.yml), alongside the
+# Builds Evi Setup for Windows, macOS and Linux and evi-core.json (what Evi Setup and in-app updates
+# download), tests them and publishes the release. Releases carry no evi CLI since 1.5.0: Evi 1.4.0
+# and later update from evi-core.json alone. Evi Setup for macOS and Linux builds on those systems (setup-builds.yml), alongside the
 # Windows job; the release is published once every build and test passed.
 # Its notes come from the version's entry in src/shared/changelog.ts (scripts/release-notes.ts), so
 # there's nothing to write or press on GitHub. Evi's Updates tab, `evi update`, Evi Setup and
@@ -80,41 +81,20 @@ jobs:
       - run: bun test
       - run: bun scripts/test-cli.ts
 
-      # Re-signs the cross-compiled macOS installers, see the README
-      - name: Install rcodesign
-        run: |
-          curl -sSL https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign/0.29.0/apple-codesign-0.29.0-x86_64-pc-windows-msvc.zip -o rcodesign.zip
-          unzip -q rcodesign.zip -d rcodesign
-          echo "RCODESIGN=$(find "$PWD/rcodesign" -name rcodesign.exe)" >> "$GITHUB_ENV"
-
       # Evi Setup (installer/, Rust + Tauri) builds with the runner's Rust; this keeps its crates between runs
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: installer
 
-      # Every installer and its .sha256, plus evi-core.json (what Evi Setup downloads) and Evi-Setup.exe.
-      # Bun downloads the other systems' runtimes and moves them
-      # into its cache; on the runner the checkout is on D: and the cache and temp on C:, and those
-      # moves fail ("Failed to extract executable"). Keep all of it on the checkout's drive.
+      # evi-core.json and Evi-Setup.exe, each with its .sha256
       - run: bun scripts/build.ts --release --installer
-        env:
-          BUN_INSTALL_CACHE_DIR: ${{ runner.temp }}/bun-cache
-          TEMP: ${{ runner.temp }}
-          TMP: ${{ runner.temp }}
-      - run: bun scripts/test-cli.ts --exe
       - run: bun scripts/test-installer.ts
       - run: cat dist/*.sha256
 
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          # Named one by one: evi-linux-* would also match the .sha256 files
           path: |
-            dist/evi.exe
-            dist/evi-macos-arm64
-            dist/evi-macos-x64
-            dist/evi-linux-x64
-            dist/evi-linux-arm64
             dist/evi-core.json
             dist/Evi-Setup.exe
             dist/*.sha256
@@ -148,5 +128,5 @@ jobs:
           # The Windows job's files arrive in dist/ (its upload kept the folder next to notes.md)
           if [ -d dist ]; then mv dist/* . && rmdir dist; fi
           ls -l
-          # The CLI files stay for Evi up to 1.3.1, which won't update from a release without them
-          gh release create "$TAG" evi.exe evi-macos-{arm64,x64} evi-linux-{x64,arm64} evi-core.json             Evi-Setup.exe Evi-Setup-macos.zip Evi-Setup-linux-{x64,arm64} *.sha256             "${flags[@]}"             --target "$GITHUB_SHA"             --title "Evi $VERSION"             --notes-file notes.md
+          # Evi Setup for every system, and evi-core.json for Evi Setup and in-app updates
+          gh release create "$TAG" evi-core.json             Evi-Setup.exe Evi-Setup-macos.zip Evi-Setup-linux-{x64,arm64} *.sha256             "${flags[@]}"             --target "$GITHUB_SHA"             --title "Evi $VERSION"             --notes-file notes.md
