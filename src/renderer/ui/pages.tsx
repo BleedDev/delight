@@ -10,7 +10,12 @@ import { Inbox } from "../inbox";
 import { Store } from "../store";
 import { AccountTab } from "./AccountTab";
 import { BackupTab } from "./BackupTab";
-import { DevelopersTab } from "./DevelopersTab";
+import { AnnouncementsTab } from "./developers/Announcements";
+import { Live } from "./developers/data";
+import { OverviewTab } from "./developers/Overview";
+import { PeopleTab } from "./developers/People";
+import { PluginsTab as DevPluginsTab } from "./developers/Plugins";
+import { ReviewTab } from "./developers/Review";
 import { DevToolsTab } from "./DevToolsTab";
 import { ErrorBoundary, IconName, TabBar, useStore } from "./components";
 import { selectedTab, showTab, subscribeTabs } from "./nav";
@@ -103,7 +108,11 @@ export const pages: readonly Page[] = [
         icon: "analytics",
         visible: Developer.isDev,
         tabs: [
-            { id: "analytics", label: () => t("dev.tab"), icon: "analytics", Component: DevelopersTab },
+            { id: "overview", label: () => t("dev.tab"), icon: "analytics", Component: OverviewTab },
+            { id: "plugins", label: () => t("tabs.plugins"), icon: "puzzle", Component: DevPluginsTab },
+            { id: "review", label: () => t("dev.reviewTab"), icon: "circleCheck", Component: ReviewTab, count: Live.waiting },
+            { id: "announcements", label: () => t("dev.announcementsTab"), icon: "bell", Component: AnnouncementsTab },
+            { id: "people", label: () => t("dev.people"), icon: "people", Component: PeopleTab },
         ],
     },
 ];
@@ -118,6 +127,8 @@ export function PageView({ page }: { page: Page; }) {
     // Update counts follow the store, the inbox's its notifications
     useStore(Store.subscribe, Store.getSnapshot);
     useStore(Inbox.subscribe, Inbox.getSnapshot);
+    // and the Developers page's Review pill, what waits on evi.rest
+    useStore(Live.subscribe, Live.get);
     const current = page.tabs.find(tab => tab.id === selected) ?? page.tabs[0];
     const barId = `dl-subtab-${page.id}`;
 

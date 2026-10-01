@@ -11,6 +11,7 @@ import type { CommunityResult } from "@shared/ipc";
 import { IPC } from "@shared/ipc";
 import { parseCredits } from "@shared/badges";
 import { parseAnnouncements } from "@shared/announcements";
+import { isAdminRoute } from "@shared/devAdmin";
 import { parseDevLive } from "@shared/devLive";
 import { parseNotifications } from "@shared/notifications";
 import { parsePluginPage, parseRatings, validateReview } from "@shared/reviews";
@@ -54,6 +55,16 @@ function allowWrite() {
     while (writes.length && now - writes[0] > 60_000) writes.shift();
     if (writes.length >= 10) return false;
     writes.push(now);
+    return true;
+}
+
+/** Admin changes from the Developers page: a person reviewing, not a loop */
+const adminWrites: number[] = [];
+function allowAdminWrite() {
+    const now = Date.now();
+    while (adminWrites.length && now - adminWrites[0] > 60_000) adminWrites.shift();
+    if (adminWrites.length >= 30) return false;
+    adminWrites.push(now);
     return true;
 }
 
@@ -129,6 +140,14 @@ export function initCommunity() {
     }));
     // The Developers page: evi.rest only answers an Evi linked to one of Evi's developers
     ipcMain.handle(IPC.DEV_LIVE, () => call(async () => parseDevLive((await apiRequest("GET", "/admin/live", { max: 256 * 1024 })).json)));
+    // Only the routes the Developers page uses; evi.rest still decides whether this Evi may
+    ipcMain.handle(IPC.DEV_ADMIN, (_e, method: unknown, path: unknown, body: unknown) => {
+        if (!isAdminRoute(method, path)) return { ok: false, error: "Evi doesn't call that" };
+        if (method !== "GET" && !allowAdminWrite()) return { ok: false, error: "Too many changes at once, wait a minute" };
+        const payload = body === undefined ? undefined : JSON.stringify(body);
+        if (payload !== undefined && payload.length > 64 * 1024) return { ok: false, error: "That's too long to send" };
+        return call(async () => (await apiRequest(method, `${path}`, { ...payload !== undefined && json(body), max: 8 * 1024 * 1024 })).json as unknown);
+    });
     // Evi's team to everyone: public, so it works without a linked account
     ipcMain.handle(IPC.ANNOUNCEMENTS, () => call(async () => parseAnnouncements((await apiRequest("GET", "/announcements", { max: 256 * 1024 })).json)));
     ipcMain.handle(IPC.COMMUNITY_INBOX, () => call(async () => parseNotifications((await apiRequest("GET", "/me/notifications")).json?.notifications)));

@@ -201,14 +201,45 @@ function fakeNative(bootData: BootData) {
             ok: true,
             value: {
                 at: Date.now(),
-                now: { online: 1284, connections: 1301, versions: [{ version: "1.4.3", count: 1102 }, { version: "1.4.2", count: 151 }, { version: "1.3.0", count: 31 }] },
+                now: { online: 1284, connections: 1301, versions: [{ version: "1.5.0", count: 1102 }, { version: "1.5.1", count: 151 }, { version: "old", count: 31 }] },
+                versionDays: [{ day: new Date().toISOString().slice(0, 10), version: "1.5.0", peak: 1102 }],
                 today: { active: 3920, peak: 1410 },
                 days: Array.from({ length: 30 }, (_, i) => ({ day: new Date(Date.now() - (29 - i) * 86_400_000).toISOString().slice(0, 10), active: 2400 + Math.round(1400 * Math.sin(i / 4) ** 2) + i * 20, peak: 900 + i * 10 })),
                 people: { accounts: 812, linked: 1033 },
-                topPlugins: [{ id: "view-icons", name: "View Icons", installs: 2210 }, { id: "music-player", name: "Music Player", installs: 1544 }, { id: "quest-blocker", name: "Quest Blocker", installs: 990 }],
+                topPlugins: [{ id: "view-icons", name: "View Icons", installs: 2210 }, { id: "music-player", name: "Music Player", installs: 1544 }, { id: "quest-blocker", name: "Quest Blocker", installs: 990 }, { id: "fake-deafen", name: "Fake Deafen", installs: 870 }, { id: "clear-urls", name: "Clear URLs", installs: 655 }, { id: "last-seen", name: "Last Seen", installs: 402 }],
                 store: { plugins: 64, waiting: 3, reports: 1 },
             },
         }),
+        // evi.rest's admin API as the Developers page sees it; calls are kept for the checks
+        devAdmin: async (method: string, path: string, body?: unknown) => {
+            const test = (window as any).__test;
+            (test.devAdmin ??= []).push({ method, path, body });
+            const day = 86_400_000, now = Date.now();
+            if (method !== "GET") return { ok: true, value: {} };
+            const route = path.replace(/\?.*$/, "");
+            const value = ({
+                "/admin/submissions": { submissions: [{ id: 41, status: "pending", plugin: "cool-plugin", name: "Cool Plugin", version: "1.2.0", published: "1.1.0", channel: "stable", author: { slug: "lodestone", name: "Lodestone" }, createdAt: now - 3 * 3600_000, code: "export default definePlugin({ start() {} });", codeTruncated: false, nativeCode: null, scan: { patchCount: 3, domains: ["api.example.com"], dynamicCode: [], clipboardRead: false, stores: ["UserStore"] } }] },
+                "/admin/theme-submissions": { submissions: [{ id: 7, status: "pending", theme: "midnight", name: "Midnight", version: "1.0.0", published: null, author: { slug: "ann", name: "Ann" }, createdAt: now - day, css: ":root { --bg: #000; }", scan: { hosts: [{ host: "fonts.googleapis.com", allowed: true }] } }] },
+                "/admin/reports": { reports: [{ id: "12", status: "open", plugin: "music-player", version: "1.0.0", reason: "broken", details: "The player doesn't show after Discord's update.", openForPlugin: 2, createdAt: now - 3600_000, reporter: { id: "1", username: "someone", globalName: "Someone Nice" } }] },
+                "/admin/reviews": { reviews: [] },
+                "/admin/health": {
+                    plugins: [
+                        { id: "music-player", name: "Music Player", installsReporting: 1544, brokenPatches: 212, lastReportAt: now - 600_000 },
+                        { id: "view-icons", name: "View Icons", installsReporting: 2210, brokenPatches: 0, lastReportAt: now - 120_000 },
+                        { id: "quest-blocker", name: "Quest Blocker", installsReporting: 990, brokenPatches: 0, lastReportAt: now - 300_000 },
+                    ],
+                    pulls: { "old-plugin": { versions: "all", reason: "It crashed Discord after the September update.", removed: true, at: now - 2 * day } },
+                },
+                "/admin/announcements": { announcements: [{ id: 3, title: "Evi 1.5.0 is out", body: "Live announcements, and plugin notifications work again.", at: now - day, withdrawnAt: null, by: { id: "1", username: "bleed", globalName: "bleed" } }] },
+                "/admin/people": {
+                    people: [
+                        { user: { id: "123456789012345678", username: "evi-tester", globalName: "Evi Tester", avatar: null }, lastLogin: now - 3600_000, badges: ["early-supporter", "plugin-author"] },
+                        { user: { id: "223456789012345678", username: "lodestone", globalName: "Lodestone", avatar: null }, lastLogin: now - day, badges: [] },
+                    ],
+                },
+            } as Record<string, unknown>)[route];
+            return value === undefined ? { ok: false, error: "Not found" } : { ok: true, value };
+        },
         openDashboard: async () => { (window as any).__test.account.dashboard++; },
         // Evi 9.9.0 is out; installing reports progress, then the installer would restart Discord
         checkForUpdate: async () => {
@@ -1649,6 +1680,7 @@ check("Evi's panel shows no scrollbars", scrollbars.every(s => s.width === "none
 }
 
 // The Developers page: only on an Evi linked to one of Evi's developers, with evi.rest's numbers
+// and its admin tools in tabs
 {
     const hiddenBefore = await page.locator("#dl-tab-developers").count() === 0;
     await page.evaluate(() => { (window as any).__test.account.admin = true; });
@@ -1658,21 +1690,66 @@ check("Evi's panel shows no scrollbars", scrollbars.every(s => s.width === "none
     const body = page.locator(".dl-body");
     await body.getByText("Online now", { exact: true }).waitFor({ timeout: 3000 });
     const shown = await page.evaluate(() => ({
-        tiles: [...document.querySelectorAll(".dl-dev-tile")].map(t => t.textContent),
+        tabs: [...document.querySelectorAll('[id^="dl-subtab-developers-"]')].map(b => b.id.replace("dl-subtab-developers-", "")).filter(id => id !== "panel"),
+        reviewPill: document.querySelector("#dl-subtab-developers-review")?.textContent,
+        stats: [...document.querySelectorAll(".dl-dev-stat")].map(t => t.textContent),
         bars: document.querySelectorAll(".dl-dev-bar").length,
-        versions: document.querySelectorAll("#dl-dev-versions .dl-dev-ranked > li").length,
-        plugins: [...document.querySelectorAll("#dl-dev-plugins .dl-dev-ranked-name")].map(n => n.textContent),
+        segments: document.querySelectorAll(".dl-dev-stack > span").length,
+        legend: [...document.querySelectorAll(".dl-dev-legend > li")].map(li => li.textContent),
+        plugins: [...document.querySelectorAll(".dl-dev-top .dl-dev-name")].map(n => n.textContent),
     }));
     await page.hover(".dl-dev-bar-hit:last-child");
     const tooltip = await page.textContent(".dl-dev-tooltip").catch(() => null);
+    await page.mouse.move(0, 0);
     await page.screenshot({ path: join(OUT, "ui-developers.png") });
+
+    // Review: approving an upload asks first, then calls evi.rest
+    await page.click("#dl-subtab-developers-review");
+    await body.getByText("Cool Plugin", { exact: true }).waitFor({ timeout: 3000 });
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: join(OUT, "ui-developers-review.png") });
+    await body.locator("li", { hasText: "Cool Plugin" }).getByRole("button", { name: "Approve", exact: true }).click();
+    await page.getByRole("button", { name: "Publish to the store" }).click();
+    await page.waitForSelector("#dl-dev-confirm", { state: "detached", timeout: 3000 }).catch(() => { });
+
+    await page.click("#dl-subtab-developers-plugins");
+    await body.getByText("Music Player", { exact: true }).first().waitFor({ timeout: 3000 });
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: join(OUT, "ui-developers-plugins.png") });
+
+    // Announcements: the preview follows what's typed, and sending asks first
+    await page.click("#dl-subtab-developers-announcements");
+    await page.fill("#dl-dev-ann-title", "Evi 1.6.0 is out");
+    await page.fill("#dl-dev-ann-body", "Fix Embeds and Quick Markup are in the store.");
+    const preview = await page.textContent(".dl-dev-preview");
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: join(OUT, "ui-developers-announcements.png") });
+    await body.getByRole("button", { name: "Send to everyone" }).click();
+    await page.locator("#dl-dev-ann-confirm").getByRole("button", { name: "Send to everyone" }).click();
+    await page.waitForSelector("#dl-dev-ann-confirm", { state: "detached", timeout: 3000 }).catch(() => { });
+
+    await page.click("#dl-subtab-developers-people");
+    await body.getByText("Lodestone", { exact: true }).waitFor({ timeout: 3000 });
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: join(OUT, "ui-developers-people.png") });
+
+    const calls = await page.evaluate(() => ((window as any).__test.devAdmin ?? []).filter((c: any) => c.method !== "GET"));
+    await page.click("#dl-subtab-developers-overview");
     await page.evaluate(() => { (window as any).__test.account.admin = false; });
     await openTab("general", "account");
     await page.waitForSelector("#dl-tab-developers", { state: "detached", timeout: 3000 }).catch(() => { });
     const hiddenAfter = await page.locator("#dl-tab-developers").count() === 0;
-    check("the Developers page shows only for a developer: who's online, people per day, versions and top plugins",
-        hiddenBefore && hiddenAfter && shown.tiles[0]?.includes("1,284") && shown.bars === 30 && shown.versions === 3 && shown.plugins[0] === "View Icons" && !!tooltip?.includes("people"),
+    check("the Developers page shows only for a developer: live numbers, people per day, versions and top plugins",
+        hiddenBefore && hiddenAfter && !!shown.stats[0]?.includes("1,284") && shown.bars === 30 && shown.segments === 3
+        && !!shown.legend.at(-1)?.startsWith("Before 1.5.0") && shown.plugins[0] === "View Icons" && !!tooltip?.includes("people"),
         { hiddenBefore, hiddenAfter, shown, tooltip });
+    check("the Developers page has Overview, Plugins, Review, Announcements and People, with what waits on Review",
+        JSON.stringify(shown.tabs) === '["overview","plugins","review","announcements","people"]' && !!shown.reviewPill?.includes("4"), shown);
+    check("approving an upload and sending an announcement each ask first, then call evi.rest",
+        calls.some((c: any) => c.method === "POST" && c.path === "/admin/submissions/41/approve")
+        && calls.some((c: any) => c.method === "POST" && c.path === "/admin/announcements" && c.body?.title === "Evi 1.6.0 is out")
+        && !!preview?.includes("Evi 1.6.0 is out"),
+        { calls, preview });
     await page.click("#dl-tab-plugins");
 }
 
@@ -1950,6 +2027,53 @@ check("view-icons: Download sits right after zoom in the viewer for profile pict
 check("view-icons: both patches apply, and a banner gets a button filling it that opens it in the viewer with Download",
     viewIcons.patches.length === 2 && viewIcons.patches.every((s: string) => s === "applied") && viewIcons.fills && viewIcons.keepsOverlay && viewIcons.noButtonForPending
     && viewIcons.bannerBar.includes("Download") && viewIcons.bannerShown, viewIcons);
+
+// view-icons: Profile details shows each colour as a row with Copy and Apply buttons, no menus, no scrollbar
+{
+    const shown = await page.evaluate(async () => {
+        const { api, plugins } = (window as any).Evi;
+        const { sleep } = (window as any).__qa;
+        await plugins.setEnabled("view-icons", true);
+        const self = (window as any).Evi.$("view-icons");
+        const root = document.createElement("div");
+        root.id = "evi-vi-test-banner";
+        root.style.cssText = "position:fixed;left:0;top:0;width:340px;height:120px;";
+        document.body.appendChild(root);
+        const user = { id: "1", username: "southkoreadays", globalName: "jay", displayNameStyles: { fontId: 3, effectId: 2, colors: [0xff5ea8, 0x7c5cff] }, collectibles: { nameplate: { label: "Koi Pond", skuId: "1234567890" } } };
+        api.createRoot(root).render(self.renderBanner(user, "https://cdn.discordapp.com/embed/avatars/2.png", null, { themeColors: [0x1e1f22, 0x5865f2], accentColor: 0xffffff }));
+        await sleep(200);
+        (root.querySelector(".evi-vi-details") as HTMLElement | null)?.click();
+        await sleep(600);
+        const modal = document.querySelector(".evi-vi-modal");
+        const body = modal?.querySelector<HTMLElement>(".evi-vi-body");
+        return {
+            rows: [...modal?.querySelectorAll(".evi-vi-swatch") ?? []].map(li => ({
+                label: li.querySelector(".evi-vi-swatch-label")?.textContent,
+                value: li.querySelector(".evi-vi-swatch-value")?.textContent,
+                buttons: [...li.querySelectorAll("button")].map(b => b.getAttribute("aria-label")),
+            })),
+            sectionButtons: [...modal?.querySelectorAll(".evi-vi-section-action") ?? []].map(b => b.textContent),
+            menus: modal?.querySelectorAll('[role="menu"]').length ?? -1,
+            scrollbar: body ? body.offsetWidth - body.clientWidth : -1,
+            scrollbarWidth: body ? getComputedStyle(body).scrollbarWidth : "",
+        };
+    });
+    await page.locator(".evi-vi-modal").screenshot({ path: join(OUT, "view-icons-details.png") }).catch(() => { });
+    await page.locator(".evi-vi-swatch").first().locator("button").first().click().catch(() => { });
+    await page.waitForTimeout(150);
+    const copiedLabel = await page.locator(".evi-vi-swatch").first().locator("button").first().getAttribute("aria-label").catch(() => null);
+    await page.locator(".evi-vi-close").click().catch(() => { });
+    await page.waitForTimeout(400);
+    await page.evaluate(async () => {
+        document.getElementById("evi-vi-test-banner")?.remove();
+        await (window as any).Evi.plugins.setEnabled("view-icons", false);
+    });
+    check("view-icons: Profile details lists each colour with its hex (no #) and Copy/Apply buttons, section buttons for the whole theme and name style, no menus and no scrollbar",
+        shown.rows.length === 5 && shown.rows.every(r => !!r.value && !r.value.includes("#") && r.buttons.length >= 1)
+        && shown.rows[0].buttons.length === 2 && shown.rows.some(r => r.label === "Gradient start") && shown.rows.find(r => r.label === "Banner")?.value?.toLowerCase() === "ffffff"
+        && shown.sectionButtons.includes("Use this theme") && shown.sectionButtons.includes("Use this name style")
+        && shown.menus === 0 && shown.scrollbar === 0 && shown.scrollbarWidth === "none" && !!copiedLabel?.startsWith("Copied"), { ...shown, copiedLabel });
+}
 
 // A plugin's details: what it actually did, grouped by host, a host its code doesn't name flagged, no query strings
 await findPlugin("net-user");

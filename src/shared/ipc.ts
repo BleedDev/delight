@@ -127,6 +127,8 @@ export const IPC = {
     ANNOUNCEMENTS: "evi:announcements",
     ANNOUNCEMENTS_CHANGED: "evi:announcements-changed",
     DEV_LIVE: "evi:dev-live",
+    /** The Developers page's other calls to evi.rest's admin API (shared/devAdmin.ts says which) */
+    DEV_ADMIN: "evi:dev-admin",
     COMMUNITY_INBOX_READ: "evi:community-inbox-read",
     /** main -> renderer: the account's inbox changed (evi.rest's stream said so) */
     COMMUNITY_INBOX_CHANGED: "evi:community-inbox-changed",

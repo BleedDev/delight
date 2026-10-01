@@ -2,7 +2,7 @@
     "id": "view-icons",
     "name": "View Icons",
     "description": "Download avatars and banners from someone's profile. Click their avatar or banner to open it full size, then Download sits next to zoom.",
-    "version": "2.3.0",
+    "version": "2.4.0",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
         "utility"
     ],
     "changelog": [
+        {
+            "version": "2.4.0",
+            "notes": [
+                "Profile details are clearer: every colour sits in a row with its name, its hex and buttons to copy it or use it on your profile, no menus to open. Using a whole theme or name style is one button under it, and the window has no scrollbar."
+            ]
+        },
         {
             "version": "2.3.0",
             "notes": [
@@ -65,6 +71,9 @@
             "name": "Profilbilder ansehen",
             "description": "Lade Avatare und Banner aus dem Profil anderer herunter. Klicke auf einen Avatar oder ein Banner, um es in voller Größe zu öffnen, und neben dem Zoom findest du „Herunterladen“.",
             "changelog": {
+                "2.4.0": [
+                    "Profildetails sind übersichtlicher: Jede Farbe steht in einer Zeile mit Namen, Hexwert und Knöpfen zum Kopieren oder Verwenden in deinem Profil, ohne Menüs. Ein ganzes Design oder einen Namensstil übernimmst du mit einem Knopf darunter, und das Fenster hat keine Scrollleiste mehr."
+                ],
                 "2.3.0": [
                     "Profildetails: Farben werden ohne # kopiert und passen direkt in Discords Farbfelder. Jede Farbe hat ein Menü zum Kopieren oder zum Verwenden in deinem eigenen Profil (Design, Bannerfarbe, Namensstil). Namen erscheinen mit Discords eigener Schrift und animiertem Effekt, und ein Namensschild öffnet sich im Shop."
                 ],
@@ -91,6 +100,9 @@
             "name": "Ver iconos",
             "description": "Descarga avatares y banners del perfil de cualquier persona. Haz clic en su avatar o banner para abrirlo a tamaño completo y verás Descargar junto al zoom.",
             "changelog": {
+                "2.4.0": [
+                    "Los detalles del perfil son más claros: cada color está en una fila con su nombre, su hex y botones para copiarlo o usarlo en tu perfil, sin menús. Usar un tema o estilo de nombre completo es un botón debajo, y la ventana ya no tiene barra de desplazamiento."
+                ],
                 "2.3.0": [
                     "Detalles del perfil: los colores se copian sin el #, así se pegan directo en los campos de color de Discord. Cada color tiene un menú para copiarlo o usarlo en tu propio perfil (tema, color del banner, estilo del nombre). Los nombres se ven con la fuente y el efecto animado de Discord, y una placa de nombre se abre en la tienda."
                 ],
@@ -117,6 +129,9 @@
             "name": "Voir les icônes",
             "description": "Télécharge les avatars et les bannières du profil de quelqu'un. Clique sur son avatar ou sa bannière pour l'ouvrir en taille réelle, et Télécharger apparaît à côté du zoom.",
             "changelog": {
+                "2.4.0": [
+                    "Les détails du profil sont plus clairs : chaque couleur est sur une ligne avec son nom, son code hex et des boutons pour la copier ou l'utiliser sur votre profil, sans menu. Un thème ou un style de pseudo entier s'applique avec un bouton en dessous, et la fenêtre n'a plus de barre de défilement."
+                ],
                 "2.3.0": [
                     "Détails du profil : les couleurs se copient sans le #, pour se coller directement dans les champs de couleur de Discord. Chaque couleur a un menu pour la copier ou l'utiliser sur votre propre profil (thème, couleur de bannière, style du pseudo). Les pseudos s'affichent avec la police et l'effet animé de Discord, et une plaque de nom s'ouvre dans la boutique."
                 ],
@@ -143,6 +158,9 @@
             "name": "アイコンを表示",
             "description": "相手のプロフィールからアバターやバナーをダウンロードできます。アバターやバナーをクリックして原寸で開くと、ズームの隣にダウンロードが表示されます。",
             "changelog": {
+                "2.4.0": [
+                    "プロフィールの詳細が見やすくなりました。各色は名前とHEX値、コピーやプロフィールに使うボタンと一緒に1行に並び、メニューを開く必要はありません。テーマや名前スタイル全体はその下のボタンひとつで使え、ウィンドウにスクロールバーも出ません。"
+                ],
                 "2.3.0": [
                     "プロフィールの詳細:色は#なしでコピーされ、Discordの色の欄にそのまま貼り付けられます。各色のメニューからコピーしたり、自分のプロフィール(テーマ、バナーの色、名前のスタイル)に使ったりできます。名前はDiscord本来のフォントとアニメーション効果で表示され、ネームプレートはショップで開けます。"
                 ],
@@ -169,6 +187,9 @@
             "name": "Podgląd ikon",
             "description": "Pobieraj awatary i banery z profilu innych osób. Kliknij awatar lub baner, aby otworzyć go w pełnym rozmiarze, a obok powiększenia znajdziesz przycisk Pobierz.",
             "changelog": {
+                "2.4.0": [
+                    "Szczegóły profilu są czytelniejsze: każdy kolor ma swój wiersz z nazwą, kodem hex i przyciskami do skopiowania lub użycia w profilu, bez menu. Cały motyw lub styl nazwy ustawisz jednym przyciskiem pod spodem, a okno nie ma już paska przewijania."
+                ],
                 "2.3.0": [
                     "Szczegóły profilu: kolory kopiują się bez #, więc wklejają się prosto w pola kolorów Discorda. Każdy kolor ma menu, by go skopiować lub użyć we własnym profilu (motyw, kolor banera, styl nazwy). Nazwy wyglądają z czcionką i animowanym efektem Discorda, a tabliczka otwiera się w sklepie."
                 ],
@@ -195,6 +216,9 @@
             "name": "Ver ícones",
             "description": "Baixe avatares e banners do perfil de qualquer pessoa. Clique no avatar ou no banner para abrir em tamanho real e o botão Baixar aparece ao lado do zoom.",
             "changelog": {
+                "2.4.0": [
+                    "Os detalhes do perfil estão mais claros: cada cor fica numa linha com nome, hex e botões para copiá-la ou usá-la no seu perfil, sem menus. Usar um tema ou estilo de nome inteiro é um botão logo abaixo, e a janela não tem mais barra de rolagem."
+                ],
                 "2.3.0": [
                     "Detalhes do perfil: as cores são copiadas sem o #, para colar direto nos campos de cor do Discord. Cada cor tem um menu para copiá-la ou usá-la no seu próprio perfil (tema, cor do banner, estilo do nome). Os nomes aparecem com a fonte e o efeito animado do próprio Discord, e uma placa de nome abre na loja."
                 ],
@@ -221,6 +245,9 @@
             "name": "Просмотр значков",
             "description": "Скачивайте аватары и баннеры из чужих профилей. Щёлкните по аватару или баннеру, чтобы открыть его в полном размере, и рядом с увеличением появится кнопка «Скачать».",
             "changelog": {
+                "2.4.0": [
+                    "Детали профиля стали понятнее: каждый цвет в своей строке с названием, hex-кодом и кнопками, чтобы скопировать его или применить к своему профилю, без меню. Всю тему или стиль имени можно применить одной кнопкой под ними, а у окна больше нет полосы прокрутки."
+                ],
                 "2.3.0": [
                     "Детали профиля: цвета копируются без #, чтобы сразу вставляться в поля цвета Discord. У каждого цвета есть меню: скопировать или использовать в своём профиле (тема, цвет баннера, стиль имени). Имена показываются со шрифтом и анимированным эффектом самого Discord, а табличка открывается в магазине."
                 ],
@@ -247,6 +274,9 @@
             "name": "Simgeleri Görüntüle",
             "description": "Birinin profilindeki avatarları ve banner'ları indir. Avatarına veya banner'ına tıklayıp tam boyutta aç, İndir düğmesi yakınlaştırmanın yanında olacak.",
             "changelog": {
+                "2.4.0": [
+                    "Profil ayrıntıları daha anlaşılır: her renk adı, hex kodu ve kopyalama ya da profiline uygulama düğmeleriyle kendi satırında, menü açmaya gerek yok. Bütün bir temayı veya ad stilini altındaki tek düğmeyle kullanırsın ve pencerede artık kaydırma çubuğu yok."
+                ],
                 "2.3.0": [
                     "Profil ayrıntıları: renkler # olmadan kopyalanır, böylece doğrudan Discord'un renk alanlarına yapışır. Her rengin onu kopyalamak ya da kendi profilinde (tema, afiş rengi, ad stili) kullanmak için bir menüsü var. Adlar Discord'un kendi yazı tipi ve animasyonlu efektiyle görünür, isim plakası mağazada açılır."
                 ],

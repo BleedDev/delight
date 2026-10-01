@@ -5,10 +5,13 @@
 
 export interface DevLive {
     at: number;
+    /** "old" is every Evi from before 1.5.0, which doesn't say its version */
     now: { online: number; connections: number; versions: { version: string; count: number; }[]; };
     today: { active: number; peak: number; };
     /** Oldest first, today last */
     days: { day: string; active: number; peak: number; }[];
+    /** The most online at once on each version, per day */
+    versionDays: { day: string; version: string; peak: number; }[];
     people: { accounts: number; linked: number; };
     topPlugins: { id: string; name: string; installs: number; }[];
     store: { plugins: number; waiting: number; reports: number; };
@@ -18,15 +21,22 @@ const n = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0 
 const str = (v: unknown, max: number) => typeof v === "string" ? v.slice(0, max) : "";
 const list = (v: unknown, max: number) => Array.isArray(v) ? v.slice(0, max) : [];
 
+/** Evis from before 1.5.0 send no version: evi.rest calls them "old" ("unknown" before it did) */
+const version = (v: unknown) => {
+    const text = str(v, 40);
+    return !text || text === "unknown" ? "old" : text;
+};
+
 export function parseDevLive(raw: any): DevLive {
     return {
         at: n(raw?.at),
         now: {
             online: n(raw?.now?.online),
             connections: n(raw?.now?.connections),
-            versions: list(raw?.now?.versions, 30).map((v: any) => ({ version: str(v?.version, 40) || "unknown", count: n(v?.count) })),
+            versions: list(raw?.now?.versions, 30).map((v: any) => ({ version: version(v?.version), count: n(v?.count) })),
         },
         today: { active: n(raw?.today?.active), peak: n(raw?.today?.peak) },
+        versionDays: list(raw?.versionDays, 2000).filter((d: any) => /^\d{4}-\d{2}-\d{2}$/.test(d?.day)).map((d: any) => ({ day: d.day, version: version(d.version), peak: n(d.peak) })),
         days: list(raw?.days, 400).filter((d: any) => /^\d{4}-\d{2}-\d{2}$/.test(d?.day)).map((d: any) => ({ day: d.day, active: n(d.active), peak: n(d.peak) })),
         people: { accounts: n(raw?.people?.accounts), linked: n(raw?.people?.linked) },
         topPlugins: list(raw?.topPlugins, 20).map((p: any) => ({ id: str(p?.id, 64), name: str(p?.name, 100) || str(p?.id, 64), installs: n(p?.installs) })),

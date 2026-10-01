@@ -4131,83 +4131,126 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 @keyframes dl-announcement-in { from { opacity: 0; translate: 0 -16px; scale: 0.97; } }
 @keyframes dl-announcement-out { to { opacity: 0; translate: 0 -8px; scale: 0.98; } }
 
-/* ---- Developers page (DevelopersTab.tsx) ---------------------------------------------------- */
+/* ---- Developers page (developers/*.tsx) ---------------------------------------------------- */
 
 .dl-dev {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 40px;
 }
 
-.dl-dev-tiles {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
-    margin-block-end: -16px;
+/* Overview: four numbers in a row, no boxes; what each counts is in its tooltip */
+.dl-dev-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 48px;
 }
 
-.dl-dev-tile {
+.dl-dev-stat {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    padding: 14px 16px;
-    border-radius: var(--dl-radius-group);
-    border: 1px solid var(--dl-border-group);
-    background: var(--dl-bg-group);
+    border-radius: var(--dl-radius-control);
+    outline-offset: 4px;
+    cursor: default;
 }
 
+.dl-dev-stat:focus-visible { outline: 2px solid var(--dl-focus-ring); }
+
+.dl-dev-stat-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Online now: a dot that breathes, so the number reads as live */
+.dl-dev-live {
+    position: relative;
+    inline-size: 8px;
+    block-size: 8px;
+    border-radius: 50%;
+    background: var(--dl-text-positive);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-dev-live::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: inherit;
+        animation: dl-dev-pulse 2s ease-out infinite;
+        pointer-events: none;
+    }
+}
+
+@keyframes dl-dev-pulse { to { opacity: 0; scale: 2.6; } }
+
+/* What waits for review: one quiet line that goes to the Review tab */
+.dl-dev-waiting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-block-start: -16px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-group);
+    color: var(--dl-text-default);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.dl-dev-waiting > :nth-child(2) { flex: 1; }
+.dl-dev-waiting:focus-visible { outline: 2px solid var(--dl-focus-ring); }
+@media (hover: hover) { .dl-dev-waiting:hover { background: var(--dl-bg-hover); } }
+
+.dl-dev-placeholder {
+    padding-block: 12px;
+    border-block: 1px dashed var(--dl-border-divider);
+}
+
+/* People per day: thin bars on a recessive baseline, two labels under it */
 .dl-dev-chart {
     display: flex;
-    gap: 8px;
-    block-size: 180px;
-    padding: 16px;
-    border-radius: var(--dl-radius-group);
-    border: 1px solid var(--dl-border-group);
-    background: var(--dl-bg-group);
-}
-
-.dl-dev-chart-axis {
-    display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    align-items: flex-end;
-    min-inline-size: 24px;
+    gap: 8px;
 }
 
 .dl-dev-bars {
     position: relative;
-    flex: 1;
     display: flex;
     align-items: flex-end;
+    block-size: 120px;
     border-block-end: 1px solid var(--dl-border-divider);
 }
 
-/* The hit area is the whole column, wider and taller than the bar */
+/* The hit area is the whole column, taller and wider than its bar */
 .dl-dev-bar-hit {
-    flex: 1;
-    block-size: 100%;
     display: flex;
+    flex: 1;
+    justify-content: center;
     align-items: flex-end;
+    block-size: 100%;
     padding-inline: 1px;
+    border-radius: 4px 4px 0 0;
     outline: none;
-    cursor: default;
 }
 
 .dl-dev-bar {
     inline-size: 100%;
+    max-inline-size: 20px;
     border-radius: 4px 4px 0 0;
     background: var(--dl-brand);
-    opacity: 0.85;
-    transition: opacity var(--dl-duration-fast);
 }
 
-.dl-dev-bar-hit[data-active] .dl-dev-bar { opacity: 1; }
 .dl-dev-bars:has([data-active]) .dl-dev-bar-hit:not([data-active]) .dl-dev-bar { opacity: 0.45; }
-.dl-dev-bar-hit:focus-visible .dl-dev-bar { box-shadow: 0 0 0 2px var(--dl-focus-ring); }
+.dl-dev-bar-hit:focus-visible { box-shadow: inset 0 0 0 2px var(--dl-focus-ring); }
 
 .dl-dev-tooltip {
     position: absolute;
-    inset-block-start: -8px;
+    inset-block-start: -12px;
     padding: 4px 8px;
     border-radius: var(--dl-radius-control);
     background: var(--dl-bg-modal);
@@ -4216,44 +4259,142 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
     pointer-events: none;
 }
 
-.dl-dev-columns {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 24px;
+/* The busiest day's count, on a faint line at the top of the bars */
+.dl-dev-max {
+    position: absolute;
+    inset-block-start: -2px;
+    inset-inline: 0;
+    border-block-start: 1px dashed var(--dl-border-divider);
+    padding-block-start: 2px;
+    pointer-events: none;
 }
 
-.dl-dev-ranked {
+.dl-dev-axis {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+/* Versions: one bar split by version, newest in Evi's colour and older ones paler */
+.dl-dev-versions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dl-dev-stack {
+    display: flex;
+    gap: 2px;
+    block-size: 8px;
+}
+
+.dl-dev-stack > span {
+    min-inline-size: 4px;
+    background: color-mix(in oklab, var(--dl-brand) var(--dl-dev-shade, 100%), transparent);
+}
+
+.dl-dev-stack > span:first-child { border-start-start-radius: 4px; border-end-start-radius: 4px; }
+.dl-dev-stack > span:last-child { border-start-end-radius: 4px; border-end-end-radius: 4px; }
+.dl-dev-stack > [data-old],
+.dl-dev-swatch[data-old] { background: var(--dl-interactive); opacity: 0.5; }
+
+.dl-dev-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
     margin: 0;
     padding: 0;
     list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
 }
 
-.dl-dev-ranked > li {
+.dl-dev-legend > li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dl-dev-swatch {
+    inline-size: 8px;
+    block-size: 8px;
+    border-radius: 2px;
+    background: color-mix(in oklab, var(--dl-brand) var(--dl-dev-shade, 100%), transparent);
+}
+
+/* Most used plugins: two columns of rank, name and count */
+.dl-dev-top {
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 4px 12px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-auto-flow: row;
+    gap: 0 32px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.dl-dev-ranked-name {
+.dl-dev-top > li {
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding-block: 8px;
+    border-block-end: 1px solid var(--dl-border-divider);
+}
+
+.dl-dev-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.dl-dev-ranked-bar {
-    grid-column: 1 / -1;
-    block-size: 4px;
-    border-radius: 2px;
-    background: var(--dl-bg-group);
-    overflow: hidden;
+/* Search next to a section's title */
+.dl-dev-search { inline-size: min(300px, 100%); }
+
+/* The kill switch on a plugin that works waits for the row to be pointed at or focused */
+@media (hover: hover) {
+    .dl-dev-row-action:not([data-shown]) { opacity: 0; transition: opacity var(--dl-duration-fast) ease-out; }
+    .dl-row:hover > .dl-row-head > .dl-dev-row-action,
+    .dl-row:focus-within > .dl-row-head > .dl-dev-row-action { opacity: 1; }
 }
 
-.dl-dev-ranked-bar > span {
-    display: block;
-    block-size: 100%;
-    border-radius: 2px;
-    background: var(--dl-brand);
+.dl-dev-avatar {
+    flex: none;
+    border-radius: 50%;
+    outline: 1px solid rgb(255 255 255 / 0.08);
+    outline-offset: -1px;
+}
+
+.dl-dev-code {
+    max-block-size: 60vh;
+    margin: 0;
+    padding: 12px;
+    overflow: auto;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-code);
+    color: var(--dl-text-default);
+    font: 12px/1.5 var(--dl-font-code);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* Announcements: the form beside a preview of the banner people get */
+.dl-dev-compose {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: start;
+    gap: 24px 32px;
+}
+
+.dl-dev-preview {
+    position: sticky;
+    inset-block-start: 16px;
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-dev-preview .dl-announcement[data-preview] {
+    box-shadow: 0 8px 16px rgb(0 0 0 / 0.16);
+    animation: none;
 }

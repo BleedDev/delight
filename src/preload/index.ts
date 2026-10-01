@@ -9,6 +9,7 @@ import type { PluginReportInput } from "@shared/pluginReports";
 import type { PulledPlugins } from "@shared/pulls";
 import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesResult, CreditsDocument } from "@shared/badges";
 import type { Announcement } from "@shared/announcements";
+import type { AdminMethod } from "@shared/devAdmin";
 import type { DevLive } from "@shared/devLive";
 import type { EviNotification } from "@shared/notifications";
 import type { PluginPage, RatingSummary } from "@shared/reviews";
@@ -117,6 +118,8 @@ const EviNative = {
     inbox: (): Promise<CommunityResult<EviNotification[]>> => ipcRenderer.invoke(IPC.COMMUNITY_INBOX),
     announcements: (): Promise<CommunityResult<Announcement[]>> => ipcRenderer.invoke(IPC.ANNOUNCEMENTS),
     devLive: (): Promise<CommunityResult<DevLive>> => ipcRenderer.invoke(IPC.DEV_LIVE),
+    /** The Developers page's calls to evi.rest's admin API; main allows only shared/devAdmin.ts's routes */
+    devAdmin: (method: AdminMethod, path: string, body?: unknown): Promise<CommunityResult<unknown>> => ipcRenderer.invoke(IPC.DEV_ADMIN, method, path, body),
     onAnnouncementsChange: (cb: () => void) => {
         ipcRenderer.on(IPC.ANNOUNCEMENTS_CHANGED, () => cb());
     },

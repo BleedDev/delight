@@ -1,0 +1,98 @@
+{
+    "id": "fix-embeds",
+    "name": "Fix Embeds",
+    "description": "Rewrites X, Instagram, TikTok, Reddit, Bluesky and other links as you send them, so their videos and pictures play right in Discord.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "messages",
+        "media"
+    ],
+    "permissions": {
+        "readMessages": true
+    },
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "locales": {
+        "de": {
+            "name": "Embeds reparieren",
+            "description": "Ändert Links von X, Instagram, TikTok, Reddit, Bluesky und mehr beim Senden so, dass ihre Videos und Bilder in Discord abgespielt werden.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Arreglar vistas previas",
+            "description": "Cambia los enlaces de X, Instagram, TikTok, Reddit, Bluesky y más al enviarlos para que sus vídeos e imágenes se vean en Discord.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Réparer les aperçus",
+            "description": "Modifie les liens X, Instagram, TikTok, Reddit, Bluesky et d'autres à l'envoi pour que leurs vidéos et images s'affichent dans Discord.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "埋め込み修正",
+            "description": "X、Instagram、TikTok、Reddit、Blueskyなどのリンクを送信時に書き換え、動画や画像がDiscord内で再生されるようにします。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Naprawa osadzeń",
+            "description": "Zmienia przy wysyłaniu linki z X, Instagrama, TikToka, Reddita, Bluesky i innych, żeby ich filmy i zdjęcia działały w Discordzie.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Corrigir incorporações",
+            "description": "Troca links do X, Instagram, TikTok, Reddit, Bluesky e outros ao enviar, para que vídeos e imagens apareçam no Discord.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Исправление превью",
+            "description": "При отправке меняет ссылки X, Instagram, TikTok, Reddit, Bluesky и других, чтобы их видео и картинки показывались в Discord.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Önizleme Düzeltici",
+            "description": "X, Instagram, TikTok, Reddit, Bluesky ve diğerlerinin bağlantılarını gönderirken değiştirir, böylece videolar ve resimler Discord'da oynar.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}

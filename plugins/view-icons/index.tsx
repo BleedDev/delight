@@ -13,7 +13,7 @@
  * The viewer's own button component is captured when its module loads, so Download looks and
  * behaves like zoom. If Discord renames it, a plain button with the same icon stands in.
  */
-import { Components, definePlugin, exitDone, filters, find, findComponent, getStore, openLayer, React } from "@evi/api";
+import { Components, definePlugin, filters, find, findComponent, getStore, openLayer, React } from "@evi/api";
 import type { CloseLayer, PluginContext, SourcePatch } from "@evi/api";
 import type { MouseEvent, ReactNode } from "react";
 
@@ -230,59 +230,47 @@ async function applyToProfile(url: "/users/@me/profile" | "/users/@me", body: Re
     }
 }
 
-interface Action { label: string; run(): void; }
+const COPY_PATH = "M3 16a1 1 0 0 1-1-1V5a3 3 0 0 1 3-3h10a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H5a1 1 0 0 0-1 1v10a1 1 0 0 1-1 1H3Zm4-5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z";
+const CHECK_PATH = "M21.7 5.3a1 1 0 0 1 0 1.4l-12 12a1 1 0 0 1-1.4 0l-6-6a1 1 0 1 1 1.4-1.4L9 16.58l11.3-11.3a1 1 0 0 1 1.4 0Z";
+/** A brush: put this on my profile */
+const APPLY_PATH = "M20.7 2.3a1 1 0 0 1 0 1.4l-8.2 8.2a3.5 3.5 0 0 1-1.42 3.06C9.6 16 8 16.5 6 19c-.5.6-1.3.97-2 .97H3a1 1 0 0 1-.9-1.43c.68-1.4.9-2.7 1.13-3.95.3-1.6.6-3.3 2.3-4.66a3.5 3.5 0 0 1 3.06-.56l8.2-8.2a1 1 0 0 1 1.42 0l2.48 2.48Z";
 
-/** A colour: clicking it opens what you can do with it, copy first */
-function Swatch({ color, label, actions = [] }: { color: string; label: string; actions?: Action[]; }) {
-    const [open, setOpen] = React.useState(false);
-    const [closing, setClosing] = React.useState(false);
-    const menuRef = React.useRef<HTMLDivElement>(null);
-    const wrapRef = React.useRef<HTMLDivElement>(null);
-    const close = () => {
-        if (!open || closing) return;
-        setClosing(true);
-        void exitDone(menuRef.current).then(() => {
-            setOpen(false);
-            setClosing(false);
-        });
-    };
-    React.useEffect(() => {
-        if (!open) return;
-        const outside = (e: Event) => {
-            if (!wrapRef.current?.contains(e.target as Node)) close();
-        };
-        const key = (e: KeyboardEvent) => {
-            if (e.key !== "Escape") return;
-            e.stopImmediatePropagation();
-            close();
-        };
-        document.addEventListener("mousedown", outside, true);
-        window.addEventListener("keydown", key, true);
-        menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-        return () => {
-            document.removeEventListener("mousedown", outside, true);
-            window.removeEventListener("keydown", key, true);
-        };
-    }, [open, closing]);
-    const items: Action[] = [{ label: t("details.copy", { value: copyText(color) }), run: () => void copy(color) }, ...actions];
-
-    return (
-        <div className="evi-vi-chip-wrap" ref={wrapRef}>
-            <button type="button" className="evi-vi-chip" aria-haspopup="menu" aria-expanded={open} onClick={() => (open ? close() : setOpen(true))}>
-                <span className="evi-vi-chip-dot" style={{ background: color }} aria-hidden="true" />
-                <span className="evi-vi-chip-label">{label}</span>
-                <span className="evi-vi-chip-value">{copyText(color)}</span>
-                <svg className="evi-vi-chip-caret" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5.3 9.3a1 1 0 0 1 1.4 0l5.3 5.29 5.3-5.3a1 1 0 1 1 1.4 1.42l-6 6a1 1 0 0 1-1.4 0l-6-6a1 1 0 0 1 0-1.42Z" /></svg>
-            </button>
-            {open && (
-                <div ref={menuRef} className="evi-vi-menu evi-popout" role="menu" data-closing={closing || undefined}>
-                    {items.map(item => (
-                        <button key={item.label} type="button" role="menuitem" className="evi-vi-menu-item" onClick={() => { item.run(); close(); }}>{item.label}</button>
-                    ))}
-                </div>
-            )}
-        </div>
+/** A small icon button with Discord's tooltip */
+function IconAction({ label, path, onClick, done }: { label: string; path: string; onClick(): void; done?: boolean; }) {
+    const button = (
+        <button type="button" className="evi-vi-act" aria-label={label} data-done={done || undefined} onClick={onClick}>
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d={done ? CHECK_PATH : path} /></svg>
+        </button>
     );
+    const Tooltip = Components.Tooltip;
+    return Tooltip ? <Tooltip text={label} position="top">{button}</Tooltip> : button;
+}
+
+/** One colour: its swatch, what it is and its hex, with Copy and (when it can) Apply right there */
+function Swatch({ color, label, apply }: { color: string; label: string; apply?: { label: string; run(): void; }; }) {
+    const [copied, setCopied] = React.useState(false);
+    React.useEffect(() => {
+        if (!copied) return;
+        const timer = setTimeout(() => setCopied(false), 1500);
+        return () => clearTimeout(timer);
+    }, [copied]);
+    const value = copyText(color);
+    return (
+        <li className="evi-vi-swatch">
+            <span className="evi-vi-swatch-dot" style={{ background: color }} aria-hidden="true" />
+            <span className="evi-vi-swatch-label">{label}</span>
+            <span className="evi-vi-swatch-value">{value}</span>
+            <span className="evi-vi-swatch-actions">
+                <IconAction label={t(copied ? "details.copied" : "details.copy", { value })} path={COPY_PATH} done={copied} onClick={() => { void copy(color); setCopied(true); }} />
+                {apply && <IconAction label={apply.label} path={APPLY_PATH} onClick={apply.run} />}
+            </span>
+        </li>
+    );
+}
+
+/** An action for the whole section (the theme, the name style), under its colours */
+function SectionAction({ label, onClick }: { label: string; onClick(): void; }) {
+    return <button type="button" className="evi-vi-section-action" onClick={onClick}>{label}</button>;
 }
 
 /** The name as Discord draws it in profiles: its font, effect and colours, animated */
@@ -352,23 +340,18 @@ function DetailsDialog({ name, username, details, onClose }: { name: string; use
                     {theme && (
                         <Row title={t("details.theme")}>
                             <div className="evi-vi-preview evi-vi-theme" style={{ background: gradient([theme.primary, theme.accent]) }} aria-hidden="true" />
-                            <div className="evi-vi-chips">
-                                <Swatch color={theme.primary} label={t("details.primary")} actions={[
-                                    { label: t("details.useTop"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(mine()?.theme?.accent ?? theme.accent)] }) },
-                                    { label: t("details.useTheme"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(theme.accent)] }) },
-                                ]} />
-                                <Swatch color={theme.accent} label={t("details.accent")} actions={[
-                                    { label: t("details.useBottom"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(mine()?.theme?.primary ?? theme.primary), toInt(theme.accent)] }) },
-                                    { label: t("details.useTheme"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(theme.accent)] }) },
-                                ]} />
-                            </div>
+                            <ul className="evi-vi-swatches">
+                                <Swatch color={theme.primary} label={t("details.primary")} apply={{ label: t("details.useTop"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(mine()?.theme?.accent ?? theme.accent)] }) }} />
+                                <Swatch color={theme.accent} label={t("details.accent")} apply={{ label: t("details.useBottom"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(mine()?.theme?.primary ?? theme.primary), toInt(theme.accent)] }) }} />
+                            </ul>
+                            <SectionAction label={t("details.applyTheme")} onClick={() => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(theme.accent)] })} />
                         </Row>
                     )}
                     {bannerColor && (
                         <Row title={t("details.bannerColor")}>
-                            <div className="evi-vi-chips"><Swatch color={bannerColor} label={t("kind.banner")} actions={[
-                                { label: t("details.useBanner"), run: () => void applyToProfile("/users/@me/profile", { accent_color: toInt(bannerColor) }) },
-                            ]} /></div>
+                            <ul className="evi-vi-swatches">
+                                <Swatch color={bannerColor} label={t("kind.banner")} apply={{ label: t("details.useBanner"), run: () => void applyToProfile("/users/@me/profile", { accent_color: toInt(bannerColor) }) }} />
+                            </ul>
                         </Row>
                     )}
                     {nameStyle && (
@@ -379,12 +362,11 @@ function DetailsDialog({ name, username, details, onClose }: { name: string; use
                                 {nameStyle.font && <><dt>{t("details.font")}</dt><dd>{nameStyle.font}</dd></>}
                             </dl>
                             {nameColors.length > 0 && (
-                                <div className="evi-vi-chips">
-                                    {nameColors.map((c, i) => <Swatch key={i} color={c} label={t("details.color", { n: i + 1 })} actions={[
-                                        { label: t("details.useNameStyle"), run: () => void applyToProfile("/users/@me", { display_name_font_id: nameStyle.raw.fontId, display_name_effect_id: nameStyle.raw.effectId, display_name_colors: nameStyle.raw.colors }) },
-                                    ]} />)}
-                                </div>
+                                <ul className="evi-vi-swatches">
+                                    {nameColors.map((c, i) => <Swatch key={i} color={c} label={nameColors.length === 2 ? t(i === 0 ? "details.gradientStart" : "details.gradientEnd") : t("details.color", { n: i + 1 })} />)}
+                                </ul>
                             )}
+                            <SectionAction label={t("details.applyName")} onClick={() => void applyToProfile("/users/@me", { display_name_font_id: nameStyle.raw.fontId, display_name_effect_id: nameStyle.raw.effectId, display_name_colors: nameStyle.raw.colors })} />
                         </Row>
                     )}
                     {nameplate && (
@@ -516,21 +498,31 @@ const css = `
     color: var(--interactive-icon-default, var(--interactive-normal)); cursor: pointer; }
 @media (hover: hover) { .evi-vi-close:hover { background: var(--background-mod-subtle, var(--background-modifier-hover)); color: var(--interactive-icon-hover, var(--interactive-hover)); } }
 .evi-vi-close:focus-visible { outline: 2px solid var(--focus-primary); }
-.evi-vi-body { overflow-y: auto; padding: 8px 20px 20px; display: flex; flex-direction: column; gap: 20px; }
+.evi-vi-body { overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; padding: 8px 20px 20px; display: flex; flex-direction: column; gap: 20px; }
+.evi-vi-body::-webkit-scrollbar { display: none; }
 .evi-vi-row-title { margin: 0 0 8px; font-size: 12px; line-height: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted, #949ba4); }
 .evi-vi-preview { height: 72px; border-radius: 8px; outline: 1px solid rgb(255 255 255 / .08); outline-offset: -1px; margin-bottom: 8px; }
 .evi-vi-name { margin: 0 0 8px; font-size: 24px; line-height: 30px; font-weight: 700; -webkit-background-clip: text; background-clip: text; color: transparent; overflow-wrap: anywhere; }
 .evi-vi-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 8px; font-size: 14px; line-height: 18px; }
 .evi-vi-facts dt { color: var(--text-muted, #949ba4); }
 .evi-vi-facts dd { margin: 0; color: var(--text-default, #dbdee1); }
-.evi-vi-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.evi-vi-chip-wrap { position: relative; }
-.evi-vi-chip-caret { color: var(--text-muted, #949ba4); margin-inline-start: -2px; }
-.evi-vi-menu { position: absolute; z-index: 2; inset-block-start: calc(100% + 4px); inset-inline-start: 0; min-width: 220px; display: flex; flex-direction: column; padding: 6px;
-    border-radius: 8px; background: var(--background-surface-higher, var(--background-floating, #111214)); border: 1px solid var(--border-subtle, rgb(255 255 255 / .08));
-    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / .24)); }
-.evi-vi-menu-item { padding: 8px 10px; border: 0; border-radius: 4px; background: none; color: var(--interactive-text-default, var(--text-default, #dbdee1)); font: inherit; font-size: 14px; line-height: 18px; text-align: start; cursor: pointer; }
-.evi-vi-menu-item:hover, .evi-vi-menu-item:focus-visible { background: var(--background-mod-subtle, var(--background-modifier-hover)); color: var(--interactive-text-hover, #fff); outline: none; }
+.evi-vi-swatches { margin: 0; padding: 0; list-style: none; border-radius: 8px; background: var(--background-base-lower, rgb(0 0 0 / .12)); border: 1px solid var(--border-subtle, rgb(255 255 255 / .06)); }
+.evi-vi-swatch { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 6px 0 12px; }
+.evi-vi-swatch + .evi-vi-swatch { border-top: 1px solid var(--border-subtle, rgb(255 255 255 / .06)); }
+.evi-vi-swatch-dot { flex: none; width: 20px; height: 20px; border-radius: 50%; outline: 1px solid rgb(255 255 255 / .16); outline-offset: -1px; }
+.evi-vi-swatch-label { flex: 1; min-width: 0; font-size: 14px; line-height: 18px; color: var(--text-default, #dbdee1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evi-vi-swatch-value { font-family: var(--font-code, monospace); font-size: 13px; text-transform: uppercase; color: var(--text-muted, #949ba4); }
+.evi-vi-swatch-actions { display: flex; gap: 2px; }
+.evi-vi-act { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--interactive-icon-default, var(--interactive-normal)); cursor: pointer; transition: background-color .15s ease, color .15s ease, scale .2s ease-out; }
+@media (hover: hover) { .evi-vi-act:hover { background: var(--background-mod-subtle, var(--background-modifier-hover)); color: var(--interactive-icon-hover, var(--interactive-hover)); } }
+.evi-vi-act:active { scale: .92; }
+.evi-vi-act:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: -2px; }
+.evi-vi-act[data-done] { color: var(--text-feedback-positive, var(--status-positive, #23a55a)); }
+.evi-vi-section-action { align-self: flex-start; margin-top: 8px; min-height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--button-secondary-background, var(--background-mod-normal, rgb(255 255 255 / .08))); color: var(--interactive-text-default, var(--text-default, #dbdee1)); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color .15s ease, scale .2s ease-out; }
+@media (hover: hover) { .evi-vi-section-action:hover { background: var(--button-secondary-background-hover, var(--background-mod-strong, rgb(255 255 255 / .12))); } }
+.evi-vi-section-action:active { scale: .97; }
+.evi-vi-section-action:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: 2px; }
+.evi-vi-row { display: flex; flex-direction: column; }
 .evi-vi-styled-name { margin: 0 0 8px; font-size: 24px; line-height: 30px; font-weight: 700; }
 .evi-vi-plate { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .evi-vi-shop { flex: none; min-height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--button-filled-brand-background, var(--brand-500, #5865f2)); color: var(--white, #fff);
@@ -538,15 +530,7 @@ const css = `
 @media (hover: hover) { .evi-vi-shop:hover { background: var(--button-filled-brand-background-hover, var(--brand-560, #4752c4)); } }
 .evi-vi-shop:active { scale: .97; }
 .evi-vi-shop:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: 2px; }
-.evi-vi-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px 0 6px; border: 1px solid var(--border-subtle, rgb(255 255 255 / .08)); border-radius: 8px;
-    background: var(--background-base-lower, rgb(0 0 0 / .12)); color: var(--text-default, #dbdee1); font: inherit; font-size: 13px; cursor: pointer; transition: scale .2s ease-out; }
-@media (hover: hover) { .evi-vi-chip:hover { background: var(--background-mod-subtle, var(--background-modifier-hover)); } }
-.evi-vi-chip:active { scale: .97; }
-.evi-vi-chip:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: 2px; }
-.evi-vi-chip-dot { width: 20px; height: 20px; border-radius: 50%; outline: 1px solid rgb(255 255 255 / .16); outline-offset: -1px; }
-.evi-vi-chip-label { color: var(--text-muted, #949ba4); white-space: nowrap; }
-.evi-vi-chip-value { font-family: var(--font-code, monospace); text-transform: uppercase; }
-.evi-vi-plain { margin: 0; font-size: 14px; line-height: 18px; }
+@media (hover: hover) { .evi-vi-plain { margin: 0; font-size: 14px; line-height: 18px; }
 .evi-vi-empty { color: var(--text-muted, #949ba4); }
 `;
 

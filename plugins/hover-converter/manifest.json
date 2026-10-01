@@ -1,0 +1,102 @@
+{
+    "id": "hover-converter",
+    "name": "Hover Converter",
+    "description": "Hover \"$20\", \"5 ft\", \"30°C\" or \"3pm EST\" in any message to see it in your own currency, units and time zone.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "messages",
+        "utility"
+    ],
+    "permissions": {
+        "network": [
+            "api.frankfurter.dev",
+            "open.er-api.com"
+        ],
+        "readMessages": true
+    },
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "locales": {
+        "de": {
+            "name": "Umrechner",
+            "description": "Fahre über „$20“, „5 ft“, „30°C“ oder „3pm EST“ in einer Nachricht und sieh es in deiner Währung, deinen Einheiten und deiner Zeitzone.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Conversor al pasar",
+            "description": "Pasa el cursor por «$20», «5 ft», «30°C» o «3pm EST» en un mensaje para verlo en tu moneda, tus unidades y tu zona horaria.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Convertisseur au survol",
+            "description": "Survole « $20 », « 5 ft », « 30°C » ou « 3pm EST » dans un message pour le voir dans ta devise, tes unités et ton fuseau horaire.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "ホバー変換",
+            "description": "メッセージ内の「$20」「5 ft」「30°C」「3pm EST」にカーソルを合わせると、あなたの通貨、単位、タイムゾーンで表示します。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Przelicznik po najechaniu",
+            "description": "Najedź na „$20”, „5 ft”, „30°C” albo „3pm EST” w wiadomości, by zobaczyć to w swojej walucie, jednostkach i strefie czasowej.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Conversor ao passar o mouse",
+            "description": "Passe o mouse sobre “$20”, “5 ft”, “30°C” ou “3pm EST” numa mensagem para ver na sua moeda, nas suas unidades e no seu fuso horário.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Конвертер при наведении",
+            "description": "Наведите на «$20», «5 ft», «30°C» или «3pm EST» в сообщении, чтобы увидеть это в своей валюте, единицах и часовом поясе.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Üzerine Gelince Çevir",
+            "description": "Bir mesajdaki “$20”, “5 ft”, “30°C” ya da “3pm EST” üzerine gelin; kendi para biriminiz, birimleriniz ve saat diliminizle görün.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}
