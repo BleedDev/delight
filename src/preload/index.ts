@@ -9,6 +9,7 @@ import type { PluginReportInput } from "@shared/pluginReports";
 import type { PulledPlugins } from "@shared/pulls";
 import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesResult, CreditsDocument } from "@shared/badges";
 import type { Announcement } from "@shared/announcements";
+import type { DevLive } from "@shared/devLive";
 import type { EviNotification } from "@shared/notifications";
 import type { PluginPage, RatingSummary } from "@shared/reviews";
 import type { StoreHome } from "@shared/storeHome";
@@ -115,6 +116,7 @@ const EviNative = {
     following: (): Promise<CommunityResult<string[]>> => ipcRenderer.invoke(IPC.COMMUNITY_FOLLOWING),
     inbox: (): Promise<CommunityResult<EviNotification[]>> => ipcRenderer.invoke(IPC.COMMUNITY_INBOX),
     announcements: (): Promise<CommunityResult<Announcement[]>> => ipcRenderer.invoke(IPC.ANNOUNCEMENTS),
+    devLive: (): Promise<CommunityResult<DevLive>> => ipcRenderer.invoke(IPC.DEV_LIVE),
     onAnnouncementsChange: (cb: () => void) => {
         ipcRenderer.on(IPC.ANNOUNCEMENTS_CHANGED, () => cb());
     },

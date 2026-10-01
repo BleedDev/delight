@@ -5,10 +5,12 @@
 import type { ComponentType } from "react";
 
 import { t, useLocale } from "../i18n";
+import { Developer } from "../developer";
 import { Inbox } from "../inbox";
 import { Store } from "../store";
 import { AccountTab } from "./AccountTab";
 import { BackupTab } from "./BackupTab";
+import { DevelopersTab } from "./DevelopersTab";
 import { DevToolsTab } from "./DevToolsTab";
 import { ErrorBoundary, IconName, TabBar, useStore } from "./components";
 import { selectedTab, showTab, subscribeTabs } from "./nav";
@@ -39,6 +41,8 @@ export interface Page {
     label(): string;
     icon: IconName;
     tabs: PageTab[];
+    /** Left out unless this says yes (see visiblePages) */
+    visible?(): boolean;
 }
 
 const pluginUpdates = () => Store.getSnapshot().plugins.filter(p => Store.pluginAction(p.id) === "update").length;
@@ -92,7 +96,20 @@ export const pages: readonly Page[] = [
             { id: "devtools", label: () => t("devtools.tab"), icon: "terminal", Component: DevToolsTab },
         ],
     },
+    {
+        // Only on an Evi linked to one of Evi's developers
+        id: "developers",
+        label: () => t("dev.page"),
+        icon: "analytics",
+        visible: Developer.isDev,
+        tabs: [
+            { id: "analytics", label: () => t("dev.tab"), icon: "analytics", Component: DevelopersTab },
+        ],
+    },
 ];
+
+/** The pages this Evi shows; changes when Developer does */
+export const visiblePages = () => pages.filter(p => p.visible?.() ?? true);
 
 /** A page's tab bar and the tab it's on */
 export function PageView({ page }: { page: Page; }) {

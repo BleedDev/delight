@@ -6,6 +6,7 @@
 import type { AccountUser } from "@shared/account";
 
 import { t } from "../i18n";
+import { Developer } from "../developer";
 import { Native } from "../native";
 import { React } from "../webpack/common";
 import { Button, Section, Status, Text } from "./components";
@@ -32,6 +33,8 @@ export function AccountTab() {
 
     const check = React.useCallback(async () => {
         const res = await Native.accountStatus();
+        // Linked or unlinked: the Developers page follows
+        void Developer.refresh();
         if (!res.ok) setState({ kind: "offline", error: res.error });
         else setState(res.user ? { kind: "linked", user: res.user } : { kind: "idle" });
     }, []);
@@ -49,6 +52,7 @@ export function AccountTab() {
             const res = await Native.accountStatus();
             if (res.ok && res.user) {
                 setState({ kind: "linked", user: res.user });
+                void Developer.refresh();
                 // Just linked: the account takes this Discord's current name and avatar
                 syncProfileNow();
             }

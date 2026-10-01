@@ -12,7 +12,8 @@ const CODE_RE = /^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/;
 
 async function status(): Promise<AccountStatus> {
     try {
-        return { ok: true, user: parseAccountUser((await apiRequest("GET", "/link", { max: 16 * 1024 })).json), site: new URL(apiUrl()).origin };
+        const json = (await apiRequest("GET", "/link", { max: 16 * 1024 })).json;
+        return { ok: true, user: parseAccountUser(json), site: new URL(apiUrl()).origin, admin: json?.admin === true };
     } catch (err) {
         return { ok: false, error: (err as Error).message };
     }

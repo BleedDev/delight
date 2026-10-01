@@ -196,7 +196,19 @@ function fakeNative(bootData: BootData) {
             return { ok: true, id, version: "1.0.0" };
         },
         // Account link: not linked until the test confirms the code "on the site"
-        accountStatus: async () => ({ ok: true, site: "https://evi.rest", user: (window as any).__test.account.confirmed ? { id: "123456789012345678", username: "evi-tester", globalName: "Evi Tester", avatar: null } : null }),
+        accountStatus: async () => ({ ok: true, site: "https://evi.rest", user: (window as any).__test.account.confirmed ? { id: "123456789012345678", username: "evi-tester", globalName: "Evi Tester", avatar: null } : null, admin: !!(window as any).__test.account.admin }),
+        devLive: async () => ({
+            ok: true,
+            value: {
+                at: Date.now(),
+                now: { online: 1284, connections: 1301, versions: [{ version: "1.4.3", count: 1102 }, { version: "1.4.2", count: 151 }, { version: "1.3.0", count: 31 }] },
+                today: { active: 3920, peak: 1410 },
+                days: Array.from({ length: 30 }, (_, i) => ({ day: new Date(Date.now() - (29 - i) * 86_400_000).toISOString().slice(0, 10), active: 2400 + Math.round(1400 * Math.sin(i / 4) ** 2) + i * 20, peak: 900 + i * 10 })),
+                people: { accounts: 812, linked: 1033 },
+                topPlugins: [{ id: "view-icons", name: "View Icons", installs: 2210 }, { id: "music-player", name: "Music Player", installs: 1544 }, { id: "quest-blocker", name: "Quest Blocker", installs: 990 }],
+                store: { plugins: 64, waiting: 3, reports: 1 },
+            },
+        }),
         openDashboard: async () => { (window as any).__test.account.dashboard++; },
         // Evi 9.9.0 is out; installing reports progress, then the installer would restart Discord
         checkForUpdate: async () => {
@@ -1633,6 +1645,34 @@ check("Evi's panel shows no scrollbars", scrollbars.every(s => s.width === "none
     await body.getByText("Open dashboard").click();
     const account = await page.evaluate(() => (window as any).__test.account);
     check("Account tab links this install: code, then who it's linked to, then the dashboard", code === "K7PQ-X3MV" && account.started === 1 && account.dashboard === 1, { code, account });
+    await page.click("#dl-tab-plugins");
+}
+
+// The Developers page: only on an Evi linked to one of Evi's developers, with evi.rest's numbers
+{
+    const hiddenBefore = await page.locator("#dl-tab-developers").count() === 0;
+    await page.evaluate(() => { (window as any).__test.account.admin = true; });
+    await openTab("general", "account");
+    await page.waitForSelector("#dl-tab-developers", { timeout: 3000 });
+    await page.click("#dl-tab-developers");
+    const body = page.locator(".dl-body");
+    await body.getByText("Online now", { exact: true }).waitFor({ timeout: 3000 });
+    const shown = await page.evaluate(() => ({
+        tiles: [...document.querySelectorAll(".dl-dev-tile")].map(t => t.textContent),
+        bars: document.querySelectorAll(".dl-dev-bar").length,
+        versions: document.querySelectorAll("#dl-dev-versions .dl-dev-ranked > li").length,
+        plugins: [...document.querySelectorAll("#dl-dev-plugins .dl-dev-ranked-name")].map(n => n.textContent),
+    }));
+    await page.hover(".dl-dev-bar-hit:last-child");
+    const tooltip = await page.textContent(".dl-dev-tooltip").catch(() => null);
+    await page.screenshot({ path: join(OUT, "ui-developers.png") });
+    await page.evaluate(() => { (window as any).__test.account.admin = false; });
+    await openTab("general", "account");
+    await page.waitForSelector("#dl-tab-developers", { state: "detached", timeout: 3000 }).catch(() => { });
+    const hiddenAfter = await page.locator("#dl-tab-developers").count() === 0;
+    check("the Developers page shows only for a developer: who's online, people per day, versions and top plugins",
+        hiddenBefore && hiddenAfter && shown.tiles[0]?.includes("1,284") && shown.bars === 30 && shown.versions === 3 && shown.plugins[0] === "View Icons" && !!tooltip?.includes("people"),
+        { hiddenBefore, hiddenAfter, shown, tooltip });
     await page.click("#dl-tab-plugins");
 }
 

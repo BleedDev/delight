@@ -33,6 +33,8 @@ const iconPaths: Record<string, string> = {
     themes: "M7 14a3 3 0 0 0-3 3c0 1.3-1.2 2-2 2 .9 1.2 2.5 2 4 2a4 4 0 0 0 4-4 3 3 0 0 0-3-3zm13.7-9.4-1.3-1.3a1 1 0 0 0-1.4 0L9 12.3l2.8 2.7 8.9-8.9a1 1 0 0 0 0-1.4z",
     // Sliders
     general: "M4 5a1 1 0 0 0 0 2h7.17a3 3 0 0 0 5.66 0H20a1 1 0 1 0 0-2h-3.17a3 3 0 0 0-5.66 0H4Zm0 12a1 1 0 1 0 0 2h3.17a3 3 0 0 0 5.66 0H20a1 1 0 1 0 0-2h-7.17a3 3 0 0 0-5.66 0H4Zm-1-5a1 1 0 0 1 1-1h11.17a3 3 0 0 1 5.66 0H21a1 1 0 1 1 0 2h-.17a3 3 0 0 1-5.66 0H4a1 1 0 0 1-1-1Z",
+    // Three bars
+    developers: "M4 21a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4Zm7 0a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-2Zm7 0a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-2Z",
     // Wrench
     advanced: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z",
 };
@@ -76,9 +78,10 @@ function buildSection(types: NodeTypes): LayoutNode {
         };
     };
 
-    const items = pages.map(entry);
+    const items = pages.map(page => ({ page, node: entry(page) }));
 
-    return { key: SECTION_KEY, type: types.SECTION, useTitle: () => "Evi", buildLayout: () => items };
+    // Asked each time Discord builds its settings, so the Developers page comes and goes with the account
+    return { key: SECTION_KEY, type: types.SECTION, useTitle: () => "Evi", buildLayout: () => items.filter(i => i.page.visible?.() ?? true).map(i => i.node) };
 }
 
 function wrapRoot(root: LayoutNode, types: NodeTypes) {

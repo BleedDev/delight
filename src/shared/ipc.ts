@@ -126,6 +126,7 @@ export const IPC = {
     COMMUNITY_INBOX: "evi:community-inbox",
     ANNOUNCEMENTS: "evi:announcements",
     ANNOUNCEMENTS_CHANGED: "evi:announcements-changed",
+    DEV_LIVE: "evi:dev-live",
     COMMUNITY_INBOX_READ: "evi:community-inbox-read",
     /** main -> renderer: the account's inbox changed (evi.rest's stream said so) */
     COMMUNITY_INBOX_CHANGED: "evi:community-inbox-changed",

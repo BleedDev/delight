@@ -168,7 +168,8 @@ const jitter = (ms: number) => ms / 2 + Math.random() * ms;
 /** One connection's life: resolves when it ends, after at least one event, or throws */
 async function listen() {
     const res = await net.fetch(`${apiUrl()}/badges/events`, {
-        headers: { "Accept": "text/event-stream", "X-Evi-Install": getInstallId() },
+        // The version only feeds Evi's developers' numbers (who runs which Evi)
+        headers: { "Accept": "text/event-stream", "X-Evi-Install": getInstallId(), "X-Evi-Version": EVI_VERSION },
         cache: "no-store",
     });
     if (!res.ok || !res.body) throw Object.assign(new Error(`The change stream answered ${res.status}`), { status: res.status });

@@ -2,11 +2,12 @@ import type { KeyboardEvent } from "react";
 
 import { t, useLocale } from "../i18n";
 import { isRecording } from "../keybinds";
+import { Developer } from "../developer";
 import { Native } from "../native";
 import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
 import { Button, ErrorBoundary, Icon, openDialogs, Text, useStore } from "./components";
-import { pages, PageView } from "./pages";
+import { PageView, visiblePages } from "./pages";
 import { currentRelease, WhatsNewModal } from "./WhatsNew";
 import css from "./styles.css" with { type: "text" };
 import { DiscordContext } from "./discordContext";
@@ -35,7 +36,7 @@ function close() {
 }
 
 // Each page has its tabs along the top, see pages.tsx
-const tabs = pages;
+let tabs = visiblePages();
 
 // Remembered across closing and reopening, like Discord's settings remember their last page
 let lastTab = tabs[0].id;
@@ -46,6 +47,9 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), texta
 
 function Panel() {
     useLocale();
+    // The Developers page comes and goes with the linked account
+    useStore(Developer.subscribe, Developer.isDev);
+    tabs = visiblePages();
     const [tab, setTabState] = React.useState(lastTab);
     const [whatsNew, setWhatsNew] = React.useState(false);
     const release = currentRelease();
@@ -176,7 +180,7 @@ function mount() {
 export const SettingsUI = {
     /** Opens the panel, on `page` when given (see pages.tsx) */
     open(page?: string) {
-        if (page && tabs.some(t => t.id === page)) {
+        if (page && visiblePages().some(t => t.id === page)) {
             lastTab = page;
             // Already open on another page: go there
             switchPage?.(page);

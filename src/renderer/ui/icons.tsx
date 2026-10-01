@@ -92,6 +92,10 @@ const defs = {
             "M5.5 18l3.8-5.07a1 1 0 0 1 1.6 0l2.1 2.8 1.2-1.4a1 1 0 0 1 1.52 0L18.5 18h-13Z",
         ],
     },
+    analytics: {
+        discord: "AnalyticsIcon",
+        paths: ["M4 21a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4Zm7 0a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-2Zm7 0a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-2Z"],
+    },
 } satisfies Record<string, IconDef>;
 
 /** Names Evi used before switching to Discord's set, kept so existing callers keep working */

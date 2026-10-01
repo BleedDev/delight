@@ -4130,3 +4130,130 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 
 @keyframes dl-announcement-in { from { opacity: 0; translate: 0 -16px; scale: 0.97; } }
 @keyframes dl-announcement-out { to { opacity: 0; translate: 0 -8px; scale: 0.98; } }
+
+/* ---- Developers page (DevelopersTab.tsx) ---------------------------------------------------- */
+
+.dl-dev {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.dl-dev-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-block-end: -16px;
+}
+
+.dl-dev-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 16px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-dev-chart {
+    display: flex;
+    gap: 8px;
+    block-size: 180px;
+    padding: 16px;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-dev-chart-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    min-inline-size: 24px;
+}
+
+.dl-dev-bars {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    border-block-end: 1px solid var(--dl-border-divider);
+}
+
+/* The hit area is the whole column, wider and taller than the bar */
+.dl-dev-bar-hit {
+    flex: 1;
+    block-size: 100%;
+    display: flex;
+    align-items: flex-end;
+    padding-inline: 1px;
+    outline: none;
+    cursor: default;
+}
+
+.dl-dev-bar {
+    inline-size: 100%;
+    border-radius: 4px 4px 0 0;
+    background: var(--dl-brand);
+    opacity: 0.85;
+    transition: opacity var(--dl-duration-fast);
+}
+
+.dl-dev-bar-hit[data-active] .dl-dev-bar { opacity: 1; }
+.dl-dev-bars:has([data-active]) .dl-dev-bar-hit:not([data-active]) .dl-dev-bar { opacity: 0.45; }
+.dl-dev-bar-hit:focus-visible .dl-dev-bar { box-shadow: 0 0 0 2px var(--dl-focus-ring); }
+
+.dl-dev-tooltip {
+    position: absolute;
+    inset-block-start: -8px;
+    padding: 4px 8px;
+    border-radius: var(--dl-radius-control);
+    background: var(--dl-bg-modal);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.24);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.dl-dev-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+}
+
+.dl-dev-ranked {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dl-dev-ranked > li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+}
+
+.dl-dev-ranked-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dl-dev-ranked-bar {
+    grid-column: 1 / -1;
+    block-size: 4px;
+    border-radius: 2px;
+    background: var(--dl-bg-group);
+    overflow: hidden;
+}
+
+.dl-dev-ranked-bar > span {
+    display: block;
+    block-size: 100%;
+    border-radius: 2px;
+    background: var(--dl-brand);
+}

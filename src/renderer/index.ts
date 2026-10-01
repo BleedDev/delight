@@ -7,6 +7,7 @@ import { pullFor } from "@shared/pulls";
 
 import { Backup } from "./backup";
 import { CrashDetective } from "./crashDetective";
+import { Developer } from "./developer";
 import { installCssFixes, warmUiFonts } from "./cssFixes";
 import { I18n } from "./i18n";
 import { startHealthReports } from "./health";
@@ -149,6 +150,8 @@ function boot() {
                 startLiveToasts();
                 // Evi's team to everyone, top and centre, live
                 startAnnouncements();
+                // Evi's developers get their Developers page
+                void Developer.refresh();
             });
             // So a font's first use (opening settings, an italic in chat) doesn't relayout all text
             whenAppReady(warmUiFonts);

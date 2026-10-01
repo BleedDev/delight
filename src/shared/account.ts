@@ -14,7 +14,8 @@ export interface AccountUser {
 }
 
 /** `site` is the website the API belongs to, where the dashboard is */
-export type AccountStatus = { ok: true; user: AccountUser | null; site: string; } | { ok: false; error: string; };
+/** `admin`: one of Evi's developers, whose Evi shows the Developers page */
+export type AccountStatus = { ok: true; user: AccountUser | null; site: string; admin?: boolean; } | { ok: false; error: string; };
 export type AccountLinkResult = { ok: true; code: string; } | { ok: false; error: string; };
 
 export function parseAccountUser(json: unknown): AccountUser | null {

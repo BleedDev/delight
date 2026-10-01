@@ -11,6 +11,7 @@ import type { CommunityResult } from "@shared/ipc";
 import { IPC } from "@shared/ipc";
 import { parseCredits } from "@shared/badges";
 import { parseAnnouncements } from "@shared/announcements";
+import { parseDevLive } from "@shared/devLive";
 import { parseNotifications } from "@shared/notifications";
 import { parsePluginPage, parseRatings, validateReview } from "@shared/reviews";
 import { parseStoreHome } from "@shared/storeHome";
@@ -126,6 +127,8 @@ export function initCommunity() {
         const authors = (await apiRequest("GET", "/me/following")).json?.authors;
         return Array.isArray(authors) ? authors.filter((s): s is string => typeof s === "string").slice(0, 500) : [];
     }));
+    // The Developers page: evi.rest only answers an Evi linked to one of Evi's developers
+    ipcMain.handle(IPC.DEV_LIVE, () => call(async () => parseDevLive((await apiRequest("GET", "/admin/live", { max: 256 * 1024 })).json)));
     // Evi's team to everyone: public, so it works without a linked account
     ipcMain.handle(IPC.ANNOUNCEMENTS, () => call(async () => parseAnnouncements((await apiRequest("GET", "/announcements", { max: 256 * 1024 })).json)));
     ipcMain.handle(IPC.COMMUNITY_INBOX, () => call(async () => parseNotifications((await apiRequest("GET", "/me/notifications")).json?.notifications)));
