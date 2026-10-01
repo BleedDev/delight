@@ -31,7 +31,8 @@ const WATCH = args.has("--watch");
 const RELEASE = args.has("--release");
 const CLI = args.has("--cli");
 const INSTALLER = args.has("--installer");
-const INSTALLER_ONLY = INSTALLER && !CLI && !WATCH;
+// --release with --installer still builds evi-core.json
+const INSTALLER_ONLY = INSTALLER && !CLI && !WATCH && !RELEASE;
 
 /** Release assets next to the CLI's: what Evi Setup downloads, and Evi Setup itself */
 const CORE_ASSET = "evi-core.json";
