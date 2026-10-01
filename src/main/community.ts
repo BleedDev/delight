@@ -10,6 +10,7 @@
 import type { CommunityResult } from "@shared/ipc";
 import { IPC } from "@shared/ipc";
 import { parseCredits } from "@shared/badges";
+import { parseAnnouncements } from "@shared/announcements";
 import { parseNotifications } from "@shared/notifications";
 import { parsePluginPage, parseRatings, validateReview } from "@shared/reviews";
 import { parseStoreHome } from "@shared/storeHome";
@@ -125,6 +126,8 @@ export function initCommunity() {
         const authors = (await apiRequest("GET", "/me/following")).json?.authors;
         return Array.isArray(authors) ? authors.filter((s): s is string => typeof s === "string").slice(0, 500) : [];
     }));
+    // Evi's team to everyone: public, so it works without a linked account
+    ipcMain.handle(IPC.ANNOUNCEMENTS, () => call(async () => parseAnnouncements((await apiRequest("GET", "/announcements", { max: 256 * 1024 })).json)));
     ipcMain.handle(IPC.COMMUNITY_INBOX, () => call(async () => parseNotifications((await apiRequest("GET", "/me/notifications")).json?.notifications)));
     ipcMain.handle(IPC.COMMUNITY_INBOX_READ, (_, ids: unknown) => call(async () => {
         const clean = Array.isArray(ids) ? ids.filter(id => typeof id === "string" && /^\d{1,15}$/.test(id)).slice(0, 100) : undefined;

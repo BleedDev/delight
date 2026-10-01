@@ -20,6 +20,7 @@ const kindIcon: Record<NotificationKind, IconName> = {
     wishlist: "heart",
     fixed: "circleCheck",
     update: "download",
+    announcement: "bell",
 };
 
 /** Which day a notification is from, for the list's headings */

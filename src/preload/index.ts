@@ -8,6 +8,7 @@ import type { Hotfix } from "@shared/hotfixes";
 import type { PluginReportInput } from "@shared/pluginReports";
 import type { PulledPlugins } from "@shared/pulls";
 import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesResult, CreditsDocument } from "@shared/badges";
+import type { Announcement } from "@shared/announcements";
 import type { EviNotification } from "@shared/notifications";
 import type { PluginPage, RatingSummary } from "@shared/reviews";
 import type { StoreHome } from "@shared/storeHome";
@@ -113,6 +114,7 @@ const EviNative = {
     follow: (slug: string, on: boolean): Promise<CommunityResult<{ following: boolean; followers: number; }>> => ipcRenderer.invoke(IPC.COMMUNITY_FOLLOW, slug, on),
     following: (): Promise<CommunityResult<string[]>> => ipcRenderer.invoke(IPC.COMMUNITY_FOLLOWING),
     inbox: (): Promise<CommunityResult<EviNotification[]>> => ipcRenderer.invoke(IPC.COMMUNITY_INBOX),
+    announcements: (): Promise<CommunityResult<Announcement[]>> => ipcRenderer.invoke(IPC.ANNOUNCEMENTS),
     markInboxRead: (ids?: string[]): Promise<CommunityResult<EviNotification[]>> => ipcRenderer.invoke(IPC.COMMUNITY_INBOX_READ, ids),
     onInboxChange(cb: () => void) {
         ipcRenderer.on(IPC.COMMUNITY_INBOX_CHANGED, () => cb());

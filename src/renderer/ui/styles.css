@@ -3684,6 +3684,7 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 .dl-inbox-icon[data-kind="review"], .dl-inbox-icon[data-kind="wishlist"] { color: #f0b232; }
 .dl-inbox-icon[data-kind="wishlist"] { color: #f23f78; }
 .dl-inbox-icon[data-kind="fixed"] { color: var(--dl-text-positive); }
+.dl-inbox-icon[data-kind="announcement"] { color: var(--dl-brand, #5865f2); }
 .dl-inbox-icon[data-kind="update"], .dl-inbox-icon[data-kind="follow"] { color: var(--dl-text-brand); }
 
 .dl-inbox-text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-inline-size: 0; }
