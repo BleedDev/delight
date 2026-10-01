@@ -103,6 +103,9 @@ describe("the stylesheet", () => {
         expect(css).toContain(`${POPOUT_LAYER}:is(`);
         expect(css).toContain("--background-surface-high: rgb(0 0 0 / 0.7);");
         expect(css).toContain("--modal-background: rgb(0 0 0 / 0.7);");
+        // A footer on a see-through dialog doesn't stack a second see-through layer on it
+        expect(css).toContain("--modal-footer-background: transparent;");
+        expect(css).not.toContain("--modal-footer-background: rgb(");
     });
 });
 

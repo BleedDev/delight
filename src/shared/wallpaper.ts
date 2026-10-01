@@ -300,8 +300,15 @@ function windowVars(dark: boolean, w: WallpaperSettings) {
         vars.map(v => see(v, w.panels[panel as keyof typeof PANEL_VARS], w.tint, dark))).join("\n");
 }
 
+/**
+ * Dialog footers sit inside the dialog, already see-through: a see-through footer of their own
+ * would stack on it and show the wallpaper through twice, a band of a different colour (Join a
+ * Server's Back / Join row). They show the dialog's background instead.
+ */
+const STACKED_VARS = new Set(["--modal-footer-background"]);
+
 function popoutVars(dark: boolean, w: WallpaperSettings) {
-    return POPOUT_VARS.map(v => see(v, w.panels.popouts, w.tint, dark)).join("\n");
+    return POPOUT_VARS.map(v => STACKED_VARS.has(v) ? `    ${v}: transparent;` : see(v, w.panels.popouts, w.tint, dark)).join("\n");
 }
 
 /** `scope` and every element under it that sets Discord's theme again */
