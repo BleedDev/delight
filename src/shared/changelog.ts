@@ -35,6 +35,18 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.4.2",
+        date: "2026-10-01",
+        sections: {
+            improved: [
+                "**Safe mode is yours to switch off.** General → Updates has \"Turn on safe mode by itself\": off, crashes never turn it on.",
+            ],
+            fixed: [
+                "**Nothing of Evi's over your games.** Safe mode and other notices showed in Discord's in-game overlay, where they couldn't be clicked away, and a game closing the overlay counted as Discord crashing.",
+            ],
+        },
+    },
+    {
         version: "1.4.1",
         date: "2026-10-01",
         sections: {

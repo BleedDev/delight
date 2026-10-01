@@ -11,6 +11,14 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.4.2": {
+            improved: [
+                "**Den abgesicherten Modus schaltest du.** Unter Allgemein → Updates gibt es „Abgesicherten Modus von selbst einschalten“: Ausgeschaltet lösen Abstürze ihn nie aus.",
+            ],
+            fixed: [
+                "**Nichts von Evi über deinen Spielen.** Der abgesicherte Modus und andere Hinweise erschienen im In-Game-Overlay von Discord, wo man sie nicht wegklicken konnte, und wenn ein Spiel das Overlay schloss, galt das als Absturz.",
+            ],
+        },
         "1.4.1": {
             added: [
                 "**Evi Setup für macOS und Linux.** Installiere, aktualisiere und entferne Evi auf jedem System in einem Fenster, ohne Terminal. Unter Linux fragt es nach deinem Passwort, wenn Discords Ordner es braucht, und unter macOS und Linux bringt es Evi nach Discord-Updates von selbst zurück.",
@@ -271,6 +279,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.4.2": {
+            improved: [
+                "**El modo seguro lo decides tú.** En General → Actualizaciones está «Activar el modo seguro solo»: desactivado, los fallos nunca lo activan.",
+            ],
+            fixed: [
+                "**Nada de Evi sobre tus juegos.** El modo seguro y otros avisos aparecían en la superposición de Discord en el juego, donde no se podían cerrar, y que un juego cerrara la superposición contaba como un fallo de Discord.",
+            ],
+        },
         "1.4.1": {
             added: [
                 "**Evi Setup para macOS y Linux.** Instala, actualiza y quita Evi desde una ventana en cualquier sistema, sin terminal. En Linux pide tu contraseña cuando la carpeta de Discord lo necesita, y en macOS y Linux vuelve a poner Evi por sí solo tras las actualizaciones de Discord.",
@@ -531,6 +547,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.4.2": {
+            improved: [
+                "**Le mode sans échec, c'est vous qui décidez.** Général → Mises à jour propose « Activer le mode sans échec de lui-même » : désactivé, les plantages ne l'activent jamais.",
+            ],
+            fixed: [
+                "**Plus rien d'Evi par-dessus vos jeux.** Le mode sans échec et d'autres avis s'affichaient dans l'overlay en jeu de Discord, impossibles à fermer, et un jeu qui fermait l'overlay comptait comme un plantage de Discord.",
+            ],
+        },
         "1.4.1": {
             added: [
                 "**Evi Setup pour macOS et Linux.** Installez, mettez à jour et retirez Evi depuis une fenêtre sur tous les systèmes, sans terminal. Sous Linux, il demande votre mot de passe quand le dossier de Discord l'exige, et sous macOS et Linux il remet Evi en place tout seul après les mises à jour de Discord.",
@@ -791,6 +815,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.4.2": {
+            improved: [
+                "**セーフモードをオフにできるように。** 一般 → アップデートの「自動でセーフモードにする」をオフにすると、クラッシュしてもセーフモードになりません。",
+            ],
+            fixed: [
+                "**ゲームの上にEviが表示されなくなりました。** セーフモードなどのお知らせがDiscordのゲーム内オーバーレイに表示されて閉じられず、ゲームがオーバーレイを閉じるとクラッシュとして数えられていました。",
+            ],
+        },
         "1.4.1": {
             added: [
                 "**macOSとLinux向けのEvi Setup。** どのシステムでも、ターミナルを使わずにウィンドウからEviをインストール、更新、削除できます。LinuxではDiscordのフォルダに必要なときだけパスワードを求め、macOSとLinuxではDiscordの更新後にEviを自動で元に戻します。",
@@ -1051,6 +1083,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.4.2": {
+            improved: [
+                "**Tryb awaryjny możesz wyłączyć.** W Ogólne → Aktualizacje jest „Włączaj tryb awaryjny sam”: po wyłączeniu awarie nigdy go nie włączają.",
+            ],
+            fixed: [
+                "**Nic z Evi nad twoimi grami.** Tryb awaryjny i inne powiadomienia pojawiały się w nakładce Discorda w grze, gdzie nie dało się ich zamknąć, a zamknięcie nakładki przez grę liczyło się jako awaria Discorda.",
+            ],
+        },
         "1.4.1": {
             added: [
                 "**Evi Setup dla macOS i Linuxa.** Instaluj, aktualizuj i usuwaj Evi z okna na każdym systemie, bez terminala. Na Linuxie pyta o hasło, gdy folder Discorda tego wymaga, a na macOS i Linuxie sam przywraca Evi po aktualizacjach Discorda.",
@@ -1311,6 +1351,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.4.2": {
+            improved: [
+                "**O modo seguro é você quem decide.** Em Geral → Atualizações tem \"Ativar o modo seguro sozinho\": desativado, travamentos nunca o ativam.",
+            ],
+            fixed: [
+                "**Nada do Evi por cima dos seus jogos.** O modo seguro e outros avisos apareciam na sobreposição do Discord no jogo, sem como fechar, e um jogo fechando a sobreposição contava como travamento do Discord.",
+            ],
+        },
         "1.4.1": {
             added: [
                 "**Evi Setup para macOS e Linux.** Instale, atualize e remova o Evi por uma janela em qualquer sistema, sem terminal. No Linux ele pede sua senha quando a pasta do Discord exige, e no macOS e no Linux ele recoloca o Evi sozinho depois das atualizações do Discord.",
@@ -1571,6 +1619,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.4.2": {
+            improved: [
+                "**Безопасный режим теперь можно отключить.** В Общие → Обновления есть «Включать безопасный режим самостоятельно»: если выключить, сбои его не включают.",
+            ],
+            fixed: [
+                "**Ничего от Evi поверх игр.** Безопасный режим и другие уведомления появлялись во внутриигровом оверлее Discord, где их нельзя было закрыть, а закрытие оверлея игрой считалось сбоем Discord.",
+            ],
+        },
         "1.4.1": {
             added: [
                 "**Evi Setup для macOS и Linux.** Устанавливайте, обновляйте и удаляйте Evi через окно на любой системе, без терминала. В Linux он спрашивает пароль, когда этого требует папка Discord, а в macOS и Linux сам возвращает Evi после обновлений Discord.",
@@ -1831,6 +1887,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.4.2": {
+            improved: [
+                "**Güvenli modu kapatmak senin elinde.** Genel → Güncellemeler'de \"Güvenli modu kendiliğinden aç\" var: kapalıyken çökmeler onu hiç açmaz.",
+            ],
+            fixed: [
+                "**Oyunlarının üstünde Evi'den bir şey yok.** Güvenli mod ve diğer bildirimler Discord'un oyun içi katmanında çıkıyor ve kapatılamıyordu; bir oyunun katmanı kapatması da Discord çökmesi sayılıyordu.",
+            ],
+        },
         "1.4.1": {
             added: [
                 "**macOS ve Linux için Evi Setup.** Evi'yi her sistemde terminal olmadan bir pencereden kur, güncelle ve kaldır. Linux'ta Discord'un klasörü gerektirdiğinde şifreni sorar; macOS ve Linux'ta Discord güncellemelerinden sonra Evi'yi kendiliğinden geri getirir.",
