@@ -35,6 +35,18 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "1.5.0",
+        date: "2026-10-01",
+        sections: {
+            added: [
+                "**News from Evi's team, live.** Announcements show at the top of your screen within seconds of being sent, and stay until you close them.",
+            ],
+            fixed: [
+                "**Plugin notifications show again.** Discord changed how it shows its pop-ups today, and plugins' ones stopped appearing.",
+            ],
+        },
+    },
+    {
         version: "1.4.3",
         date: "2026-10-01",
         sections: {

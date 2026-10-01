@@ -11,6 +11,14 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "1.5.0": {
+            added: [
+                "**Neuigkeiten von Evis Team, live.** Ankündigungen erscheinen Sekunden nach dem Senden oben auf deinem Bildschirm und bleiben, bis du sie schließt.",
+            ],
+            fixed: [
+                "**Plugin-Benachrichtigungen erscheinen wieder.** Discord hat heute geändert, wie es seine Pop-ups zeigt, und die von Plugins erschienen nicht mehr.",
+            ],
+        },
         "1.4.3": {
             fixed: [
                 "**Dein Discord-Farbdesign hält sich aus Evis raus.** Mit einem Evi-Design zeigten Teile, die es nicht einfärbt (etwa die Fußzeile eines Dialogs), die Tönung deines Discord-Farbdesigns.",
@@ -285,6 +293,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "1.5.0": {
+            added: [
+                "**Noticias del equipo de Evi, en directo.** Los anuncios aparecen arriba en tu pantalla segundos después de enviarse y se quedan hasta que los cierras.",
+            ],
+            fixed: [
+                "**Las notificaciones de los plugins vuelven a verse.** Discord cambió hoy cómo muestra sus avisos emergentes y los de los plugins dejaron de aparecer.",
+            ],
+        },
         "1.4.3": {
             fixed: [
                 "**Tu tema de color de Discord ya no se mezcla con el de Evi.** Con un tema de Evi, las partes que no colorea (como el pie de un diálogo) mostraban el tinte de tu tema de Discord.",
@@ -559,6 +575,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "1.5.0": {
+            added: [
+                "**Les nouvelles de l'équipe d'Evi, en direct.** Les annonces apparaissent en haut de ton écran quelques secondes après leur envoi et restent jusqu'à ce que tu les fermes.",
+            ],
+            fixed: [
+                "**Les notifications des plugins s'affichent de nouveau.** Discord a changé aujourd'hui la façon dont il affiche ses pop-ups, et celles des plugins n'apparaissaient plus.",
+            ],
+        },
         "1.4.3": {
             fixed: [
                 "**Ton thème de couleur Discord ne se mêle plus de celui d'Evi.** Avec un thème Evi, les parties qu'il ne colore pas (comme le pied d'une fenêtre) prenaient la teinte de ton thème Discord.",
@@ -833,6 +857,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "1.5.0": {
+            added: [
+                "**Evi チームからのお知らせをリアルタイムで。** お知らせは送信から数秒で画面上部に表示され、閉じるまで残ります。",
+            ],
+            fixed: [
+                "**プラグインの通知が再び表示されるように。** 本日 Discord がポップアップの表示方法を変更し、プラグインの通知が表示されなくなっていました。",
+            ],
+        },
         "1.4.3": {
             fixed: [
                 "**Discordのカラーテーマが Evi のテーマに混ざらなくなりました。** Evi のテーマを使っていると、テーマが色を付けない部分(ダイアログの下部など)に Discord のカラーテーマの色味が出ていました。",
@@ -1107,6 +1139,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "1.5.0": {
+            added: [
+                "**Wiadomości od zespołu Evi, na żywo.** Ogłoszenia pojawiają się u góry ekranu kilka sekund po wysłaniu i zostają, dopóki ich nie zamkniesz.",
+            ],
+            fixed: [
+                "**Powiadomienia pluginów znów się pokazują.** Discord zmienił dziś sposób wyświetlania wyskakujących okienek i te od pluginów przestały się pojawiać.",
+            ],
+        },
         "1.4.3": {
             fixed: [
                 "**Twój motyw kolorów Discorda nie miesza się z motywem Evi.** Z motywem Evi części, których nie koloruje (jak stopka okna), miały odcień twojego motywu Discorda.",
@@ -1381,6 +1421,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "1.5.0": {
+            added: [
+                "**Novidades da equipe do Evi, ao vivo.** Os anúncios aparecem no topo da sua tela segundos depois de enviados e ficam até você fechá-los.",
+            ],
+            fixed: [
+                "**As notificações dos plugins voltaram a aparecer.** O Discord mudou hoje a forma de mostrar seus pop-ups, e os dos plugins pararam de aparecer.",
+            ],
+        },
         "1.4.3": {
             fixed: [
                 "**Seu tema de cores do Discord não se mistura mais ao do Evi.** Com um tema do Evi, partes que ele não colore (como o rodapé de uma janela) mostravam o tom do seu tema do Discord.",
@@ -1655,6 +1703,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "1.5.0": {
+            added: [
+                "**Новости от команды Evi в реальном времени.** Объявления появляются вверху экрана через несколько секунд после отправки и остаются, пока вы их не закроете.",
+            ],
+            fixed: [
+                "**Уведомления плагинов снова показываются.** Сегодня Discord изменил способ показа всплывающих окон, и уведомления плагинов перестали появляться.",
+            ],
+        },
         "1.4.3": {
             fixed: [
                 "**Цветовая тема Discord больше не смешивается с темой Evi.** С темой Evi части, которые она не окрашивает (например, низ окна), принимали оттенок вашей темы Discord.",
@@ -1929,6 +1985,14 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "1.5.0": {
+            added: [
+                "**Evi ekibinden haberler, canlı.** Duyurular gönderildikten saniyeler sonra ekranının üstünde görünür ve sen kapatana kadar kalır.",
+            ],
+            fixed: [
+                "**Eklenti bildirimleri yeniden görünüyor.** Discord bugün açılır pencerelerini gösterme şeklini değiştirdi ve eklentilerinkiler görünmez olmuştu.",
+            ],
+        },
         "1.4.3": {
             fixed: [
                 "**Discord renk temanın Evi'nin temasına karışması bitti.** Bir Evi temasıyla, temanın renklendirmediği yerler (bir pencerenin alt kısmı gibi) Discord renk temanın tonunu alıyordu.",
