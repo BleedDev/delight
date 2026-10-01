@@ -3684,7 +3684,6 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 .dl-inbox-icon[data-kind="review"], .dl-inbox-icon[data-kind="wishlist"] { color: #f0b232; }
 .dl-inbox-icon[data-kind="wishlist"] { color: #f23f78; }
 .dl-inbox-icon[data-kind="fixed"] { color: var(--dl-text-positive); }
-.dl-inbox-icon[data-kind="announcement"] { color: var(--dl-brand, #5865f2); }
 .dl-inbox-icon[data-kind="update"], .dl-inbox-icon[data-kind="follow"] { color: var(--dl-text-brand); }
 
 .dl-inbox-text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-inline-size: 0; }
@@ -4048,3 +4047,86 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 @keyframes dl-live-toast-close { to { grid-template-rows: 0fr; padding-block-start: 0; } }
 @keyframes dl-live-toast-in { from { opacity: 0; translate: var(--dl-toast-shift) 0; scale: 0.96; } }
 @keyframes dl-live-toast-out { to { opacity: 0; translate: calc(var(--dl-toast-shift) / 2) 0; scale: 0.98; } }
+
+/* Announcements from Evi's team: top and centre, one at a time, until closed (ui/Announcements.tsx) */
+.dl-announcements {
+    position: fixed;
+    inset-block-start: 16px;
+    inset-inline: 0;
+    /* Above Evi's own panel, dialogs and toasts */
+    z-index: 10003;
+    display: flex;
+    justify-content: center;
+    padding-inline: 16px;
+    /* Only the card takes clicks */
+    pointer-events: none;
+}
+
+.dl-announcement {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    inline-size: min(520px, 100%);
+    padding: 12px 8px 12px 12px;
+    border: 1px solid var(--dl-border-divider);
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-bg-modal);
+    box-shadow: var(--shadow-high, 0 12px 24px rgb(0 0 0 / 0.24));
+    pointer-events: auto;
+}
+
+.dl-announcement[data-closing] { pointer-events: none; }
+
+.dl-announcement-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    inline-size: 32px;
+    block-size: 32px;
+    border-radius: 50%;
+    background: color-mix(in oklab, var(--dl-brand) 18%, transparent);
+    color: var(--dl-brand);
+}
+
+.dl-announcement-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+
+.dl-announcement-title, .dl-announcement-body { overflow-wrap: anywhere; text-wrap: pretty; }
+
+.dl-announcement-link {
+    flex: none;
+    align-self: center;
+    min-block-size: 32px;
+    padding-inline: 12px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--dl-brand);
+    color: var(--white, #fff);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: scale 200ms ease-out;
+}
+
+@media (hover: hover) {
+    .dl-announcement-link:hover { background: color-mix(in oklab, var(--dl-brand) 85%, black); }
+}
+
+.dl-announcement-link:active { scale: 0.97; }
+.dl-announcement-link:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 2px; }
+
+/* Drops in from the top like Discord's popouts on that side, and lifts away when closed */
+@media (prefers-reduced-motion: no-preference) {
+    :root:not(.reduce-motion) .dl-announcement { animation: dl-announcement-in 320ms var(--evi-spring-in, ease-out); }
+    :root:not(.reduce-motion) .dl-announcement[data-closing] { animation: dl-announcement-out 180ms ease-in forwards; }
+}
+
+@keyframes dl-announcement-in { from { opacity: 0; translate: 0 -16px; scale: 0.97; } }
+@keyframes dl-announcement-out { to { opacity: 0; translate: 0 -8px; scale: 0.98; } }

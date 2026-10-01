@@ -75,6 +75,10 @@ export const fr = {
     "account.openDashboard": "Ouvrir le tableau de bord",
 
     // ---- Safe mode ----
+    "announcement.from": "De l'équipe d'Evi",
+    "announcement.open": "En savoir plus",
+    "announcement.close": "Fermer l'annonce",
+    "announcement.region": "Annonces de l'équipe d'Evi",
     "safeMode.title": "Evi est en mode sans échec",
     "safeMode.settingTitle": "Mode sans échec",
     "safeMode.setting": "Activer le mode sans échec de lui-même quand Discord plante à répétition",

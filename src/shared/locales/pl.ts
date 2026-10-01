@@ -75,6 +75,10 @@ export const pl = {
     "account.openDashboard": "Otwórz panel",
 
     // ---- Safe mode ----
+    "announcement.from": "Od zespołu Evi",
+    "announcement.open": "Dowiedz się więcej",
+    "announcement.close": "Zamknij ogłoszenie",
+    "announcement.region": "Ogłoszenia od zespołu Evi",
     "safeMode.title": "Evi działa w trybie awaryjnym",
     "safeMode.settingTitle": "Tryb awaryjny",
     "safeMode.setting": "Włączaj tryb awaryjny sam, gdy Discord ciągle się zawiesza",

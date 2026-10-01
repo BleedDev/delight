@@ -75,6 +75,10 @@ export const es = {
     "account.openDashboard": "Abrir panel",
 
     // ---- Safe mode ----
+    "announcement.from": "Del equipo de Evi",
+    "announcement.open": "Más información",
+    "announcement.close": "Cerrar anuncio",
+    "announcement.region": "Anuncios del equipo de Evi",
     "safeMode.title": "Evi está en modo seguro",
     "safeMode.settingTitle": "Modo seguro",
     "safeMode.setting": "Activar el modo seguro solo cuando Discord se cierra una y otra vez",

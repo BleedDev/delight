@@ -31,7 +31,6 @@ const kindIcon: Record<NotificationKind, IconName> = {
     wishlist: "heart",
     fixed: "circleCheck",
     update: "download",
-    announcement: "bell",
 };
 
 type Toast =

@@ -304,6 +304,9 @@ function fakeNative(bootData: BootData) {
         inbox: async () => ({ ok: true, value: [{ id: "1", kind: "review", title: "New review of Message Clock", body: "★★★★★ Exactly what I wanted.", link: { kind: "plugin", id: "store-clock" }, at: Date.now() - 60_000, read: false }] }),
         markInboxRead: async () => ((window as any).__test.inboxRead = true, { ok: true, value: [{ id: "1", kind: "review", title: "New review of Message Clock", body: "★★★★★ Exactly what I wanted.", link: { kind: "plugin", id: "store-clock" }, at: Date.now() - 60_000, read: true }] }),
         onInboxChange: () => { },
+        // evi.rest's announcements: the test sets the list and fires the live event itself
+        announcements: async () => ({ ok: true, value: (window as any).__test.announcements ?? [] }),
+        onAnnouncementsChange: (cb: () => void) => void ((window as any).__test.announce = cb),
         credits: async () => ({ ok: true, value: { supporters: [{ name: "Mira", avatar: null, userId: "333333333333333333", since: 1, level: "supporter-gold" }] } }),
         credited: async () => ({ ok: true, value: false }),
         setCredited: async (on: boolean) => ({ ok: true, value: on }),
@@ -785,7 +788,7 @@ const toolkit = await page.evaluate(async () => {
     };
 
     // Toasts
-    const toastModule = load(toolkit.filters.showToast, ".currentToastMap.has(");
+    const toastModule = load(toolkit.filters.showToast, "(\"showToast\"))return");
     const shown = api.showToast("Evi toast test", { type: "success" });
     const toast = await toastText("Evi toast test");
 
@@ -2536,6 +2539,39 @@ check("store themes show a Store badge in the Themes tab", themeRow.includes("Mi
     const gone = await page.evaluate(() => document.querySelectorAll(".dl-live-toast").length);
     check("hovering a toast holds its timer, and its close button takes it away", held === "paused" && gone === 0, { held, gone });
     await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.liveToasts = false)));
+
+    // An announcement from Evi's team arrives live: top and centre, until closed, and only once
+    const announce = (list: unknown[]) => page.evaluate(l => {
+        const T = (window as any).__test;
+        T.announcements = l;
+        T.announce?.();
+    }, list);
+    await announce([{ id: 7, title: "Evi 1.5 is out", body: "Declutter is here.", link: "https://evi.rest/blog", at: Date.now() }]);
+    await page.waitForSelector(".dl-announcement", { timeout: 3000 }).catch(() => { });
+    await page.waitForTimeout(400);
+    const banner = await page.evaluate(() => {
+        const el = document.querySelector(".dl-announcement");
+        const box = el?.getBoundingClientRect();
+        return {
+            text: el?.textContent ?? "",
+            top: !!box && box.top <= 24,
+            centred: !!box && Math.abs(box.left + box.width / 2 - innerWidth / 2) <= 2,
+            link: !!el?.querySelector(".dl-announcement-link"),
+        };
+    });
+    check("an announcement shows live, top and centre, with its link", banner.text.includes("Evi 1.5 is out") && banner.text.includes("Declutter is here.") && banner.top && banner.centred && banner.link, banner);
+    await page.screenshot({ path: join(OUT, "ui-announcement.png") });
+    await page.getByRole("button", { name: "Close announcement" }).click();
+    await page.waitForSelector(".dl-announcement", { state: "detached", timeout: 2000 }).catch(() => { });
+    await announce([{ id: 7, title: "Evi 1.5 is out", body: "", at: Date.now() }]);
+    await page.waitForTimeout(500);
+    const after = await page.evaluate(() => ({ shown: document.querySelectorAll(".dl-announcement").length, seen: (window as any).Evi.settings.data.announcementsSeen }));
+    check("a closed announcement is remembered and doesn't come back", after.shown === 0 && after.seen?.includes(7), after);
+    await announce([{ id: 8, title: "Store maintenance", body: "", at: Date.now() }]);
+    await page.waitForSelector(".dl-announcement", { timeout: 3000 }).catch(() => { });
+    await announce([]);
+    await page.waitForSelector(".dl-announcement", { state: "detached", timeout: 2000 }).catch(() => { });
+    check("a withdrawn announcement leaves the screen", await page.evaluate(() => document.querySelectorAll(".dl-announcement").length) === 0);
 
     await openTab("advanced", "devtools");
     await page.waitForSelector("#dl-dt-flux", { timeout: 5000 }).catch(() => { });

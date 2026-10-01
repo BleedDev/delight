@@ -12,8 +12,7 @@ export type NotificationKind =
     | "api" // the plugin API changed in a way that touches your plugin
     | "wishlist" // a plugin you hearted updated or got a beta
     | "fixed" // a plugin you have or hearted works again on your Discord
-    | "update" // a new Evi
-    | "announcement"; // a word from Evi's team to everyone
+    | "update"; // a new Evi
 
 export type NotificationLink =
     | { kind: "plugin" | "theme" | "author"; id: string; }
@@ -31,7 +30,7 @@ export interface EviNotification {
 }
 
 export const MAX_NOTIFICATIONS = 100;
-const KINDS = new Set<NotificationKind>(["review", "submission", "theme", "follow", "api", "wishlist", "fixed", "update", "announcement"]);
+const KINDS = new Set<NotificationKind>(["review", "submission", "theme", "follow", "api", "wishlist", "fixed", "update"]);
 
 const text = (v: unknown, max: number) => typeof v === "string" && v.length <= max && !/[\0-\x08\x0e-\x1f]/.test(v);
 

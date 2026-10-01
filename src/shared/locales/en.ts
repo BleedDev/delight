@@ -78,6 +78,10 @@ export const en = {
     "account.openDashboard": "Open dashboard",
 
     // ---- Safe mode ----
+    "announcement.from": "From Evi's team",
+    "announcement.open": "Learn more",
+    "announcement.close": "Close announcement",
+    "announcement.region": "Announcements from Evi's team",
     "safeMode.title": "Evi is in safe mode",
     "safeMode.settingTitle": "Safe mode",
     "safeMode.setting": "Turn on safe mode by itself when Discord keeps crashing",

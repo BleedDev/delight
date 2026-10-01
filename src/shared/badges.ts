@@ -144,6 +144,9 @@ export const hasHotfixesEvent = (block: string) => hasEvent(block, "hotfixes");
 /** Whether an SSE chunk says this account's inbox changed (a `notifications` event, sent only to its installs) */
 export const hasNotificationsEvent = (block: string) => hasEvent(block, "notifications");
 
+/** Whether an SSE chunk says an announcement was sent or withdrawn (shared/announcements.ts) */
+export const hasAnnouncementsEvent = (block: string) => hasEvent(block, "announcements");
+
 /** The `badges` events in an SSE chunk, as the etag each one carries */
 export function parseBadgeEvents(block: string): string[] {
     const etags: string[] = [];

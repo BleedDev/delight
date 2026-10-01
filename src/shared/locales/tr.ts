@@ -75,6 +75,10 @@ export const tr = {
     "account.openDashboard": "Paneli aç",
 
     // ---- Safe mode ----
+    "announcement.from": "Evi ekibinden",
+    "announcement.open": "Daha fazla bilgi",
+    "announcement.close": "Duyuruyu kapat",
+    "announcement.region": "Evi ekibinden duyurular",
     "safeMode.title": "Evi güvenli modda",
     "safeMode.settingTitle": "Güvenli mod",
     "safeMode.setting": "Discord sürekli çöktüğünde güvenli modu kendiliğinden aç",

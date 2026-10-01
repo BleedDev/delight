@@ -75,6 +75,10 @@ export const ja = {
     "account.openDashboard": "ダッシュボードを開く",
 
     // ---- Safe mode ----
+    "announcement.from": "Eviチームより",
+    "announcement.open": "詳しく見る",
+    "announcement.close": "お知らせを閉じる",
+    "announcement.region": "Eviチームからのお知らせ",
     "safeMode.title": "Eviはセーフモードです",
     "safeMode.settingTitle": "セーフモード",
     "safeMode.setting": "Discordのクラッシュが続いたら自動でセーフモードにする",

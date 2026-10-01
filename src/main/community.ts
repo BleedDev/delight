@@ -19,7 +19,7 @@ import { ipcMain, webContents } from "electron";
 import { readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
-import { onInboxAnnounced } from "./badges";
+import { onAnnouncementsChanged, onInboxAnnounced } from "./badges";
 import { apiRequest } from "./evirest";
 import { DATA_DIR } from "./paths";
 import { cachedGet } from "./reports";
@@ -144,6 +144,10 @@ export function initCommunity() {
 
     // The stream says the inbox changed (or it reconnected and something may have): the page asks again
     onInboxAnnounced(announceInboxChange);
+    // Spread out: every running Evi hears it in the same instant
+    onAnnouncementsChanged(() => setTimeout(() => {
+        for (const wc of webContents.getAllWebContents()) if (!wc.isDestroyed()) wc.send(IPC.ANNOUNCEMENTS_CHANGED);
+    }, Math.random() * 5000));
 
     setTimeout(() => void checkin(), FIRST_AFTER).unref?.();
     setInterval(() => void checkin(), CHECK_EVERY).unref?.();

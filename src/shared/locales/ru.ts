@@ -75,6 +75,10 @@ export const ru = {
     "account.openDashboard": "Открыть панель управления",
 
     // ---- Safe mode ----
+    "announcement.from": "От команды Evi",
+    "announcement.open": "Подробнее",
+    "announcement.close": "Закрыть объявление",
+    "announcement.region": "Объявления от команды Evi",
     "safeMode.title": "Evi в безопасном режиме",
     "safeMode.settingTitle": "Безопасный режим",
     "safeMode.setting": "Включать безопасный режим самостоятельно, если Discord постоянно падает",

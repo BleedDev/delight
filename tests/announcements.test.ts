@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
 import { MAX_TITLE, parseAnnouncementInput, parseAnnouncements } from "../src/shared/announcements";
-import { parseNotifications } from "../src/shared/notifications";
 
 describe("announcements", () => {
     test("what an admin sends is trimmed, needs a title, and links are https", () => {
@@ -21,9 +20,5 @@ describe("announcements", () => {
         ] });
         expect(list).toEqual([{ id: 1, title: "Good", body: "", at: 5 }]);
         expect(parseAnnouncements(null)).toEqual([]);
-    });
-
-    test("they're a kind the Inbox shows", () => {
-        expect(parseNotifications([{ id: "local:announcement:1", kind: "announcement", title: "Hi", body: "", at: 1, read: false }])).toHaveLength(1);
     });
 });

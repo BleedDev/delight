@@ -115,6 +115,9 @@ const EviNative = {
     following: (): Promise<CommunityResult<string[]>> => ipcRenderer.invoke(IPC.COMMUNITY_FOLLOWING),
     inbox: (): Promise<CommunityResult<EviNotification[]>> => ipcRenderer.invoke(IPC.COMMUNITY_INBOX),
     announcements: (): Promise<CommunityResult<Announcement[]>> => ipcRenderer.invoke(IPC.ANNOUNCEMENTS),
+    onAnnouncementsChange: (cb: () => void) => {
+        ipcRenderer.on(IPC.ANNOUNCEMENTS_CHANGED, () => cb());
+    },
     markInboxRead: (ids?: string[]): Promise<CommunityResult<EviNotification[]>> => ipcRenderer.invoke(IPC.COMMUNITY_INBOX_READ, ids),
     onInboxChange(cb: () => void) {
         ipcRenderer.on(IPC.COMMUNITY_INBOX_CHANGED, () => cb());

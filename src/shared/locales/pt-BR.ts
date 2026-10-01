@@ -75,6 +75,10 @@ export const ptBR = {
     "account.openDashboard": "Abrir painel",
 
     // ---- Safe mode ----
+    "announcement.from": "Da equipe do Evi",
+    "announcement.open": "Saiba mais",
+    "announcement.close": "Fechar aviso",
+    "announcement.region": "Avisos da equipe do Evi",
     "safeMode.title": "O Evi está no modo de segurança",
     "safeMode.settingTitle": "Modo seguro",
     "safeMode.setting": "Ativar o modo seguro sozinho quando o Discord trava várias vezes",

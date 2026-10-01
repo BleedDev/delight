@@ -75,6 +75,10 @@ export const de = {
     "account.openDashboard": "Dashboard öffnen",
 
     // ---- Safe mode ----
+    "announcement.from": "Vom Evi-Team",
+    "announcement.open": "Mehr erfahren",
+    "announcement.close": "Ankündigung schließen",
+    "announcement.region": "Ankündigungen vom Evi-Team",
     "safeMode.title": "Evi ist im abgesicherten Modus",
     "safeMode.settingTitle": "Abgesicherter Modus",
     "safeMode.setting": "Abgesicherten Modus von selbst einschalten, wenn Discord wiederholt abstürzt",

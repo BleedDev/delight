@@ -38,6 +38,7 @@ import { Inbox } from "./inbox";
 import { startPluginChangelogs } from "./ui/PluginChangelog";
 import { showCrashDetective } from "./ui/CrashDetective";
 import { startLiveToasts } from "./ui/LiveToasts";
+import { startAnnouncements } from "./ui/Announcements";
 import { showSafeModeNotice } from "./ui/SafeModeNotice";
 import { installSettingsEntry } from "./ui/settingsEntry";
 import { showWhatsNewIfUpdated } from "./ui/WhatsNew";
@@ -146,6 +147,8 @@ function boot() {
                 Inbox.start();
                 // New notifications pop up in the corner as they arrive
                 startLiveToasts();
+                // Evi's team to everyone, top and centre, live
+                startAnnouncements();
             });
             // So a font's first use (opening settings, an italic in chat) doesn't relayout all text
             whenAppReady(warmUiFonts);

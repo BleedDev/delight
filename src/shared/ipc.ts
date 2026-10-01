@@ -125,6 +125,7 @@ export const IPC = {
     /** This account's inbox, and marking it read */
     COMMUNITY_INBOX: "evi:community-inbox",
     ANNOUNCEMENTS: "evi:announcements",
+    ANNOUNCEMENTS_CHANGED: "evi:announcements-changed",
     COMMUNITY_INBOX_READ: "evi:community-inbox-read",
     /** main -> renderer: the account's inbox changed (evi.rest's stream said so) */
     COMMUNITY_INBOX_CHANGED: "evi:community-inbox-changed",
@@ -273,6 +274,8 @@ export interface EviSettings {
     localNotifications?: EviNotification[];
     /** New notifications pop up over Discord as they arrive (ui/LiveToasts.tsx). Missing: on */
     liveToasts?: boolean;
+    /** Announcements from Evi's team already shown here (their ids), so each shows once */
+    announcementsSeen?: number[];
     /** `false`: crashes don't turn safe mode on; only starting Discord with --evi-safe does. Missing: on */
     autoSafeMode?: boolean;
     /** Plugins you have or hearted that evi.rest said were broken, so a fix is told once */

@@ -5,10 +5,6 @@
  * This install's own come from watching the store: a plugin or theme you hearted has a new version or
  * a beta, a plugin you have or hearted that evi.rest said was broken works again, a new Evi is out.
  * Each is told once: what was seen is kept in settings (wishlistSeen, brokenSeen).
- *
- * Announcements from Evi's team reach every install, linked or not: evi.rest's public list is read
- * now and then and each becomes one of this install's own, once. One withdrawn before it was read
- * goes away again.
  */
 import { compareVersions, RegistryEntry } from "@shared/store";
 import { EviNotification, MAX_NOTIFICATIONS, mergeNotifications, NotificationKind, NotificationLink, unreadCount } from "@shared/notifications";
@@ -44,11 +40,11 @@ function set(next: Partial<InboxState>) {
 }
 
 /** Adds one of this install's own, unless one with the same id is there already */
-function addLocal(id: string, kind: NotificationKind, title: string, body: string, link?: NotificationLink, at = Date.now()) {
+function addLocal(id: string, kind: NotificationKind, title: string, body: string, link?: NotificationLink) {
     const local = Settings.data.localNotifications ?? [];
     if (local.some(n => n.id === id)) return;
     Settings.update(d => {
-        d.localNotifications = [{ id, kind, title, body, ...(link && { link }), at, read: false }, ...local].slice(0, MAX_NOTIFICATIONS);
+        d.localNotifications = [{ id, kind, title, body, ...(link && { link }), at: Date.now(), read: false }, ...local].slice(0, MAX_NOTIFICATIONS);
     });
 }
 
@@ -115,23 +111,6 @@ function watchStore() {
 let started = false;
 /** After startup settles, then every few hours: the store's own checks are enough when it's open */
 const LOOK_FIRST_AFTER = 60_000;
-const ANNOUNCEMENTS_EVERY = 30 * 60 * 1000;
-const ANNOUNCEMENT_PREFIX = "local:announcement:";
-
-/** evi.rest's announcements into this install's inbox: new ones added, unread withdrawn ones dropped */
-async function readAnnouncements() {
-    if (!Native.announcements) return;
-    const result = await Native.announcements().catch(() => undefined);
-    if (!result?.ok) return;
-    const live = new Set(result.value.map(a => `${ANNOUNCEMENT_PREFIX}${a.id}`));
-    for (const a of [...result.value].reverse()) {
-        addLocal(`${ANNOUNCEMENT_PREFIX}${a.id}`, "announcement", a.title, a.body, a.link ? { kind: "url", url: a.link } : undefined, a.at);
-    }
-    const local = Settings.data.localNotifications ?? [];
-    if (local.some(n => n.id.startsWith(ANNOUNCEMENT_PREFIX) && !n.read && !live.has(n.id))) {
-        Settings.update(d => void (d.localNotifications = (d.localNotifications ?? []).filter(n => !n.id.startsWith(ANNOUNCEMENT_PREFIX) || n.read || live.has(n.id))));
-    }
-}
 const LOOK_EVERY = 6 * 60 * 60 * 1000;
 
 export const Inbox = {
@@ -165,8 +144,6 @@ export const Inbox = {
         };
         setTimeout(look, LOOK_FIRST_AFTER);
         setInterval(look, LOOK_EVERY);
-        void readAnnouncements();
-        setInterval(() => void readAnnouncements(), ANNOUNCEMENTS_EVERY);
     },
 
     /** The account's inbox from evi.rest; says `linked: false` for an Evi that isn't linked */
