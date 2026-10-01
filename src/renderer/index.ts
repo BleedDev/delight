@@ -18,6 +18,7 @@ import { diagnoseLookups } from "./plugins/lookups";
 import { PluginManager, PublicPlugins } from "./plugins/manager";
 import { startPullNotices } from "./pulls";
 import { SafeMode } from "./safeMode";
+import { isOverlayUrl } from "@shared/appHosts";
 import { Settings } from "./settings";
 import { Store } from "./store";
 import { Updates } from "./updates";
@@ -119,6 +120,9 @@ function boot() {
         if (!SafeMode.active) startBadges();
         if (!SafeMode.active) startAccountSync();
         if (!SafeMode.active) startPluginShare();
+        // The in-game overlay is see-through and clicks go through it: nothing may float there, update
+        // notices included (Discord's own window has them)
+        if (isOverlayUrl(location.href)) return;
         // Even in safe mode: a new version may be the fix
         startUpdateChecks();
         if (SafeMode.active) {

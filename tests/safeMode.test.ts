@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { isDiscordAppUrl, isOverlayUrl } from "../src/shared/appHosts";
 import { DEFAULT_SETTINGS, EviSettings, PluginManifest, RecentChange } from "../src/shared/ipc";
 import { addChange, diffSettings, MAX_CHANGES, parseState, pickSuspect, startupMode, StartupState } from "../src/shared/safeMode";
 
@@ -77,4 +78,13 @@ describe("reading safe-mode.json", () => {
         const crash = { at: 5, reason: "crashed", suspect: { plugin: "a", why: "busiest", site: { kind: "hook", name: "x", ms: 200 } } };
         expect(parseState({ pendingStarts: 0, changes: [], crash }).crash).toEqual(crash as any);
     });
+});
+
+test("Discord's in-game overlay is told apart from its window", () => {
+    expect(isOverlayUrl("https://discord.com/overlay")).toBe(true);
+    expect(isOverlayUrl("https://canary.discord.com/overlay/123?x=1")).toBe(true);
+    expect(isOverlayUrl("https://discord.com/channels/@me")).toBe(false);
+    expect(isOverlayUrl("https://discord.com/overlays-are-not-this")).toBe(false);
+    expect(isOverlayUrl("not a url")).toBe(false);
+    expect(isDiscordAppUrl("https://discord.com/overlay")).toBe(true);
 });

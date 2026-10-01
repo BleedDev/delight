@@ -13,6 +13,7 @@
  * Safe mode caused by crashes is sticky across restarts until the user leaves it from the notice.
  * `--evi-safe` is for one start only.
  */
+import { isOverlayUrl } from "@shared/appHosts";
 import { Breadcrumb, CrashRecord, parseBreadcrumb, pickCrashSuspect } from "@shared/crashDetective";
 import { RecentChange, SafeModeInfo, SafeModeReason } from "@shared/ipc";
 import { addChange, CRASH_LOOP_STARTS, CRASH_WINDOW_MS, EMPTY_STATE, parseState, RENDERER_CRASHES, StartupMode, startupMode, StartupState } from "@shared/safeMode";
@@ -64,9 +65,11 @@ function save() {
     }
 }
 
+/** Discord's own window. Not the in-game overlay: games close that one, and it isn't Discord crashing */
 function isDiscordApp(wc: WebContents) {
     try {
-        return /(^|\.)discord\.com$/.test(new URL(wc.getURL()).hostname);
+        const url = wc.getURL();
+        return /(^|\.)discord\.com$/.test(new URL(url).hostname) && !isOverlayUrl(url);
     } catch {
         return false;
     }
