@@ -1,3 +1,4 @@
+import { NEUTRAL_TINT_CSS } from "@shared/discordTint";
 import type { AddThemeResult, ThemeChange, ThemePayload } from "@shared/ipc";
 
 import { Logger } from "./logger";
@@ -15,6 +16,9 @@ const listeners = new Set<() => void>();
 let snapshot: ThemePayload[] = [];
 
 const styleId = (file: string) => `evi-theme-${file.replace(/[^\w.-]/g, "_")}`;
+/** While an Evi theme is on, Discord's own colour theme stops tinting what it leaves out */
+const NEUTRAL_TINT_ID = "evi-neutral-discord-tint";
+let neutralTint: ManagedStyle | undefined;
 
 function notify() {
     snapshot = [...themes.values()].sort((a, b) => a.name.localeCompare(b.name));
@@ -53,6 +57,12 @@ export const Themes = {
                 style.remove();
                 styles.delete(file);
             }
+        }
+        const anyOn = [...themes.values()].some(theme => applies(theme.file));
+        if (anyOn && !neutralTint) neutralTint = createStyle(NEUTRAL_TINT_CSS, NEUTRAL_TINT_ID, QUICK_CSS_ID);
+        else if (!anyOn && neutralTint) {
+            neutralTint.remove();
+            neutralTint = undefined;
         }
         for (const theme of themes.values()) {
             if (!applies(theme.file)) continue;
