@@ -944,6 +944,7 @@ export const tr = {
     "community.linkToReview": "Eklentilere puan vermek ve yorum yazmak için Evi’yi Discord hesabına bağla.",
     "community.loadingReviews": "Yorumlar yükleniyor…",
     "community.newThisWeek": "Bu hafta yeni",
+    "store.filter.new": "Yeni",
     "community.noRatings": "Henüz puan yok. İlk puanı sen ver.",
     "community.pickStars": "Önce kaç yıldız vereceğini seç.",
     "community.pinned": "Sabitlendi",

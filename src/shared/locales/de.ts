@@ -944,6 +944,7 @@ export const de = {
     "community.linkToReview": "Verknüpfe Evi mit deinem Discord-Konto, um Plugins zu bewerten und Rezensionen zu schreiben.",
     "community.loadingReviews": "Rezensionen werden geladen …",
     "community.newThisWeek": "Neu diese Woche",
+    "store.filter.new": "Neu",
     "community.noRatings": "Noch keine Bewertungen. Mach den Anfang.",
     "community.pickStars": "Wähl zuerst die Anzahl der Sterne.",
     "community.pinned": "Angeheftet",

@@ -944,6 +944,7 @@ export const fr = {
     "community.linkToReview": "Associe Evi à ton compte Discord pour noter les plugins et écrire des avis.",
     "community.loadingReviews": "Chargement des avis…",
     "community.newThisWeek": "Nouveau cette semaine",
+    "store.filter.new": "Nouveautés",
     "community.noRatings": "Aucune note pour l’instant. Lance-toi.",
     "community.pickStars": "Choisis d’abord le nombre d’étoiles.",
     "community.pinned": "Épinglé",

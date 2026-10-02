@@ -946,6 +946,7 @@ export const pl = {
     "community.linkToReview": "Połącz Evi ze swoim kontem Discord, żeby oceniać wtyczki i pisać recenzje.",
     "community.loadingReviews": "Wczytywanie recenzji…",
     "community.newThisWeek": "Nowe w tym tygodniu",
+    "store.filter.new": "Nowe",
     "community.noRatings": "Jeszcze nie ma ocen. Oceń jako pierwsza osoba.",
     "community.pickStars": "Najpierw wybierz liczbę gwiazdek.",
     "community.pinned": "Przypięte",

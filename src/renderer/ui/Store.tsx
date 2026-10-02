@@ -580,7 +580,7 @@ function UpdateAll({ kind, items }: { kind: StoreKind; items: Item[]; }) {
     );
 }
 
-type Filter = "all" | "updates" | "installed" | "uninstalled" | "official" | "community";
+type Filter = "all" | "new" | "updates" | "installed" | "uninstalled" | "official" | "community";
 
 /** Cards per page: four rows of three, or six of two */
 const PAGE_SIZE = 12;
@@ -806,8 +806,11 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
     onAuthor(slug: string): void;
 }) {
     const tags = [...new Set(items.flatMap(i => i.entry.tags))].sort();
+    // First listed this week, from evi.rest's front page (store home)
+    const fresh = new Set(state.home?.fresh ?? []);
     const tests: Record<Filter, (i: Item) => boolean> = {
         all: () => true,
+        new: i => fresh.has(`${kind}:${i.entry.id}`),
         updates: i => i.action === "update",
         installed: i => i.action === "installed" || i.action === "update" || i.action === "local",
         // What you could still add: not installed from the store or by hand
@@ -876,6 +879,7 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
                     onChange={setFilter}
                     options={[
                         { id: "all", label: t("plugins.filter.all"), count: count("all") },
+                        { id: "new", label: t("store.filter.new"), count: count("new") },
                         { id: "updates", label: t("tabs.updates"), count: count("updates") },
                         { id: "installed", label: t("store.installed"), count: count("installed") },
                         { id: "uninstalled", label: t("store.notInstalled"), count: count("uninstalled") },

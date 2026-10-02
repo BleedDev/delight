@@ -941,6 +941,7 @@ export const ja = {
     "community.linkToReview": "プラグインを評価してレビューを書くには、EviをDiscordアカウントと連携してください。",
     "community.loadingReviews": "レビューを読み込み中…",
     "community.newThisWeek": "今週の新着",
+    "store.filter.new": "新着",
     "community.noRatings": "まだ評価はありません。最初の評価をどうぞ。",
     "community.pickStars": "先に星の数を選んでください。",
     "community.pinned": "ピン留め",

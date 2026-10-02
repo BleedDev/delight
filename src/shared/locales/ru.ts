@@ -1001,6 +1001,7 @@ export const ru = {
     "community.linkToReview": "Привяжите Evi к своему аккаунту Discord, чтобы оценивать плагины и писать отзывы.",
     "community.loadingReviews": "Загрузка отзывов…",
     "community.newThisWeek": "Новое за неделю",
+    "store.filter.new": "Новые",
     "community.noRatings": "Оценок пока нет. Станьте первым.",
     "community.pickStars": "Сначала выберите количество звёзд.",
     "community.pinned": "Закреплено",

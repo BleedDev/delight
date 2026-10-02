@@ -944,6 +944,7 @@ export const ptBR = {
     "community.linkToReview": "Vincule o Evi à sua conta do Discord para avaliar plugins e escrever resenhas.",
     "community.loadingReviews": "Carregando resenhas…",
     "community.newThisWeek": "Novos esta semana",
+    "store.filter.new": "Novos",
     "community.noRatings": "Ainda não há avaliações. Seja o primeiro a avaliar.",
     "community.pickStars": "Escolha primeiro quantas estrelas.",
     "community.pinned": "Fixada",
