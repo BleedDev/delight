@@ -2,7 +2,7 @@
     "id": "fast-lists",
     "name": "Fast Lists",
     "description": "Keeps Discord smooth with hundreds of servers and long chats. Servers, messages and members far out of view skip rendering work, without ever being removed, so nothing flickers, disappears or jumps.",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "minEviVersion": "1.1.0",
     "authors": [
         "Evi"
@@ -12,6 +12,12 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "2.1.2",
+            "notes": [
+                "Lighter when idle: its once-a-second check looks for all lists in one pass of the page and never measures the layout mid-frame."
+            ]
+        },
         {
             "version": "2.1.1",
             "notes": [
@@ -50,6 +56,9 @@
             "name": "Schnelle Listen",
             "description": "Hält Discord flüssig, auch mit Hunderten Servern und langen Chats. Server, Nachrichten und Mitglieder weit außerhalb des Sichtbereichs sparen sich die Renderarbeit, ohne je entfernt zu werden, sodass nichts flackert, verschwindet oder springt.",
             "changelog": {
+                "2.1.2": [
+                    "Sparsamer im Leerlauf: Die sekündliche Prüfung sucht alle Listen in einem Durchgang durch die Seite und misst das Layout nie mitten im Bild."
+                ],
                 "2.1.1": [
                     "Keine kurzen Hänger mehr beim Kanalwechsel: Es wartet, bis Discord fertig gezeichnet hat, bevor es misst."
                 ],
@@ -72,6 +81,9 @@
             "name": "Listas rápidas",
             "description": "Mantiene Discord fluido con cientos de servidores y chats largos. Los servidores, mensajes y miembros muy fuera de la vista se ahorran el trabajo de renderizado sin eliminarse nunca, así que nada parpadea, desaparece ni da saltos.",
             "changelog": {
+                "2.1.2": [
+                    "Más ligero en reposo: su comprobación cada segundo busca todas las listas en una sola pasada por la página y nunca mide el diseño a mitad de un fotograma."
+                ],
                 "2.1.1": [
                     "Se acabaron los pequeños tirones al cambiar de canal: espera a que Discord termine de dibujar antes de medir."
                 ],
@@ -94,6 +106,9 @@
             "name": "Listes rapides",
             "description": "Garde Discord fluide avec des centaines de serveurs et de longs chats. Les serveurs, messages et membres très loin de la vue évitent le travail de rendu sans jamais être supprimés, donc rien ne clignote, ne disparaît ni ne saute.",
             "changelog": {
+                "2.1.2": [
+                    "Plus léger au repos : sa vérification chaque seconde cherche toutes les listes en un seul passage sur la page et ne mesure jamais la mise en page en plein affichage."
+                ],
                 "2.1.1": [
                     "Plus de petits blocages en changeant de salon : il attend que Discord ait fini d'afficher avant de mesurer."
                 ],
@@ -116,6 +131,9 @@
             "name": "高速リスト",
             "description": "数百のサーバーや長いチャットでも Discord をなめらかに保ちます。画面から大きく外れたサーバー、メッセージ、メンバーは削除されることなく描画処理だけを省くので、ちらつきや消失、ジャンプは起きません。",
             "changelog": {
+                "2.1.2": [
+                    "待機中の負荷が軽くなりました。毎秒のチェックはページを一度たどるだけで全リストを探し、描画の途中でレイアウトを計測しません。"
+                ],
                 "2.1.1": [
                     "チャンネル切り替え時の一瞬のフリーズがなくなりました。Discordの描画が終わってから計測します。"
                 ],
@@ -138,6 +156,9 @@
             "name": "Szybkie listy",
             "description": "Utrzymuje płynność Discorda przy setkach serwerów i długich czatach. Serwery, wiadomości i członkowie daleko poza widokiem pomijają pracę renderowania, ale nigdy nie są usuwani, więc nic nie migocze, nie znika ani nie skacze.",
             "changelog": {
+                "2.1.2": [
+                    "Lżejszy w bezczynności: sprawdzanie co sekundę szuka wszystkich list jednym przejściem po stronie i nigdy nie mierzy układu w trakcie rysowania klatki."
+                ],
                 "2.1.1": [
                     "Koniec krótkich przycięć przy zmianie kanału: czeka, aż Discord skończy rysować, zanim cokolwiek zmierzy."
                 ],
@@ -160,6 +181,9 @@
             "name": "Listas rápidas",
             "description": "Mantém o Discord fluido com centenas de servidores e chats longos. Servidores, mensagens e membros bem fora da tela pulam o trabalho de renderização sem nunca serem removidos, então nada pisca, some ou pula.",
             "changelog": {
+                "2.1.2": [
+                    "Mais leve quando ocioso: a verificação a cada segundo procura todas as listas em uma única passada pela página e nunca mede o layout no meio de um quadro."
+                ],
                 "2.1.1": [
                     "Chega de pequenos travamentos ao trocar de canal: ele espera o Discord terminar de desenhar antes de medir."
                 ],
@@ -182,6 +206,9 @@
             "name": "Быстрые списки",
             "description": "Сохраняет плавность Discord при сотнях серверов и длинных чатах. Серверы, сообщения и участники далеко за пределами экрана не отрисовываются, но никогда не удаляются, поэтому ничего не мерцает, не пропадает и не прыгает.",
             "changelog": {
+                "2.1.2": [
+                    "Меньше нагрузки в простое: ежесекундная проверка ищет все списки за один проход по странице и никогда не измеряет раскладку посреди кадра."
+                ],
                 "2.1.1": [
                     "Больше никаких коротких подвисаний при смене канала: плагин ждёт, пока Discord закончит отрисовку, и только потом измеряет."
                 ],
@@ -204,6 +231,9 @@
             "name": "Hızlı Listeler",
             "description": "Yüzlerce sunucu ve uzun sohbetlerle Discord'u akıcı tutar. Görüş alanının çok dışındaki sunucular, mesajlar ve üyeler hiç kaldırılmadan oluşturma işinden muaf tutulur; böylece hiçbir şey titremez, kaybolmaz veya sıçramaz.",
             "changelog": {
+                "2.1.2": [
+                    "Boştayken daha hafif: saniyede bir yapılan kontrol tüm listeleri sayfada tek geçişte arıyor ve düzeni asla bir karenin ortasında ölçmüyor."
+                ],
                 "2.1.1": [
                     "Kanal değiştirirken kısa donmalar yok: ölçmeden önce Discord'un çizmeyi bitirmesini bekliyor."
                 ],

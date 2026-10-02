@@ -113,8 +113,10 @@ export default definePlugin({
             return !!s && !s.isCollapsed && s.toString().length > 0;
         };
 
+        // Every press anywhere in Discord lands here: the selection is only read for a Shift press,
+        // the only kind where it matters, so a big selection isn't turned into text on each click
         const onDown = (e: MouseEvent) => {
-            if (e.button === 0) down = { x: e.clientX, y: e.clientY, selected: selection() };
+            if (e.button === 0) down = { x: e.clientX, y: e.clientY, selected: e.shiftKey && selection() };
         };
 
         const onClick = (e: MouseEvent) => {

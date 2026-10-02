@@ -96,20 +96,30 @@ const storage = () => context?.settings as unknown as Storage | undefined;
 
 /** Bumped on zone and settings changes and once a minute, on the minute */
 let version = 0;
+/** Bumped on zone and settings changes only: what a time that shows nothing waits for */
+let changes = 0;
 const listeners = new Set<() => void>();
+const notify = () => listeners.forEach(l => l());
 const bump = () => {
     version++;
-    listeners.forEach(l => l());
+    changes++;
+    notify();
+};
+const tick = () => {
+    version++;
+    notify();
+};
+const subscribeVersion = (cb: () => void) => {
+    listeners.add(cb);
+    return () => void listeners.delete(cb);
 };
 
-function useVersion() {
-    return React.useSyncExternalStore(
-        cb => {
-            listeners.add(cb);
-            return () => void listeners.delete(cb);
-        },
-        () => version,
-    );
+/**
+ * Re-renders on changes, and on the minute tick too unless `live` says nothing is shown: most
+ * messages and member rows are of people without a saved zone, and skip the tick
+ */
+function useVersion(live?: () => boolean) {
+    return React.useSyncExternalStore(subscribeVersion, () => !live || live() ? version : -1 - changes);
 }
 
 function commit(next: ZoneMap) {
@@ -157,7 +167,7 @@ function WithTooltip({ text, children }: { text: string; children: React.ReactEl
 }
 
 function ChatTime({ userId, sentAt }: { userId: string; sentAt?: Date; }) {
-    useVersion();
+    useVersion(() => !!zoneOf(userId) && !!context?.settings.get("showInChat"));
     const zone = zoneOf(userId);
     if (!zone || !context?.settings.get("showInChat")) return null;
     const sent = context.settings.get("chatTime") === "sent" && sentAt;
@@ -171,7 +181,7 @@ function ChatTime({ userId, sentAt }: { userId: string; sentAt?: Date; }) {
 }
 
 function MemberTime({ userId }: { userId: string; }) {
-    useVersion();
+    useVersion(() => !!zoneOf(userId) && !!context?.settings.get("showInMemberList"));
     const zone = zoneOf(userId);
     if (!zone || !context?.settings.get("showInMemberList")) return null;
     const d = describeAt(zone, new Date());
@@ -406,8 +416,8 @@ export default definePlugin({
 
         // One ticker for every visible time, on the minute
         ctx.setTimeout(() => {
-            bump();
-            ctx.setInterval(bump, 60_000);
+            tick();
+            ctx.setInterval(tick, 60_000);
         }, 60_000 - (Date.now() % 60_000) + 50);
 
         ctx.contextMenu("user-context", (children, props) => {

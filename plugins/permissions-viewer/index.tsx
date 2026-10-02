@@ -37,7 +37,8 @@ interface Role extends RoleInput {
     color?: string;
 }
 
-function guildRoles(guildId: string): Role[] {
+/** Discord's role objects for a server, unsorted */
+function rawRoles(guildId: string): any[] {
     const guild = store("GuildStore")?.getGuild?.(guildId);
     const roleStore = store("GuildRoleStore");
     let raw: any;
@@ -45,14 +46,25 @@ function guildRoles(guildId: string): Role[] {
         raw = roleStore?.getRolesSnapshot?.(guildId) ?? roleStore?.getRoles?.(guildId) ?? roleStore?.getSortedRoles?.(guildId);
     } catch { /* older Discord keeps roles on the guild */ }
     raw ??= guild?.roles;
-    const list: any[] = !raw ? [] : Array.isArray(raw) ? raw : Object.values(raw);
-    return sortRoles(list.filter(r => r?.id).map(r => ({
-        id: r.id,
-        name: r.id === guildId ? "@everyone" : r.name ?? r.id,
-        permissions: toBits(r.permissions),
-        position: r.position ?? 0,
-        color: r.colorString ?? undefined,
-    })), guildId);
+    return !raw ? [] : Array.isArray(raw) ? raw : Object.values(raw);
+}
+
+const toRole = (r: any, guildId: string): Role => ({
+    id: r.id,
+    name: r.id === guildId ? "@everyone" : r.name ?? r.id,
+    permissions: toBits(r.permissions),
+    position: r.position ?? 0,
+    color: r.colorString ?? undefined,
+});
+
+function guildRoles(guildId: string): Role[] {
+    return sortRoles(rawRoles(guildId).filter(r => r?.id).map(r => toRole(r, guildId)), guildId);
+}
+
+/** One role, without converting and sorting all of them: the role menu checks this on every Developer Mode menu */
+function guildRole(guildId: string, roleId: string): Role | undefined {
+    const raw = rawRoles(guildId).find(r => r?.id === roleId);
+    return raw ? toRole(raw, guildId) : undefined;
 }
 
 const getGuild = (id: string | undefined) => id ? store("GuildStore")?.getGuild?.(id) : undefined;
@@ -614,7 +626,7 @@ export default definePlugin({
             const roleId: string | undefined = props.role?.id ?? props.id;
             const guildId: string | undefined = props.guild?.id ?? props.guildId ?? store("SelectedGuildStore")?.getGuildId?.();
             if (!roleId || !guildId) return;
-            const role = guildRoles(guildId).find(r => r.id === roleId);
+            const role = guildRole(guildId, roleId);
             if (!role) return;
             children.push(item("evi-pv-role", () => {
                 try {

@@ -76,6 +76,8 @@ const attached = new WeakSet<HTMLVideoElement>();
 const sped = new WeakSet<HTMLVideoElement>();
 const touched = new Map<HTMLVideoElement, Touched>();
 const fps = new WeakMap<HTMLVideoElement, number>();
+/** Each video's chat scroller (or null), looked up once: the overlay is placed every frame */
+const scrollers = new WeakMap<HTMLVideoElement, Element | null>();
 
 /** The video under the pointer */
 let hovered: HTMLVideoElement | null = null;
@@ -499,7 +501,9 @@ function visibleRect(video: HTMLVideoElement) {
     let top = Math.max(box.top, 0), left = Math.max(box.left, 0);
     let bottom = Math.min(box.bottom, window.innerHeight), right = Math.min(box.right, window.innerWidth);
     if (!document.fullscreenElement) {
-        const scroller = video.closest("[class*=\"scroller\"]")?.getBoundingClientRect();
+        let el = scrollers.get(video);
+        if (el === undefined || (el && !el.isConnected)) scrollers.set(video, el = video.closest("[class*=\"scroller\"]"));
+        const scroller = el?.getBoundingClientRect();
         if (scroller) {
             top = Math.max(top, scroller.top);
             bottom = Math.min(bottom, scroller.bottom);
@@ -508,14 +512,22 @@ function visibleRect(video: HTMLVideoElement) {
     return { top, left, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
 }
 
+/** Sets an attribute only when it changes: an unchanged write would still restyle the overlay every frame */
+function setData(el: HTMLElement, key: string, value: string) {
+    if (el.dataset[key] !== value) el.dataset[key] = value;
+}
+
+/** Where the overlay was last put, so a frame where nothing moved writes nothing */
+let placed = "";
+
 /** Keeps the overlay on its video while anything of it is showing */
 function update() {
     if (!root || !strip) return;
     const video = current;
     const showStrip = stripVisible();
     const active = !!video?.isConnected && (showStrip || flashing);
-    root.dataset.visible = String(active);
-    strip.dataset.visible = String(showStrip);
+    setData(root, "visible", String(active));
+    setData(strip, "visible", String(showStrip));
     if (!active || !video) {
         if (menuOpen && !video?.isConnected) setMenu(false, false);
         cancelAnimationFrame(frame);
@@ -528,10 +540,14 @@ function update() {
     if (root.parentElement !== host) host.append(root);
 
     const rect = visibleRect(video);
-    root.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
-    root.style.width = `${rect.width}px`;
-    root.style.height = `${rect.height}px`;
-    root.dataset.compact = String(rect.width < MIN_STRIP_WIDTH || rect.height < 64);
+    const place = `${rect.left},${rect.top},${rect.width},${rect.height}`;
+    if (place !== placed) {
+        placed = place;
+        root.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
+        root.style.width = `${rect.width}px`;
+        root.style.height = `${rect.height}px`;
+        setData(root, "compact", String(rect.width < MIN_STRIP_WIDTH || rect.height < 64));
+    }
 
     if (!frame) {
         frame = requestAnimationFrame(() => {
@@ -725,6 +741,7 @@ export default definePlugin({
             clearTimeout(flashTimer);
             idleTimer = flashTimer = undefined;
             root?.remove();
+            placed = "";
             root = strip = menu = flashEl = speedButton = loopButton = pipButton = undefined;
             restore();
             hovered = current = null;

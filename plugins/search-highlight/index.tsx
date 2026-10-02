@@ -140,9 +140,10 @@ function fadeOut() {
 function textNodes(root: Element): Text[] {
     const out: Text[] = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-        acceptNode: node => node.parentElement?.closest(SKIP) && root.contains(node.parentElement.closest(SKIP)!)
-            ? NodeFilter.FILTER_REJECT
-            : NodeFilter.FILTER_ACCEPT,
+        acceptNode: node => {
+            const skip = node.parentElement?.closest(SKIP);
+            return skip && root.contains(skip) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+        },
     });
     for (let n = walker.nextNode(); n; n = walker.nextNode()) out.push(n as Text);
     return out;
@@ -183,10 +184,26 @@ function schedule() {
     if (!frame) frame = requestAnimationFrame(paint);
 }
 
+const MESSAGE = "[id^='message-content-']";
+
+/** Whether a DOM change can add or change message text: the rest of Discord changes all the time */
+function touchesMessages(records: MutationRecord[]) {
+    for (const r of records) {
+        const target = r.target instanceof Element ? r.target : r.target.parentElement;
+        if (target?.closest(MESSAGE)) return true;
+        for (const node of r.addedNodes) {
+            if (node instanceof Element && (node.matches(MESSAGE) || node.querySelector(MESSAGE))) return true;
+        }
+    }
+    return false;
+}
+
 /** While a search is open, repaint when messages render, scroll in or change */
 function watch() {
     if (terms.length && !observer) {
-        observer = new MutationObserver(schedule);
+        observer = new MutationObserver(records => {
+            if (!frame && touchesMessages(records)) schedule();
+        });
         observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     } else if (!terms.length && observer) {
         observer.disconnect();
@@ -215,8 +232,12 @@ export default definePlugin({
             return;
         }
         ctx.addStyle(css);
-        ctx.hookExport("before", searchActions, "fetchMessages", onSearch);
-        ctx.hookExport("before", searchActions, "fetchTabMessages", onSearch);
+        // One lookup for both methods: each lookup walks Discord's modules
+        ctx.waitFor(searchActions, actions => {
+            for (const method of ["fetchMessages", "fetchTabMessages"]) {
+                if (typeof actions[method] === "function") ctx.hook.before(actions, method, onSearch);
+            }
+        });
         ctx.hookExport("before", messageActions, "jumpToMessage", onJump);
         for (const type of ["SEARCH_MESSAGES_CLEAR", "SEARCH_MESSAGES_CLEAR_ALL", "SEARCH_RESULTS_CLOSE", "SEARCH_QUERY_TEXT_CLEAR"]) {
             ctx.flux.subscribe(type, clearSearch);

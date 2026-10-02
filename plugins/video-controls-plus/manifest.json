@@ -2,7 +2,7 @@
     "id": "video-controls-plus",
     "name": "Video Controls+",
     "description": "Playback speed from 0.25x to 3x, loop, frame stepping and picture-in-picture for videos in chat, plus YouTube-style keyboard shortcuts while you hover a video.",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "authors": [
         "Evi"
     ],
@@ -12,6 +12,12 @@
     "minEviVersion": "0.3.2",
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.1.2",
+            "notes": [
+                "Lighter while a video is hovered: the controls only move when the video does."
+            ]
+        },
         {
             "version": "1.1.1",
             "notes": [
@@ -48,6 +54,9 @@
             "name": "Video-Steuerung+",
             "description": "Wiedergabegeschwindigkeit von 0,25x bis 3x, Wiederholen, Einzelbildschaltung und Bild-in-Bild für Videos im Chat, dazu YouTube-artige Tastenkürzel, solange du mit der Maus über einem Video bist.",
             "changelog": {
+                "1.1.2": [
+                    "Schonender, während du über einem Video bist: Die Steuerung bewegt sich nur, wenn sich das Video bewegt."
+                ],
                 "1.1.1": [
                     "Die Steuerung erscheint wieder bei Videos im Chat, nicht nur im Vollbild."
                 ],
@@ -69,6 +78,9 @@
             "name": "Controles de vídeo+",
             "description": "Velocidad de reproducción de 0,25x a 3x, repetición, avance fotograma a fotograma e imagen en imagen para los vídeos del chat, además de atajos de teclado al estilo de YouTube mientras pasas el ratón por un vídeo.",
             "changelog": {
+                "1.1.2": [
+                    "Más ligero al pasar el ratón sobre un vídeo: los controles solo se mueven cuando se mueve el vídeo."
+                ],
                 "1.1.1": [
                     "Los controles vuelven a aparecer en los vídeos del chat, no solo en pantalla completa."
                 ],
@@ -90,6 +102,9 @@
             "name": "Contrôles vidéo+",
             "description": "Vitesse de lecture de 0,25x à 3x, lecture en boucle, avance image par image et image dans l'image pour les vidéos du chat, avec des raccourcis clavier à la YouTube quand vous survolez une vidéo.",
             "changelog": {
+                "1.1.2": [
+                    "Plus léger quand tu survoles une vidéo : les commandes ne bougent que si la vidéo bouge."
+                ],
                 "1.1.1": [
                     "Les commandes s’affichent de nouveau sur les vidéos du chat, pas seulement en plein écran."
                 ],
@@ -111,6 +126,9 @@
             "name": "動画コントロール+",
             "description": "チャット内の動画に、0.25xから3xまでの再生速度、ループ、コマ送り、ピクチャーインピクチャーを追加します。動画にカーソルを合わせている間は、YouTubeのようなキーボードショートカットも使えます。",
             "changelog": {
+                "1.1.2": [
+                    "動画にカーソルを合わせているときの負荷が軽くなりました。コントロールは動画が動いたときだけ移動します。"
+                ],
                 "1.1.1": [
                     "チャット内の動画でも、全画面表示のときだけでなくコントロールが表示されるようになりました。"
                 ],
@@ -132,6 +150,9 @@
             "name": "Sterowanie wideo+",
             "description": "Prędkość odtwarzania od 0,25x do 3x, zapętlanie, przechodzenie klatka po klatce i obraz w obrazie dla filmów na czacie, a do tego skróty klawiszowe w stylu YouTube, gdy kursor jest nad filmem.",
             "changelog": {
+                "1.1.2": [
+                    "Lżej, gdy najedziesz na film: elementy sterujące przesuwają się tylko wtedy, gdy przesuwa się film."
+                ],
                 "1.1.1": [
                     "Sterowanie znowu pojawia się na filmach na czacie, nie tylko na pełnym ekranie."
                 ],
@@ -153,6 +174,9 @@
             "name": "Controles de vídeo+",
             "description": "Velocidade de reprodução de 0,25x a 3x, repetição, avanço quadro a quadro e picture-in-picture para os vídeos do chat, além de atalhos de teclado no estilo do YouTube enquanto você passa o mouse sobre um vídeo.",
             "changelog": {
+                "1.1.2": [
+                    "Mais leve com o mouse sobre um vídeo: os controles só se movem quando o vídeo se move."
+                ],
                 "1.1.1": [
                     "Os controles voltam a aparecer nos vídeos do chat, não só em tela cheia."
                 ],
@@ -174,6 +198,9 @@
             "name": "Управление видео+",
             "description": "Скорость воспроизведения от 0,25x до 3x, повтор, покадровый просмотр и «картинка в картинке» для видео в чате, а также горячие клавиши как на YouTube, пока курсор наведён на видео.",
             "changelog": {
+                "1.1.2": [
+                    "Меньше нагрузки, пока курсор над видео: панель управления двигается, только когда двигается само видео."
+                ],
                 "1.1.1": [
                     "Элементы управления снова появляются на видео в чате, а не только в полноэкранном режиме."
                 ],
@@ -195,6 +222,9 @@
             "name": "Video Denetimleri+",
             "description": "Sohbetteki videolar için 0,25x ile 3x arası oynatma hızı, döngü, kare kare ilerleme ve pencere içinde pencere; bir videonun üzerindeyken YouTube tarzı klavye kısayolları da var.",
             "changelog": {
+                "1.1.2": [
+                    "Bir videonun üzerindeyken daha hafif: kontroller yalnızca video hareket ettiğinde yer değiştiriyor."
+                ],
                 "1.1.1": [
                     "Kontroller artık yalnızca tam ekranda değil, sohbetteki videolarda da görünüyor."
                 ],

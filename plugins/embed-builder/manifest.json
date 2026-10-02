@@ -2,7 +2,7 @@
     "id": "embed-builder",
     "name": "Embed Builder",
     "description": "Compose rich embeds with a title, colour, fields and images, see them exactly as they'll look, and send them through a channel's webhook, or edit one sent before. For server admins.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
         "Evi"
     ],
@@ -19,6 +19,12 @@
     },
     "changelog": [
         {
+            "version": "1.0.1",
+            "notes": [
+                "Faster start: its styles load the first time you open the builder, so Discord doesn't restyle the whole app at startup for it."
+            ]
+        },
+        {
             "version": "1.0.0",
             "notes": [
                 "First release."
@@ -31,6 +37,9 @@
             "name": "Embed-Builder",
             "description": "Erstelle Embeds mit Titel, Farbe, Feldern und Bildern, sieh genau, wie sie aussehen, und sende sie über einen Webhook des Kanals oder bearbeite einen früher gesendeten. Für Server-Admins.",
             "changelog": {
+                "1.0.1": [
+                    "Schnellerer Start: Seine Styles werden erst geladen, wenn du den Builder zum ersten Mal öffnest, sodass Discord beim Start nicht die ganze App dafür neu gestalten muss."
+                ],
                 "1.0.0": [
                     "Erste Version."
                 ]
@@ -40,6 +49,9 @@
             "name": "Creador de embeds",
             "description": "Crea embeds con título, color, campos e imágenes, mira exactamente cómo se verán y envíalos con un webhook del canal, o edita uno enviado antes. Para administradores de servidores.",
             "changelog": {
+                "1.0.1": [
+                    "Inicio más rápido: sus estilos se cargan la primera vez que abres el editor, así Discord no tiene que recalcular el estilo de toda la app al arrancar."
+                ],
                 "1.0.0": [
                     "Primera versión."
                 ]
@@ -49,6 +61,9 @@
             "name": "Créateur d'embeds",
             "description": "Compose des embeds avec titre, couleur, champs et images, vois exactement leur rendu et envoie-les via un webhook du salon, ou modifie un message déjà envoyé. Pour les admins de serveur.",
             "changelog": {
+                "1.0.1": [
+                    "Démarrage plus rapide : ses styles se chargent la première fois que vous ouvrez l'éditeur, donc Discord n'a pas à recalculer le style de toute l'appli au démarrage."
+                ],
                 "1.0.0": [
                     "Première version."
                 ]
@@ -58,6 +73,9 @@
             "name": "埋め込みビルダー",
             "description": "タイトル、色、フィールド、画像付きの埋め込みを作成し、実際の見た目を確認してチャンネルのWebhookで送信、または送信済みのものを編集できます。サーバー管理者向け。",
             "changelog": {
+                "1.0.1": [
+                    "起動が速くなりました。スタイルはビルダーを初めて開いたときに読み込むので、起動時に Discord 全体のスタイル再計算が起きません。"
+                ],
                 "1.0.0": [
                     "初回リリース。"
                 ]
@@ -67,6 +85,9 @@
             "name": "Kreator embedów",
             "description": "Twórz embedy z tytułem, kolorem, polami i obrazami, zobacz dokładnie, jak będą wyglądać, i wysyłaj je webhookiem kanału albo edytuj wcześniej wysłane. Dla administratorów serwerów.",
             "changelog": {
+                "1.0.1": [
+                    "Szybszy start: style wczytują się dopiero przy pierwszym otwarciu kreatora, więc Discord nie musi przy starcie przeliczać stylów całej aplikacji."
+                ],
                 "1.0.0": [
                     "Pierwsze wydanie."
                 ]
@@ -76,6 +97,9 @@
             "name": "Criador de embeds",
             "description": "Crie embeds com título, cor, campos e imagens, veja exatamente como vão ficar e envie por um webhook do canal, ou edite um enviado antes. Para admins de servidores.",
             "changelog": {
+                "1.0.1": [
+                    "Início mais rápido: os estilos carregam na primeira vez que você abre o editor, então o Discord não precisa recalcular o estilo do app inteiro ao iniciar."
+                ],
                 "1.0.0": [
                     "Primeira versão."
                 ]
@@ -85,6 +109,9 @@
             "name": "Конструктор эмбедов",
             "description": "Создавайте эмбеды с заголовком, цветом, полями и изображениями, смотрите, как они будут выглядеть, и отправляйте через вебхук канала или редактируйте отправленные ранее. Для админов серверов.",
             "changelog": {
+                "1.0.1": [
+                    "Быстрее запуск: стили загружаются при первом открытии конструктора, поэтому Discord не пересчитывает стили всего приложения при старте."
+                ],
                 "1.0.0": [
                     "Первый выпуск."
                 ]
@@ -94,6 +121,9 @@
             "name": "Embed Oluşturucu",
             "description": "Başlık, renk, alan ve görsellerle embed'ler oluştur, tam olarak nasıl görüneceklerini gör ve kanalın webhook'u ile gönder ya da daha önce gönderileni düzenle. Sunucu yöneticileri için.",
             "changelog": {
+                "1.0.1": [
+                    "Daha hızlı başlangıç: stilleri oluşturucuyu ilk açtığında yükleniyor, böylece Discord açılışta onun için tüm uygulamanın stilini yeniden hesaplamıyor."
+                ],
                 "1.0.0": [
                     "İlk sürüm."
                 ]

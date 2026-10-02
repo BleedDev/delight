@@ -2,7 +2,7 @@
     "id": "quick-markup",
     "name": "Quick Markup",
     "description": "Crop, blur names, and draw arrows and boxes right in Discord's upload preview, before you send a picture.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
         "Evi"
     ],
@@ -12,6 +12,12 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.0.1",
+            "notes": [
+                "Drawing in the editor is smooth on big pictures: it no longer redraws the whole picture and every mark each time the pointer moves."
+            ]
+        },
         {
             "version": "1.0.0",
             "notes": [
@@ -24,6 +30,9 @@
             "name": "Schnell markieren",
             "description": "Zuschneiden, Namen verpixeln, Pfeile und Rahmen zeichnen, direkt in Discords Upload-Vorschau, bevor du ein Bild sendest.",
             "changelog": {
+                "1.0.1": [
+                    "Zeichnen im Editor läuft auch bei großen Bildern flüssig: Er zeichnet nicht mehr bei jeder Mausbewegung das ganze Bild samt aller Markierungen neu."
+                ],
                 "1.0.0": [
                     "Erste Version."
                 ]
@@ -33,6 +42,9 @@
             "name": "Marcado rápido",
             "description": "Recorta, difumina nombres y dibuja flechas y recuadros en la vista previa de subida de Discord antes de enviar una imagen.",
             "changelog": {
+                "1.0.1": [
+                    "Dibujar en el editor es fluido incluso con imágenes grandes: ya no vuelve a dibujar toda la imagen y cada marca cada vez que se mueve el puntero."
+                ],
                 "1.0.0": [
                     "Primera versión."
                 ]
@@ -42,6 +54,9 @@
             "name": "Annotation rapide",
             "description": "Rogne, floute des noms, dessine des flèches et des cadres dans l'aperçu d'envoi de Discord avant d'envoyer une image.",
             "changelog": {
+                "1.0.1": [
+                    "Dessiner dans l'éditeur reste fluide sur les grandes images : il ne redessine plus toute l'image et chaque annotation à chaque mouvement du pointeur."
+                ],
                 "1.0.0": [
                     "Première version."
                 ]
@@ -51,6 +66,9 @@
             "name": "クイック書き込み",
             "description": "画像を送る前に、Discordのアップロードプレビューで切り抜き、名前のぼかし、矢印や枠の書き込みができます。",
             "changelog": {
+                "1.0.1": [
+                    "大きな画像でもエディターでの描画がなめらかになりました。ポインターが動くたびに画像全体とすべてのマークを描き直さなくなりました。"
+                ],
                 "1.0.0": [
                     "初回リリース。"
                 ]
@@ -60,6 +78,9 @@
             "name": "Szybkie oznaczanie",
             "description": "Przytnij, rozmyj imiona, rysuj strzałki i ramki w podglądzie przesyłania Discorda, zanim wyślesz obraz.",
             "changelog": {
+                "1.0.1": [
+                    "Rysowanie w edytorze jest płynne także na dużych obrazach: nie rysuje już od nowa całego obrazu i wszystkich oznaczeń przy każdym ruchu kursora."
+                ],
                 "1.0.0": [
                     "Pierwsze wydanie."
                 ]
@@ -69,6 +90,9 @@
             "name": "Marcação rápida",
             "description": "Corte, desfoque nomes e desenhe setas e caixas na prévia de envio do Discord antes de mandar uma imagem.",
             "changelog": {
+                "1.0.1": [
+                    "Desenhar no editor fica fluido mesmo em imagens grandes: ele não redesenha mais a imagem inteira e todas as marcações a cada movimento do ponteiro."
+                ],
                 "1.0.0": [
                     "Primeira versão."
                 ]
@@ -78,6 +102,9 @@
             "name": "Быстрая разметка",
             "description": "Обрезайте, размывайте имена, рисуйте стрелки и рамки прямо в превью загрузки Discord перед отправкой картинки.",
             "changelog": {
+                "1.0.1": [
+                    "Рисовать в редакторе теперь плавно даже на больших картинках: он больше не перерисовывает всё изображение и все пометки при каждом движении указателя."
+                ],
                 "1.0.0": [
                     "Первый выпуск."
                 ]
@@ -87,6 +114,9 @@
             "name": "Hızlı İşaretleme",
             "description": "Bir resmi göndermeden önce Discord'un yükleme önizlemesinde kırp, isimleri bulanıklaştır, ok ve kutu çiz.",
             "changelog": {
+                "1.0.1": [
+                    "Düzenleyicide çizim büyük resimlerde de akıcı: işaretçi her hareket ettiğinde tüm resmi ve bütün işaretleri yeniden çizmiyor."
+                ],
                 "1.0.0": [
                     "İlk sürüm."
                 ]

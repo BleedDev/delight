@@ -1519,8 +1519,14 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
 // ---- Opening it ---------------------------------------------------------------------------------
 
 let closeOpen: CloseLayer | undefined;
+/** The builder's ~30 KB of CSS goes in the first time it opens, not at startup: a new stylesheet makes Discord restyle the whole app */
+let styled = false;
 
 function openBuilder(channel: any) {
+    if (!styled && context) {
+        context.addStyle(css);
+        styled = true;
+    }
     closeOpen?.({ instant: true });
     const close = openLayer(close => <Builder channel={channel} onClose={() => close()} />, {
         onClosed: () => void (closeOpen === close && (closeOpen = undefined)),
@@ -1812,10 +1818,10 @@ const css = `
 export default definePlugin({
     start(ctx) {
         context = ctx;
-        ctx.addStyle(css);
         ctx.onDispose(() => {
             closeOpen?.({ instant: true });
             context = undefined;
+            styled = false;
         });
 
         ctx.contextMenu(["channel-context", "thread-context"], (children, props) => {

@@ -2,7 +2,7 @@ import { definePlugin, filters, find, getStore, openLayer, React } from "@evi/ap
 import type { CloseLayer } from "@evi/api";
 import type { ComponentType, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 
-import { canMarkUp, isTiny, Mark, outputType, Point, Rect, rectFrom, render, strokeFor, Tool } from "./draw";
+import { canMarkUp, drawMark, isTiny, Mark, outputType, Point, Rect, rectFrom, render, strokeFor, Tool } from "./draw";
 import { t } from "./strings";
 
 /**
@@ -84,11 +84,28 @@ function Editor({ file, onSave, onClose }: { file: File; onSave(file: File): voi
     const size = image ? { w: image.naturalWidth, h: image.naturalHeight } : { w: 1, h: 1 };
     const width = strokeFor(size);
 
-    // The picture with its marks, and the one being drawn
+    // The picture with its finished marks, drawn once per change rather than on every pointer move
+    const base = React.useMemo(() => {
+        if (!image) return undefined;
+        const c = document.createElement("canvas");
+        render(c, image, size, marks);
+        return c;
+    }, [image, marks]);
+
+    // That, and the mark being drawn on top
     React.useEffect(() => {
-        if (!image || !canvas.current) return;
-        render(canvas.current, image, size, draft?.mark ? [...marks, draft.mark] : marks);
-    }, [image, marks, draft]);
+        const c = canvas.current;
+        if (!base || !c) return;
+        // Setting the size reallocates the canvas: only when it changes
+        if (c.width !== base.width || c.height !== base.height) {
+            c.width = base.width;
+            c.height = base.height;
+        }
+        const g = c.getContext("2d")!;
+        g.clearRect(0, 0, c.width, c.height);
+        g.drawImage(base, 0, 0);
+        if (draft?.mark) drawMark(g, draft.mark);
+    }, [base, draft]);
 
     React.useEffect(() => {
         const onKey = (e: KeyboardEvent) => {

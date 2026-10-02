@@ -229,11 +229,12 @@ function Player() {
         const id = setTimeout(() => setLast(null), 150);
         return () => clearTimeout(id);
     }, [current]);
+    // Once a second, right when the time shown changes; not while dragging, which shows the drag
     React.useEffect(() => {
-        if (!current?.isPlaying) return;
-        const id = setInterval(tick, 500);
-        return () => clearInterval(id);
-    }, [current?.isPlaying]);
+        if (!current?.isPlaying || drag !== null) return;
+        const id = setTimeout(tick, 1000 - (livePosition(current, Date.now()) % 1000) + 20);
+        return () => clearTimeout(id);
+    });
 
     const view = current ?? last;
     if (!view) return null;

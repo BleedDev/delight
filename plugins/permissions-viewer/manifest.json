@@ -2,7 +2,7 @@
     "id": "permissions-viewer",
     "name": "Permissions Viewer",
     "description": "Adds View Permissions to user, role, channel and server menus: see every permission someone has in a channel and which role or overwrite granted or denied it.",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "authors": [
         "Evi"
     ],
@@ -12,6 +12,12 @@
     "minEviVersion": "0.3.2",
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.2.1",
+            "notes": [
+                "Right-click menus with Developer Mode open faster in servers with many roles: it no longer sorts every role just to check whether you clicked one."
+            ]
+        },
         {
             "version": "1.2.0",
             "notes": [
@@ -49,6 +55,9 @@
             "name": "Berechtigungsanzeige",
             "description": "Fügt den Menüs von Nutzern, Rollen, Kanälen und Servern „Berechtigungen anzeigen“ hinzu: Sieh jede Berechtigung, die jemand in einem Kanal hat, und welche Rolle oder Überschreibung sie erteilt oder verweigert hat.",
             "changelog": {
+                "1.2.1": [
+                    "Rechtsklickmenüs mit Entwicklermodus öffnen sich in Servern mit vielen Rollen schneller: Es sortiert nicht mehr alle Rollen, nur um zu prüfen, ob du eine angeklickt hast."
+                ],
                 "1.2.0": [
                     "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
                 ],
@@ -70,6 +79,9 @@
             "name": "Visor de permisos",
             "description": "Añade Ver permisos a los menús de usuarios, roles, canales y servidores: mira todos los permisos que tiene alguien en un canal y qué rol o sobrescritura los concedió o denegó.",
             "changelog": {
+                "1.2.1": [
+                    "Los menús del clic derecho con el modo desarrollador se abren más rápido en servidores con muchos roles: ya no ordena todos los roles solo para ver si hiciste clic en uno."
+                ],
                 "1.2.0": [
                     "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
                 ],
@@ -91,6 +103,9 @@
             "name": "Visionneuse de permissions",
             "description": "Ajoute Voir les permissions aux menus des utilisateurs, rôles, salons et serveurs : consulte toutes les permissions de quelqu'un dans un salon et quel rôle ou remplacement les a accordées ou refusées.",
             "changelog": {
+                "1.2.1": [
+                    "Les menus du clic droit en mode développeur s'ouvrent plus vite dans les serveurs avec beaucoup de rôles : il ne trie plus tous les rôles juste pour vérifier si vous avez cliqué sur l'un d'eux."
+                ],
                 "1.2.0": [
                     "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
                 ],
@@ -112,6 +127,9 @@
             "name": "権限ビューアー",
             "description": "ユーザー、ロール、チャンネル、サーバーのメニューに「権限を表示」を追加します。チャンネルで誰がどの権限を持っているか、そしてどのロールや上書きが許可・拒否したかを確認できます。",
             "changelog": {
+                "1.2.1": [
+                    "ロールの多いサーバーで、開発者モードの右クリックメニューが速く開くようになりました。ロールをクリックしたかどうか確認するためだけに全ロールを並べ替えなくなりました。"
+                ],
                 "1.2.0": [
                     "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
                 ],
@@ -133,6 +151,9 @@
             "name": "Podgląd uprawnień",
             "description": "Dodaje „Wyświetl uprawnienia” do menu użytkowników, ról, kanałów i serwerów: zobacz wszystkie uprawnienia, jakie ktoś ma na kanale, oraz która rola lub nadpisanie je przyznało albo zabroniło.",
             "changelog": {
+                "1.2.1": [
+                    "Menu prawego przycisku w trybie dewelopera otwierają się szybciej na serwerach z wieloma rolami: nie sortuje już wszystkich ról tylko po to, by sprawdzić, czy kliknięto jedną z nich."
+                ],
                 "1.2.0": [
                     "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
                 ],
@@ -154,6 +175,9 @@
             "name": "Visualizador de permissões",
             "description": "Adiciona Ver permissões aos menus de usuários, cargos, canais e servidores: veja todas as permissões que alguém tem em um canal e qual cargo ou substituição as concedeu ou negou.",
             "changelog": {
+                "1.2.1": [
+                    "Os menus do botão direito com o modo desenvolvedor abrem mais rápido em servidores com muitos cargos: ele não ordena mais todos os cargos só para ver se você clicou em um."
+                ],
                 "1.2.0": [
                     "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
                 ],
@@ -175,6 +199,9 @@
             "name": "Просмотр прав",
             "description": "Добавляет «Посмотреть права» в меню пользователей, ролей, каналов и серверов: видно все права человека в канале и какая роль или исключение их выдали или запретили.",
             "changelog": {
+                "1.2.1": [
+                    "Контекстные меню в режиме разработчика открываются быстрее на серверах с множеством ролей: плагин больше не сортирует все роли, чтобы проверить, нажали ли вы на одну из них."
+                ],
                 "1.2.0": [
                     "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
                 ],
@@ -196,6 +223,9 @@
             "name": "İzin Görüntüleyici",
             "description": "Kullanıcı, rol, kanal ve sunucu menülerine İzinleri Görüntüle ekler: birinin bir kanalda sahip olduğu tüm izinleri ve bunları hangi rolün ya da geçersiz kılmanın verdiğini veya reddettiğini gör.",
             "changelog": {
+                "1.2.1": [
+                    "Çok rolü olan sunucularda Geliştirici Modu sağ tık menüleri daha hızlı açılıyor: bir role tıklayıp tıklamadığını anlamak için artık tüm rolleri sıralamıyor."
+                ],
                 "1.2.0": [
                     "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
                 ],

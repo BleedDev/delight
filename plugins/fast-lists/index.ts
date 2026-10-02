@@ -344,14 +344,17 @@ function createSession(list: Element, kind: ListKind, marginScreens: number) {
     return {
         list,
         /**
-         * Attached before the list could scroll (still loading): needs a fresh session now that it can.
-         * Only looked for again once rows came in since the last look, not every second.
+         * Attached before the list could scroll (still loading) and rows came in since the last look:
+         * worth checking again whether it scrolls now. No layout read here, that's `scrollable`'s job,
+         * after Discord's frame.
          */
         stale() {
             if (scroller || !grew) return false;
             grew = false;
-            return !!findScroller(list);
+            return true;
         },
+        /** Whether the list has a scroller now. Reads layout: call it after Discord's frame, never mid-render. */
+        scrollable: () => !!findScroller(list),
         dispose() {
             disposed = true;
             cancelSync?.();
@@ -403,6 +406,8 @@ export default definePlugin({
 
         /** Lists waiting to be set up after Discord's next frame */
         const pending = new Map<string, Element>();
+        /** Pending lists to set up again even if they are the current session's (settings changed) */
+        const rebuild = new Set<string>();
         let scheduled = false;
 
         /**
@@ -419,14 +424,36 @@ export default definePlugin({
                     const list = pending.get(kind.key);
                     if (!list) continue;
                     pending.delete(kind.key);
+                    const forced = rebuild.delete(kind.key);
                     if (!list.isConnected || !ctx.settings.get(kind.key)) continue;
-                    sessions.get(kind.key)?.dispose();
+                    const current = sessions.get(kind.key);
+                    // A stale check: only start over once the list really can scroll
+                    if (current?.list === list && !forced && !current.scrollable()) continue;
+                    current?.dispose();
                     sessions.set(kind.key, createSession(list, kind, ctx.settings.get("margin")));
                 }
             }, 0));
         };
 
+        /**
+         * The lists of `kinds` on the page, found in one walk of the document. A prefix attribute
+         * selector can't use any of the browser's indexes, so each lookup reads every element:
+         * three separate lookups every second were most of this plugin's idle cost.
+         */
+        const findLists = (kinds: ListKind[]) => {
+            const found = new Map<ListKind["key"], Element>();
+            if (!kinds.length) return found;
+            for (const el of document.querySelectorAll(kinds.map(kind => kind.list).join(", "))) {
+                for (const kind of kinds) {
+                    if (!found.has(kind.key) && el.matches(kind.list)) found.set(kind.key, el);
+                }
+                if (found.size === kinds.length) break;
+            }
+            return found;
+        };
+
         const refresh = (force = false) => {
+            const missing: ListKind[] = [];
             for (const kind of LISTS) {
                 const current = sessions.get(kind.key);
                 const enabled = ctx.settings.get(kind.key);
@@ -440,14 +467,25 @@ export default definePlugin({
                 // stale() resets itself, so it's asked once.
                 const stale = !!current && current.list.isConnected && current.stale();
                 if (!force && !stale && current?.list.isConnected) continue;
-                const list = stale ? current!.list : document.querySelector(kind.list);
+                if (stale && !force) {
+                    pending.set(kind.key, current!.list);
+                    schedule();
+                    continue;
+                }
+                missing.push(kind);
+            }
+            const lists = findLists(missing);
+            for (const kind of missing) {
+                const current = sessions.get(kind.key);
+                const list = lists.get(kind.key);
                 if (!list) {
                     current?.dispose();
                     sessions.delete(kind.key);
                     pending.delete(kind.key);
                     continue;
                 }
-                if (!force && !stale && current?.list === list) continue;
+                if (!force && current?.list === list) continue;
+                if (force) rebuild.add(kind.key);
                 pending.set(kind.key, list);
                 schedule();
             }

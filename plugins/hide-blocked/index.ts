@@ -174,7 +174,11 @@ function reconcileAudio(off = false) {
     if ([...ours].join() !== before) saveMuted?.([...ours]);
 }
 
-let lastDmIn: unknown, lastDmOut: readonly string[] | undefined;
+/**
+ * The DM list asks for its ids on every render. Each answer is kept for the array Discord handed us
+ * and the version it was worked out under, so the same question isn't filtered again
+ */
+let lastDmIn: unknown, lastDmVersion = -1, lastDmOut: readonly string[] | undefined;
 
 /** Voice lists get a stable array per input and version, so Discord's memos downstream hold */
 const voiceCache = new WeakMap<object, { version: number; out: readonly unknown[]; }>();
@@ -241,15 +245,20 @@ export default definePlugin({
         if (dmSort) {
             ctx.hook.after(dmSort, "getPrivateChannelIds", ({ result }: { result: unknown; }) => {
                 if (!options?.active || !options.dms || !Array.isArray(result)) return;
+                if (result === lastDmIn && version === lastDmVersion) return lastDmOut === result ? undefined : lastDmOut;
                 try {
                     const out = filterDmIds(result, id => {
                         const ch = channelStore?.getChannel?.(id);
                         return ch?.type === DM ? ch.getRecipientId?.() ?? ch.recipients?.[0] : undefined;
                     }, hidden);
-                    if (out === result) return;
-                    // Same contents as last time: the same array, so nothing re-renders
-                    if (lastDmIn === result || (lastDmOut?.length === out.length && out.every((id, i) => lastDmOut![i] === id))) return lastDmOut;
                     lastDmIn = result;
+                    lastDmVersion = version;
+                    if (out === result) {
+                        lastDmOut = result;
+                        return;
+                    }
+                    // Same contents as last time: the same array, so nothing re-renders
+                    if (lastDmOut?.length === out.length && out.every((id, i) => lastDmOut![i] === id)) return lastDmOut;
                     lastDmOut = out;
                     return out;
                 } catch (e) {
@@ -310,6 +319,7 @@ export default definePlugin({
             } catch { }
             hiddenVoice.clear();
             lastDmIn = lastDmOut = undefined;
+            lastDmVersion = -1;
             voiceStore = channelStore = mediaEngine = audioActions = dmSort = undefined;
             saveMuted = undefined;
             relationships?.removeChangeListener?.(onRelationships);

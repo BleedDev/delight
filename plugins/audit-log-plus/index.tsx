@@ -322,7 +322,8 @@ function ChangeLine({ c }: { c: ChangeView; }) {
     }
 }
 
-function EntryRow({ row, guildId, onNavigate }: { row: Row; guildId: string; onNavigate(): void; }) {
+/** Memoized: typing in the search or loading another page only renders the rows that changed */
+const EntryRow = React.memo(function EntryRow({ row, guildId, onNavigate }: { row: Row; guildId: string; onNavigate(): void; }) {
     const [open, setOpen] = React.useState(false);
     const hasDetails = row.changes.length > 0 || row.options.length > 0;
     const actor = row.actor;
@@ -360,7 +361,7 @@ function EntryRow({ row, guildId, onNavigate }: { row: Row; guildId: string; onN
             )}
         </li>
     );
-}
+});
 
 const dayStart = (v: string) => v ? new Date(`${v}T00:00:00`).getTime() : undefined;
 const dayEnd = (v: string) => v ? new Date(`${v}T23:59:59.999`).getTime() : undefined;

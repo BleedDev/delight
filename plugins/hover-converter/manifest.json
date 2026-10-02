@@ -2,7 +2,7 @@
     "id": "hover-converter",
     "name": "Hover Converter",
     "description": "Hover \"$20\", \"5 ft\", \"30°C\" or \"3pm EST\" in any message to see it in your own currency, units and time zone.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
         "Evi"
     ],
@@ -19,6 +19,12 @@
     },
     "changelog": [
         {
+            "version": "1.0.1",
+            "notes": [
+                "Lighter on Discord while you scroll: it works out your currency, units and time zone once instead of for every message, and reuses its number formats."
+            ]
+        },
+        {
             "version": "1.0.0",
             "notes": [
                 "First release."
@@ -30,6 +36,9 @@
             "name": "Umrechner",
             "description": "Fahre über „$20“, „5 ft“, „30°C“ oder „3pm EST“ in einer Nachricht und sieh es in deiner Währung, deinen Einheiten und deiner Zeitzone.",
             "changelog": {
+                "1.0.1": [
+                    "Schont Discord beim Scrollen: Währung, Einheiten und Zeitzone werden einmal ermittelt statt für jede Nachricht, und die Zahlenformate werden wiederverwendet."
+                ],
                 "1.0.0": [
                     "Erste Version."
                 ]
@@ -39,6 +48,9 @@
             "name": "Conversor al pasar",
             "description": "Pasa el cursor por «$20», «5 ft», «30°C» o «3pm EST» en un mensaje para verlo en tu moneda, tus unidades y tu zona horaria.",
             "changelog": {
+                "1.0.1": [
+                    "Más ligero para Discord al desplazarte: calcula tu moneda, unidades y zona horaria una vez en lugar de en cada mensaje, y reutiliza sus formatos de número."
+                ],
                 "1.0.0": [
                     "Primera versión."
                 ]
@@ -48,6 +60,9 @@
             "name": "Convertisseur au survol",
             "description": "Survole « $20 », « 5 ft », « 30°C » ou « 3pm EST » dans un message pour le voir dans ta devise, tes unités et ton fuseau horaire.",
             "changelog": {
+                "1.0.1": [
+                    "Plus léger pour Discord quand vous faites défiler : votre devise, vos unités et votre fuseau horaire sont calculés une seule fois au lieu de pour chaque message, et les formats de nombres sont réutilisés."
+                ],
                 "1.0.0": [
                     "Première version."
                 ]
@@ -57,6 +72,9 @@
             "name": "ホバー変換",
             "description": "メッセージ内の「$20」「5 ft」「30°C」「3pm EST」にカーソルを合わせると、あなたの通貨、単位、タイムゾーンで表示します。",
             "changelog": {
+                "1.0.1": [
+                    "スクロール中のDiscordの負担が軽くなりました。通貨・単位・タイムゾーンをメッセージごとではなく一度だけ判定し、数値の書式も使い回します。"
+                ],
                 "1.0.0": [
                     "初回リリース。"
                 ]
@@ -66,6 +84,9 @@
             "name": "Przelicznik po najechaniu",
             "description": "Najedź na „$20”, „5 ft”, „30°C” albo „3pm EST” w wiadomości, by zobaczyć to w swojej walucie, jednostkach i strefie czasowej.",
             "changelog": {
+                "1.0.1": [
+                    "Mniej obciąża Discorda podczas przewijania: walutę, jednostki i strefę czasową ustala raz, a nie dla każdej wiadomości, i ponownie używa formatów liczb."
+                ],
                 "1.0.0": [
                     "Pierwsze wydanie."
                 ]
@@ -75,6 +96,9 @@
             "name": "Conversor ao passar o mouse",
             "description": "Passe o mouse sobre “$20”, “5 ft”, “30°C” ou “3pm EST” numa mensagem para ver na sua moeda, nas suas unidades e no seu fuso horário.",
             "changelog": {
+                "1.0.1": [
+                    "Mais leve para o Discord enquanto você rola: descobre sua moeda, unidades e fuso horário uma vez em vez de a cada mensagem, e reaproveita os formatos de número."
+                ],
                 "1.0.0": [
                     "Primeira versão."
                 ]
@@ -84,6 +108,9 @@
             "name": "Конвертер при наведении",
             "description": "Наведите на «$20», «5 ft», «30°C» или «3pm EST» в сообщении, чтобы увидеть это в своей валюте, единицах и часовом поясе.",
             "changelog": {
+                "1.0.1": [
+                    "Меньше нагружает Discord при прокрутке: валюта, единицы и часовой пояс определяются один раз, а не для каждого сообщения, а форматы чисел используются повторно."
+                ],
                 "1.0.0": [
                     "Первый выпуск."
                 ]
@@ -93,6 +120,9 @@
             "name": "Üzerine Gelince Çevir",
             "description": "Bir mesajdaki “$20”, “5 ft”, “30°C” ya da “3pm EST” üzerine gelin; kendi para biriminiz, birimleriniz ve saat diliminizle görün.",
             "changelog": {
+                "1.0.1": [
+                    "Kaydırırken Discord'u daha az yorar: para biriminizi, birimlerinizi ve saat diliminizi her mesaj için değil bir kez belirler ve sayı biçimlerini yeniden kullanır."
+                ],
                 "1.0.0": [
                     "İlk sürüm."
                 ]

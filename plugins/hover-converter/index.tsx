@@ -101,19 +101,31 @@ function useVersion() {
 
 // ---- Preferences --------------------------------------------------------------------------------
 
+const tr: Prefs["tr"] = (key, vars) => t(key, vars);
+
+/**
+ * Everything but the clock, worked out once: Discord parses markdown for every message it draws, and
+ * the region and time zone lookups cost more than the parse. Redone when a setting or rates change
+ * (bump), Discord's language changes, or after a minute (the time zone may have moved).
+ */
+let base: { at: number; version: number; locale: string; currency: string; system: Prefs["system"]; zone: string; } | undefined;
+
 function prefs(): Prefs {
-    const s = context?.settings;
-    const currency = s?.get("currency") ?? "auto";
-    const units = s?.get("units") ?? "auto";
-    return {
-        locale: I18n.discordLocale,
-        currency: currency === "auto" ? autoCurrency() : currency,
-        system: units === "auto" ? systemFor(region()) : units,
-        zone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-        now: new Date(),
-        rates,
-        tr: (key, vars) => t(key, vars),
-    };
+    const locale = I18n.discordLocale;
+    const at = Date.now();
+    if (!base || base.version !== version || base.locale !== locale || at - base.at > 60_000) {
+        const s = context?.settings;
+        const currency = s?.get("currency") ?? "auto";
+        const units = s?.get("units") ?? "auto";
+        const r = currency === "auto" || units === "auto" ? region() : "";
+        base = {
+            at, version, locale,
+            currency: currency === "auto" ? currencyFor(r) : currency,
+            system: units === "auto" ? systemFor(r) : units,
+            zone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        };
+    }
+    return { locale, currency: base.currency, system: base.system, zone: base.zone, now: new Date(at), rates, tr };
 }
 
 function kinds(): Kinds {
@@ -190,6 +202,8 @@ function walk(node: any, p: Prefs, k: Kinds, depth: number, key: string): any {
     if (Array.isArray(node)) {
         let changed = false;
         const next = node.map((child, i) => {
+            // Most children are text without a digit: skip them before building a key
+            if (typeof child === "string" && !/\d/.test(child)) return child;
             const v = walk(child, p, k, depth + 1, `${key}.${i}`);
             if (v !== child) changed = true;
             return v;
@@ -244,5 +258,6 @@ export default definePlugin({
     stop() {
         context = undefined;
         rates = undefined;
+        base = undefined;
     },
 });

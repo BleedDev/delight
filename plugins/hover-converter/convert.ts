@@ -247,8 +247,19 @@ function digits(v: number) {
     return a >= 100 ? 0 : a >= 10 ? 1 : 2;
 }
 
+// Building an Intl formatter costs far more than using one, and messages render over and over: keep them
+const formatters = new Map<string, object>();
+function cached<F extends object>(key: string, make: () => F): F {
+    let f = formatters.get(key) as F | undefined;
+    if (!f) {
+        if (formatters.size > 500) formatters.clear();
+        formatters.set(key, f = make());
+    }
+    return f;
+}
+
 function unit(v: number, u: Unit, locale: string, max = digits(v)) {
-    return new Intl.NumberFormat(locale, { style: "unit", unit: UNIT_INTL[u], unitDisplay: "short", maximumFractionDigits: max }).format(v);
+    return cached(`u|${locale}|${u}|${max}`, () => new Intl.NumberFormat(locale, { style: "unit", unit: UNIT_INTL[u], unitDisplay: "short", maximumFractionDigits: max })).format(v);
 }
 
 function feetInches(totalInches: number, locale: string) {
@@ -317,7 +328,7 @@ export function convertMoney(found: Extract<Found, { kind: "currency"; }>, prefs
     const value = amount / from * into;
     const big = Math.abs(value) >= 1000;
     try {
-        return new Intl.NumberFormat(prefs.locale, { style: "currency", currency: to, ...(big ? { maximumFractionDigits: 0 } : {}) }).format(value);
+        return cached(`c|${prefs.locale}|${to}|${big}`, () => new Intl.NumberFormat(prefs.locale, { style: "currency", currency: to, ...(big ? { maximumFractionDigits: 0 } : {}) })).format(value);
     } catch {
         return undefined;
     }
@@ -327,7 +338,7 @@ export function convertMoney(found: Extract<Found, { kind: "currency"; }>, prefs
 export function offsetAt(zone: string, at: Date): number {
     if (zone.startsWith("offset:")) return Number(zone.slice(7));
     try {
-        const name = new Intl.DateTimeFormat("en-US", { timeZone: zone, timeZoneName: "longOffset" }).formatToParts(at).find(p => p.type === "timeZoneName")?.value ?? "GMT";
+        const name = cached(`z|${zone}`, () => new Intl.DateTimeFormat("en-US", { timeZone: zone, timeZoneName: "longOffset" })).formatToParts(at).find(p => p.type === "timeZoneName")?.value ?? "GMT";
         const m = /GMT([+-])(\d{2}):?(\d{2})?/.exec(name);
         return m ? (m[1] === "-" ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] ?? 0)) : 0;
     } catch {
@@ -350,12 +361,12 @@ export function convertTime(found: Extract<Found, { kind: "time"; }>, prefs: Pic
     const yours = offsetAt(prefs.zone, new Date(at));
     if (yours === sourceOffset) return undefined;
     // 24-hour clocks write 07:00, 12-hour ones 7:00 AM
-    const cycle = new Intl.DateTimeFormat(prefs.locale, { hour: "numeric" }).resolvedOptions().hourCycle;
+    const cycle = cached(`h|${prefs.locale}`, () => new Intl.DateTimeFormat(prefs.locale, { hour: "numeric" })).resolvedOptions().hourCycle;
     const hour = cycle === "h23" || cycle === "h24" ? "2-digit" : "numeric";
-    const time = new Intl.DateTimeFormat(prefs.locale, { hour, minute: "2-digit", timeZone: prefs.zone }).format(new Date(at));
+    const time = cached(`t|${prefs.locale}|${hour}|${prefs.zone}`, () => new Intl.DateTimeFormat(prefs.locale, { hour, minute: "2-digit", timeZone: prefs.zone })).format(new Date(at));
     const diff = dayAt(at, yours) - sourceDay;
     if (!diff) return prefs.tr("time.yours", { time });
-    const day = new Intl.RelativeTimeFormat(prefs.locale, { numeric: "auto" }).format(diff, "day");
+    const day = cached(`r|${prefs.locale}`, () => new Intl.RelativeTimeFormat(prefs.locale, { numeric: "auto" })).format(diff, "day");
     return prefs.tr("time.yoursDay", { time, day });
 }
 

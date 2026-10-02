@@ -81,6 +81,13 @@ function prettyCached(text: string) {
     return prettyCache.get(text) ?? null;
 }
 
+/** The preview's <pre> props for a text, kept while the text stays: it re-renders on every hover */
+let lastGutter: { text: string; props: { "data-dl-cbt-lines": string; style: Record<string, string>; }; } | undefined;
+function gutterProps(text: string) {
+    if (lastGutter?.text !== text) lastGutter = { text, props: { "data-dl-cbt-lines": "", style: { "--dl-cbt-gutter": gutterCss(text) } } };
+    return lastGutter.props;
+}
+
 // ---- Clipboard and files ---------------------------------------------------------------------
 
 async function copyText(text: string, partOf?: number) {
@@ -175,6 +182,9 @@ interface CodeNode { content?: string; lang?: string; }
 /** Styles of Discord's code element the gutter copies, so it lines up and looks like part of it */
 const COPIED_STYLES = ["fontFamily", "fontSize", "lineHeight", "paddingTop", "paddingBottom", "backgroundColor", "borderTopWidth", "borderTopStyle", "borderTopColor", "borderBottomWidth", "borderBottomStyle", "borderBottomColor"] as const;
 
+/** Every key CodeTools puts in the gutter's style, to compare without serialising */
+const COPIED_KEYS = [...COPIED_STYLES, "borderLeftWidth", "borderLeftStyle", "borderLeftColor", "borderTopLeftRadius", "borderBottomLeftRadius"];
+
 /** Discord's code element beside ours in the code block (not our pretty printed one) */
 function discordCode(from: HTMLElement | null) {
     return [...from?.parentElement?.querySelectorAll<HTMLElement>("code") ?? []].find(c => !c.classList.contains("dl-cbt-pretty"));
@@ -196,7 +206,10 @@ function CodeTools({ node }: { node: CodeNode; }) {
 
     const barRef = React.useRef<HTMLDivElement>(null);
     const [codeLook, setCodeLook] = React.useState<{ style: React.CSSProperties; className: string; }>();
+    // Only the gutter and the pretty printed code wear the look: without them, no style read at all
+    const needsLook = lineNumbers || !!prettyText;
     React.useLayoutEffect(() => {
+        if (!needsLook) return;
         const code = discordCode(barRef.current);
         if (!code) return;
         const computed = getComputedStyle(code);
@@ -209,7 +222,7 @@ function CodeTools({ node }: { node: CodeNode; }) {
         style.borderLeftColor = computed.borderTopColor;
         style.borderTopLeftRadius = computed.borderTopRightRadius;
         style.borderBottomLeftRadius = computed.borderBottomRightRadius;
-        setCodeLook(old => old && JSON.stringify(old.style) === JSON.stringify(style) && old.className === code.className ? old : { style, className: code.className });
+        setCodeLook(old => old && old.className === code.className && COPIED_KEYS.every(k => (old.style as Record<string, string>)[k] === style[k]) ? old : { style, className: code.className });
     }, [lineNumbers, prettyText]);
 
     // The code block's container gets classes of ours instead of CSS finding it with div:has(...):
@@ -223,6 +236,7 @@ function CodeTools({ node }: { node: CodeNode; }) {
         return () => host.classList.remove("dl-cbt-host", "dl-cbt-has-gutter", "dl-cbt-has-pretty");
     }, [lineNumbers, prettyText]);
 
+    const gutter = React.useMemo(() => lineNumbers ? gutterText(lineCount(shown)) : "", [lineNumbers, shown]);
     const lang = prettyText ? "json" : node.lang;
     return (
         <>
@@ -232,7 +246,7 @@ function CodeTools({ node }: { node: CodeNode; }) {
                 <Action label={t("copy")} icon="copy" onClick={() => void copyText(shown)} />
             </div>
             {lineNumbers && (
-                <div className="dl-cbt-gutter" aria-hidden="true" style={codeLook?.style}>{gutterText(lineCount(shown))}</div>
+                <div className="dl-cbt-gutter" aria-hidden="true" style={codeLook?.style}>{gutter}</div>
             )}
             {prettyText && <JsonCode text={prettyText} className={`${codeLook?.className ?? "hljs"} dl-cbt-pretty`} />}
         </>
@@ -243,10 +257,11 @@ function CodeTools({ node }: { node: CodeNode; }) {
 
 function PreviewTools({ url, text, bytesLeft }: { url: string; fileName: string; text: string | null; bytesLeft: number; }) {
     useVersion();
+    // Pretty printing needs the whole file, and Discord reads only the first 50 KB. Parsed once per
+    // text: the preview re-renders on every hover.
+    const json = React.useMemo(() => text != null && bytesLeft === 0 && isJson(text, "json"), [text, bytesLeft]);
     if (text == null) return null;
     const pretty = prettyFiles.has(url);
-    // Pretty printing needs the whole file, and Discord reads only the first 50 KB
-    const json = bytesLeft === 0 && isJson(text, "json");
     const copy = async () => {
         if (bytesLeft === 0) return copyText(text);
         try {
@@ -283,19 +298,24 @@ function FilePane({ url, fileName }: { url: string; fileName: string; }) {
         return () => void (live = false);
     }, [url]);
 
+    // Up to 512 KB: parsed, pretty printed and numbered once, not on every render
+    const text = loaded.state === "done" ? loaded.text : "";
+    const partial = loaded.state === "done" && loaded.partial;
+    const json = React.useMemo(() => !!text && !partial && isJson(text, languageOf(fileName)), [text, partial, fileName]);
+    const prettyText = React.useMemo(() => pretty && json ? prettyJson(text) : null, [pretty, json, text]);
+    const shown = prettyText ?? text;
+    const gutter = React.useMemo(() => lineNumbers ? gutterCss(shown) : "", [lineNumbers, shown]);
+
     if (loaded.state === "loading") return <div className="dl-cbt-pane dl-cbt-note">{t("preview.loading")}</div>;
     if (loaded.state === "error") return <div className="dl-cbt-pane dl-cbt-note dl-cbt-error">{t("preview.error")}</div>;
 
-    const json = !loaded.partial && isJson(loaded.text, languageOf(fileName));
-    const prettyText = pretty && json ? prettyJson(loaded.text) : null;
-    const shown = prettyText ?? loaded.text;
     return (
         <div className="dl-cbt-pane">
             <div className="dl-cbt-bar" role="group">
                 {json && <Action label={t(pretty ? "original" : "pretty")} icon="pretty" pressed={pretty} onClick={() => setPretty(p => !p)} />}
                 <Action label={t("copy")} icon="copy" onClick={() => void copyText(shown, loaded.partial ? MAX_FILE_BYTES : undefined)} />
             </div>
-            <pre className="dl-cbt-file-pre" {...(lineNumbers ? { "data-dl-cbt-lines": "", style: { "--dl-cbt-gutter": gutterCss(shown) } as React.CSSProperties } : {})}>
+            <pre className="dl-cbt-file-pre" {...(lineNumbers ? { "data-dl-cbt-lines": "", style: { "--dl-cbt-gutter": gutter } as React.CSSProperties } : {})}>
                 {prettyText ? <JsonCode text={prettyText} /> : <code>{shown}</code>}
             </pre>
             {loaded.partial && <div className="dl-cbt-note">{t("preview.partial", { size: formatBytes(MAX_FILE_BYTES) })}</div>}
@@ -457,7 +477,7 @@ export default definePlugin({
         if (!ctx?.settings.get("lineNumbers") || typeof text !== "string") return undefined;
         // Word wrap on (Discord's ⋯ menu): wrapped lines can't be numbered
         if (typeof className === "string" && /\bwordWrap_/.test(className)) return undefined;
-        return { "data-dl-cbt-lines": "", style: { "--dl-cbt-gutter": gutterCss(text) } };
+        return gutterProps(text);
     },
 
     start(context) {
@@ -478,6 +498,7 @@ export default definePlugin({
         ctx = undefined;
         prettyFiles.clear();
         prettyCache.clear();
+        lastGutter = undefined;
         bump();
     },
 });

@@ -67,10 +67,21 @@ function isPhone(raw: string) {
 
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-function containsWord(text: string, value: string) {
+/** One pattern per value, made once: a settings screen has hundreds of text nodes, each checked against every value */
+const wordPatterns = new Map<string, RegExp | null>();
+
+function wordPattern(value: string) {
+    let pattern = wordPatterns.get(value);
+    if (pattern !== undefined) return pattern;
     const v = value.trim();
-    if (v.length < 3) return false;
-    return new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRegex(v)}(?![\\p{L}\\p{N}_])`, "iu").test(text);
+    pattern = v.length < 3 ? null : new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRegex(v)}(?![\\p{L}\\p{N}_])`, "iu");
+    if (wordPatterns.size >= 500) wordPatterns.clear();
+    wordPatterns.set(value, pattern);
+    return pattern;
+}
+
+function containsWord(text: string, value: string) {
+    return wordPattern(value)?.test(text) ?? false;
 }
 
 function matchesKnown(text: string, known: KnownValues) {

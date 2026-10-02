@@ -2,7 +2,7 @@
     "id": "timezones",
     "name": "Timezones",
     "description": "Set someone's timezone from their right-click menu and see their local time next to their name in chat, on their profile and in the member list. Kept on this device.",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "authors": [
         "Evi"
     ],
@@ -12,6 +12,12 @@
     "minEviVersion": "0.3.2",
     "permissions": {},
     "changelog": [
+        {
+            "version": "1.1.1",
+            "notes": [
+                "Lighter on Discord: the once-a-minute clock update only redraws times that are actually shown, not every message and member."
+            ]
+        },
         {
             "version": "1.1.0",
             "notes": [
@@ -49,6 +55,9 @@
             "name": "Zeitzonen",
             "description": "Lege über das Rechtsklickmenü die Zeitzone einer Person fest und sieh ihre Ortszeit neben dem Namen im Chat, im Profil und in der Mitgliederliste. Bleibt auf diesem Gerät.",
             "changelog": {
+                "1.1.1": [
+                    "Schont Discord: Die minütliche Uhrzeit-Aktualisierung zeichnet nur Zeiten neu, die wirklich angezeigt werden, nicht jede Nachricht und jedes Mitglied."
+                ],
                 "1.1.0": [
                     "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
                 ],
@@ -70,6 +79,9 @@
             "name": "Zonas horarias",
             "description": "Establece la zona horaria de alguien desde su menú de clic derecho y mira su hora local junto a su nombre en el chat, en su perfil y en la lista de miembros. Se guarda en este dispositivo.",
             "changelog": {
+                "1.1.1": [
+                    "Más ligero para Discord: la actualización del reloj cada minuto solo vuelve a dibujar las horas que se muestran de verdad, no cada mensaje y miembro."
+                ],
                 "1.1.0": [
                     "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
                 ],
@@ -91,6 +103,9 @@
             "name": "Fuseaux horaires",
             "description": "Définis le fuseau horaire de quelqu'un depuis son menu clic droit et vois son heure locale à côté de son nom dans le chat, sur son profil et dans la liste des membres. Conservé sur cet appareil.",
             "changelog": {
+                "1.1.1": [
+                    "Plus léger pour Discord : la mise à jour de l'heure chaque minute ne redessine que les heures réellement affichées, pas chaque message et chaque membre."
+                ],
                 "1.1.0": [
                     "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
                 ],
@@ -112,6 +127,9 @@
             "name": "タイムゾーン",
             "description": "ユーザーの右クリックメニューからタイムゾーンを設定すると、チャット、プロフィール、メンバーリストの名前の横にその人の現地時刻が表示されます。このデバイスにのみ保存されます。",
             "changelog": {
+                "1.1.1": [
+                    "Discordへの負荷を軽減：1分ごとの時刻更新で、すべてのメッセージやメンバーではなく、実際に表示されている時刻だけを再描画します。"
+                ],
                 "1.1.0": [
                     "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
                 ],
@@ -133,6 +151,9 @@
             "name": "Strefy czasowe",
             "description": "Ustaw strefę czasową danej osoby z jej menu prawego przycisku myszy i zobacz jej lokalny czas obok nazwy na czacie, w profilu i na liście członków. Zapisywane na tym urządzeniu.",
             "changelog": {
+                "1.1.1": [
+                    "Mniejsze obciążenie Discorda: cominutowa aktualizacja zegara odświeża tylko faktycznie wyświetlane godziny, a nie każdą wiadomość i każdego członka."
+                ],
                 "1.1.0": [
                     "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
                 ],
@@ -154,6 +175,9 @@
             "name": "Fusos horários",
             "description": "Defina o fuso horário de alguém pelo menu de clique direito e veja a hora local da pessoa ao lado do nome no chat, no perfil e na lista de membros. Fica salvo neste dispositivo.",
             "changelog": {
+                "1.1.1": [
+                    "Mais leve para o Discord: a atualização do relógio a cada minuto só redesenha os horários que realmente aparecem, não cada mensagem e membro."
+                ],
                 "1.1.0": [
                     "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
                 ],
@@ -175,6 +199,9 @@
             "name": "Часовые пояса",
             "description": "Задавайте часовой пояс человека из его контекстного меню и смотрите его местное время рядом с именем в чате, в профиле и в списке участников. Хранится на этом устройстве.",
             "changelog": {
+                "1.1.1": [
+                    "Меньше нагрузки на Discord: ежеминутное обновление часов перерисовывает только реально показанное время, а не каждое сообщение и каждого участника."
+                ],
                 "1.1.0": [
                     "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
                 ],
@@ -196,6 +223,9 @@
             "name": "Saat Dilimleri",
             "description": "Birinin sağ tık menüsünden saat dilimini ayarla ve yerel saatini sohbette adının yanında, profilinde ve üye listesinde gör. Bu cihazda saklanır.",
             "changelog": {
+                "1.1.1": [
+                    "Discord'u daha az yorar: dakikada bir yapılan saat güncellemesi her mesajı ve üyeyi değil, yalnızca gerçekten gösterilen saatleri yeniden çizer."
+                ],
                 "1.1.0": [
                     "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
                 ],
