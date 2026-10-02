@@ -18,6 +18,7 @@ import { cx, FocusLayer, Icon, useExit, useModal } from "./components";
 import { coverUrl } from "./covers";
 import { ensureStyles } from "./index";
 import { DiscordContext } from "./discordContext";
+import { showTour2, tourDue } from "./Tour2";
 
 /** The markdown Evi's notes use: **bold** lead-ins and `code` */
 export function inline(text: string) {
@@ -176,11 +177,21 @@ function Startup({ releases }: { releases: Release[]; }) {
  */
 export function showWhatsNewIfUpdated() {
     const seen = Settings.data.lastSeenVersion;
-    if (seen === EVI_VERSION) return;
+    // Evi 2.0's tour stands in for What's new, once, on an update or a first install alike
+    const tour = tourDue();
+    if (seen === EVI_VERSION && !tour) return;
     const releases = releasesSince(seen, EVI_VERSION);
     Settings.update(d => {
         d.lastSeenVersion = EVI_VERSION;
     });
+    if (tour) {
+        startupOpen = true;
+        showTour2(() => {
+            startupOpen = false;
+            for (const fn of afterStartup.splice(0)) fn();
+        });
+        return;
+    }
     if (!releases.length) return;
 
     startupOpen = true;

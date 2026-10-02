@@ -116,7 +116,7 @@ function fakeNative(bootData: BootData) {
     Object.assign((window as any).__test, { healthReports: [] as unknown[], crashReports: [] as unknown[], pluginReports: [] as unknown[], pulled: bootData.pulled ?? {} });
     // Discord deletes window.localStorage once it starts, like Evi the test keeps a reference
     (window as any).__test.storage = window.localStorage;
-    (window as any).EviNative = {
+    (window as any).__test.native = (window as any).EviNative = {
         boot: () => structuredClone(bootData),
         saveSettings: async (s: unknown) => void ((window as any).__test.savedSettings = s),
         saveSettingsSync: (s: unknown) => void ((window as any).__test.savedSettings = structuredClone(s)),
@@ -197,6 +197,34 @@ function fakeNative(bootData: BootData) {
         },
         // Account link: not linked until the test confirms the code "on the site"
         accountStatus: async () => ({ ok: true, site: "https://evi.rest", user: (window as any).__test.account.confirmed ? { id: "123456789012345678", username: "evi-tester", globalName: "Evi Tester", avatar: null } : null, admin: !!(window as any).__test.account.admin }),
+        // The Author page ("Publish your own"): __test.authorMode picks evi.rest's answer
+        authorStats: async (days: number) => {
+            const test = (window as any).__test;
+            test.authorDays = days;
+            if (test.authorMode === "unlinked") return { ok: false, error: "Link this Evi to your Discord account first (Evi settings, Account)", unlinked: true };
+            if (test.authorMode === "none") return { ok: false, error: "Only verified authors have plugin stats", notAuthor: true };
+            const day = (ago: number) => new Date(Date.now() - ago * 86_400_000).toISOString().slice(0, 10);
+            const history = Array.from({ length: days }, (_, i) => ({ day: day(days - i), installed: 900 + i * 14, active: 760 + Math.round(120 * Math.sin(i / 4) ** 2) + i * 12 }));
+            const plugin = (id: string, name: string, extra: object) => ({
+                id, name, version: "2.1.0", coAuthored: false, activeNow: history.at(-1)!.active, installedNow: history.at(-1)!.installed, history, stars: 214,
+                rating: { average: 4.6, count: 38, counts: [1, 1, 2, 8, 26] },
+                reviews: [
+                    { id: 2, rating: 5, body: "Exactly what I wanted, works great after every Discord update.", version: "2.1.0", user: { id: "223456789012345678", name: "Mira", avatar: null }, createdAt: Date.now() - 3_600_000 },
+                    { id: 1, rating: 4, body: "Love it. Would be nice to pick the colour.", version: "2.0.0", user: { id: "323456789012345678", name: "kai", avatar: null }, createdAt: Date.now() - 86_400_000 * 3 },
+                ],
+                openReports: 1, crashes: { unresolved: 2, latestRate: 0.012 },
+                health: { installsReporting: 9, lastReportAt: Date.now() - 600_000, state: null, builds: [{ build: "412345", installs: 7, lookups: 1, patches: 5, start: 1 }, { build: "411902", installs: 2, lookups: 0, patches: 2, start: 0 }] },
+                pull: null, hotfixes: [], ...extra,
+            });
+            return {
+                ok: true,
+                value: {
+                    author: { slug: "kaz", name: "Kaz" }, days, at: Date.now(),
+                    plugins: [plugin("stream-dm-guard", "Stream DM Guard", {}), plugin("quiet-mode", "Quiet Mode", { coAuthored: true, hotfixes: [{ id: 3, note: "Discord moved the member list", at: Date.now() }] })],
+                },
+            };
+        },
+        authorOpen: async (link: string) => void (window as any).__test.nativeCalls.push(["authorOpen", link]),
         devLive: async () => ({
             ok: true,
             value: {
@@ -1753,6 +1781,66 @@ check("Evi's panel shows no scrollbars", scrollbars.every(s => s.width === "none
     await page.click("#dl-tab-plugins");
 }
 
+// The Author page: "Publish your own" at the top right of Plugins opens an author's numbers, how to
+// become one, or linking first, as evi.rest answers
+{
+    await page.click("#dl-tab-plugins");
+    const button = page.locator(".dl-page-action button");
+    await button.waitFor({ timeout: 3000 });
+    const place = await page.evaluate(() => {
+        const b = document.querySelector(".dl-page-action button")!.getBoundingClientRect();
+        const bar = document.querySelector(".dl-page-head[data-action]")!.getBoundingClientRect();
+        const tab = document.querySelector(".dl-page-head .dl-tabbar-item")!.getBoundingClientRect();
+        return { rightGap: Math.round(bar.right - b.right), sameRow: Math.abs((b.top + b.bottom) / 2 - (tab.top + tab.bottom) / 2) < 12 };
+    });
+    const closeDialog = async () => {
+        await page.click('#dl-author button[aria-label="Close"]');
+        await page.waitForSelector("#dl-author", { state: "detached", timeout: 3000 });
+    };
+
+    await page.evaluate(() => { (window as any).__test.authorMode = "none"; });
+    await button.click();
+    await page.locator("#dl-author").getByText("Publish your own plugins").waitFor({ timeout: 3000 });
+    const steps = await page.locator(".dl-authorhub-steps > li").count();
+    // Past the dialog's open animation
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: join(OUT, "ui-author-become.png") });
+    await page.locator("#dl-author").getByText("Open the guide").click();
+    const opened = await page.evaluate(() => (window as any).__test.nativeCalls.filter((c: any) => c[0] === "authorOpen").map((c: any) => c[1]));
+    await closeDialog();
+
+    await page.evaluate(() => { (window as any).__test.authorMode = "unlinked"; });
+    await button.click();
+    await page.locator("#dl-author").getByText("Link your Discord account first").waitFor({ timeout: 3000 });
+    // Past the dialog's open animation
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: join(OUT, "ui-author-link.png") });
+    await closeDialog();
+
+    await page.evaluate(() => { (window as any).__test.authorMode = "author"; });
+    await button.click();
+    await page.waitForSelector(".dl-authorhub-stats", { timeout: 3000 });
+    const shown = await page.evaluate(() => ({
+        title: document.querySelector("#dl-author-title")?.textContent,
+        stats: [...document.querySelectorAll(".dl-authorhub-stat")].map(s => s.textContent),
+        bars: document.querySelectorAll(".dl-authorhub-chart .dl-dev-bar-hit").length,
+        builds: document.querySelectorAll(".dl-authorhub-builds > li").length,
+        reviews: document.querySelectorAll(".dl-authorhub-review").length,
+        switcher: !!document.querySelector(".dl-authorhub-switcher"),
+    }));
+    // Past the dialog's open animation
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: join(OUT, "ui-author.png") });
+    await page.locator("#dl-author").getByText("7 days").click();
+    await page.waitForFunction(() => document.querySelectorAll(".dl-authorhub-chart .dl-dev-bar-hit").length === 7, null, { timeout: 3000 });
+    const days = await page.evaluate(() => (window as any).__test.authorDays);
+    await closeDialog();
+    check("Plugins has \"Publish your own\" at its top right; it shows how to publish, linking first, or an author's numbers",
+        place.rightGap <= 2 && place.sameRow && steps === 4 && opened.includes("docs")
+        && shown.title === "Your plugins" && shown.stats.length === 6 && shown.bars === 30 && shown.builds === 2 && shown.reviews === 2 && shown.switcher && days === 7,
+        { place, steps, opened, shown, days });
+}
+
 // The Updates tab: checks when opened, says what's new, and updates with one button
 {
     await openTab("general", "updates");
@@ -2923,6 +3011,71 @@ await page.waitForTimeout(300);
 check("Escape closes the panel", !(await page.$(".dl-panel")));
 
 check("healthy start reported once plugins ran for a while", await page.evaluate(() => (window as any).__test.bootOk === 1));
+// Evi 2.0's tour: the wave's plugins the store lists, picked and turned on, shown once
+{
+    await page.evaluate(async () => {
+        const native = (window as any).__test.native;
+        const list = native.storeList;
+        native.storeList = async () => {
+            const listing = await list();
+            const file = (id: string, name: string) => ({ url: `https://example.com/${id}/${name}`, sha256: "0".repeat(64) });
+            const entry = (id: string, name: string, description: string, native = false) => ({
+                id, name, description, authors: ["Evi"], version: "1.0.0", tags: [], native, minEviVersion: "0.1.0", screenshots: [], changelog: [],
+                files: { "manifest.json": file(id, "manifest.json"), "index.js": file(id, "index.js"), ...(native ? { "native.js": file(id, "native.js") } : {}) },
+            });
+            listing.plugins.push(
+                entry("voice-messages", "Desktop Voice Messages", "Record and send voice messages from your PC, with the waveform."),
+                entry("fix-embeds", "Fix Embeds", "Rewrites X, Instagram and TikTok links so their videos play in Discord."),
+                entry("click-actions", "Click Actions", "Double-click to edit or reply, Shift+click to delete."),
+                // Needs consent on its own page: never offered here
+                entry("rich-presence", "Rich Presence Builder", "Your own Playing status.", true),
+            );
+            return listing;
+        };
+        await (window as any).Evi.store.refresh();
+        (window as any).__test.storeInstalls.length = 0;
+        (window as any).Evi.showTour2();
+    });
+    await page.waitForSelector(".dl-tour[role=dialog]", { timeout: 5000 });
+    await page.waitForTimeout(800);
+    const welcome = await page.evaluate(() => ({
+        title: document.querySelector(".dl-tour-title")?.textContent,
+        seen: (window as any).Evi.settings.data.tour2Seen,
+        scenes: document.querySelectorAll(".dl-tour-welcome .dl-tour-art").length,
+    }));
+    await page.screenshot({ path: join(OUT, "ui-tour-welcome.png") });
+    await page.locator(".dl-tour").getByRole("button", { name: "See what’s new" }).click();
+    await page.waitForSelector(".dl-tour-card", { timeout: 5000 });
+    await page.waitForTimeout(900);
+    const cards = await page.evaluate(() => [...document.querySelectorAll(".dl-tour-card-name")].map(n => n.textContent));
+    const playing = await page.evaluate(() => document.querySelectorAll(".dl-tour-art[data-play]").length);
+    await page.screenshot({ path: join(OUT, "ui-tour-pick.png") });
+    await page.locator('.dl-tour-card:has(#dl-tour-name-voice-messages)').click({ position: { x: 40, y: 40 } });
+    await page.locator('.dl-tour-card:has(#dl-tour-name-fix-embeds)').click({ position: { x: 40, y: 40 } });
+    const go = page.locator(".dl-tour").getByRole("button", { name: "Turn on selected (2)" });
+    await go.waitFor({ timeout: 3000 });
+    // Borders and Discord's switches animate: let them settle
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(OUT, "ui-tour-picked.png") });
+    await go.click();
+    await page.waitForSelector(".dl-tour-done", { timeout: 10_000 });
+    await page.waitForTimeout(600);
+    const done = await page.evaluate(() => ({
+        installs: (window as any).__test.storeInstalls.map((i: any) => i.id),
+        enabled: ["voice-messages", "fix-embeds"].map(id => (window as any).Evi.settings.data.plugins[id]?.enabled),
+        text: document.querySelector(".dl-tour-done")?.textContent,
+    }));
+    await page.screenshot({ path: join(OUT, "ui-tour-done.png") });
+    const tourExit = await closesWithExit(".dl-tour", () => page.locator(".dl-tour").getByRole("button", { name: "Done", exact: true }).click());
+    check("Evi 2.0 tour: once, the wave's store plugins as moving cards, picked ones installed and on, closes with Discord's motion",
+        welcome.title === "Make Discord yours" && welcome.seen === true && welcome.scenes === 3
+        && JSON.stringify(cards) === '["Desktop Voice Messages","Click Actions","Fix Embeds"]' && playing > 0
+        // The wave's plugins are loaded here from plugins/ as local ones: those are switched on rather than installed
+        && done.installs.every((id: string) => id === "voice-messages" || id === "fix-embeds") && done.enabled.every(Boolean) && !!done.text?.includes("You’re all set")
+        && tourExit.closing && tourExit.gone,
+        { welcome, cards, playing, done, tourExit });
+}
+
 // The broken plugin's start failures are the point of it
 const unexpected = eviErrors.filter(e => !e.includes(BROKEN));
 check("no Evi errors in console", unexpected.length === 0, unexpected.slice(0, 5));

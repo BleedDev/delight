@@ -129,6 +129,10 @@ export const IPC = {
     DEV_LIVE: "evi:dev-live",
     /** The Developers page's other calls to evi.rest's admin API (shared/devAdmin.ts says which) */
     DEV_ADMIN: "evi:dev-admin",
+    /** The Author page: the linked account's plugin numbers (shared/authorStats.ts) */
+    AUTHOR_STATS: "evi:author-stats",
+    /** The Author page's links to evi.rest: publishing, and the docs */
+    AUTHOR_OPEN: "evi:author-open",
     COMMUNITY_INBOX_READ: "evi:community-inbox-read",
     /** main -> renderer: the account's inbox changed (evi.rest's stream said so) */
     COMMUNITY_INBOX_CHANGED: "evi:community-inbox-changed",
@@ -279,6 +283,8 @@ export interface EviSettings {
     liveToasts?: boolean;
     /** Announcements from Evi's team already shown here (their ids), so each shows once */
     announcementsSeen?: number[];
+    /** The Evi 2.0 tour (ui/Tour2.tsx) was shown, or skipped: it shows once */
+    tour2Seen?: boolean;
     /** `false`: crashes don't turn safe mode on; only starting Discord with --evi-safe does. Missing: on */
     autoSafeMode?: boolean;
     /** Plugins you have or hearted that evi.rest said were broken, so a fix is told once */

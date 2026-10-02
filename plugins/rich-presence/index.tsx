@@ -3,8 +3,8 @@ import type { PluginContext } from "@evi/api";
 import type { ReactNode } from "react";
 
 import {
-    ACTIVITY_TYPES, ActivityKind, Button, EMPTY_STATE, formatTimer, fromLocalInput, httpsUrl, imageUrls, isStreamUrl, LIMITS, newPreset,
-    parseState, Preset, PresetState, Problem, problems, startOfDay, TIME_MODES, TimeMode, toActivity, toLocalInput,
+    ACTIVITY_TYPES, ActivityKind, Button, EMPTY_STATE, formatTimer, fromLocalInput, httpsUrl, imageKeys, imageRef, imageUrls, isAppId, isStreamUrl,
+    keySlot, LIMITS, newPreset, parseState, Preset, PresetState, Problem, problems, startOfDay, TIME_MODES, TimeMode, toActivity, toLocalInput,
 } from "./rpc";
 import { t } from "./strings";
 
@@ -16,19 +16,20 @@ import { t } from "./strings";
  * gateway with the rest of your presence (checked in Discord's web build, 2026-10-02). We dispatch
  * the same action under our own socket id, and the same action with `activity: null` takes it away.
  *
- * Every activity belongs to a Discord application, and pictures from links only show through one:
- * POST /applications/:id/external-assets { urls } turns each https link into an `mp:external/…` key,
- * which is what Discord's own RPC code does for games that send links. Evi's own application will be
- * the default (DEFAULT_APP_ID); until it's filled in, the Application ID setting is required.
+ * Every activity belongs to a Discord application, and everyone brings their own: the settings show a
+ * setup guide until there's an Application ID. Pictures resolve the way Discord's RPC server does it
+ * for games: POST /applications/:id/external-assets { urls } turns each https link into an
+ * `mp:external/…` key, and an art asset's key name becomes its id from the application's asset list
+ * (GET /oauth2/applications/:id/assets). With no name, the activity takes the application's name.
  *
  * Presets live in this plugin's settings entry under a key the generated settings don't show.
  */
 
-/** Evi's own Discord application. TODO before release: fill in the ID of the "Evi" app. */
-export const DEFAULT_APP_ID = "";
-
 const SOCKET_ID = "evi-rich-presence";
 const STORAGE_KEY = "presets";
+/** The application the guide checked: { id, name, icon }, for its name and the panel's header */
+const APP_KEY = "app";
+const PORTAL_URL = "https://discord.com/developers/applications";
 const APPLY_DELAY = 600;
 
 type Settings = typeof settings;
@@ -36,8 +37,8 @@ const settings = {
     appId: {
         type: "string",
         get label() { return t("settings.appId"); },
-        get description() { return t(DEFAULT_APP_ID ? "settings.appId.descriptionDefault" : "settings.appId.description"); },
-        get placeholder() { return DEFAULT_APP_ID || "123456789012345678"; },
+        get description() { return t("settings.appId.description"); },
+        placeholder: "123456789012345678",
         default: "",
     },
 } as const;
@@ -49,7 +50,19 @@ let state: PresetState = EMPTY_STATE;
 
 type Storage = { get(key: string): unknown; set(key: string, value: unknown): void; };
 const storage = () => (ctx ?? panelCtx)?.settings as unknown as Storage | undefined;
-const appId = () => String((ctx ?? panelCtx)?.settings.get("appId") ?? "").trim() || DEFAULT_APP_ID;
+const appId = () => String((ctx ?? panelCtx)?.settings.get("appId") ?? "").trim();
+
+interface AppInfo { id: string; name: string; icon: string | null; }
+
+/** The checked application, if it's still the one in the setting */
+function appInfo(): AppInfo | undefined {
+    const v = storage()?.get(APP_KEY) as Partial<AppInfo> | undefined;
+    return v && typeof v.id === "string" && v.id === appId() && typeof v.name === "string"
+        ? { id: v.id, name: v.name, icon: typeof v.icon === "string" ? v.icon : null }
+        : undefined;
+}
+const appName = () => appInfo()?.name ?? "";
+const appIcon = (app: AppInfo) => app.icon ? `https://cdn.discordapp.com/app-icons/${app.id}/${app.icon}.png?size=64` : undefined;
 
 const listeners = new Set<() => void>();
 const subscribe = (fn: () => void) => (listeners.add(fn), () => void listeners.delete(fn));
@@ -83,7 +96,24 @@ const http = (): any => find(v => typeof v?.post === "function" && typeof v?.del
 const assetCache = new Map<string, string>();
 const cacheKey = (app: string, url: string) => `${app} ${url}`;
 
-async function resolveAssets(app: string, urls: string[]): Promise<Record<string, string>> {
+/** An application's art assets, key name (lowercase) -> asset id */
+const artCache = new Map<string, Map<string, string>>();
+
+async function artAssets(app: string, refresh = false): Promise<Map<string, string>> {
+    const cached = artCache.get(app);
+    if (cached && !refresh) return cached;
+    const client = http();
+    if (!client) throw new Error("Discord's HTTP client wasn't found");
+    const res = await client.get({ url: `/oauth2/applications/${app}/assets`, oldFormErrors: true });
+    const map = new Map<string, string>();
+    if (Array.isArray(res?.body)) {
+        for (const a of res.body) if (typeof a?.name === "string" && typeof a?.id === "string") map.set(a.name.toLowerCase(), a.id);
+    }
+    artCache.set(app, map);
+    return map;
+}
+
+async function resolveAssets(app: string, urls: string[], keys: string[] = []): Promise<Record<string, string>> {
     const missing = urls.filter(u => !assetCache.has(cacheKey(app, u)));
     if (missing.length) {
         const client = http();
@@ -105,6 +135,15 @@ async function resolveAssets(app: string, urls: string[]): Promise<Record<string
     for (const url of urls) {
         const key = assetCache.get(cacheKey(app, url));
         if (key) out[url] = key;
+    }
+    if (keys.length) {
+        // A key we don't know yet may have just been uploaded: ask once more, as Discord does
+        let art = await artAssets(app);
+        if (keys.some(k => !art.has(k.toLowerCase()))) art = await artAssets(app, true);
+        for (const k of keys) {
+            const id = art.get(k.toLowerCase());
+            if (id) out[keySlot(k)] = id;
+        }
     }
     return out;
 }
@@ -135,12 +174,13 @@ async function apply() {
     const run = ++applying;
     const preset = activePreset();
     const app = appId();
-    if (!ctx || !preset || problems(preset, app).length) return clear();
+    const name = appName();
+    if (!ctx || !preset || problems(preset, app, name).length) return clear();
     const now = Date.now();
     if (!since.has(preset.id)) since.set(preset.id, now);
     let assets: Record<string, string> = {};
     try {
-        assets = await resolveAssets(app, imageUrls(preset));
+        assets = await resolveAssets(app, imageUrls(preset), imageKeys(preset));
     } catch (err) {
         ctx?.logger.warn("Couldn't turn the pictures into Discord assets", err);
         if (!warnedImages) {
@@ -150,7 +190,7 @@ async function apply() {
     }
     // A newer edit started while the pictures were on their way: that one decides
     if (run !== applying || !ctx) return;
-    dispatch(toActivity(preset, app, { since: since.get(preset.id)!, now }, assets));
+    dispatch(toActivity(preset, app, { since: since.get(preset.id)!, now }, assets, name));
 }
 
 // ---- Editor -------------------------------------------------------------------------------------
@@ -223,7 +263,8 @@ function Editor({ preset }: { preset: Preset; }) {
         while (buttons.length && !buttons[buttons.length - 1].label && !buttons[buttons.length - 1].url) buttons.pop();
         set({ buttons });
     };
-    const badUrl = (v: string) => !!v.trim() && !httpsUrl(v);
+    const badImage = (v: string) => !!v.trim() && !imageRef(v);
+    const name = appName();
 
     return (
         <div className="evi-rp-editor">
@@ -238,8 +279,8 @@ function Editor({ preset }: { preset: Preset; }) {
 
             <h4 className="evi-rp-section">{t("section.text")}</h4>
             <div className="evi-rp-group">
-                <Field label={t("field.name")} wide>
-                    <TextInput value={preset.name} placeholder={t("field.name.placeholder")} invalid={!preset.name.trim()} onChange={name => set({ name })} />
+                <Field label={t("field.name")} hint={name ? t("field.name.hintApp", { name }) : undefined} wide>
+                    <TextInput value={preset.name} placeholder={name || t("field.name.placeholder")} invalid={!preset.name.trim() && !name} onChange={name => set({ name })} />
                 </Field>
                 <Field label={t("field.details")}>
                     <TextInput value={preset.details} placeholder={t("field.details.placeholder")} onChange={details => set({ details })} />
@@ -257,13 +298,13 @@ function Editor({ preset }: { preset: Preset; }) {
             <h4 className="evi-rp-section">{t("section.images")}</h4>
             <div className="evi-rp-group">
                 <Field label={t("field.largeImage")} hint={t("field.imageHint")}>
-                    <TextInput value={preset.largeImage} type="url" max={LIMITS.url} placeholder="https://…/picture.png" invalid={badUrl(preset.largeImage)} onChange={largeImage => set({ largeImage })} />
+                    <TextInput value={preset.largeImage} max={LIMITS.url} placeholder="https://…/picture.png" invalid={badImage(preset.largeImage)} onChange={largeImage => set({ largeImage })} />
                 </Field>
                 <Field label={t("field.largeText")}>
                     <TextInput value={preset.largeText} onChange={largeText => set({ largeText })} />
                 </Field>
                 <Field label={t("field.smallImage")}>
-                    <TextInput value={preset.smallImage} type="url" max={LIMITS.url} placeholder="https://…/icon.png" invalid={badUrl(preset.smallImage)} onChange={smallImage => set({ smallImage })} />
+                    <TextInput value={preset.smallImage} max={LIMITS.url} placeholder="https://…/icon.png" invalid={badImage(preset.smallImage)} onChange={smallImage => set({ smallImage })} />
                 </Field>
                 <Field label={t("field.smallText")}>
                     <TextInput value={preset.smallText} onChange={smallText => set({ smallText })} />
@@ -323,9 +364,19 @@ function useNow() {
 }
 
 /** Shaped like the activity card on Discord's profiles */
-function Preview({ preset }: { preset: Preset; }) {
+/** What the preview shows for a picture: the link itself, or an art asset from Discord's CDN */
+function pictureSrc(value: string, app: string, art: Map<string, string> | undefined) {
+    const ref = imageRef(value);
+    if (!ref) return undefined;
+    if (ref.kind === "url") return ref.url;
+    const id = art?.get(ref.key.toLowerCase());
+    return id ? `https://cdn.discordapp.com/app-assets/${app}/${id}.png` : undefined;
+}
+
+function Preview({ preset, art }: { preset: Preset; art?: Map<string, string>; }) {
     const now = useNow();
-    const large = httpsUrl(preset.largeImage), small = httpsUrl(preset.smallImage);
+    const app = appId();
+    const large = pictureSrc(preset.largeImage, app, art), small = pictureSrc(preset.smallImage, app, art);
     const started = since.get(preset.id) ?? now;
     let timer = "";
     if (preset.timeMode === "elapsed") timer = t("preview.elapsed", { time: formatTimer(now - started) });
@@ -347,7 +398,7 @@ function Preview({ preset }: { preset: Preset; }) {
                     </span>
                 )}
                 <span className="evi-rp-lines">
-                    <span className="evi-rp-name">{preset.name.trim() || t("field.name.placeholder")}</span>
+                    <span className="evi-rp-name">{preset.name.trim() || appName() || t("field.name.placeholder")}</span>
                     {preset.details.trim() && <span>{preset.details}</span>}
                     {(preset.state.trim() || party) && <span>{[preset.state.trim(), party].filter(Boolean).join(" ")}</span>}
                     {timer && <span className="evi-rp-timer">{timer}</span>}
@@ -362,23 +413,173 @@ function Preview({ preset }: { preset: Preset; }) {
     );
 }
 
+// ---- Setup guide --------------------------------------------------------------------------------
+
+/** Discord's public info about an application: what GET /applications/:id/rpc gives anyone */
+async function checkApp(id: string): Promise<AppInfo> {
+    const client = http();
+    if (!client) throw new Error("Discord's HTTP client wasn't found");
+    const res = await client.get({ url: `/applications/${id}/rpc`, oldFormErrors: true });
+    const body = res?.body;
+    if (typeof body?.id !== "string" || typeof body?.name !== "string") throw new Error("Unexpected answer from Discord");
+    return { id: body.id, name: body.name, icon: typeof body.icon === "string" ? body.icon : null };
+}
+
+type Check =
+    | { kind: "idle"; }
+    | { kind: "checking"; }
+    | { kind: "ok"; app: AppInfo; }
+    | { kind: "error"; text: string; };
+
+function Step({ n, title, children }: { n: number; title: string; children: ReactNode; }) {
+    return (
+        <li className="evi-rp-step">
+            <span className="evi-rp-step-n" aria-hidden="true">{n}</span>
+            <div className="evi-rp-step-body">
+                <h4 className="evi-rp-step-title">{title}</h4>
+                {children}
+            </div>
+        </li>
+    );
+}
+
+function Guide({ onDone }: { onDone(): void; }) {
+    const [value, setValue] = React.useState(() => appId());
+    const [check, setCheck] = React.useState<Check>(() => {
+        const info = appInfo();
+        return info ? { kind: "ok", app: info } : { kind: "idle" };
+    });
+
+    async function run() {
+        const id = value.trim();
+        if (!isAppId(id)) return setCheck({ kind: "error", text: t("guide.step4.invalid") });
+        setCheck({ kind: "checking" });
+        try {
+            const app = await checkApp(id);
+            const store = storage();
+            store?.set("appId", app.id);
+            store?.set(APP_KEY, app);
+            setCheck({ kind: "ok", app });
+        } catch (err: any) {
+            const status = err?.status ?? err?.statusCode;
+            if (status === 404 || status === 400) return setCheck({ kind: "error", text: t("guide.step4.notFound") });
+            const message = err?.body?.message ?? err?.message ?? String(err);
+            setCheck({ kind: "error", text: t("guide.step4.failed", { error: message }) });
+        }
+    }
+
+    const ok = check.kind === "ok" && check.app.id === value.trim();
+
+    return (
+        <div className="evi-rp-guide">
+            <header className="evi-rp-guide-head">
+                <h3 className="evi-rp-guide-title">{t("guide.title")}</h3>
+                <p className="evi-rp-guide-intro">{t("guide.intro")}</p>
+            </header>
+            <ol className="evi-rp-steps">
+                <Step n={1} title={t("guide.step1.title")}>
+                    <p>{t("guide.step1.body")}</p>
+                    <button type="button" className="evi-rp-button" data-variant="secondary" onClick={() => window.open(PORTAL_URL, "_blank", "noopener,noreferrer")}>
+                        {t("guide.step1.button")} ↗
+                    </button>
+                </Step>
+                <Step n={2} title={t("guide.step2.title")}>
+                    <p>{t("guide.step2.body")}</p>
+                </Step>
+                <Step n={3} title={t("guide.step3.title")}>
+                    <p>{t("guide.step3.body")}</p>
+                    {/* What to look for on the portal's General Information page */}
+                    <div className="evi-rp-mock" aria-hidden="true">
+                        <span className="evi-rp-mock-label">APPLICATION ID</span>
+                        <span className="evi-rp-mock-row">
+                            <code>123456789012345678</code>
+                            <span className="evi-rp-mock-copy">Copy</span>
+                        </span>
+                    </div>
+                </Step>
+                <Step n={4} title={t("guide.step4.title")}>
+                    <form className="evi-rp-check" onSubmit={e => { e.preventDefault(); void run(); }}>
+                        <input
+                            className="evi-rp-input"
+                            value={value}
+                            inputMode="numeric"
+                            spellCheck={false}
+                            placeholder={t("guide.step4.placeholder")}
+                            aria-label={t("guide.step4.title")}
+                            aria-invalid={check.kind === "error" || undefined}
+                            onChange={e => {
+                                setValue(e.currentTarget.value.replace(/\s+/g, ""));
+                                if (check.kind === "error") setCheck({ kind: "idle" });
+                            }}
+                        />
+                        <button type="submit" className="evi-rp-button" data-variant="primary" disabled={!value.trim() || check.kind === "checking"}>
+                            {t(check.kind === "checking" ? "guide.step4.checking" : "guide.step4.check")}
+                        </button>
+                    </form>
+                    {check.kind === "error" && <p className="evi-rp-check-error" role="alert">{check.text}</p>}
+                    {ok && check.kind === "ok" && (
+                        <p className="evi-rp-check-ok" role="status">
+                            {appIcon(check.app)
+                                ? <img className="evi-rp-app-icon" src={appIcon(check.app)} alt="" />
+                                : <span className="evi-rp-app-icon" aria-hidden="true">{check.app.name.slice(0, 1)}</span>}
+                            {t("guide.step4.ok", { name: check.app.name })}
+                        </p>
+                    )}
+                </Step>
+                <Step n={5} title={t("guide.step5.title")}>
+                    <p>{t("guide.step5.body")}</p>
+                </Step>
+            </ol>
+            <div className="evi-rp-guide-foot">
+                <button type="button" className="evi-rp-button" data-variant="primary" disabled={!ok} onClick={onDone}>{t("guide.done")}</button>
+            </div>
+        </div>
+    );
+}
+
 function Panel() {
     useLocale();
     const current = useState$();
     const [selected, setSelected] = React.useState<string>(() => current.active || current.presets[0]?.id || "");
     const [confirmDelete, setConfirmDelete] = React.useState(false);
+    const [guide, setGuide] = React.useState(false);
+    const [, refresh] = React.useReducer((n: number) => n + 1, 0);
+    const [art, setArt] = React.useState<Map<string, string>>();
     const app = appId();
+    const info = appInfo();
     const preset = current.presets.find(p => p.id === selected) ?? current.presets[0];
-    const issues = preset ? problems(preset, app) : [];
+    const issues = preset ? problems(preset, app, info?.name ?? "") : [];
     const isShown = !!preset && current.active === preset.id;
+    const usesKeys = !!preset && imageKeys(preset).length > 0;
 
     React.useEffect(() => setConfirmDelete(false), [preset?.id]);
+    // Art asset keys show in the preview once we know their ids
+    React.useEffect(() => {
+        if (!usesKeys || !isAppId(app)) return;
+        let live = true;
+        artAssets(app, true).then(map => live && setArt(map), () => { });
+        return () => void (live = false);
+    }, [app, usesKeys, preset?.largeImage, preset?.smallImage]);
+
+    if (guide || !isAppId(app)) {
+        return (
+            <section className="evi-rp-panel">
+                <style>{CSS}</style>
+                <Guide onDone={() => { setGuide(false); refresh(); }} />
+            </section>
+        );
+    }
 
     return (
         <section className="evi-rp-panel">
             <style>{CSS}</style>
-            {!app && <p className="evi-rp-notice" role="note">{t("panel.noAppId")}</p>}
             {!ctx && <p className="evi-rp-notice" role="note">{t("panel.pluginOff")}</p>}
+            <div className="evi-rp-app">
+                {info && appIcon(info) ? <img className="evi-rp-app-icon" src={appIcon(info)} alt="" /> : <span className="evi-rp-app-icon" aria-hidden="true">{(info?.name ?? "?").slice(0, 1)}</span>}
+                <span className="evi-rp-app-name">{info?.name ?? app}</span>
+                <button type="button" className="evi-rp-link" onClick={() => setGuide(true)}>{t("guide.change")}</button>
+                <button type="button" className="evi-rp-link" onClick={() => setGuide(true)}>{t("guide.reopen")}</button>
+            </div>
 
             <div className="evi-rp-presets" role="tablist" aria-label={t("panel.presets")}>
                 {current.presets.map(p => (
@@ -405,7 +606,7 @@ function Panel() {
                     <div className="evi-rp-layout">
                         <Editor preset={preset} />
                         <aside className="evi-rp-side">
-                            <Preview preset={preset} />
+                            <Preview preset={preset} art={art} />
                             {issues.length > 0 && (
                                 <ul className="evi-rp-problems">
                                     {issues.map(p => <li key={p}>{problemText(p)}</li>)}
@@ -458,6 +659,49 @@ const CSS = `
     background: var(--info-help-background, rgba(88, 101, 242, 0.1)); border: 1px solid var(--info-help-border, rgba(88, 101, 242, 0.4));
 }
 .evi-rp-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.evi-rp-app { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.evi-rp-app-name { font-weight: 600; color: var(--header-primary, var(--text-strong, #f2f3f5)); margin-inline-end: auto; }
+.evi-rp-app-icon {
+    flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px;
+    background: var(--evi-rp-brand); color: #fff; font-weight: 700; font-size: 14px; object-fit: cover;
+}
+.evi-rp-link {
+    border: 0; padding: 0; background: none; font: inherit; font-size: 13px; color: var(--text-link, #00a8fc); cursor: pointer;
+}
+.evi-rp-link:hover { text-decoration: underline; }
+.evi-rp-guide { display: flex; flex-direction: column; gap: 18px; max-width: 640px; }
+.evi-rp-guide-head { display: flex; flex-direction: column; gap: 6px; }
+.evi-rp-guide-title { margin: 0; font-size: 20px; font-weight: 700; color: var(--header-primary, var(--text-strong, #f2f3f5)); }
+.evi-rp-guide-intro { margin: 0; color: var(--evi-rp-muted); line-height: 1.45; }
+.evi-rp-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.evi-rp-step { position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 14px; padding-bottom: 20px; }
+/* The line joining one step's number to the next */
+.evi-rp-step:not(:last-child)::before {
+    content: ""; position: absolute; left: 15px; top: 34px; bottom: 2px; width: 2px; border-radius: 1px; background: var(--evi-rp-border);
+}
+.evi-rp-step-n {
+    display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--background-mod-strong, rgba(78, 80, 88, 0.6)); color: var(--header-primary, #f2f3f5); font-weight: 700; font-size: 14px;
+}
+.evi-rp-step-body { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding-top: 5px; min-width: 0; }
+.evi-rp-step-body p { margin: 0; line-height: 1.45; color: var(--evi-rp-text); }
+.evi-rp-step-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--header-primary, var(--text-strong, #f2f3f5)); }
+.evi-rp-mock {
+    display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 8px;
+    background: var(--evi-rp-input); border: 1px solid var(--evi-rp-border);
+}
+.evi-rp-mock-label { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; color: var(--evi-rp-muted); }
+.evi-rp-mock-row { display: flex; align-items: center; gap: 12px; }
+.evi-rp-mock-row code { font-family: var(--font-code, monospace); font-size: 13px; }
+.evi-rp-mock-copy {
+    padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #fff; background: var(--evi-rp-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--evi-rp-brand) 35%, transparent);
+}
+.evi-rp-check { display: flex; gap: 8px; width: 100%; max-width: 440px; }
+.evi-rp-check .evi-rp-input { flex: 1; min-width: 0; font-family: var(--font-code, monospace); }
+.evi-rp-check-error { color: var(--text-feedback-critical, #f23f43) !important; font-size: 13px; }
+.evi-rp-check-ok { display: flex; align-items: center; gap: 8px; color: var(--text-feedback-positive, #23a55a) !important; font-weight: 600; }
+.evi-rp-guide-foot { display: flex; justify-content: flex-start; padding-left: 46px; }
 .evi-rp-chip {
     display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 6px 12px; border-radius: 999px;
     border: 1px solid var(--evi-rp-border); background: none; color: var(--evi-rp-text); font: inherit; cursor: pointer;
@@ -566,5 +810,5 @@ export default definePlugin({
 
     /** For tests and debugging */
     getState: () => state,
-    activityFor: (preset: Preset, app: string) => toActivity(preset, app, { since: Date.now(), now: Date.now() }, {}),
+    activityFor: (preset: Preset, app: string, name = "") => toActivity(preset, app, { since: Date.now(), now: Date.now() }, {}, name),
 });

@@ -42,6 +42,7 @@ import { startLiveToasts } from "./ui/LiveToasts";
 import { startAnnouncements } from "./ui/Announcements";
 import { showSafeModeNotice } from "./ui/SafeModeNotice";
 import { installSettingsEntry } from "./ui/settingsEntry";
+import { showTour2 } from "./ui/Tour2";
 import { showWhatsNewIfUpdated } from "./ui/WhatsNew";
 import { onCommonReady } from "./webpack/common";
 import { pendingWaiters } from "./webpack/find";
@@ -95,7 +96,7 @@ function boot() {
     interceptWebpack();
 
     const data = Native.boot();
-    if (data.testHooks) (Evi as { plugins: unknown; }).plugins = PluginManager;
+    if (data.testHooks) Object.assign(Evi, { plugins: PluginManager, showTour2 });
     // Main words its own dialogs and errors in Discord's language too
     Native.setLocale?.(I18n.locale);
     I18n.subscribe(() => Native.setLocale?.(I18n.locale));

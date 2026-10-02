@@ -96,6 +96,9 @@ const defs = {
         discord: "AnalyticsIcon",
         paths: ["M4 21a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4Zm7 0a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-2Zm7 0a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-2Z"],
     },
+    mic: { discord: "MicrophoneIcon", paths: ["M12 2a4 4 0 0 0-4 4v4a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4Z", "M6 10a1 1 0 1 0-2 0 8 8 0 0 0 7 7.94V21H8a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2h-3v-3.06A8 8 0 0 0 20 10a1 1 0 1 0-2 0 6 6 0 0 1-12 0Z"] },
+    music: { discord: "MusicIcon", paths: ["M20 2.5a1 1 0 0 0-1.2-.98l-10 2A1 1 0 0 0 8 4.5v10.04A3.5 3.5 0 1 0 10 17.5V8.32l8-1.6v5.82A3.5 3.5 0 1 0 20 15.5v-13Z"] },
+    tick: { discord: "CheckmarkLargeIcon", paths: ["M21.7 5.3a1 1 0 0 1 0 1.4l-12 12a1 1 0 0 1-1.4 0l-6-6a1 1 0 1 1 1.4-1.4L9 16.58l11.3-11.3a1 1 0 0 1 1.4 0Z"] },
 } satisfies Record<string, IconDef>;
 
 /** Names Evi used before switching to Discord's set, kept so existing callers keep working */

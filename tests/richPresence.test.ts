@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 
 import {
-    formatTimer, fromLocalInput, httpsUrl, imageUrls, isAppId, isStreamUrl, newPreset, parseState, problems, startOfDay, toActivity, toLocalInput,
+    formatTimer, fromLocalInput, httpsUrl, imageKeys, imageRef, imageUrls, isAppId, isStreamUrl, keySlot, newPreset, parseState, problems, startOfDay,
+    toActivity, toLocalInput,
 } from "../plugins/rich-presence/rpc";
 import type { Preset } from "../plugins/rich-presence/rpc";
 import { missingTranslations } from "../src/shared/pluginTranslations";
@@ -107,5 +108,36 @@ describe("Rich Presence Builder", () => {
         const code = ["index.tsx", "strings.ts", "rpc.ts"].map(f => readFileSync(`${dir}/${f}`, "utf8")).join("\n");
         expect(missingTranslations(manifest, code)).toEqual([]);
         expect(manifest.enabledByDefault).toBe(false);
+    });
+
+    test("a picture is an https link or an art asset key; keys go out as their asset ids", () => {
+        expect(imageRef("https://example.com/a.png")).toEqual({ kind: "url", url: "https://example.com/a.png" });
+        expect(imageRef("logo")).toEqual({ kind: "key", key: "logo" });
+        expect(imageRef("big_logo-2")).toEqual({ kind: "key", key: "big_logo-2" });
+        expect(imageRef("http://example.com/a.png")).toBeUndefined();
+        expect(imageRef("not a key")).toBeUndefined();
+        const p = preset({ largeImage: "Logo", smallImage: "https://example.com/s.png" });
+        expect(problems(p, "123456789012345678")).toEqual([]);
+        expect(imageUrls(p)).toEqual(["https://example.com/s.png"]);
+        expect(imageKeys(p)).toEqual(["Logo"]);
+        const assets = { [keySlot("Logo")]: "111", "https://example.com/s.png": "mp:external/abc" };
+        const a = toActivity(p, "123456789012345678", times, assets) as any;
+        expect(a.assets.large_image).toBe("111");
+        expect(a.assets.small_image).toBe("mp:external/abc");
+        // An unknown key is left out, like Discord's RPC server does
+        expect((toActivity(preset({ largeImage: "missing" }), "123456789012345678", times, {}) as any).assets).toBeUndefined();
+    });
+
+    test("with no name, the application's own name shows", () => {
+        const p = preset({ name: "" });
+        expect(problems(p, "123456789012345678")).toEqual(["noName"]);
+        expect(problems(p, "123456789012345678", "My Game")).toEqual([]);
+        expect((toActivity(p, "123456789012345678", times, {}, "My Game") as any).name).toBe("My Game");
+        expect((toActivity(preset({ name: "Custom" }), "123456789012345678", times, {}, "My Game") as any).name).toBe("Custom");
+    });
+
+    test("no default application: everyone brings their own", () => {
+        const code = readFileSync("plugins/rich-presence/index.tsx", "utf8");
+        expect(code).not.toContain("DEFAULT_APP_ID");
     });
 });

@@ -11,6 +11,7 @@ import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, 
 import type { Announcement } from "@shared/announcements";
 import type { AdminMethod } from "@shared/devAdmin";
 import type { DevLive } from "@shared/devLive";
+import type { AuthorLink, AuthorStatsResult } from "@shared/authorStats";
 import type { EviNotification } from "@shared/notifications";
 import type { PluginPage, RatingSummary } from "@shared/reviews";
 import type { StoreHome } from "@shared/storeHome";
@@ -120,6 +121,10 @@ const EviNative = {
     devLive: (): Promise<CommunityResult<DevLive>> => ipcRenderer.invoke(IPC.DEV_LIVE),
     /** The Developers page's calls to evi.rest's admin API; main allows only shared/devAdmin.ts's routes */
     devAdmin: (method: AdminMethod, path: string, body?: unknown): Promise<CommunityResult<unknown>> => ipcRenderer.invoke(IPC.DEV_ADMIN, method, path, body),
+    /** The Author page: this account's plugin numbers, the last `days` days */
+    authorStats: (days: number): Promise<AuthorStatsResult> => ipcRenderer.invoke(IPC.AUTHOR_STATS, days),
+    /** Opens publishing or the docs on evi.rest, in the browser */
+    authorOpen: (link: AuthorLink): Promise<void> => ipcRenderer.invoke(IPC.AUTHOR_OPEN, link),
     onAnnouncementsChange: (cb: () => void) => {
         ipcRenderer.on(IPC.ANNOUNCEMENTS_CHANGED, () => cb());
     },

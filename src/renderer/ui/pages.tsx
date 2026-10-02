@@ -9,6 +9,7 @@ import { Developer } from "../developer";
 import { Inbox } from "../inbox";
 import { Store } from "../store";
 import { AccountTab } from "./AccountTab";
+import { PublishButton } from "./author/Author";
 import { BackupTab } from "./BackupTab";
 import { AnnouncementsTab } from "./developers/Announcements";
 import { Live } from "./developers/data";
@@ -48,6 +49,8 @@ export interface Page {
     tabs: PageTab[];
     /** Left out unless this says yes (see visiblePages) */
     visible?(): boolean;
+    /** At the right end of the page's tab bar, e.g. Plugins' "Publish your own" */
+    action?: ComponentType;
 }
 
 const pluginUpdates = () => Store.getSnapshot().plugins.filter(p => Store.pluginAction(p.id) === "update").length;
@@ -61,6 +64,7 @@ export const pages: readonly Page[] = [
         id: "plugins",
         label: () => t("tabs.plugins"),
         icon: "puzzle",
+        action: PublishButton,
         tabs: [
             { id: "installed", label: () => t("tabs.installed"), icon: "circleCheck", Component: InstalledPlugins },
             { id: "store", label: () => t("common.store"), icon: "store", Component: PluginStore, count: pluginUpdates },
@@ -134,13 +138,16 @@ export function PageView({ page }: { page: Page; }) {
 
     return (
         <div className="dl-page-view">
-            <TabBar
-                id={barId}
-                label={page.label()}
-                tabs={page.tabs.map(tab => ({ id: tab.id, label: tab.label(), icon: tab.icon, count: tab.count?.() }))}
-                value={current.id}
-                onChange={tab => showTab(page.id, tab)}
-            />
+            <div className="dl-page-head" data-action={page.action ? "" : undefined}>
+                <TabBar
+                    id={barId}
+                    label={page.label()}
+                    tabs={page.tabs.map(tab => ({ id: tab.id, label: tab.label(), icon: tab.icon, count: tab.count?.() }))}
+                    value={current.id}
+                    onChange={tab => showTab(page.id, tab)}
+                />
+                {page.action && <div className="dl-page-action"><page.action /></div>}
+            </div>
             <div role="tabpanel" id={`${barId}-panel`} aria-labelledby={`${barId}-${current.id}`}>
                 <ErrorBoundary resetKey={current.id}><current.Component /></ErrorBoundary>
             </div>

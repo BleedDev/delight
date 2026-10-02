@@ -13,16 +13,17 @@ import { parseCredits } from "@shared/badges";
 import { parseAnnouncements } from "@shared/announcements";
 import { isAdminRoute } from "@shared/devAdmin";
 import { parseDevLive } from "@shared/devLive";
+import { AUTHOR_LINKS, clampDays, NOT_AUTHOR, parseAuthorStats } from "@shared/authorStats";
 import { parseNotifications } from "@shared/notifications";
 import { parsePluginPage, parseRatings, validateReview } from "@shared/reviews";
 import { parseStoreHome } from "@shared/storeHome";
 import { isPluginId } from "@shared/store";
-import { ipcMain, webContents } from "electron";
+import { ipcMain, shell, webContents } from "electron";
 import { readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { onAnnouncementsChanged, onInboxAnnounced } from "./badges";
-import { apiRequest } from "./evirest";
+import { apiRequest, apiUrl } from "./evirest";
 import { DATA_DIR } from "./paths";
 import { cachedGet } from "./reports";
 import { settings } from "./settings";
@@ -147,6 +148,17 @@ export function initCommunity() {
         const payload = body === undefined ? undefined : JSON.stringify(body);
         if (payload !== undefined && payload.length > 64 * 1024) return { ok: false, error: "That's too long to send" };
         return call(async () => (await apiRequest(method, `${path}`, { ...payload !== undefined && json(body), max: 8 * 1024 * 1024 })).json as unknown);
+    });
+    // The Author page: evi.rest answers a verified author's linked Evi with their own plugins' numbers
+    ipcMain.handle(IPC.AUTHOR_STATS, async (_e, days: unknown) => {
+        const result = await call(async () => parseAuthorStats((await apiRequest("GET", `/me/author/stats?days=${clampDays(days)}`, { max: 2 * 1024 * 1024 })).json));
+        return result.ok || !NOT_AUTHOR.test(result.error) ? result : { ...result, notAuthor: true };
+    });
+    ipcMain.handle(IPC.AUTHOR_OPEN, (_e, link: unknown) => {
+        if (typeof link !== "string" || !Object.hasOwn(AUTHOR_LINKS, link)) return;
+        const site = new URL(apiUrl());
+        if (site.protocol !== "https:" && site.hostname !== "localhost") return;
+        return shell.openExternal(`${site.origin}${AUTHOR_LINKS[link as keyof typeof AUTHOR_LINKS]}`);
     });
     // Evi's team to everyone: public, so it works without a linked account
     ipcMain.handle(IPC.ANNOUNCEMENTS, () => call(async () => parseAnnouncements((await apiRequest("GET", "/announcements", { max: 256 * 1024 })).json)));

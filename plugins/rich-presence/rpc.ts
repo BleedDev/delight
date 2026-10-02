@@ -125,6 +125,24 @@ export const isStreamUrl = (value: string) => {
     return !!url && STREAM_HOSTS.test(new URL(url).hostname);
 };
 
+/**
+ * A picture is either an https link (turned into an `mp:` key through Discord's external assets) or
+ * the key of an art asset uploaded to the application (Rich Presence → Art Assets), sent as its id.
+ */
+export type ImageRef = { kind: "url"; url: string; } | { kind: "key"; key: string; };
+
+const ASSET_KEY = /^(?:mp:\S{1,250}|[\w.-]{1,256})$/;
+
+export function imageRef(value: string): ImageRef | undefined {
+    const text = value.trim();
+    if (!text) return undefined;
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(text)) {
+        const url = httpsUrl(text);
+        return url ? { kind: "url", url } : undefined;
+    }
+    return ASSET_KEY.test(text) ? { kind: "key", key: text } : undefined;
+}
+
 /** Application IDs are snowflakes */
 export const isAppId = (value: string) => /^\d{17,20}$/.test(value.trim());
 
@@ -133,12 +151,13 @@ export type Problem =
     | "buttonLabel" | "buttonUrl" | "badParty" | "noTime";
 
 /** What's wrong with a preset, first problem first; nothing means it can be shown */
-export function problems(p: Preset, appId: string): Problem[] {
+export function problems(p: Preset, appId: string, appName = ""): Problem[] {
     const out: Problem[] = [];
     if (!isAppId(appId)) out.push("noAppId");
-    if (!p.name.trim()) out.push("noName");
-    if (p.largeImage.trim() && !httpsUrl(p.largeImage)) out.push("badLargeImage");
-    if (p.smallImage.trim() && !httpsUrl(p.smallImage)) out.push("badSmallImage");
+    // Left empty, the application's own name shows, as for games
+    if (!p.name.trim() && !appName.trim()) out.push("noName");
+    if (p.largeImage.trim() && !imageRef(p.largeImage)) out.push("badLargeImage");
+    if (p.smallImage.trim() && !imageRef(p.smallImage)) out.push("badSmallImage");
     if (p.type === "streaming" && !isStreamUrl(p.streamUrl)) out.push("badStreamUrl");
     for (const b of p.buttons) {
         if (!b.label.trim() && !b.url.trim()) continue;
@@ -150,8 +169,29 @@ export function problems(p: Preset, appId: string): Problem[] {
     return [...new Set(out)];
 }
 
-/** The https pictures a preset needs asset keys for */
-export const imageUrls = (p: Preset) => [p.largeImage, p.smallImage].map(httpsUrl).filter((u): u is string => !!u);
+/** The https pictures a preset needs asset keys for (art asset keys need nothing) */
+export const imageUrls = (p: Preset) => [p.largeImage, p.smallImage]
+    .map(imageRef)
+    .flatMap(ref => ref?.kind === "url" ? [ref.url] : []);
+
+/** The art asset keys a preset uses: Discord sends their ids, looked up in the application's assets */
+export const imageKeys = (p: Preset) => [p.largeImage, p.smallImage]
+    .map(imageRef)
+    .flatMap(ref => ref?.kind === "key" && !ref.key.startsWith("mp:") ? [ref.key] : []);
+
+/** Where `assets` keeps an art asset key's id, next to the links' `mp:` keys */
+export const keySlot = (key: string) => `key:${key.toLowerCase()}`;
+
+/**
+ * What to send for a picture, as Discord's RPC server does for games: a link becomes its `mp:` key,
+ * an art asset key becomes that asset's id. One that couldn't be resolved is left out.
+ */
+function assetFor(value: string, assets: Record<string, string>): string | undefined {
+    const ref = imageRef(value);
+    if (!ref) return undefined;
+    if (ref.kind === "url") return assets[ref.url] || undefined;
+    return ref.key.startsWith("mp:") ? ref.key : assets[keySlot(ref.key)] || undefined;
+}
 
 /** Start of today, local time: "elapsed" from midnight reads as the time of day */
 export function startOfDay(now: number) {
@@ -169,12 +209,13 @@ export interface ActivityTimes {
 /**
  * What Discord's local activity store takes for `p`. `assets` maps each https picture to its asset
  * key (`mp:external/…`); a picture without one is left out rather than sent as a link Discord can't show.
+ * With no name, the application's own (`appName`) shows, like Discord's RPC server does for games.
  */
-export function toActivity(p: Preset, appId: string, times: ActivityTimes, assets: Record<string, string>): Record<string, unknown> {
+export function toActivity(p: Preset, appId: string, times: ActivityTimes, assets: Record<string, string>, appName = ""): Record<string, unknown> {
     const text = (v: string) => v.trim().slice(0, LIMITS.text) || undefined;
     const activity: Record<string, unknown> = {
         application_id: appId.trim(),
-        name: text(p.name),
+        name: text(p.name) ?? text(appName),
         type: TYPE_ID[p.type],
         flags: 1, // INSTANCE, like a game's own presence
     };
@@ -186,7 +227,7 @@ export function toActivity(p: Preset, appId: string, times: ActivityTimes, asset
     const timestamps = timesFor(p, times);
     if (timestamps) activity.timestamps = timestamps;
 
-    const large = assets[httpsUrl(p.largeImage) ?? ""], small = assets[httpsUrl(p.smallImage) ?? ""];
+    const large = assetFor(p.largeImage, assets), small = assetFor(p.smallImage, assets);
     const assetsOut: Record<string, string> = {};
     if (large) {
         assetsOut.large_image = large;

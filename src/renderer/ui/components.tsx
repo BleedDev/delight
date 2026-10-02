@@ -874,14 +874,14 @@ export function useExit(onClose: () => void) {
  * Escape and clicking beside it close it; focus stays inside and goes back where it was after.
  * `children` can be a function of `close`, for content that closes the dialog itself (with its exit).
  */
-export function Dialog({ title, onClose, children, id }: { title: ReactNode; onClose(): void; children: ReactNode | ((close: () => void) => ReactNode); id: string; }) {
+export function Dialog({ title, onClose, children, id, className }: { title: ReactNode; onClose(): void; children: ReactNode | ((close: () => void) => ReactNode); id: string; /** On the dialog box, e.g. for a wider one */ className?: string; }) {
     const exit = useExit(onClose);
     const { ref, onKeyDown } = useModal(exit.close);
 
     return ReactDOM.createPortal(
         <div className="dl-root" {...exit.closingProps}>
             <div className="dl-scrim dl-dialog-scrim evi-scrim" onMouseDown={e => e.target === e.currentTarget && exit.close()}>
-                <div className="dl-dialog evi-modal" role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} tabIndex={-1} ref={ref} onKeyDown={onKeyDown} id={id}>
+                <div className={cx("dl-dialog evi-modal", className)} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} tabIndex={-1} ref={ref} onKeyDown={onKeyDown} id={id}>
                     <FocusLayer containerRef={ref}>
                         <header className="dl-dialog-head">
                             <Text tag="h2" variant="heading-lg/semibold" color="text-strong" id={`${id}-title`}>{title}</Text>
