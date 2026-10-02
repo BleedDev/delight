@@ -151,9 +151,9 @@ const PATTERNS: { re: RegExp; read(m: RegExpExecArray): Found | undefined; }[] =
         re: new RegExp(`${B}(${NUM}) (dollars?|bucks|euros?)${E}`, "giu"),
         read: m => money(parseNumber(m[1]), WORDS[m[2].toLowerCase()]),
     },
-    // 6'2", 5′11″, 5 ft 11 in
+    // 6'2", 5′11″, 5 ft 11 in, and "5'11 ft" as people write it: one height, not 11 feet
     {
-        re: new RegExp(`${B}(\\d)(?:'|′| ?ft ?| feet )(\\d{1,2})(?:"|″|''| ?in(?:ches)?)?(?![\\p{L}\\p{N}_'"])`, "gu"),
+        re: new RegExp(`${B}(\\d)(?:'|′| ?ft ?| feet )(\\d{1,2})(?:"|″|''| ?in(?:ches)?| ?ft| feet)?(?![\\p{L}\\p{N}_'"])`, "gu"),
         read: m => Number(m[2]) < 12 ? { kind: "unit", value: Number(m[1]) + Number(m[2]) / 12, unit: "ft", inches: Number(m[1]) * 12 + Number(m[2]) } : undefined,
     },
     // 5 ft, 30°C, -4 °F, 100 km/h, 2L, 5 metres

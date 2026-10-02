@@ -57,6 +57,8 @@ describe("hover converter: money", () => {
 describe("hover converter: units", () => {
     test("imperial to metric", () => {
         expect(tips(`he is 6'2" tall`, metricEur)).toEqual([{ text: `6'2"`, tip: "≈ 188 cm" }]);
+        // A unit after the inches belongs to the height, not to the inches alone
+        expect(tips(`5'11 ft`, metricEur)).toEqual([{ text: `5'11 ft`, tip: "≈ 180 cm" }]);
         expect(tips("5 ft 11 in", metricEur)).toEqual([{ text: "5 ft 11 in", tip: "≈ 180 cm" }]);
         expect(tips("5ft", metricEur)).toEqual([{ text: "5ft", tip: "≈ 152 cm" }]);
         expect(tips("-4°F", metricEur)).toEqual([{ text: "-4°F", tip: "≈ -20°C" }]);

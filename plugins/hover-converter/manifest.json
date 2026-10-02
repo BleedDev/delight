@@ -2,7 +2,7 @@
     "id": "hover-converter",
     "name": "Hover Converter",
     "description": "Hover \"$20\", \"5 ft\", \"30°C\" or \"3pm EST\" in any message to see it in your own currency, units and time zone.",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "authors": [
         "Evi"
     ],
@@ -18,6 +18,12 @@
         "readMessages": true
     },
     "changelog": [
+        {
+            "version": "1.0.4",
+            "notes": [
+                "\"5'11 ft\" converts as one height instead of as 11 feet."
+            ]
+        },
         {
             "version": "1.0.3",
             "notes": [
@@ -48,6 +54,9 @@
             "name": "Umrechner",
             "description": "Fahre über „$20“, „5 ft“, „30°C“ oder „3pm EST“ in einer Nachricht und sieh es in deiner Währung, deinen Einheiten und deiner Zeitzone.",
             "changelog": {
+                "1.0.4": [
+                    "„5'11 ft“ wird als eine Körpergröße umgerechnet statt als 11 Fuß."
+                ],
                 "1.0.3": [
                     "Preise werden wieder umgerechnet. Discord blockiert die Wechselkurs-Seiten auf seiner Seite, daher wurden die Kurse nie geladen und nichts unterstrichen; jetzt werden sie außerhalb der Discord-Seite abgerufen."
                 ],
@@ -66,6 +75,9 @@
             "name": "Conversor al pasar",
             "description": "Pasa el cursor por «$20», «5 ft», «30°C» o «3pm EST» en un mensaje para verlo en tu moneda, tus unidades y tu zona horaria.",
             "changelog": {
+                "1.0.4": [
+                    "«5'11 ft» se convierte como una sola estatura y no como 11 pies."
+                ],
                 "1.0.3": [
                     "Los precios vuelven a convertirse. Discord bloquea los sitios de tipos de cambio desde su página, así que los tipos nunca se cargaban y nada se subrayaba; ahora se obtienen fuera de la página de Discord."
                 ],
@@ -84,6 +96,9 @@
             "name": "Convertisseur au survol",
             "description": "Survole « $20 », « 5 ft », « 30°C » ou « 3pm EST » dans un message pour le voir dans ta devise, tes unités et ton fuseau horaire.",
             "changelog": {
+                "1.0.4": [
+                    "« 5'11 ft » est converti comme une seule taille et non comme 11 pieds."
+                ],
                 "1.0.3": [
                     "Les prix sont de nouveau convertis. Discord bloque les sites de taux de change depuis sa page, donc les taux ne se chargeaient jamais et rien n'était souligné ; ils sont maintenant récupérés en dehors de la page de Discord."
                 ],
@@ -102,6 +117,9 @@
             "name": "ホバー変換",
             "description": "メッセージ内の「$20」「5 ft」「30°C」「3pm EST」にカーソルを合わせると、あなたの通貨、単位、タイムゾーンで表示します。",
             "changelog": {
+                "1.0.4": [
+                    "「5'11 ft」を11フィートではなく、1つの身長として換算するようになりました。"
+                ],
                 "1.0.3": [
                     "価格がまた換算されるようになりました。Discordのページから為替レートのサイトへの接続がブロックされ、レートが読み込まれず何も下線が付いていませんでした。今はDiscordのページの外で取得します。"
                 ],
@@ -120,6 +138,9 @@
             "name": "Przelicznik po najechaniu",
             "description": "Najedź na „$20”, „5 ft”, „30°C” albo „3pm EST” w wiadomości, by zobaczyć to w swojej walucie, jednostkach i strefie czasowej.",
             "changelog": {
+                "1.0.4": [
+                    "„5'11 ft” jest przeliczane jako jeden wzrost, a nie jako 11 stóp."
+                ],
                 "1.0.3": [
                     "Ceny znów są przeliczane. Discord blokuje na swojej stronie serwisy z kursami walut, więc kursy nigdy się nie wczytywały i nic nie było podkreślone; teraz są pobierane poza stroną Discorda."
                 ],
@@ -138,6 +159,9 @@
             "name": "Conversor ao passar o mouse",
             "description": "Passe o mouse sobre “$20”, “5 ft”, “30°C” ou “3pm EST” numa mensagem para ver na sua moeda, nas suas unidades e no seu fuso horário.",
             "changelog": {
+                "1.0.4": [
+                    "\"5'11 ft\" é convertido como uma única altura, e não como 11 pés."
+                ],
                 "1.0.3": [
                     "Os preços voltaram a ser convertidos. O Discord bloqueia os sites de câmbio na página dele, então as cotações nunca carregavam e nada era sublinhado; agora elas são buscadas fora da página do Discord."
                 ],
@@ -156,6 +180,9 @@
             "name": "Конвертер при наведении",
             "description": "Наведите на «$20», «5 ft», «30°C» или «3pm EST» в сообщении, чтобы увидеть это в своей валюте, единицах и часовом поясе.",
             "changelog": {
+                "1.0.4": [
+                    "«5'11 ft» конвертируется как один рост, а не как 11 футов."
+                ],
                 "1.0.3": [
                     "Цены снова конвертируются. Discord блокирует сайты с курсами валют на своей странице, поэтому курсы не загружались и ничего не подчёркивалось; теперь они загружаются вне страницы Discord."
                 ],
@@ -174,6 +201,9 @@
             "name": "Üzerine Gelince Çevir",
             "description": "Bir mesajdaki “$20”, “5 ft”, “30°C” ya da “3pm EST” üzerine gelin; kendi para biriminiz, birimleriniz ve saat diliminizle görün.",
             "changelog": {
+                "1.0.4": [
+                    "\"5'11 ft\" artık 11 fit olarak değil, tek bir boy olarak çevriliyor."
+                ],
                 "1.0.3": [
                     "Fiyatlar yeniden çevriliyor. Discord, kendi sayfasından döviz kuru sitelerine bağlanmayı engellediği için kurlar hiç yüklenmiyor ve hiçbir şeyin altı çizilmiyordu; artık Discord'un sayfası dışından alınıyor."
                 ],
