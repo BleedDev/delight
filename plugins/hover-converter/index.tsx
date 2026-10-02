@@ -7,7 +7,8 @@
  *   are cut around what convert.ts finds. Code, links and spoilers (rendered later, from a
  *   function) are left alone.
  * - Rates: per euro, from Frankfurter (the European Central Bank's) with ExchangeRate-API filling
- *   the currencies the ECB doesn't publish, kept for 12 hours under this plugin's settings.
+ *   the currencies the ECB doesn't publish, kept for 12 hours under this plugin's settings. native.ts
+ *   fetches them: Discord's Content-Security-Policy blocks both APIs from the page.
  * - Each underline works out its text when it renders, so rates arriving or a setting changing
  *   update what's on screen without Discord re-parsing anything.
  */
@@ -20,8 +21,6 @@ import { t } from "./strings";
 
 const RATES_KEY = "rates";
 const RATES_TTL = 12 * 60 * 60 * 1000;
-const FRANKFURTER = "https://api.frankfurter.dev/v1/latest?base=EUR";
-const EXCHANGE_RATE_API = "https://open.er-api.com/v6/latest/EUR";
 /** How deep into Discord's output to look: messages nest a few levels (lists, quotes, bold) */
 const MAX_DEPTH = 12;
 
@@ -142,11 +141,7 @@ function worth(found: Found, p: Prefs, k: Kinds) {
 
 // ---- Rates --------------------------------------------------------------------------------------
 
-async function json(url: string) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`${res.status} from ${new URL(url).host}`);
-    return res.json();
-}
+type Source = { rates?: Record<string, number>; error?: string; };
 
 async function loadRates() {
     const saved = storage()?.get(RATES_KEY) as (Rates & { at: number; }) | undefined;
@@ -155,17 +150,16 @@ async function loadRates() {
         bump();
         if (Date.now() - saved.at < RATES_TTL) return;
     }
-    const merged: Record<string, number> = {};
+    if (!context) return;
+    // Fetched by native.ts: Discord's page isn't allowed to connect to either API
+    const { ecb, other } = await context.native.call<{ ecb: Source; other: Source; }>("rates");
     // ExchangeRate-API first, then the ECB's on top: the ECB's where it has one
-    const [other, ecb] = await Promise.allSettled([json(EXCHANGE_RATE_API), json(FRANKFURTER)]);
-    if (other.status === "fulfilled" && other.value?.rates) Object.assign(merged, other.value.rates);
-    if (ecb.status === "fulfilled" && ecb.value?.rates) Object.assign(merged, ecb.value.rates);
-    const clean = Object.fromEntries(Object.entries(merged).filter(([code, v]) => /^[A-Z]{3}$/.test(code) && typeof v === "number" && v > 0));
-    if (!Object.keys(clean).length) {
-        context?.logger.warn("Couldn't load exchange rates", ecb.status === "rejected" ? ecb.reason : other);
+    const merged: Record<string, number> = { ...other.rates, ...ecb.rates };
+    if (!Object.keys(merged).length) {
+        context.logger.warn("Couldn't load exchange rates", ecb.error, other.error);
         return;
     }
-    rates = { base: "EUR", rates: { ...clean, EUR: 1 } };
+    rates = { base: "EUR", rates: { ...merged, EUR: 1 } };
     storage()?.set(RATES_KEY, { ...rates, at: Date.now() });
     bump();
 }

@@ -2,7 +2,7 @@
     "id": "hover-converter",
     "name": "Hover Converter",
     "description": "Hover \"$20\", \"5 ft\", \"30°C\" or \"3pm EST\" in any message to see it in your own currency, units and time zone.",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "authors": [
         "Evi"
     ],
@@ -18,6 +18,12 @@
         "readMessages": true
     },
     "changelog": [
+        {
+            "version": "1.0.3",
+            "notes": [
+                "Prices convert again. Discord blocks the exchange rate sites from its page, so the rates never loaded and nothing was underlined; they're now fetched from outside Discord's page."
+            ]
+        },
         {
             "version": "1.0.2",
             "notes": [
@@ -42,6 +48,9 @@
             "name": "Umrechner",
             "description": "Fahre über „$20“, „5 ft“, „30°C“ oder „3pm EST“ in einer Nachricht und sieh es in deiner Währung, deinen Einheiten und deiner Zeitzone.",
             "changelog": {
+                "1.0.3": [
+                    "Preise werden wieder umgerechnet. Discord blockiert die Wechselkurs-Seiten auf seiner Seite, daher wurden die Kurse nie geladen und nichts unterstrichen; jetzt werden sie außerhalb der Discord-Seite abgerufen."
+                ],
                 "1.0.2": [
                     "Preise werden in die Währung deines Wohnorts umgerechnet, ermittelt über deine Zeitzone. Vorher machte „English (US)“ den US-Dollar zur Währung aller, sodass „$20“ nie umgerechnet wurde."
                 ],
@@ -57,6 +66,9 @@
             "name": "Conversor al pasar",
             "description": "Pasa el cursor por «$20», «5 ft», «30°C» o «3pm EST» en un mensaje para verlo en tu moneda, tus unidades y tu zona horaria.",
             "changelog": {
+                "1.0.3": [
+                    "Los precios vuelven a convertirse. Discord bloquea los sitios de tipos de cambio desde su página, así que los tipos nunca se cargaban y nada se subrayaba; ahora se obtienen fuera de la página de Discord."
+                ],
                 "1.0.2": [
                     "Los precios se convierten a la moneda del lugar donde vives, según tu zona horaria. Antes, «English (US)» hacía que la moneda de todos fuera el dólar estadounidense, así que «$20» nunca se convertía."
                 ],
@@ -72,6 +84,9 @@
             "name": "Convertisseur au survol",
             "description": "Survole « $20 », « 5 ft », « 30°C » ou « 3pm EST » dans un message pour le voir dans ta devise, tes unités et ton fuseau horaire.",
             "changelog": {
+                "1.0.3": [
+                    "Les prix sont de nouveau convertis. Discord bloque les sites de taux de change depuis sa page, donc les taux ne se chargeaient jamais et rien n'était souligné ; ils sont maintenant récupérés en dehors de la page de Discord."
+                ],
                 "1.0.2": [
                     "Les prix sont convertis dans la devise de l'endroit où vous vivez, déduite de votre fuseau horaire. Avant, « English (US) » faisait du dollar américain la devise de tout le monde, donc « $20 » n'était jamais converti."
                 ],
@@ -87,6 +102,9 @@
             "name": "ホバー変換",
             "description": "メッセージ内の「$20」「5 ft」「30°C」「3pm EST」にカーソルを合わせると、あなたの通貨、単位、タイムゾーンで表示します。",
             "changelog": {
+                "1.0.3": [
+                    "価格がまた換算されるようになりました。Discordのページから為替レートのサイトへの接続がブロックされ、レートが読み込まれず何も下線が付いていませんでした。今はDiscordのページの外で取得します。"
+                ],
                 "1.0.2": [
                     "価格はタイムゾーンから判断したお住まいの地域の通貨に換算されます。以前は「English (US)」のせいで全員の通貨が米ドルになり、「$20」が換算されませんでした。"
                 ],
@@ -102,6 +120,9 @@
             "name": "Przelicznik po najechaniu",
             "description": "Najedź na „$20”, „5 ft”, „30°C” albo „3pm EST” w wiadomości, by zobaczyć to w swojej walucie, jednostkach i strefie czasowej.",
             "changelog": {
+                "1.0.3": [
+                    "Ceny znów są przeliczane. Discord blokuje na swojej stronie serwisy z kursami walut, więc kursy nigdy się nie wczytywały i nic nie było podkreślone; teraz są pobierane poza stroną Discorda."
+                ],
                 "1.0.2": [
                     "Ceny są przeliczane na walutę miejsca, w którym mieszkasz, ustaloną na podstawie strefy czasowej. Wcześniej „English (US)” sprawiało, że walutą wszystkich był dolar amerykański, więc „$20” nigdy nie był przeliczany."
                 ],
@@ -117,6 +138,9 @@
             "name": "Conversor ao passar o mouse",
             "description": "Passe o mouse sobre “$20”, “5 ft”, “30°C” ou “3pm EST” numa mensagem para ver na sua moeda, nas suas unidades e no seu fuso horário.",
             "changelog": {
+                "1.0.3": [
+                    "Os preços voltaram a ser convertidos. O Discord bloqueia os sites de câmbio na página dele, então as cotações nunca carregavam e nada era sublinhado; agora elas são buscadas fora da página do Discord."
+                ],
                 "1.0.2": [
                     "Os preços são convertidos para a moeda de onde você mora, descoberta pelo seu fuso horário. Antes, \"English (US)\" fazia a moeda de todo mundo ser o dólar americano, então \"$20\" nunca era convertido."
                 ],
@@ -132,6 +156,9 @@
             "name": "Конвертер при наведении",
             "description": "Наведите на «$20», «5 ft», «30°C» или «3pm EST» в сообщении, чтобы увидеть это в своей валюте, единицах и часовом поясе.",
             "changelog": {
+                "1.0.3": [
+                    "Цены снова конвертируются. Discord блокирует сайты с курсами валют на своей странице, поэтому курсы не загружались и ничего не подчёркивалось; теперь они загружаются вне страницы Discord."
+                ],
                 "1.0.2": [
                     "Цены переводятся в валюту страны, где вы живёте, — она определяется по часовому поясу. Раньше из-за «English (US)» у всех валютой считался доллар США, и «$20» никогда не конвертировалось."
                 ],
@@ -147,6 +174,9 @@
             "name": "Üzerine Gelince Çevir",
             "description": "Bir mesajdaki “$20”, “5 ft”, “30°C” ya da “3pm EST” üzerine gelin; kendi para biriminiz, birimleriniz ve saat diliminizle görün.",
             "changelog": {
+                "1.0.3": [
+                    "Fiyatlar yeniden çevriliyor. Discord, kendi sayfasından döviz kuru sitelerine bağlanmayı engellediği için kurlar hiç yüklenmiyor ve hiçbir şeyin altı çizilmiyordu; artık Discord'un sayfası dışından alınıyor."
+                ],
                 "1.0.2": [
                     "Fiyatlar, saat diliminden anlaşılan, yaşadığın yerin para birimine çevriliyor. Önceden \"English (US)\" herkesin para birimini ABD doları yaptığı için \"$20\" hiç çevrilmiyordu."
                 ],
