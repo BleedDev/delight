@@ -86,6 +86,37 @@ async function fetchIcons(doc: BadgesDocument, known: Record<string, string>) {
     return icons;
 }
 
+/** Badge icons already turned into data URLs, by their evi.rest address */
+const inlined = new Map<string, string>();
+const BADGE_ICON = /^https?:\/\/[^/]+\/badges\/[\w.-]+\.(?:png|gif|webp|jpe?g)(?:\?v=\w+)?$/;
+
+/**
+ * Discord's page may only show images from Discord, so an evi.rest badge icon address shows as a
+ * broken image there. Swaps every one found in an answer (the Developers page's people and badges)
+ * for the image itself, the way the badges in Discord get theirs. Anything else is left as it is.
+ */
+export async function inlineBadgeIcons<T>(value: T): Promise<T> {
+    const found = new Set<string>();
+    const walk = (v: unknown) => {
+        if (typeof v === "string") { if (BADGE_ICON.test(v) && sameHost(v)) found.add(v); }
+        else if (Array.isArray(v)) v.forEach(walk);
+        else if (v && typeof v === "object") Object.values(v).forEach(walk);
+    };
+    walk(value);
+    await Promise.all([...found].filter(url => !inlined.has(url)).map(async url => {
+        const download = await downloadHttps(url, MAX_ICON_BYTES, { what: "The badge icon" });
+        const data = download.ok ? imageDataUrl(download.body) : undefined;
+        if (data) inlined.set(url, data);
+    }));
+    const swap = (v: unknown): unknown => {
+        if (typeof v === "string") return inlined.get(v) ?? v;
+        if (Array.isArray(v)) return v.map(swap);
+        if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, swap(x)]));
+        return v;
+    };
+    return found.size ? swap(value) as T : value;
+}
+
 /** The document with icons swapped for data URLs; badges whose icon failed are left out */
 function forPage({ doc, icons }: Cache): BadgesResult {
     const badges: BadgesDocument["badges"] = {};

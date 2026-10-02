@@ -24,7 +24,7 @@ import { ipcMain, shell, webContents } from "electron";
 import { readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
-import { onAnnouncementsChanged, onInboxAnnounced, onRequiredChanged } from "./badges";
+import { inlineBadgeIcons, onAnnouncementsChanged, onInboxAnnounced, onRequiredChanged } from "./badges";
 import { apiRequest, apiUrl } from "./evirest";
 import { DATA_DIR } from "./paths";
 import { cachedGet } from "./reports";
@@ -155,7 +155,7 @@ export function initCommunity() {
         }
         const payload = body === undefined ? undefined : JSON.stringify(body);
         if (payload !== undefined && payload.length > 64 * 1024) return { ok: false, error: "That's too long to send" };
-        return call(async () => (await apiRequest(method, `${path}`, { ...payload !== undefined && json(body), max: 8 * 1024 * 1024 })).json as unknown);
+        return call(async () => inlineBadgeIcons((await apiRequest(method, `${path}`, { ...payload !== undefined && json(body), max: 8 * 1024 * 1024 })).json as unknown));
     });
     // The Author page: evi.rest answers a verified author's linked Evi with their own plugins' numbers
     ipcMain.handle(IPC.AUTHOR_STATS, async (_e, days: unknown) => {
