@@ -399,7 +399,10 @@ function mediaSaver(ctx: Ctx, cache: MediaCache<SavedMedia>) {
 
 function install(ctx: Ctx, log: MessageLog, store: any, saver: ReturnType<typeof mediaSaver>) {
     const registry = (Dispatcher as any)._actionHandlers;
-    const handlers = registry?._dependencyGraph?.getNodeData?.(store.getDispatchToken?.())?.actionHandler;
+    const token = store.getDispatchToken?.();
+    // Discord keeps each store's handlers in _nodes (token -> { actionHandler }) since October 2026,
+    // in a dependency graph before that
+    const handlers = registry?._nodes?.get?.(token)?.actionHandler ?? registry?._dependencyGraph?.getNodeData?.(token)?.actionHandler;
     if (!handlers || !["MESSAGE_DELETE", "MESSAGE_DELETE_BULK", "MESSAGE_UPDATE"].every(t => typeof handlers[t] === "function")) {
         ctx.logger.error("Couldn't find MessageStore's action handlers, Discord changed how Flux stores register");
         return;
@@ -434,6 +437,9 @@ function install(ctx: Ctx, log: MessageLog, store: any, saver: ReturnType<typeof
     const purgeHandler = (action: FluxAction) =>
         handlers.MESSAGE_DELETE_BULK({ type: "MESSAGE_DELETE_BULK", channelId: action.channelId, ids: action.ids, eviPurge: true });
     handlers[PURGE_ACTION] = purgeHandler;
+    // The _nodes registry only asks the stores listed for an action type: list MessageStore for ours
+    const byType: Record<string, string[]> | undefined = registry._tokensByActionType;
+    if (byType && !byType[PURGE_ACTION]?.includes(token)) (byType[PURGE_ACTION] ??= []).push(token);
 
     const shouldKeep = (action: FluxAction, channelId: string, id: string) => {
         if (log.isDeleted(channelId, id)) return true;
@@ -518,6 +524,7 @@ function install(ctx: Ctx, log: MessageLog, store: any, saver: ReturnType<typeof
         purge(log.clear()).finally(() => {
             if (handlers[PURGE_ACTION] !== purgeHandler) return;
             delete handlers[PURGE_ACTION];
+            if (byType) delete byType[PURGE_ACTION];
             invalidate();
         });
     });

@@ -1039,10 +1039,18 @@ await page.evaluate(() => {
 // ---- silent-typing ------------------------------------------------------------------------------
 
 const silent = await page.evaluate(async () => {
-    const { api, plugins, toolkit, diagnosePatches } = (window as any).Evi;
+    const { api, plugins, toolkit, diagnosePatches, wreq } = (window as any).Evi;
     const { sleep, toastText, load } = (window as any).__qa;
 
-    // Discord's typing actions: startTyping dispatches TYPING_START_LOCAL, whose store handler sends the request
+    // Discord's typing actions: startTyping dispatches TYPING_START_LOCAL, whose store handler sends the request.
+    // Since October 2026 they're in the chat's lazy chunks: load the ones the "Channel" route declares
+    const route = /createPromise:\(\)=>Promise\.all\(\[((?:\w\.e\("\d+"\),?)+)\]\)\.then\(\w\.bind\(\w,(\d+)\)\),webpackId:\d+,name:"Channel"[,}]/;
+    for (const id of api.findModuleIds('name:"Channel"')) {
+        const m = api.functionSource(wreq.m[id]).match(route);
+        if (!m) continue;
+        await Promise.all([...m[1].matchAll(/"(\d+)"/g)].map((x: RegExpMatchArray) => wreq.e(x[1]).catch(() => { })));
+        break;
+    }
     const typing = load(api.filters.byProps("startTyping", "stopTyping"), "TYPING_START_LOCAL", "startTyping(");
     const actions = typing?.value;
     const dispatched: string[] = [];
@@ -1180,7 +1188,7 @@ const logger = await page.evaluate(async () => {
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
     const { Dispatcher } = api;
     const store = api.getStore("MessageStore");
-    const handlersOf = () => Dispatcher._actionHandlers._dependencyGraph.getNodeData(store.getDispatchToken()).actionHandler;
+    const handlersOf = () => (Dispatcher._actionHandlers._nodes?.get(store.getDispatchToken()) ?? Dispatcher._actionHandlers._dependencyGraph.getNodeData(store.getDispatchToken())).actionHandler;
     const handlers = handlersOf();
     const originals = { del: handlers.MESSAGE_DELETE, bulk: handlers.MESSAGE_DELETE_BULK, update: handlers.MESSAGE_UPDATE };
 

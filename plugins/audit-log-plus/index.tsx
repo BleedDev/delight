@@ -322,8 +322,7 @@ function ChangeLine({ c }: { c: ChangeView; }) {
     }
 }
 
-/** Memoized: typing in the search or loading another page only renders the rows that changed */
-const EntryRow = React.memo(function EntryRow({ row, guildId, onNavigate }: { row: Row; guildId: string; onNavigate(): void; }) {
+function EntryRowView({ row, guildId, onNavigate }: { row: Row; guildId: string; onNavigate(): void; }) {
     const [open, setOpen] = React.useState(false);
     const hasDetails = row.changes.length > 0 || row.options.length > 0;
     const actor = row.actor;
@@ -361,7 +360,14 @@ const EntryRow = React.memo(function EntryRow({ row, guildId, onNavigate }: { ro
             )}
         </li>
     );
-});
+}
+
+/**
+ * Memoized: typing in the search or loading another page only renders the rows that changed. Made on
+ * first render: React isn't there yet when the plugin's code first runs
+ */
+let memoRow: React.ComponentType<Parameters<typeof EntryRowView>[0]> | undefined;
+const EntryRow = (props: Parameters<typeof EntryRowView>[0]) => React.createElement(memoRow ??= React.memo(EntryRowView), props);
 
 const dayStart = (v: string) => v ? new Date(`${v}T00:00:00`).getTime() : undefined;
 const dayEnd = (v: string) => v ? new Date(`${v}T23:59:59.999`).getTime() : undefined;
