@@ -15,7 +15,7 @@
  * to Discord's HTTP client if the creator moves. Its errors are Discord's HTTP errors, whose body
  * holds the reason shown in the dialog and the toast.
  */
-import { definePlugin, findByCode, find, findMenuGroup, getStore, Menu, openLayer, React } from "@evi/api";
+import { definePlugin, Dropdown, findByCode, find, findMenuGroup, getStore, Menu, openLayer, React } from "@evi/api";
 import type { CloseLayer, PluginContext } from "@evi/api";
 import type { ReactNode } from "react";
 
@@ -314,15 +314,21 @@ function Dialog({ sound, initialGuildId, onClose }: { sound: Sound; initialGuild
                     />
                     <p id="evi-ss-name-hint" className="evi-ss-hint" data-error={!nameOk || undefined}>{t("dialog.nameHint")}</p>
 
-                    <label className="evi-ss-label" htmlFor="evi-ss-guild">{t("dialog.server")}</label>
+                    <label className="evi-ss-label" id="evi-ss-guild-label" htmlFor="evi-ss-guild">{t("dialog.server")}</label>
                     {guilds.length ? (
-                        <select id="evi-ss-guild" className="evi-ss-input" value={guildId} disabled={busy} onChange={e => setGuildId(e.currentTarget.value)}>
-                            {guilds.map(({ guild, slots }) => (
-                                <option key={guild.id} value={guild.id} disabled={slots.left <= 0}>
-                                    {guild.name} ({slots.left <= 0 ? t("dialog.full") : slots.summary})
-                                </option>
-                            ))}
-                        </select>
+                        <Dropdown
+                            id="evi-ss-guild"
+                            labelledBy="evi-ss-guild-label"
+                            label={t("dialog.server")}
+                            value={guildId}
+                            disabled={busy}
+                            onChange={setGuildId}
+                            options={guilds.map(({ guild, slots }) => ({
+                                value: guild.id,
+                                label: `${guild.name} (${slots.left <= 0 ? t("dialog.full") : slots.summary})`,
+                                disabled: slots.left <= 0,
+                            }))}
+                        />
                     ) : (
                         <p className="evi-ss-hint" data-error>{t("dialog.noPermission")}</p>
                     )}

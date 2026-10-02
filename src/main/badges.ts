@@ -9,7 +9,7 @@
  * Admin actions (the /badge command) need evi-admin.json in the data folder, { "token": "…" }. The
  * token stays in main: the page can only ask for one of a few fixed actions.
  */
-import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, hasAnnouncementsEvent, hasHotfixesEvent, hasNotificationsEvent, hasPullsEvent, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
+import { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesDocument, BadgesResult, hasAnnouncementsEvent, hasHotfixesEvent, hasNotificationsEvent, hasPullsEvent, hasRequiredEvent, isDiscordId, parseBadgeEvents, parseBadges } from "@shared/badges";
 import { imageDataUrl, imageType } from "@shared/images";
 import { IPC } from "@shared/ipc";
 import { isPluginId } from "@shared/store";
@@ -162,6 +162,12 @@ export function onAnnouncementsChanged(listener: () => void) {
     announcementListeners.add(listener);
 }
 const announceAnnouncements = () => announcementListeners.forEach(listener => listener());
+/** Told when the required Evi version changed, and after the stream reconnects (it may have meanwhile) */
+const requiredListeners = new Set<() => void>();
+export function onRequiredChanged(listener: () => void) {
+    requiredListeners.add(listener);
+}
+const announceRequired = () => requiredListeners.forEach(listener => listener());
 /** Everyone reconnects at once after a server restart: spread them out */
 const jitter = (ms: number) => ms / 2 + Math.random() * ms;
 
@@ -196,6 +202,7 @@ async function listen() {
             if (hasHotfixesEvent(chunk)) announceHotfixes();
             if (hasNotificationsEvent(chunk)) announceInbox();
             if (hasAnnouncementsEvent(chunk)) announceAnnouncements();
+            if (hasRequiredEvent(chunk)) announceRequired();
             const etags = parseBadgeEvents(chunk);
             buffer = buffer.slice(end + 2);
             const latest = etags.at(-1);
@@ -232,6 +239,7 @@ async function stream() {
         announcePulls();
         announceHotfixes();
         announceInbox();
+        announceRequired();
     }
 }
 

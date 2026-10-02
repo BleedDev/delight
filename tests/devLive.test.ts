@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { isAdminRoute, parseHealth, parsePeople, parseReports, parseSubmissions } from "../src/shared/devAdmin";
+import { isAdminRoute, parseAdminBadges, parseHealth, parsePeople, parsePersonDetail, parseReports, parseSubmissions } from "../src/shared/devAdmin";
 import { fillDays, parseDevLive } from "../src/shared/devLive";
 
 describe("the developers' numbers", () => {
@@ -31,13 +31,13 @@ describe("the developers' numbers", () => {
 describe("the Developers page's calls to evi.rest", () => {
     test("only the routes it uses, with the methods it uses them with", () => {
         for (const [method, path] of [
-            ["GET", "/admin/stats"], ["GET", "/admin/health"], ["GET", "/admin/people?q=evi%20tester"],
+            ["GET", "/admin/stats"], ["GET", "/admin/health"], ["GET", "/admin/people?page=1&size=25&q=evi%20tester"], ["GET", "/admin/badges"],
             ["GET", "/admin/submissions?status=pending"], ["POST", "/admin/submissions/12/approve"], ["POST", "/admin/theme-submissions/3/reject"],
             ["POST", "/admin/reports/7/dismiss"], ["POST", "/admin/reviews/9/hide"], ["POST", "/admin/announcements"], ["DELETE", "/admin/announcements/4"],
             ["POST", "/admin/plugins/fix-embeds/pull"], ["DELETE", "/admin/plugins/fix-embeds/pull?version=1.0.0"],
         ]) expect(isAdminRoute(method, path)).toBe(true);
         for (const [method, path] of [
-            ["GET", "/admin/badges"], ["PUT", "/admin/supporters/1"], ["DELETE", "/admin/submissions/12"], ["GET", "/admin/submissions?status=pending&x=1"],
+            ["GET", "/admin/people?q=evi"], ["PUT", "/admin/supporters/1"], ["DELETE", "/admin/submissions/12"], ["GET", "/admin/submissions?status=pending&x=1"],
             ["POST", "/admin/submissions/12/approve/../../badges"], ["GET", "/me"], ["GET", "/admin/stats#x"], ["PATCH", "/admin/stats"],
             ["POST", "/admin/plugins/../pull"], [1, "/admin/stats"], ["GET", 5],
         ]) expect(isAdminRoute(method, path)).toBe(false);
@@ -57,11 +57,50 @@ describe("the Developers page's calls to evi.rest", () => {
     test("reports, people and health come through whatever shape is off", () => {
         expect(parseReports({ reports: [{ id: "4", status: "open", plugin: "p", reason: "broken", details: "d", openForPlugin: 2, createdAt: 1, reporter: { id: "1", username: "u" } }, { id: "5", status: "resolved" }] }))
             .toEqual([{ id: 4, plugin: "p", kind: "plugin", version: undefined, reason: "broken", details: "d", reporter: { id: "1", name: "u", username: "u", avatar: undefined }, openForPlugin: 2, createdAt: 1 }]);
-        expect(parsePeople({ people: [{ user: { id: "1", username: "u", globalName: "U" }, lastLogin: 3, badges: ["early-supporter", 4] }, { user: null }] }))
-            .toEqual([{ user: { id: "1", name: "U", username: "u", avatar: undefined }, lastLogin: 3, badges: ["early-supporter"] }]);
+        expect(parsePeople({ total: 7, page: 2, size: 5, people: [{ user: { id: "1", username: "u", globalName: "U" }, lastLogin: 3, installs: 2, admin: true, badges: ["early-supporter", 4], banned: { reason: "Spam", until: 9, by: "5", at: 4 } }, { user: null }] }))
+            .toEqual({
+                total: 7, page: 2, size: 5,
+                people: [{ user: { id: "1", name: "U", username: "u", avatar: undefined }, createdAt: 0, lastLogin: 3, installs: 2, admin: true, badges: ["early-supporter"], banned: { reason: "Spam", until: 9, at: 4, by: { id: "5", name: "5" } } }],
+            });
+        expect(parsePeople(null)).toEqual({ people: [], total: 0, page: 1, size: 25 });
         const health = parseHealth({ plugins: [{ id: "a", name: "A", installsReporting: 10, brokenPatches: 3 }], pulls: { pulled: { b: { versions: "all", reason: "r", removed: true, at: 2 } } } });
         expect(health.plugins[0]).toMatchObject({ id: "a", brokenPatches: 3 });
         expect(health.pulls).toEqual([{ plugin: "b", versions: "all", reason: "r", removed: true, at: 2 }]);
         expect(parseHealth(undefined)).toEqual({ plugins: [], pulls: [] });
+    });
+
+    test("a person's page, the badge list and the People routes", () => {
+        const d = parsePersonDetail({
+            user: { id: "222222222222222222", username: "bob" }, createdAt: 1, lastLogin: 2, logins: 3, installs: 1, admin: false,
+            badges: [{ id: "tester", position: 0, grantedAt: 5 }, { id: 7 }],
+            supporter: { level: "supporter-1", since: 10, days: 40, startedAt: 10, grantedDays: -3, next: { level: "supporter-2", at: 99 } },
+            author: { slug: "bob", name: "Bob", plugins: [{ id: "thing", name: "Thing" }, { nope: 1 }] },
+            banned: { reason: "Spam", until: null, by: { id: "1", username: "alice" }, at: 4 },
+            banLog: [{ action: "ban", reason: "Spam", at: 4 }, { action: "explode", at: 1 }],
+        })!;
+        expect(d.badges).toEqual([{ id: "tester", position: 0, grantedAt: 5 }]);
+        expect(d.supporter).toMatchObject({ level: "supporter-1", grantedDays: -3, next: { level: "supporter-2", at: 99 } });
+        expect(d.author!.plugins).toEqual([{ id: "thing", name: "Thing" }]);
+        expect(d.banned).toEqual({ reason: "Spam", until: undefined, at: 4, by: { id: "1", name: "alice", username: "alice", avatar: undefined } });
+        expect(d.banLog.map(l => l.action)).toEqual(["ban"]);
+        expect(parsePersonDetail({ user: null })).toBeUndefined();
+
+        const badges = parseAdminBadges({ badges: [{ id: "a", name: "A", icon: "https://evi.rest/badges/a.png", holders: 2, supporter: true }, { id: "b", icon: "javascript:alert(1)" }, { name: "no id" }] });
+        expect(badges).toEqual([
+            { id: "a", name: "A", description: "", icon: "https://evi.rest/badges/a.png", holders: 2, supporter: true, automatic: false },
+            { id: "b", name: "b", description: "", icon: "", holders: 0, supporter: false, automatic: false },
+        ]);
+
+        const user = "222222222222222222";
+        expect(isAdminRoute("GET", "/admin/people?page=2&size=25&q=bob")).toBe(true);
+        expect(isAdminRoute("GET", "/admin/people?q=bob")).toBe(false);
+        expect(isAdminRoute("GET", `/admin/users/${user}`)).toBe(true);
+        expect(isAdminRoute("PUT", `/admin/users/${user}/ban`)).toBe(true);
+        expect(isAdminRoute("DELETE", `/admin/users/${user}/ban`)).toBe(true);
+        expect(isAdminRoute("PUT", `/admin/users/${user}/badges/early-supporter`)).toBe(true);
+        expect(isAdminRoute("PUT", "/admin/badges/tester/icon")).toBe(true);
+        expect(isAdminRoute("POST", `/admin/supporters/${user}/time`)).toBe(true);
+        expect(isAdminRoute("PUT", "/admin/users/x/ban")).toBe(false);
+        expect(isAdminRoute("PUT", `/admin/users/${user}/badges/../../x`)).toBe(false);
     });
 });

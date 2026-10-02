@@ -30,7 +30,8 @@ const COLORS = ["#f23f43", "#f0b232", "#23a55a", "#5865f2", "#ffffff", "#000000"
 const TOOLS: Tool[] = ["crop", "blur", "box", "arrow", "pen"];
 
 const ICONS: Record<Tool | "markup" | "undo" | "redo", string> = {
-    markup: "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83ZM14 19h7v2h-7z",
+    // A scribble, so it isn't mistaken for Discord's own edit pencil next to it
+    markup: "M4.59 6.89c.7-.71 1.4-1.35 1.71-1.22.5.2 0 1.03-.3 1.52-.25.42-2.86 3.89-2.86 6.31 0 1.28.48 2.34 1.34 2.98.75.56 1.74.73 2.64.46 1.07-.31 1.95-1.4 3.06-2.77 1.21-1.49 2.83-3.44 4.08-3.44 1.63 0 1.65 1.01 1.76 1.79-3.78.64-5.38 3.67-5.38 5.37 0 1.7 1.44 3.09 3.21 3.09 1.63 0 4.29-1.33 4.69-6.1H21v-2.5h-2.47c-.15-1.65-1.09-4.2-4.03-4.2-2.25 0-4.18 1.91-4.94 2.84-.58.73-2.06 2.48-2.29 2.72-.25.3-.68.84-1.11.84-.45 0-.72-.83-.36-1.92.35-1.09 1.4-2.86 1.85-3.52.78-1.14 1.3-1.92 1.3-3.28C8.95 3.69 7.31 3 6.44 3 5.12 3 3.97 4 3.72 4.25c-.36.36-.66.66-.88.93l1.75 1.71Zm9.29 11.66c-.31 0-.74-.26-.74-.72 0-.6.73-2.2 2.87-2.76-.3 2.69-1.43 3.48-2.13 3.48Z",
     crop: "M7 1v4H3v2h4v10a2 2 0 0 0 2 2h10v4h2v-4h4v-2H9V1H7Zm10 14V9a2 2 0 0 0-2-2h-4v2h4v6h2Z",
     blur: "M3 3h4v4H3zm6 0h4v4H9zm6 0h4v4h-4zM3 9h4v4H3zm6 0h4v4H9zm6 0h4v4h-4zM3 15h4v4H3zm6 0h4v4H9zm6 0h4v4h-4z",
     box: "M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm2 0v14h14V5H5Z",
@@ -300,7 +301,7 @@ export default definePlugin({
                 e?.stopPropagation?.();
                 openEditor(props);
             }}>
-                <Glyph name="markup" size={16} />
+                <Glyph name="markup" size={20} />
             </Action>
         );
     },
@@ -322,7 +323,7 @@ export default definePlugin({
 .evi-qm-modal {
     display: flex;
     flex-direction: column;
-    max-inline-size: min(1100px, 100%);
+    max-inline-size: min(920px, 100%);
     max-block-size: 100%;
     border-radius: 12px;
     background: var(--modal-background, var(--background-base-low, #2b2d31));
@@ -370,7 +371,7 @@ export default definePlugin({
 }
 /* The canvas keeps its picture's shape: as big as fits, never bigger than the picture */
 .evi-qm-canvas-wrap { position: relative; display: inline-block; line-height: 0; overflow: hidden; border-radius: 4px; }
-.evi-qm-canvas { display: block; max-inline-size: min(1060px, calc(100vw - 100px)); max-block-size: calc(100vh - 220px); touch-action: none; }
+.evi-qm-canvas { display: block; max-inline-size: min(880px, 70vw); max-block-size: 60vh; touch-action: none; }
 .evi-qm-canvas[data-tool] { cursor: crosshair; }
 .evi-qm-crop {
     position: absolute;

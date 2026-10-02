@@ -212,6 +212,17 @@ function CodeTools({ node }: { node: CodeNode; }) {
         setCodeLook(old => old && JSON.stringify(old.style) === JSON.stringify(style) && old.className === code.className ? old : { style, className: code.className });
     }, [lineNumbers, prettyText]);
 
+    // The code block's container gets classes of ours instead of CSS finding it with div:has(...):
+    // a :has() rule on every div made each change anywhere in Discord restyle the whole page
+    React.useLayoutEffect(() => {
+        const host = barRef.current?.parentElement;
+        if (!host) return;
+        host.classList.add("dl-cbt-host");
+        host.classList.toggle("dl-cbt-has-gutter", !!lineNumbers);
+        host.classList.toggle("dl-cbt-has-pretty", !!prettyText);
+        return () => host.classList.remove("dl-cbt-host", "dl-cbt-has-gutter", "dl-cbt-has-pretty");
+    }, [lineNumbers, prettyText]);
+
     const lang = prettyText ? "json" : node.lang;
     return (
         <>
@@ -307,9 +318,9 @@ function FileCard({ card, url, fileName }: { card: React.ReactElement<any>; url:
 // ---- Styles --------------------------------------------------------------------------------------
 
 const css = `
-/* The code block's container: ours are its first children */
-div:has(> .dl-cbt-bar) { position: relative; }
-div:has(> .dl-cbt-bar) > [class*="codeActions_"] { display: none; }
+/* The code block's container, marked by our component (see CodeTools) */
+.dl-cbt-host { position: relative; }
+.dl-cbt-host > [class*="codeActions_"] { display: none; }
 .dl-cbt-bar {
     position: absolute;
     top: 4px;
@@ -324,7 +335,7 @@ div:has(> .dl-cbt-bar) > [class*="codeActions_"] { display: none; }
     opacity: 0;
     transition: opacity 0.12s ease;
 }
-div:has(> .dl-cbt-bar):hover > .dl-cbt-bar,
+.dl-cbt-host:hover > .dl-cbt-bar,
 .dl-cbt-pane:hover > .dl-cbt-bar,
 .dl-cbt-bar:focus-within { opacity: 1; }
 .dl-cbt-btn {
@@ -346,9 +357,9 @@ div:has(> .dl-cbt-bar):hover > .dl-cbt-bar,
 .dl-cbt-footer-btn[aria-pressed="true"] { color: var(--interactive-active, #fff); }
 
 /* Line numbers beside a code block: a column of their own, styled like Discord's code (copied in) */
-div:has(> .dl-cbt-gutter) { display: grid; grid-template-columns: auto minmax(0, 1fr); }
-div:has(> .dl-cbt-gutter) > :not(.dl-cbt-bar, .dl-cbt-gutter) { grid-column: 2; grid-row: 1; min-width: 0; }
-div:has(> .dl-cbt-gutter) code {
+.dl-cbt-has-gutter { display: grid; grid-template-columns: auto minmax(0, 1fr); }
+.dl-cbt-has-gutter > :not(.dl-cbt-bar, .dl-cbt-gutter) { grid-column: 2; grid-row: 1; min-width: 0; }
+.dl-cbt-has-gutter code {
     white-space: pre !important;
     overflow-x: auto;
     border-top-left-radius: 0 !important;
@@ -368,7 +379,7 @@ div:has(> .dl-cbt-gutter) code {
     font-variant-numeric: tabular-nums;
 }
 /* Pretty printed: ours shows instead of Discord's */
-div:has(> .dl-cbt-pretty) > :not(.dl-cbt-bar, .dl-cbt-gutter, .dl-cbt-pretty) { display: none; }
+.dl-cbt-has-pretty > :not(.dl-cbt-bar, .dl-cbt-gutter, .dl-cbt-pretty) { display: none; }
 .dl-cbt-pretty { display: block; white-space: pre; overflow-x: auto; }
 
 /* Line numbers beside a text file preview, from a CSS string the <pre> carries */

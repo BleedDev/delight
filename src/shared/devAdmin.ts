@@ -10,11 +10,25 @@ export type AdminMethod = "GET" | "POST" | "PUT" | "DELETE";
 const ID = "\\d{1,15}";
 const PLUGIN = "[a-z0-9][a-z0-9-]{0,63}";
 const STATUS = "(?:\\?status=[a-z]{1,16})?";
+const USER = "\\d{17,20}";
+/** Badge ids are like plugin ids (badges.ts checks them the same way) */
+const BADGE = PLUGIN;
 
 /** Paths relative to /v1, query included */
 const ROUTES: [AdminMethod, RegExp][] = [
     ["GET", /^\/admin\/(?:stats|pulls|hotfixes|announcements|collections|health)$/],
-    ["GET", /^\/admin\/people(?:\?q=[^&#]{0,200})?$/],
+    ["GET", /^\/admin\/people\?page=\d{1,6}&size=\d{1,3}(?:&q=[^&#]{0,200})?$/],
+    ["GET", /^\/admin\/badges$/],
+    ["GET", new RegExp(`^/admin/users/${USER}$`)],
+    ["PUT", new RegExp(`^/admin/users/${USER}/ban$`)],
+    ["DELETE", new RegExp(`^/admin/users/${USER}/ban$`)],
+    ["PUT", new RegExp(`^/admin/users/${USER}/badges/${BADGE}$`)],
+    ["DELETE", new RegExp(`^/admin/users/${USER}/badges/${BADGE}$`)],
+    ["PUT", new RegExp(`^/admin/badges/${BADGE}(?:/icon)?$`)],
+    ["DELETE", new RegExp(`^/admin/badges/${BADGE}$`)],
+    ["PUT", new RegExp(`^/admin/supporters/${USER}$`)],
+    ["DELETE", new RegExp(`^/admin/supporters/${USER}$`)],
+    ["POST", new RegExp(`^/admin/supporters/${USER}/time$`)],
     ["GET", new RegExp(`^/admin/(?:submissions|theme-submissions|reports|reviews)${STATUS}$`)],
     ["GET", new RegExp(`^/admin/theme-submissions/${ID}/preview$`)],
     ["POST", new RegExp(`^/admin/(?:submissions|theme-submissions)/${ID}/(?:approve|reject)$`)],
@@ -25,6 +39,9 @@ const ROUTES: [AdminMethod, RegExp][] = [
     ["POST", new RegExp(`^/admin/plugins/${PLUGIN}/pull$`)],
     ["DELETE", new RegExp(`^/admin/plugins/${PLUGIN}/pull(?:\\?version=[\\w.+-]{1,32})?$`)],
     ["DELETE", new RegExp(`^/admin/hotfixes/${ID}$`)],
+    ["GET", /^\/admin\/required-version$/],
+    ["PUT", /^\/admin\/required-version$/],
+    ["DELETE", /^\/admin\/required-version$/],
 ];
 
 export function isAdminRoute(method: unknown, path: unknown): method is AdminMethod {
@@ -174,17 +191,143 @@ export function parseReviews(raw: unknown): ReportedReview[] {
     }));
 }
 
-export interface Person {
-    user: AdminUser;
-    lastLogin: number;
-    badges: string[];
+/** A ban on an evi.rest account (server/src/bans.ts); `until` undefined is for good */
+export interface Ban {
+    reason: string;
+    until?: number;
+    at: number;
+    by?: AdminUser;
 }
 
-export function parsePeople(raw: unknown): Person[] {
-    return list(raw, "people").flatMap(r => {
-        const u = user(r.user);
-        return u ? [{ user: u, lastLogin: n(r.lastLogin), badges: strings(r.badges, 30) }] : [];
-    });
+function ban(raw: any): Ban | undefined {
+    if (!raw || typeof raw !== "object") return;
+    return {
+        reason: s(raw.reason, 500),
+        until: typeof raw.until === "number" ? raw.until : undefined,
+        at: n(raw.at),
+        by: typeof raw.by === "string" ? { id: raw.by.slice(0, 32), name: raw.by.slice(0, 32) } : user(raw.by),
+    };
+}
+
+export interface Person {
+    user: AdminUser;
+    createdAt: number;
+    lastLogin: number;
+    /** Evis linked to the account */
+    installs: number;
+    /** Badge ids in the order they arranged them, their supporter level among them */
+    badges: string[];
+    admin: boolean;
+    banned?: Ban;
+}
+
+export interface PeoplePage {
+    people: Person[];
+    total: number;
+    page: number;
+    size: number;
+}
+
+export function parsePeople(raw: unknown): PeoplePage {
+    const r = raw as Record<string, unknown> | null;
+    return {
+        people: list(raw, "people").flatMap(p => {
+            const u = user(p.user);
+            return u ? [{
+                user: u,
+                createdAt: n(p.createdAt),
+                lastLogin: n(p.lastLogin),
+                installs: n(p.installs),
+                badges: strings(p.badges, 30),
+                admin: p.admin === true,
+                banned: ban(p.banned),
+            }] : [];
+        }),
+        total: n(r?.total),
+        page: Math.max(1, n(r?.page)),
+        size: Math.max(1, n(r?.size) || 25),
+    };
+}
+
+/** A badge evi.rest can give (GET /admin/badges) */
+export interface AdminBadge {
+    id: string;
+    name: string;
+    description: string;
+    /** Empty until an icon is uploaded: then it doesn't show to anyone */
+    icon: string;
+    holders: number;
+    /** A supporter level: held by supporter time, not given by hand */
+    supporter: boolean;
+    /** Given by evi.rest itself (Plugin Author) */
+    automatic: boolean;
+}
+
+/** Badge icons come from evi.rest itself, over https (a local test server is plain http), or inline as an image */
+const iconUrl = (v: unknown) => typeof v === "string" && (/^https:\/\//.test(v) || /^http:\/\/(?:localhost|127\.0\.0\.1)[:/]/.test(v) || /^data:image\/(?:png|gif|webp|jpeg|svg\+xml)[;,]/.test(v))
+    ? v.slice(0, 20_000)
+    : "";
+
+export function parseAdminBadges(raw: unknown): AdminBadge[] {
+    return list(raw, "badges").filter(b => typeof b.id === "string").map(b => ({
+        id: s(b.id, 64),
+        name: s(b.name, 100) || s(b.id, 64),
+        description: s(b.description, 300),
+        icon: iconUrl(b.icon),
+        holders: n(b.holders),
+        supporter: b.supporter === true,
+        automatic: b.automatic === true,
+    }));
+}
+
+export interface PersonDetail {
+    user: AdminUser;
+    createdAt: number;
+    lastLogin: number;
+    logins: number;
+    installs: number;
+    admin: boolean;
+    /** Badges given by hand (or by evi.rest), in their order; supporter levels are in `supporter` */
+    badges: { id: string; position: number; grantedAt: number; }[];
+    supporter?: { level: string; since: number; days: number; startedAt: number; grantedDays: number; next?: { level: string; at: number; }; };
+    author?: { slug: string; name: string; plugins: { id: string; name: string; }[]; };
+    banned?: Ban;
+    banLog: (Ban & { action: "ban" | "unban"; })[];
+}
+
+export function parsePersonDetail(raw: unknown): PersonDetail | undefined {
+    const r = raw as Record<string, any> | null;
+    const u = user(r?.user);
+    if (!r || !u) return;
+    const sup = r.supporter && typeof r.supporter === "object" ? r.supporter : undefined;
+    const auth = r.author && typeof r.author === "object" && typeof r.author.slug === "string" ? r.author : undefined;
+    return {
+        user: u,
+        createdAt: n(r.createdAt),
+        lastLogin: n(r.lastLogin),
+        logins: n(r.logins),
+        installs: n(r.installs),
+        admin: r.admin === true,
+        badges: list(r, "badges").filter(b => typeof b.id === "string").slice(0, 50).map(b => ({ id: s(b.id, 64), position: n(b.position), grantedAt: n(b.grantedAt) })),
+        supporter: sup ? {
+            level: s(sup.level, 64),
+            since: n(sup.since),
+            days: n(sup.days),
+            startedAt: n(sup.startedAt),
+            grantedDays: typeof sup.grantedDays === "number" && Number.isFinite(sup.grantedDays) ? sup.grantedDays : 0,
+            next: sup.next && typeof sup.next.level === "string" ? { level: s(sup.next.level, 64), at: n(sup.next.at) } : undefined,
+        } : undefined,
+        author: auth ? {
+            slug: s(auth.slug, 64),
+            name: s(auth.name, 100) || s(auth.slug, 64),
+            plugins: (Array.isArray(auth.plugins) ? auth.plugins : []).filter((p: any) => typeof p?.id === "string").slice(0, 100).map((p: any) => ({ id: s(p.id, 64), name: s(p.name, 100) || s(p.id, 64) })),
+        } : undefined,
+        banned: ban(r.banned),
+        banLog: list(r, "banLog").slice(0, 50).flatMap(l => {
+            const b = ban(l);
+            return b && (l.action === "ban" || l.action === "unban") ? [{ ...b, action: l.action as "ban" | "unban" }] : [];
+        }),
+    };
 }
 
 export interface SentAnnouncement {

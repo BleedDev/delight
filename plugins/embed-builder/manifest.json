@@ -10,6 +10,7 @@
         "servers",
         "utility"
     ],
+    "minEviVersion": "2.0.0",
     "permissions": {
         "network": [
             "discord.com"

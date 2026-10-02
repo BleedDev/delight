@@ -394,6 +394,21 @@ function ClearPanel() {
 
 Available: `Switch`, `TextField`, `TextArea`, `Select`, `Slider`, `Button`, `Tooltip`. Each can be undefined after a Discord update, so check first and render a fallback.
 
+For a dropdown, use Evi's own `Dropdown` (Evi 2.0.0 and newer) rather than a `<select>`, whose list is the system's own, with its scrollbar. It looks and moves like Discord's, its list is never cut off by a dialog, it has no scrollbar, works from the keyboard, and gets a filter box once there are more than 12 options:
+
+```tsx
+import { Dropdown } from "@evi/api";
+
+<Dropdown
+    label="Server"                 // names it for screen readers
+    value={guildId}
+    onChange={setGuildId}
+    options={guilds.map(g => ({ value: g.id, label: g.name, disabled: g.full }))}
+/>
+```
+
+Optional: `id`, `labelledBy` (the id of a visible label), `disabled`, `className` (added to the button, to size it). Set `"minEviVersion": "2.0.0"`, or check `Dropdown` exists and fall back to a `<select>` on older Evi.
+
 Put injected UI into Discord's tree through a source patch that calls a `$self` render function (see Silent Typing's chat bar button), or through an `after` hook on a component export that edits `result`. `findInTree(tree, predicate)` searches a React element tree.
 
 ### CSS

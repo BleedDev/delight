@@ -40,6 +40,7 @@ import { startPluginChangelogs } from "./ui/PluginChangelog";
 import { showCrashDetective } from "./ui/CrashDetective";
 import { startLiveToasts } from "./ui/LiveToasts";
 import { startAnnouncements } from "./ui/Announcements";
+import { startRequiredUpdates } from "./ui/RequiredUpdate";
 import { showSafeModeNotice } from "./ui/SafeModeNotice";
 import { installSettingsEntry } from "./ui/settingsEntry";
 import { showTour2 } from "./ui/Tour2";
@@ -128,6 +129,8 @@ function boot() {
         if (!SafeMode.active) startPluginShare();
         // Even in safe mode: a new version may be the fix
         startUpdateChecks();
+        // Evi's team requiring a version: downloads it now and restarts once nobody's in a call
+        whenAppReady(startRequiredUpdates);
         if (SafeMode.active) {
             showSafeModeNotice();
         } else {

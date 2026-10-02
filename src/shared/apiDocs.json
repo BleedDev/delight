@@ -539,8 +539,20 @@
     {
         "name": "Components",
         "kind": "const",
-        "signature": "const Components: { Switch, TextField, TextArea, Select, Slider, Button, Tooltip }",
+        "signature": "const Components: { Switch, TextField, TextArea, Select, Slider, Button, Tooltip, Dropdown }",
         "doc": "Discord's own form controls for plugin settings panels (Switch, TextField, TextArea, Select, Slider, Button). Each is undefined if Discord renamed it, so check before rendering."
+    },
+    {
+        "name": "DropdownProps",
+        "kind": "interface",
+        "signature": "interface DropdownProps<V extends string> {\n    label: string;\n    options: readonly { label: string; value: V; disabled?: boolean; }[];\n    value: V;\n    onChange(value: V): void;\n    id?: string;\n    labelledBy?: string;\n    disabled?: boolean;\n    className?: string;\n}",
+        "doc": ""
+    },
+    {
+        "name": "Dropdown",
+        "kind": "function",
+        "signature": "Dropdown<V extends string>({ id, ...props }: DropdownProps<V>)",
+        "doc": "Evi's dropdown, the one in Evi's own settings: Discord's look and motion, a list that's never cut off by a dialog, no scrollbar, keyboard and screen reader support, and a filter box once there are more than 12 options. Use it instead of a <select>, whose list is the system's own. Evi 2.0.0 and newer; check it's there (`Components.Dropdown`) if your plugin supports older Evi."
     },
     {
         "name": "getWreq",

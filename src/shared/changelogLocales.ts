@@ -11,6 +11,22 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "2.0.0": {
+            added: [
+                "**Zwölf neue Plugins.** Desktop Voice Messages, Embed Builder mit Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools und Hover Converter. Alle im Store, alle aus, bis du sie einschaltest.",
+                "**Eine Tour durch das Neue.** Beim ersten Start zeigt dir 2.0 die neuen Plugins und schaltet die ein, die du auswählst.",
+                "**Veröffentliche eigene Plugins.** Ein Button auf der Plugins-Seite öffnet dein Autoren-Dashboard: Installationen, aktive Nutzer, Bewertungen, Rezensionen und wie jeder Discord-Build mit deinen Plugins zurechtkommt.",
+            ],
+            improved: [
+                "**Menüs sehen aus wie in Discord.** Jedes Dropdown in Evi und seinen Plugins öffnet sich wie bei Discord, ohne Scrollleiste und mit Filter für lange Listen.",
+                "**Zurück, wo du warst.** Wenn du im Store von einem Plugin zurückgehst, landest du auf derselben Seite, mit denselben Filtern und an derselben Stelle.",
+                "**Wichtige Updates kommen schneller an.** Wenn ein Update nötig ist, lädt Evi es sofort herunter und startet Discord neu, wenn du nicht in einem Anruf bist.",
+            ],
+            fixed: [
+                "**Plugins gelten nicht mehr grundlos als kaputt.** Ein Plugin, das auf einen noch nicht geöffneten Teil von Discord wartete, wurde als kaputt gemeldet.",
+                "**Dialoge öffnen sich oben.** Manche öffneten sich in Discords Einstellungen bis zur Hälfte heruntergescrollt.",
+            ],
+        },
         "1.5.0": {
             added: [
                 "**Neuigkeiten von Evis Team, live.** Ankündigungen erscheinen Sekunden nach dem Senden oben auf deinem Bildschirm und bleiben, bis du sie schließt.",
@@ -293,6 +309,22 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "2.0.0": {
+            added: [
+                "**Doce plugins nuevos.** Desktop Voice Messages, Embed Builder con Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools y Hover Converter. Todos en la tienda, todos desactivados hasta que los actives.",
+                "**Un recorrido por las novedades.** La primera vez que se inicia 2.0, te muestra los plugins nuevos y activa los que elijas.",
+                "**Publica tus propios plugins.** Un botón en la página de Plugins abre tu panel de autor: instalaciones, usuarios activos, valoraciones, reseñas y cómo trata cada build de Discord a tus plugins.",
+            ],
+            improved: [
+                "**Los menús se ven como los de Discord.** Cada desplegable de Evi y sus plugins se abre como en Discord, sin barra de desplazamiento y con filtro para listas largas.",
+                "**De vuelta a donde estabas.** Al volver desde un plugin en la tienda, regresas a la misma página, filtros y posición.",
+                "**Las actualizaciones importantes llegan antes.** Cuando hace falta una actualización, Evi la descarga al momento y reinicia Discord cuando no estás en una llamada.",
+            ],
+            fixed: [
+                "**Los plugins ya no aparecen como rotos sin motivo.** Un plugin que esperaba una parte de Discord que aún no se había abierto se marcaba como roto.",
+                "**Los diálogos se abren arriba.** Algunos se abrían desplazados hasta la mitad dentro de los ajustes de Discord.",
+            ],
+        },
         "1.5.0": {
             added: [
                 "**Noticias del equipo de Evi, en directo.** Los anuncios aparecen arriba en tu pantalla segundos después de enviarse y se quedan hasta que los cierras.",
@@ -575,6 +607,22 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "2.0.0": {
+            added: [
+                "**Douze nouveaux plugins.** Desktop Voice Messages, Embed Builder avec Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools et Hover Converter. Tous dans la boutique, tous désactivés tant que tu ne les actives pas.",
+                "**Une visite des nouveautés.** Au premier démarrage, 2.0 te présente les nouveaux plugins et active ceux que tu choisis.",
+                "**Publie tes propres plugins.** Un bouton sur la page Plugins ouvre ton tableau de bord d'auteur : installations, utilisateurs actifs, notes, avis et comportement de chaque build de Discord avec tes plugins.",
+            ],
+            improved: [
+                "**Les menus ressemblent à ceux de Discord.** Chaque menu déroulant d'Evi et de ses plugins s'ouvre comme dans Discord, sans barre de défilement et avec un filtre pour les longues listes.",
+                "**Retour là où tu étais.** En revenant d'un plugin dans la boutique, tu retrouves la même page, les mêmes filtres et le même défilement.",
+                "**Les mises à jour importantes arrivent plus vite.** Quand une mise à jour est nécessaire, Evi la télécharge tout de suite et redémarre Discord quand tu n'es pas en appel.",
+            ],
+            fixed: [
+                "**Les plugins ne sont plus dits cassés sans raison.** Un plugin qui attendait une partie de Discord pas encore ouverte était signalé comme cassé.",
+                "**Les fenêtres s'ouvrent en haut.** Certaines s'ouvraient défilées à mi-hauteur dans les paramètres de Discord.",
+            ],
+        },
         "1.5.0": {
             added: [
                 "**Les nouvelles de l'équipe d'Evi, en direct.** Les annonces apparaissent en haut de ton écran quelques secondes après leur envoi et restent jusqu'à ce que tu les fermes.",
@@ -857,6 +905,22 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "2.0.0": {
+            added: [
+                "**12個の新しいプラグイン。** Desktop Voice Messages、Components V2対応のEmbed Builder、Audit Log Plus、Role Colours Everywhere、Rich Presence Builder、Search Highlight、Click Actions、Soundboard Stealer、Quick Markup、Fix Embeds、Code Block Tools、Hover Converter。すべてストアにあり、オンにするまで無効のままです。",
+                "**新機能のツアー。** 2.0を初めて起動すると新しいプラグインを紹介し、選んだものをオンにします。",
+                "**自分のプラグインを公開。** プラグインページのボタンから作者ダッシュボードが開きます。インストール数、アクティブユーザー、評価、レビュー、そしてDiscordの各ビルドでのプラグインの動作がわかります。",
+            ],
+            improved: [
+                "**メニューがDiscordと同じ見た目に。** Eviとプラグインのドロップダウンはすべて、スクロールバーなしでDiscordのように開き、長いリストには絞り込みが付きます。",
+                "**元の場所に戻れます。** ストアでプラグインから戻ると、同じページ、同じ絞り込み、同じスクロール位置に戻ります。",
+                "**必要なアップデートがすぐ届きます。** アップデートが必要なとき、Eviはすぐにダウンロードし、通話中でないときにDiscordを再起動します。",
+            ],
+            fixed: [
+                "**プラグインが理由なく壊れていると表示されなくなりました。** Discordのまだ開かれていない部分を待っているプラグインが、壊れていると報告されていました。",
+                "**ダイアログが上から開きます。** Discordの設定内で、途中までスクロールされた状態で開くものがありました。",
+            ],
+        },
         "1.5.0": {
             added: [
                 "**Evi チームからのお知らせをリアルタイムで。** お知らせは送信から数秒で画面上部に表示され、閉じるまで残ります。",
@@ -1139,6 +1203,22 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "2.0.0": {
+            added: [
+                "**Dwanaście nowych pluginów.** Desktop Voice Messages, Embed Builder z Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools i Hover Converter. Wszystkie w sklepie, wszystkie wyłączone, dopóki ich nie włączysz.",
+                "**Przewodnik po nowościach.** Przy pierwszym uruchomieniu 2.0 pokazuje nowe pluginy i włącza te, które wybierzesz.",
+                "**Publikuj własne pluginy.** Przycisk na stronie Pluginów otwiera twój panel autora: instalacje, aktywni użytkownicy, oceny, recenzje i to, jak każdy build Discorda radzi sobie z twoimi pluginami.",
+            ],
+            improved: [
+                "**Menu wyglądają jak w Discordzie.** Każda lista rozwijana w Evi i jego pluginach otwiera się jak w Discordzie, bez paska przewijania i z filtrem dla długich list.",
+                "**Powrót tam, gdzie byłeś.** Wracając z pluginu w sklepie, trafiasz na tę samą stronę, z tymi samymi filtrami i w tym samym miejscu.",
+                "**Ważne aktualizacje docierają szybciej.** Gdy aktualizacja jest potrzebna, Evi od razu ją pobiera i restartuje Discorda, gdy nie jesteś w rozmowie.",
+            ],
+            fixed: [
+                "**Pluginy nie są już bez powodu oznaczane jako zepsute.** Plugin czekający na część Discorda, która jeszcze się nie otworzyła, był zgłaszany jako zepsuty.",
+                "**Okna dialogowe otwierają się od góry.** Niektóre otwierały się przewinięte do połowy w ustawieniach Discorda.",
+            ],
+        },
         "1.5.0": {
             added: [
                 "**Wiadomości od zespołu Evi, na żywo.** Ogłoszenia pojawiają się u góry ekranu kilka sekund po wysłaniu i zostają, dopóki ich nie zamkniesz.",
@@ -1421,6 +1501,22 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "2.0.0": {
+            added: [
+                "**Doze plugins novos.** Desktop Voice Messages, Embed Builder com Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools e Hover Converter. Todos na loja, todos desativados até você ativá-los.",
+                "**Um tour pelas novidades.** Na primeira vez que o 2.0 inicia, ele mostra os plugins novos e ativa os que você escolher.",
+                "**Publique seus próprios plugins.** Um botão na página de Plugins abre seu painel de autor: instalações, usuários ativos, avaliações, resenhas e como cada build do Discord lida com seus plugins.",
+            ],
+            improved: [
+                "**Os menus parecem os do Discord.** Todo menu suspenso do Evi e dos plugins abre como no Discord, sem barra de rolagem e com filtro para listas longas.",
+                "**De volta para onde você estava.** Ao voltar de um plugin na loja, você retorna à mesma página, filtros e rolagem.",
+                "**Atualizações importantes chegam antes.** Quando uma atualização é necessária, o Evi baixa na hora e reinicia o Discord quando você não está em uma chamada.",
+            ],
+            fixed: [
+                "**Plugins não são mais chamados de quebrados sem motivo.** Um plugin que esperava uma parte do Discord que ainda não tinha aberto era reportado como quebrado.",
+                "**Diálogos abrem no topo.** Alguns abriam rolados até a metade dentro das configurações do Discord.",
+            ],
+        },
         "1.5.0": {
             added: [
                 "**Novidades da equipe do Evi, ao vivo.** Os anúncios aparecem no topo da sua tela segundos depois de enviados e ficam até você fechá-los.",
@@ -1703,6 +1799,22 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "2.0.0": {
+            added: [
+                "**Двенадцать новых плагинов.** Desktop Voice Messages, Embed Builder с Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools и Hover Converter. Все в магазине и выключены, пока вы их не включите.",
+                "**Знакомство с новинками.** При первом запуске 2.0 показывает новые плагины и включает те, что вы выберете.",
+                "**Публикуйте свои плагины.** Кнопка на странице плагинов открывает панель автора: установки, активные пользователи, оценки, отзывы и то, как каждая сборка Discord работает с вашими плагинами.",
+            ],
+            improved: [
+                "**Меню выглядят как в Discord.** Каждый выпадающий список в Evi и его плагинах открывается как в Discord, без полосы прокрутки и с фильтром для длинных списков.",
+                "**Туда, где вы были.** При возврате из плагина в магазине вы попадаете на ту же страницу, с теми же фильтрами и прокруткой.",
+                "**Важные обновления приходят быстрее.** Когда обновление необходимо, Evi сразу его скачивает и перезапускает Discord, когда вы не в звонке.",
+            ],
+            fixed: [
+                "**Плагины больше не считаются сломанными без причины.** Плагин, ждавший ещё не открытую часть Discord, отмечался как сломанный.",
+                "**Диалоги открываются сверху.** Некоторые открывались прокрученными до середины в настройках Discord.",
+            ],
+        },
         "1.5.0": {
             added: [
                 "**Новости от команды Evi в реальном времени.** Объявления появляются вверху экрана через несколько секунд после отправки и остаются, пока вы их не закроете.",
@@ -1985,6 +2097,22 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "2.0.0": {
+            added: [
+                "**On iki yeni eklenti.** Desktop Voice Messages, Components V2 destekli Embed Builder, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools ve Hover Converter. Hepsi mağazada, sen açana kadar hepsi kapalı.",
+                "**Yeniliklerde bir tur.** 2.0 ilk açıldığında yeni eklentileri gösterir ve seçtiklerini açar.",
+                "**Kendi eklentilerini yayınla.** Eklentiler sayfasındaki bir düğme yazar panelini açar: kurulumlar, aktif kullanıcılar, puanlar, yorumlar ve her Discord sürümünün eklentilerinle nasıl çalıştığı.",
+            ],
+            improved: [
+                "**Menüler Discord'unkiler gibi görünüyor.** Evi'deki ve eklentilerindeki her açılır menü Discord gibi açılır; kaydırma çubuğu yok, uzun listelerde filtre var.",
+                "**Kaldığın yere dön.** Mağazada bir eklentiden geri döndüğünde aynı sayfaya, aynı filtrelere ve aynı kaydırma konumuna dönersin.",
+                "**Önemli güncellemeler daha hızlı gelir.** Bir güncelleme gerektiğinde Evi onu hemen indirir ve sen bir aramada değilken Discord'u yeniden başlatır.",
+            ],
+            fixed: [
+                "**Eklentiler artık sebepsiz yere bozuk sayılmıyor.** Discord'un henüz açılmamış bir bölümünü bekleyen bir eklenti bozuk olarak bildiriliyordu.",
+                "**Pencereler en üstten açılıyor.** Bazıları Discord'un ayarlarında yarıya kadar kaydırılmış açılıyordu.",
+            ],
+        },
         "1.5.0": {
             added: [
                 "**Evi ekibinden haberler, canlı.** Duyurular gönderildikten saniyeler sonra ekranının üstünde görünür ve sen kapatana kadar kalır.",

@@ -11,6 +11,7 @@ import { EmptyState, Icon, Section, Text, Tooltip } from "../components";
 import { showTab } from "../nav";
 import { LoadError } from "./common";
 import { dayLabel, format, Live, useLive } from "./data";
+import { RequireUpdate } from "./RequireUpdate";
 
 /** A big number with a short label; what it counts is in its tooltip */
 function Stat({ label, value, hint, live }: { label: string; value: number; hint: string; live?: boolean; }) {
@@ -164,6 +165,8 @@ export function OverviewTab() {
             <Section title={t("dev.versions")} id="dl-dev-versions">
                 <Versions versions={live.now.versions} />
             </Section>
+
+            <RequireUpdate live={live} />
 
             <Section title={t("dev.topPlugins")} description={t("dev.topPluginsHint")} id="dl-dev-plugins">
                 <TopPlugins plugins={live.topPlugins} />

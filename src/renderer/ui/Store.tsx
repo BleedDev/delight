@@ -19,7 +19,7 @@ import { PluginManager } from "../plugins/manager";
 import { Settings } from "../settings";
 import { Store, StoreKind, StoreOp, UpdateAllResult } from "../store";
 import { React } from "../webpack/common";
-import { Badge, Button, Collapse, Dialog, Dropdown, EmptyState, FilterChips, Icon, IconButton, List, Notice, Pagination, scrollToTop, SearchField, Status, SwitchRow, Text, Tooltip, usePages, useStore } from "./components";
+import { Badge, Button, Collapse, Dialog, Dropdown, EmptyState, FilterChips, Icon, IconButton, List, Notice, Pagination, scrollToTop, SearchField, Status, SwitchRow, Text, Tooltip, useStore } from "./components";
 import { SettingsUI } from "./index";
 import { openStore, showTab, takeStoreTarget } from "./nav";
 import { PluginChangelogSetting } from "./PluginChangelog";
@@ -593,18 +593,112 @@ const sortOptions = () => [
     { value: "updated", label: t("store.sort.updated") },
 ] as const satisfies readonly { value: ListingSort; label: string; }[];
 
+/**
+ * Where you were in a store's list, so going back from a plugin's page (or switching tabs and back)
+ * lands on the same search, filters, page and scroll, with the card you opened focused. The scroll
+ * is only put back into the same scroller it was read from: a fresh open of settings starts at the top.
+ */
+interface ListMemory {
+    query: string;
+    filter: Filter;
+    category: string;
+    sort: ListingSort;
+    page: number;
+    scroll?: { scroller: WeakRef<HTMLElement>; top: number; };
+    /** The card whose page was opened, focused again on the way back */
+    focus?: string;
+}
+const listMemory: Partial<Record<StoreKind, ListMemory>> = {};
+const memoryOf = (kind: StoreKind): ListMemory => listMemory[kind] ??= { query: "", filter: "all", category: "all", sort: "name", page: 0 };
+
+/** The element that scrolls the store: Evi's panel body, or Discord's settings scroller around it */
+function scrollerOf(el: HTMLElement | null): HTMLElement | undefined {
+    for (let node = el?.parentElement; node; node = node.parentElement) {
+        const { overflowY } = getComputedStyle(node);
+        if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) return node;
+    }
+}
+
+/**
+ * Puts a scroller back where it was. The list may still be growing (the front page's rows, pictures),
+ * so the browser clamps the first try: it's tried again as the content grows, for a moment, and never
+ * against the user, who wins as soon as they scroll or press a key.
+ */
+function restoreScroll(scroller: HTMLElement, top: number, content: HTMLElement | null) {
+    scroller.scrollTop = top;
+    if (Math.abs(scroller.scrollTop - top) <= 1 || !content) return;
+    const stop = () => {
+        observer.disconnect();
+        clearTimeout(timer);
+        for (const type of ["wheel", "pointerdown", "keydown", "touchstart"]) scroller.removeEventListener(type, stop);
+    };
+    const observer = new ResizeObserver(() => {
+        scroller.scrollTop = top;
+        if (Math.abs(scroller.scrollTop - top) <= 1) stop();
+    });
+    observer.observe(content);
+    const timer = setTimeout(stop, 1500);
+    for (const type of ["wheel", "pointerdown", "keydown", "touchstart"]) scroller.addEventListener(type, stop, { passive: true });
+}
+
 export function StoreView({ kind }: { kind: StoreKind; }) {
     const state = useStoreState();
-    const [query, setQuery] = React.useState("");
-    const [filter, setFilter] = React.useState<Filter>("all");
-    const [category, setCategory] = React.useState("all");
-    const [sort, setSort] = React.useState<ListingSort>("name");
+    const memory = memoryOf(kind);
+    const [query, setQueryState] = React.useState(memory.query);
+    const [filter, setFilterState] = React.useState<Filter>(memory.filter);
+    const [category, setCategoryState] = React.useState(memory.category);
+    const [sort, setSortState] = React.useState<ListingSort>(memory.sort);
+    const [page, setPage] = React.useState(memory.page);
+    // A new search, filter, category or order starts from the first page
+    const fresh = <T,>(set: (v: T) => void) => (v: T) => {
+        set(v);
+        setPage(0);
+    };
+    const setQuery = fresh(setQueryState), setFilter = fresh(setFilterState), setCategory = fresh(setCategoryState), setSort = fresh(setSortState);
+    React.useEffect(() => void Object.assign(memory, { query, filter, category, sort, page }), [memory, query, filter, category, sort, page]);
     // Opened from an installed plugin's Update: straight to its page
     const [selected, setSelected] = React.useState(() => takeStoreTarget(kind));
     const listRef = React.useRef<HTMLDivElement>(null);
     // An author's page, over the list or over the plugin page it was opened from
     const [author, setAuthor] = React.useState<string>();
     const topRef = React.useRef<HTMLDivElement>(null);
+
+    // Leaving the list for a page: remember the card; the list keeps its scroll up to date itself
+    const openFromList = (id: string) => {
+        memory.focus = id;
+        setSelected(id);
+    };
+    const authorFromList = (slug: string) => {
+        memory.focus = undefined;
+        setAuthor(slug);
+    };
+
+    // The mouse's back button and Alt+Left go back from a page too, like the Back button
+    React.useEffect(() => {
+        if (!selected && !author) return;
+        const back = () => author ? setAuthor(undefined) : setSelected(undefined);
+        const visible = () => !!topRef.current?.isConnected && topRef.current.getClientRects().length > 0;
+        const onKey = (e: KeyboardEvent) => {
+            if (!e.altKey || e.key !== "ArrowLeft" || e.ctrlKey || e.metaKey || e.shiftKey || !visible()) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            back();
+        };
+        const onMouse = (e: MouseEvent) => {
+            if (e.button !== 3 || !visible()) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (e.type === "mouseup") back();
+        };
+        window.addEventListener("keydown", onKey, true);
+        window.addEventListener("mousedown", onMouse, true);
+        window.addEventListener("mouseup", onMouse, true);
+        return () => {
+            window.removeEventListener("keydown", onKey, true);
+            window.removeEventListener("mousedown", onMouse, true);
+            window.removeEventListener("mouseup", onMouse, true);
+        };
+    }, [selected, author]);
 
     // Detail pages start at their top, wherever the list was scrolled to: only when one opens or
     // closes, never when the Store itself opens (that scrolled Discord's settings under its sticky
@@ -616,7 +710,8 @@ export function StoreView({ kind }: { kind: StoreKind; }) {
             opened.current = true;
             return;
         }
-        scrollToTop(topRef.current);
+        // Back on the list, it puts its own scroll back (see StoreListing)
+        if (selected || author) scrollToTop(topRef.current);
     }, [selected, author]);
 
     const items = itemsOf(kind);
@@ -657,10 +752,13 @@ export function StoreView({ kind }: { kind: StoreKind; }) {
             setCategory={setCategory}
             sort={sort}
             setSort={setSort}
+            page={page}
+            setPage={setPage}
+            memory={memory}
             topRef={topRef}
             listRef={listRef}
-            onOpen={setSelected}
-            onAuthor={setAuthor}
+            onOpen={openFromList}
+            onAuthor={authorFromList}
         />
     );
 }
@@ -687,7 +785,7 @@ function searchable(kind: StoreKind, entry: ListingInfo & { locales?: RegistryEn
     };
 }
 
-function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, category, setCategory, sort, setSort, topRef, listRef, onOpen, onAuthor }: {
+function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, category, setCategory, sort, setSort, page, setPage, memory, topRef, listRef, onOpen, onAuthor }: {
     kind: StoreKind;
     state: ReturnType<typeof Store.getSnapshot>;
     items: Item[];
@@ -699,6 +797,9 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
     setCategory(category: string): void;
     sort: ListingSort;
     setSort(sort: ListingSort): void;
+    page: number;
+    setPage(page: number): void;
+    memory: ListMemory;
     topRef: React.RefObject<HTMLDivElement | null>;
     listRef: React.RefObject<HTMLDivElement | null>;
     onOpen(id: string): void;
@@ -725,7 +826,31 @@ function StoreListing({ kind, state, items, query, setQuery, filter, setFilter, 
     // Sorted as chosen, then while searching the best matches first (ties keep the chosen order)
     const sorted = items.filter(i => tests[filter](i) && inCategory(i)).sort((a, b) => order.get(a.entry.id)! - order.get(b.entry.id)!);
     const visible = searchItems(sorted, q, i => searchable(kind, i.entry));
-    const paged = usePages(visible, PAGE_SIZE, [filter, category, q, sort].join("\n"));
+    // The page lives in StoreView, so it outlasts a visit to a plugin's page
+    const pageCount = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+    const shownPage = Math.min(page, pageCount - 1);
+    const paged = { page: shownPage, count: pageCount, items: visible.slice(shownPage * PAGE_SIZE, (shownPage + 1) * PAGE_SIZE), setPage };
+
+    // Keep where the list is scrolled, and put it back once the cards are there: after a plugin's
+    // page, or switching tabs and back, as long as it's the same scroller (the same open settings)
+    const restoring = React.useRef(true);
+    const ready = paged.items.length > 0;
+    React.useLayoutEffect(() => {
+        const scroller = scrollerOf(topRef.current);
+        if (restoring.current && ready) {
+            restoring.current = false;
+            const saved = memory.scroll;
+            if (scroller && saved && saved.scroller.deref() === scroller) restoreScroll(scroller, saved.top, topRef.current);
+            const focus = memory.focus;
+            memory.focus = undefined;
+            if (focus) topRef.current?.querySelector<HTMLElement>(`li[data-store-id="${CSS.escape(focus)}"] .dl-store-card-link`)?.focus({ preventScroll: true });
+        }
+        if (!scroller || restoring.current) return;
+        const save = () => void (memory.scroll = { scroller: new WeakRef(scroller), top: scroller.scrollTop });
+        save();
+        scroller.addEventListener("scroll", save, { passive: true });
+        return () => scroller.removeEventListener("scroll", save);
+    }, [ready, memory, topRef]);
     const categories = [{ value: "all", label: t("store.allCategories") }, ...tags.map(tag => ({ value: tag, label: tagLabel(tag) }))];
 
     return (

@@ -11,7 +11,7 @@
  * - transitionToGuild(guildId, channelId) logs "transitionToGuild - Transitioning to"
  * - openUserProfileModal({ userId, guildId }) is exported by name
  */
-import { Components, definePlugin, filters, find, getStore, I18n, Menu, openLayer, React, useLocale } from "@evi/api";
+import { Components, definePlugin, Dropdown, filters, find, getStore, I18n, Menu, openLayer, React, useLocale } from "@evi/api";
 import type { CloseLayer, PluginContext } from "@evi/api";
 import type { ReactNode } from "react";
 
@@ -524,11 +524,17 @@ function AuditLog({ guild, onClose }: { guild: { id: string; name: string; }; on
                             <Icon d={ICON_SEARCH} />
                             <input type="search" value={query} onChange={e => setQuery(e.currentTarget.value)} placeholder={t("filter.search")} aria-label={t("filter.search")} autoFocus />
                         </label>
-                        <select className="evi-alp-select" value={actorId} onChange={e => setActorId(e.currentTarget.value)} aria-label={t("filter.actor")}>
-                            <option value="">{t("filter.anyone")}</option>
-                            {actorId && !actors.some(a => a.id === actorId) && <option value={actorId}>{dir.current.person(actorId)?.name ?? actorId}</option>}
-                            {actors.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                        </select>
+                        <Dropdown
+                            className="evi-alp-select"
+                            label={t("filter.actor")}
+                            value={actorId}
+                            onChange={setActorId}
+                            options={[
+                                { value: "", label: t("filter.anyone") },
+                                ...actorId && !actors.some(a => a.id === actorId) ? [{ value: actorId, label: dir.current.person(actorId)?.name ?? actorId }] : [],
+                                ...actors.map(a => ({ value: a.id, label: a.name })),
+                            ]}
+                        />
                         <label className="evi-alp-date">
                             <span>{t("filter.from")}</span>
                             <input type="date" value={from} max={to || undefined} onChange={e => setFrom(e.currentTarget.value)} />
@@ -638,7 +644,7 @@ export default definePlugin({
     min-block-size: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--input-border, transparent);
     background: var(--input-background, var(--background-base-lowest, #1e1f22)); color: var(--text-default, #dbdee1); font: inherit; font-size: 14px; color-scheme: dark;
 }
-.evi-alp-select { max-inline-size: 220px; cursor: pointer; }
+.evi-alp-select { inline-size: 220px; max-inline-size: 220px; flex: none; cursor: pointer; }
 .evi-alp-date { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted, #949ba4); }
 .evi-alp-groups { display: flex; flex-wrap: wrap; gap: 6px; }
 .evi-alp-group, .evi-alp-clear {

@@ -37,7 +37,10 @@ export type { CodeMatcher, Filter, FoundExport } from "../renderer/webpack/find"
 export type { Module, ModuleFactory, WebpackRequire } from "../renderer/webpack/runtime";
 
 import { wreq } from "../renderer/webpack/runtime";
+import { Dropdown as EviDropdown } from "../renderer/ui/components";
 import { DiscordUI } from "../renderer/ui/discord";
+import { ensureStyles } from "../renderer/ui/stylesheet";
+import { React } from "../renderer/webpack/common";
 
 /**
  * Discord's own form controls for plugin settings panels (Switch, TextField, TextArea, Select,
@@ -52,7 +55,38 @@ export const Components = {
     get Button() { return DiscordUI.Button.get; },
     /** Discord's tooltip: <Tooltip text="…">{element}</Tooltip> */
     get Tooltip() { return DiscordUI.Tooltip.get; },
+    /** Evi's own dropdown (Evi 2.0.0+), always there; see Dropdown */
+    Dropdown,
 };
+
+export interface DropdownProps<V extends string> {
+    /** Names the list for screen readers, and the button when there's no visible label */
+    label: string;
+    /** A disabled option shows greyed out and can't be picked */
+    options: readonly { label: string; value: V; disabled?: boolean; }[];
+    value: V;
+    onChange(value: V): void;
+    /** Defaults to a generated one */
+    id?: string;
+    /** The id of a visible label, which then names the button */
+    labelledBy?: string;
+    disabled?: boolean;
+    /** Added to the button, e.g. to size it to your layout */
+    className?: string;
+}
+
+/**
+ * Evi's dropdown, the one in Evi's own settings: Discord's look and motion, a list that's never
+ * cut off by a dialog, no scrollbar, keyboard and screen reader support, and a filter box once
+ * there are more than 12 options. Use it instead of a <select>, whose list is the system's own.
+ * Evi 2.0.0 and newer; check it's there (`Components.Dropdown`) if your plugin supports older Evi.
+ */
+export function Dropdown<V extends string>({ id, ...props }: DropdownProps<V>) {
+    ensureStyles();
+    const generated = React.useId();
+    return React.createElement("div", { className: "dl-root dl-dropdown-host" },
+        React.createElement(EviDropdown<V>, { ...props, id: id ?? `evi-dropdown${generated.replace(/:/g, "")}` }));
+}
 
 /** Discord's __webpack_require__, undefined until the runtime has loaded */
 export function getWreq() {

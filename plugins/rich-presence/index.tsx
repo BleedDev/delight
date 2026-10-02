@@ -1,4 +1,4 @@
-import { definePlugin, Dispatcher, find, React, useLocale } from "@evi/api";
+import { definePlugin, Dispatcher, Dropdown, find, React, useLocale } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 import type { ReactNode } from "react";
 
@@ -246,12 +246,8 @@ function TextInput({ value, onChange, placeholder, max = LIMITS.text, invalid, t
     );
 }
 
-function Select<V extends string>({ value, options, onChange, label }: { value: V; options: readonly V[]; onChange(v: V): void; label(v: V): string; }) {
-    return (
-        <select className="evi-rp-input evi-rp-select" value={value} onChange={e => onChange(e.currentTarget.value as V)}>
-            {options.map(o => <option key={o} value={o}>{label(o)}</option>)}
-        </select>
-    );
+function Select<V extends string>({ value, options, onChange, label, name }: { value: V; options: readonly V[]; onChange(v: V): void; label(v: V): string; name: string; }) {
+    return <Dropdown className="evi-rp-select" label={name} value={value} onChange={onChange} options={options.map(o => ({ value: o, label: label(o) }))} />;
 }
 
 function Editor({ preset }: { preset: Preset; }) {
@@ -273,7 +269,7 @@ function Editor({ preset }: { preset: Preset; }) {
                     <TextInput value={preset.title} max={60} onChange={title => set({ title })} />
                 </Field>
                 <Field label={t("field.type")}>
-                    <Select value={preset.type} options={ACTIVITY_TYPES} label={typeLabel} onChange={type => set({ type })} />
+                    <Select name={t("field.type")} value={preset.type} options={ACTIVITY_TYPES} label={typeLabel} onChange={type => set({ type })} />
                 </Field>
             </div>
 
@@ -332,7 +328,7 @@ function Editor({ preset }: { preset: Preset; }) {
             <h4 className="evi-rp-section">{t("section.more")}</h4>
             <div className="evi-rp-group">
                 <Field label={t("field.time")}>
-                    <Select value={preset.timeMode} options={TIME_MODES} label={timeLabel} onChange={timeMode => set({ timeMode, time: timeMode === "start" || timeMode === "end" ? preset.time || Date.now() + (timeMode === "end" ? 3600_000 : 0) : preset.time })} />
+                    <Select name={t("field.time")} value={preset.timeMode} options={TIME_MODES} label={timeLabel} onChange={timeMode => set({ timeMode, time: timeMode === "start" || timeMode === "end" ? preset.time || Date.now() + (timeMode === "end" ? 3600_000 : 0) : preset.time })} />
                 </Field>
                 {(preset.timeMode === "start" || preset.timeMode === "end") && (
                     <Field label={t(preset.timeMode === "start" ? "field.timeStart" : "field.timeEnd")}>

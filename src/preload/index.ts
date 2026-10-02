@@ -9,6 +9,7 @@ import type { PluginReportInput } from "@shared/pluginReports";
 import type { PulledPlugins } from "@shared/pulls";
 import type { BadgeAdminAction, BadgeAdminResult, BadgePrefs, BadgePrefsResult, BadgesResult, CreditsDocument } from "@shared/badges";
 import type { Announcement } from "@shared/announcements";
+import type { RequiredUpdate } from "@shared/required";
 import type { AdminMethod } from "@shared/devAdmin";
 import type { DevLive } from "@shared/devLive";
 import type { AuthorLink, AuthorStatsResult } from "@shared/authorStats";
@@ -79,6 +80,13 @@ const EviNative = {
     setBadgePrefs: (userId: string, prefs: Partial<BadgePrefs>): Promise<BadgePrefsResult> => ipcRenderer.invoke(IPC.BADGES_SET_PREFS, userId, prefs),
     checkForUpdate: (force = false): Promise<UpdateStatus> => ipcRenderer.invoke(IPC.UPDATE_CHECK, force),
     installUpdate: (): Promise<UpdateInstallResult> => ipcRenderer.invoke(IPC.UPDATE_INSTALL),
+    /** A required update: download now, whatever the update settings (it's at least `minimum`) */
+    prepareUpdate: (minimum: string): Promise<UpdateInstallResult> => ipcRenderer.invoke(IPC.UPDATE_PREPARE, minimum),
+    /** The Evi version evi.rest says everyone has to be on */
+    required: (): Promise<CommunityResult<RequiredUpdate | null>> => ipcRenderer.invoke(IPC.REQUIRED),
+    onRequiredChange(cb: () => void) {
+        ipcRenderer.on(IPC.REQUIRED_CHANGED, () => cb());
+    },
     onUpdateProgress(cb: (progress: UpdateProgress) => void) {
         ipcRenderer.on(IPC.UPDATE_PROGRESS, (_, progress) => cb(progress));
     },

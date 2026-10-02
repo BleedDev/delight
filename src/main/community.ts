@@ -10,8 +10,10 @@
 import type { CommunityResult } from "@shared/ipc";
 import { IPC } from "@shared/ipc";
 import { parseCredits } from "@shared/badges";
+import { parseRequired } from "@shared/required";
 import { parseAnnouncements } from "@shared/announcements";
 import { isAdminRoute } from "@shared/devAdmin";
+import { imageType } from "@shared/images";
 import { parseDevLive } from "@shared/devLive";
 import { AUTHOR_LINKS, clampDays, NOT_AUTHOR, parseAuthorStats } from "@shared/authorStats";
 import { parseNotifications } from "@shared/notifications";
@@ -22,7 +24,7 @@ import { ipcMain, shell, webContents } from "electron";
 import { readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
-import { onAnnouncementsChanged, onInboxAnnounced } from "./badges";
+import { onAnnouncementsChanged, onInboxAnnounced, onRequiredChanged } from "./badges";
 import { apiRequest, apiUrl } from "./evirest";
 import { DATA_DIR } from "./paths";
 import { cachedGet } from "./reports";
@@ -145,6 +147,12 @@ export function initCommunity() {
     ipcMain.handle(IPC.DEV_ADMIN, (_e, method: unknown, path: unknown, body: unknown) => {
         if (!isAdminRoute(method, path)) return { ok: false, error: "Evi doesn't call that" };
         if (method !== "GET" && !allowAdminWrite()) return { ok: false, error: "Too many changes at once, wait a minute" };
+        // A badge's icon goes up as the image itself (PNG, JPEG, GIF or WebP, 1 MB at most), not JSON
+        if ((path as string).endsWith("/icon")) {
+            if (!(body instanceof Uint8Array) || !imageType(body)) return { ok: false, error: "Pick a PNG, JPEG, GIF or WebP image" };
+            if (body.length > 1024 * 1024) return { ok: false, error: "That image is over 1 MB" };
+            return call(async () => (await apiRequest(method, path as string, { body, headers: { "Content-Type": imageType(body)!.type } })).json as unknown);
+        }
         const payload = body === undefined ? undefined : JSON.stringify(body);
         if (payload !== undefined && payload.length > 64 * 1024) return { ok: false, error: "That's too long to send" };
         return call(async () => (await apiRequest(method, `${path}`, { ...payload !== undefined && json(body), max: 8 * 1024 * 1024 })).json as unknown);
@@ -160,6 +168,8 @@ export function initCommunity() {
         if (site.protocol !== "https:" && site.hostname !== "localhost") return;
         return shell.openExternal(`${site.origin}${AUTHOR_LINKS[link as keyof typeof AUTHOR_LINKS]}`);
     });
+    // The Evi version everyone has to be on (shared/required.ts): public too
+    ipcMain.handle(IPC.REQUIRED, () => call(async () => parseRequired((await apiRequest("GET", "/required", { max: 16 * 1024 })).json)));
     // Evi's team to everyone: public, so it works without a linked account
     ipcMain.handle(IPC.ANNOUNCEMENTS, () => call(async () => parseAnnouncements((await apiRequest("GET", "/announcements", { max: 256 * 1024 })).json)));
     ipcMain.handle(IPC.COMMUNITY_INBOX, () => call(async () => parseNotifications((await apiRequest("GET", "/me/notifications")).json?.notifications)));
@@ -179,6 +189,10 @@ export function initCommunity() {
     // The stream says the inbox changed (or it reconnected and something may have): the page asks again
     onInboxAnnounced(announceInboxChange);
     // Spread out: every running Evi hears it in the same instant
+    // Spread over half a minute: every Evi that has to update would otherwise download in the same instant
+    onRequiredChanged(() => setTimeout(() => {
+        for (const wc of webContents.getAllWebContents()) if (!wc.isDestroyed()) wc.send(IPC.REQUIRED_CHANGED);
+    }, Math.random() * 30_000));
     onAnnouncementsChanged(() => setTimeout(() => {
         for (const wc of webContents.getAllWebContents()) if (!wc.isDestroyed()) wc.send(IPC.ANNOUNCEMENTS_CHANGED);
     }, Math.random() * 5000));

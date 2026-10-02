@@ -4,12 +4,11 @@ import { t, useLocale } from "../i18n";
 import { isRecording } from "../keybinds";
 import { Developer } from "../developer";
 import { Native } from "../native";
-import { createStyle } from "../styles";
 import { createRoot, React } from "../webpack/common";
 import { Button, ErrorBoundary, Icon, openDialogs, Text, useStore } from "./components";
 import { PageView, visiblePages } from "./pages";
 import { currentRelease, WhatsNewModal } from "./WhatsNew";
-import css from "./styles.css" with { type: "text" };
+import { ensureStyles } from "./stylesheet";
 import { DiscordContext } from "./discordContext";
 
 type View = "closed" | "open" | "closing";
@@ -158,13 +157,7 @@ function Root() {
     return current === "closed" ? null : <Panel />;
 }
 
-let styled = false;
-/** Our stylesheet, shared by the floating panel and the tabs embedded in Discord settings */
-export function ensureStyles() {
-    if (styled) return;
-    styled = true;
-    createStyle(css, "evi-ui");
-}
+export { ensureStyles };
 
 let mounted = false;
 function mount() {

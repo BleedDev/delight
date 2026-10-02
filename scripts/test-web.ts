@@ -91,7 +91,7 @@ const boot: BootData = {
     dataDir: "C:/fake",
     // Last saw an older Evi: What's new shows once at startup
     // Live toasts stay out of the other checks' way until their own turn
-    settings: { quickCss: true, liveToasts: false, plugins: { experiments: { enabled: true } }, enabledThemes: [], lastSeenVersion: "0.0.1", pluginVersionsSeen: { "clear-urls": "0.9.0", "no-track": "0.9.0" } },
+    settings: { quickCss: true, liveToasts: false, plugins: { experiments: { enabled: true } }, enabledThemes: [], lastSeenVersion: "0.0.1", tour2Seen: true, pluginVersionsSeen: { "clear-urls": "0.9.0", "no-track": "0.9.0" } },
     plugins,
     pulled,
     quickCss: "",
@@ -258,12 +258,32 @@ function fakeNative(bootData: BootData) {
                     ],
                     pulls: { "old-plugin": { versions: "all", reason: "It crashed Discord after the September update.", removed: true, at: now - 2 * day } },
                 },
+                "/admin/required-version": { required: null, latest: "9.9.0" },
                 "/admin/announcements": { announcements: [{ id: 3, title: "Evi 1.5.0 is out", body: "Live announcements, and plugin notifications work again.", at: now - day, withdrawnAt: null, by: { id: "1", username: "bleed", globalName: "bleed" } }] },
                 "/admin/people": {
+                    total: 3, page: 1, size: 25,
                     people: [
-                        { user: { id: "123456789012345678", username: "evi-tester", globalName: "Evi Tester", avatar: null }, lastLogin: now - 3600_000, badges: ["early-supporter", "plugin-author"] },
-                        { user: { id: "223456789012345678", username: "lodestone", globalName: "Lodestone", avatar: null }, lastLogin: now - day, badges: [] },
+                        { user: { id: "123456789012345678", username: "evi-tester", globalName: "Evi Tester", avatar: null }, createdAt: now - 40 * day, lastLogin: now - 3600_000, installs: 2, admin: false, badges: ["early-supporter", "plugin-author", "supporter-gold"], banned: null },
+                        { user: { id: "223456789012345678", username: "lodestone", globalName: "Lodestone", avatar: null }, createdAt: now - 9 * day, lastLogin: now - day, installs: 1, admin: false, badges: ["plugin-author"], banned: { reason: "Spam reviews", until: now + 6 * day, by: "1", at: now - day } },
+                        { user: { id: "323456789012345678", username: "bleed", globalName: "bleed", avatar: null }, createdAt: now - 60 * day, lastLogin: now - 600_000, installs: 3, admin: true, badges: ["developer"], banned: null },
                     ],
+                },
+                "/admin/badges": { badges: [
+                    { id: "developer", name: "Evi Developer", description: "Makes Evi", icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%235865F2'/><text x='12' y='16.5' font-size='12' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'>D</text></svg>", holders: 1 },
+                    { id: "early-supporter", name: "Early Supporter", description: "Here from the start", icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23EB459E'/><text x='12' y='16.5' font-size='12' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'>E</text></svg>", holders: 14 },
+                    { id: "plugin-author", name: "Plugin Author", description: "Published a plugin", icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23F0883E'/><text x='12' y='16.5' font-size='12' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'>P</text></svg>", holders: 6, automatic: true },
+                    { id: "supporter-gold", name: "Gold Supporter", description: "", icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23D4A72C'/><text x='12' y='16.5' font-size='12' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'>G</text></svg>", holders: 2, supporter: true },
+                    { id: "supporter-emerald", name: "Emerald Supporter", description: "", icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%232D9C6A'/><text x='12' y='16.5' font-size='12' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'>E</text></svg>", holders: 1, supporter: true },
+                    { id: "beta-tester", name: "Beta Tester", description: "Tried things first", icon: "", holders: 0 },
+                ] },
+                "/admin/users/123456789012345678": {
+                    user: { id: "123456789012345678", username: "evi-tester", globalName: "Evi Tester", avatar: null },
+                    createdAt: now - 40 * day, lastLogin: now - 3600_000, logins: 12, installs: 2, admin: false,
+                    badges: [{ id: "early-supporter", position: 0, grantedAt: now - 30 * day }, { id: "plugin-author", position: 1, grantedAt: now - 10 * day }],
+                    supporter: { userId: "123456789012345678", level: "supporter-gold", since: now - 200 * day, days: 200, startedAt: now - 200 * day, grantedDays: 0, next: { level: "supporter-emerald", at: now + 165 * day } },
+                    author: { slug: "evi-tester", name: "Evi Tester", plugins: [{ id: "store-clock", name: "Store Clock" }] },
+                    banned: null,
+                    banLog: [{ action: "unban", reason: "", until: null, by: { id: "1", username: "bleed", globalName: "bleed" }, at: now - 50 * day }],
                 },
             } as Record<string, unknown>)[route];
             return value === undefined ? { ok: false, error: "Not found" } : { ok: true, value };
@@ -378,6 +398,14 @@ function fakeNative(bootData: BootData) {
         // evi.rest's announcements: the test sets the list and fires the live event itself
         announcements: async () => ({ ok: true, value: (window as any).__test.announcements ?? [] }),
         onAnnouncementsChange: (cb: () => void) => void ((window as any).__test.announce = cb),
+        // A required Evi version (ui/RequiredUpdate.tsx): the test sets it and fires the live event itself
+        required: async () => ({ ok: true, value: (window as any).__test.required ?? null }),
+        onRequiredChange: (cb: () => void) => void ((window as any).__test.requiredChanged = cb),
+        prepareUpdate: async (minimum: string) => {
+            const test = (window as any).__test;
+            (test.prepared ??= []).push(minimum);
+            return { ok: true, version: minimum };
+        },
         credits: async () => ({ ok: true, value: { supporters: [{ name: "Mira", avatar: null, userId: "333333333333333333", since: 1, level: "supporter-gold" }] } }),
         credited: async () => ({ ok: true, value: false }),
         setCredited: async (on: boolean) => ({ ok: true, value: on }),
@@ -1758,8 +1786,52 @@ check("Evi's panel shows no scrollbars", scrollbars.every(s => s.width === "none
 
     await page.click("#dl-subtab-developers-people");
     await body.getByText("Lodestone", { exact: true }).waitFor({ timeout: 3000 });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(600);
     await page.screenshot({ path: join(OUT, "ui-developers-people.png") });
+    const peopleList = await page.evaluate(() => ({
+        badgeIcons: [...document.querySelectorAll(".dl-dev-people .dl-dev-person")].map(row => [...row.querySelectorAll("img.dl-dev-badge")].map(i => i.getAttribute("alt"))),
+        tags: [...document.querySelectorAll(".dl-dev-people .dl-dev-person")].map(row => [...row.querySelectorAll(".dl-badge, [class*=badge]")].map(b => b.textContent).filter(t => t && t.length < 20)),
+        textBadges: document.querySelector(".dl-dev-people")?.textContent?.includes("early supporter"),
+    }));
+    const peopleCall = await page.evaluate(() => ((window as any).__test.devAdmin ?? []).filter((c: any) => c.path.startsWith("/admin/people")).at(-1)?.path);
+
+    // One person's page: badges, supporter time, their plugins, and a ban
+    await page.locator(".dl-dev-person", { hasText: "Evi Tester" }).click();
+    await page.waitForSelector("#dl-dev-person .dl-dev-granted", { timeout: 3000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(OUT, "ui-developers-person.png") });
+    const personShown = await page.evaluate(() => ({
+        granted: [...document.querySelectorAll("#dl-dev-person .dl-dev-granted")].map(li => li.textContent),
+        sections: [...document.querySelectorAll("#dl-dev-person .dl-section h2")].map(h => h.textContent),
+        id: document.querySelector("#dl-dev-person .dl-dev-mono")?.textContent,
+    }));
+    await page.locator("#dl-dev-person").getByRole("button", { name: "Give", exact: true }).click();
+    await page.waitForTimeout(300);
+    await page.fill("#dl-dev-ban-reason", "Spamming reviews");
+    await page.locator("#dl-dev-person").getByRole("button", { name: "Ban", exact: true }).click();
+    await page.waitForSelector("#dl-dev-ban", { timeout: 3000 });
+    await page.locator("#dl-dev-ban").getByRole("button", { name: "Ban them" }).click();
+    await page.waitForSelector("#dl-dev-ban", { state: "detached", timeout: 3000 }).catch(() => { });
+    await page.locator("#dl-dev-person .dl-dialog-head").getByRole("button").last().click();
+    await page.waitForSelector("#dl-dev-person", { state: "detached", timeout: 3000 }).catch(() => { });
+
+    // Managing the badges themselves
+    await body.getByRole("button", { name: "Manage badges" }).click();
+    await page.waitForSelector("#dl-dev-badges .dl-dev-badge-card", { timeout: 3000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(OUT, "ui-developers-badges.png") });
+    const badgeCards = await page.locator("#dl-dev-badges .dl-dev-badge-card").count();
+    await page.locator("#dl-dev-badges .dl-dialog-head").getByRole("button").last().click();
+    await page.waitForSelector("#dl-dev-badges", { state: "detached", timeout: 3000 }).catch(() => { });
+    const peopleCalls = await page.evaluate(() => ((window as any).__test.devAdmin ?? []).filter((c: any) => c.method !== "GET" && c.path.startsWith("/admin/users/")));
+    check("People: badges as icons, pages, a person's page, giving a badge and a ban that asks first",
+        peopleList.badgeIcons[0]?.join() === "Early Supporter,Plugin Author,Gold Supporter" && !peopleList.textBadges
+        && peopleCall === "/admin/people?page=1&size=25"
+        && personShown.granted.length === 2 && personShown.id === "123456789012345678" && personShown.sections.length === 4
+        && peopleCalls.some((c: any) => c.method === "PUT" && c.path === "/admin/users/123456789012345678/badges/developer" && c.body?.position === 2)
+        && peopleCalls.some((c: any) => c.method === "PUT" && c.path === "/admin/users/123456789012345678/ban" && c.body?.reason === "Spamming reviews" && c.body?.days === 7)
+        && badgeCards === 6,
+        { peopleList, peopleCall, personShown, peopleCalls, badgeCards });
 
     const calls = await page.evaluate(() => ((window as any).__test.devAdmin ?? []).filter((c: any) => c.method !== "GET"));
     await page.click("#dl-subtab-developers-overview");
@@ -2034,6 +2106,112 @@ await page.waitForSelector("#dl-plugin-no-track-settings", { state: "detached", 
     await page.evaluate(() => (window as any).__unlockSettings?.());
     check("plugin dropdowns open on the first click inside Discord's settings (the dialog keeps focus under Discord's focus lock)",
         unlock && focus.stays && opened, { unlock, focus, opened });
+}
+
+// Evi's own dropdown: a long list opens in a layer with a filter box and no scrollbar, keys pick, Escape closes only the list
+{
+    await findPlugin("hover-converter");
+    const row = page.locator('li[aria-labelledby="dl-plugin-hover-converter"]');
+    await row.scrollIntoViewIfNeeded();
+    await row.locator('[aria-label="Hover Converter settings"]').click();
+    await page.waitForSelector("#dl-plugin-hover-converter-settings", { timeout: 3000 });
+    const combo = page.locator('#dl-plugin-hover-converter-settings [role="combobox"]').first();
+    await combo.click();
+    await page.waitForSelector(".dl-select-layer [role=listbox]", { timeout: 2000 });
+    await page.waitForTimeout(300);
+    const open = await page.evaluate(() => {
+        const list = document.querySelector<HTMLElement>(".dl-select-layer .dl-select-options")!;
+        const popout = document.querySelector<HTMLElement>(".dl-select-popout")!;
+        const dialog = document.querySelector<HTMLElement>("#dl-plugin-hover-converter-settings")!;
+        return {
+            inBody: !dialog.contains(popout),
+            options: list.querySelectorAll("[role=option]").length,
+            scrolls: list.scrollHeight > list.clientHeight,
+            scrollbar: getComputedStyle(list).scrollbarWidth,
+            gutter: list.offsetWidth - list.clientWidth,
+            filterFocused: document.activeElement?.classList.contains("dl-select-filter") ?? false,
+            expanded: document.querySelector('#dl-plugin-hover-converter-settings [role="combobox"]')?.getAttribute("aria-expanded"),
+            selectedInView: (() => {
+                const sel = list.querySelector<HTMLElement>("[aria-selected=true]");
+                if (!sel) return true;
+                const a = sel.getBoundingClientRect(), b = list.getBoundingClientRect();
+                return a.top >= b.top - 1 && a.bottom <= b.bottom + 1;
+            })(),
+        };
+    });
+    await page.screenshot({ path: join(OUT, "ui-dropdown-long.png") });
+    await page.keyboard.type("euro");
+    await page.waitForTimeout(100);
+    const filtered = await page.locator(".dl-select-layer [role=option]").allTextContents();
+    await page.keyboard.press("Enter");
+    await page.waitForSelector(".dl-select-layer", { state: "detached", timeout: 2000 }).catch(() => { });
+    const picked = (await combo.textContent()) ?? "";
+    const backOnButton = await page.evaluate(() => document.activeElement?.getAttribute("role") === "combobox");
+    // Keyboard from the button: open, move, Escape closes the list but not the dialog
+    await combo.focus();
+    await page.keyboard.press("ArrowDown");
+    await page.waitForSelector(".dl-select-layer [role=listbox]", { timeout: 2000 });
+    await page.keyboard.press("Escape");
+    await page.waitForSelector(".dl-select-layer", { state: "detached", timeout: 2000 }).catch(() => { });
+    const afterEscape = await page.evaluate(() => ({
+        list: !!document.querySelector(".dl-select-layer"),
+        dialog: !!document.querySelector("#dl-plugin-hover-converter-settings"),
+    }));
+    await page.keyboard.press("Escape");
+    await page.waitForSelector("#dl-plugin-hover-converter-settings", { state: "detached", timeout: 2000 }).catch(() => { });
+    check("Evi's dropdown: a long list opens over the dialog with a filter and no scrollbar; typing filters, Enter picks, Escape closes just the list",
+        open.inBody && open.options > 30 && open.scrolls && open.scrollbar === "none" && open.gutter === 0 && open.filterFocused && open.expanded === "true" && open.selectedInView
+        && filtered.length >= 1 && filtered.every(f => /euro/i.test(f)) && /EUR/.test(picked) && backOnButton && !afterEscape.list && afterEscape.dialog,
+        { open, filtered, picked, backOnButton, afterEscape });
+}
+
+// The same dropdown for plugins, from @evi/api, in a plugin's own layer outside Evi's views:
+// styled by Evi's tokens there too, and a disabled option can't be picked
+{
+    await page.evaluate(() => {
+        const api = (window as any).Evi.api;
+        const { React } = api;
+        const w = window as any;
+        w.__ddPicked = "a";
+        // openLayer's callback isn't a component: the state lives in one
+        function Host() {
+            const [value, setValue] = React.useState("a");
+            return React.createElement("div", { id: "dd-plugin-host", className: "evi-scrim", style: { position: "fixed", inset: 0, zIndex: 10005, display: "grid", placeItems: "center" } },
+                React.createElement("div", { className: "evi-modal", style: { width: 360, padding: 20, borderRadius: 12, background: "#242429" } },
+                    React.createElement(api.Dropdown, {
+                        label: "Server",
+                        value,
+                        onChange: (v: string) => { setValue(v); w.__ddPicked = v; },
+                        options: [
+                            { value: "a", label: "Alpha (12 slots left)" },
+                            { value: "full", label: "Full server (full)", disabled: true },
+                            { value: "c", label: "Charlie (3 slots left)" },
+                        ],
+                    })));
+        }
+        w.__ddClose = api.openLayer(() => React.createElement(Host));
+    });
+    const combo = page.locator('#dd-plugin-host [role="combobox"]');
+    await combo.waitFor({ timeout: 2000 });
+    const button = await combo.evaluate(el => {
+        const cs = getComputedStyle(el);
+        return { height: el.getBoundingClientRect().height, radius: cs.borderTopLeftRadius, appearance: cs.appearance, inRoot: !!el.closest(".dl-root") };
+    });
+    await combo.click();
+    await page.waitForSelector(".dl-select-layer [role=listbox]", { timeout: 2000 });
+    await page.waitForTimeout(300);
+    const disabled = await page.locator('.dl-select-layer [role=option][aria-disabled="true"]').count();
+    await page.screenshot({ path: join(OUT, "ui-plugin-dropdown.png") });
+    await page.locator('.dl-select-layer [role=option][aria-disabled="true"]').click({ force: true });
+    await page.waitForTimeout(150);
+    const afterDisabled = await page.evaluate(() => (window as any).__ddPicked);
+    await page.locator(".dl-select-layer [role=option]", { hasText: "Charlie" }).click();
+    await page.waitForSelector(".dl-select-layer", { state: "detached", timeout: 2000 }).catch(() => { });
+    const picked = await page.evaluate(() => (window as any).__ddPicked);
+    await page.evaluate(() => (window as any).__ddClose({ instant: true }));
+    check("plugins get Evi's dropdown from @evi/api: styled outside Evi's views, a disabled option can't be picked",
+        button.inRoot && button.height >= 36 && button.radius !== "0px" && disabled === 1 && afterDisabled === "a" && picked === "c",
+        { button, disabled, afterDisabled, picked });
 }
 
 // A plugin's details: what it can touch, and its whole changelog
@@ -2442,9 +2620,15 @@ check("native plugins carry a badge", storeList.rpc.includes("Native") && !store
         home: !!document.querySelector(".dl-home"),
     }));
     check("Not installed shows only what you don't have, and the front page steps aside", notInstalled.cards.includes("store-clock") && !notInstalled.cards.includes("store-quiet") && !notInstalled.home, notInstalled);
-    // Back to everything: the store's filter lives with the tab, so leaving and coming back resets it
+    // The store remembers where you were: leaving the tab and coming back keeps the filter
     await openTab("plugins", "installed");
     await openTab("plugins", "store");
+    await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 5000 });
+    const kept = await page.evaluate(() => [...document.querySelectorAll("[data-store-id]")].map(el => el.getAttribute("data-store-id")));
+    check("The store keeps its filter when you switch tabs and come back", kept.includes("store-clock") && !kept.includes("store-quiet"), kept);
+    // Back to everything
+    // The "All" chip (its label is followed by a count), not "All categories"
+    await page.locator(".dl-store-controls").getByText(/^All\s*\d+$/).first().click();
     await page.waitForSelector('[data-store-id="store-lookup"]', { timeout: 5000 });
 
     await page.locator('[data-store-id="store-clock"] .dl-store-card-link').click();
@@ -2487,6 +2671,73 @@ check("a verified author has a check and opens their page: bio, links and their 
     && authorPage.site === "https://evi.rest/author?u=evi" && JSON.stringify(authorPage.cards) === '["store-clock","store-lookup"]', authorPage);
 await page.getByRole("button", { name: "Plugin Store", exact: true }).click();
 await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 2000 });
+
+// Back from a plugin's page lands where you were: same page of the list, same scroll, that card focused
+{
+    await page.evaluate(async () => {
+        const native = (window as any).__test.native;
+        const list = native.storeList;
+        (window as any).__test.storeListBeforeFiller = list;
+        native.storeList = async () => {
+            const listing = await list();
+            const file = (id: string, name: string) => ({ url: `https://example.com/${id}/${name}`, sha256: "0".repeat(64) });
+            for (let n = 1; n <= 20; n++) {
+                const id = `store-filler-${String(n).padStart(2, "0")}`;
+                listing.plugins.push({
+                    id, name: `Filler ${String(n).padStart(2, "0")}`, description: "Fills the store to a second page.", authors: ["Evi"], version: "1.0.0",
+                    tags: [], native: false, minEviVersion: "0.1.0", screenshots: [], changelog: [],
+                    files: { "manifest.json": file(id, "manifest.json"), "index.js": file(id, "index.js") },
+                });
+            }
+            return listing;
+        };
+        await (window as any).Evi.store.refresh();
+    });
+    await page.waitForSelector('[data-store-id="store-filler-01"]', { timeout: 5000 });
+    await page.getByRole("button", { name: "Page 2", exact: true }).click();
+    await page.waitForTimeout(150);
+    // Scroll the store's scroller (the panel's body) part way down page 2
+    const before = await page.evaluate(() => {
+        const card = document.querySelector<HTMLElement>(".dl-store-grid li:nth-child(4)")!;
+        let scroller = card.parentElement;
+        while (scroller && !(/auto|scroll/.test(getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight)) scroller = scroller.parentElement;
+        scroller!.scrollTop = Math.min(scroller!.scrollHeight - scroller!.clientHeight, scroller!.scrollTop + 260);
+        return { top: scroller!.scrollTop, id: card.getAttribute("data-store-id"), page: document.querySelector('.dl-pagination [aria-current="page"]')?.textContent };
+    });
+    await page.waitForTimeout(150);
+    await page.locator(`[data-store-id="${before.id}"] .dl-store-card-link`).click();
+    await page.waitForSelector(`[data-store-detail="${before.id}"]`, { timeout: 3000 });
+    await page.locator(".dl-store-detail > div > button").first().click();
+    await page.waitForSelector(`[data-store-id="${before.id}"]`, { timeout: 3000 });
+    await page.waitForTimeout(100);
+    const after = await page.evaluate(id => {
+        const card = document.querySelector<HTMLElement>(`[data-store-id="${id}"]`)!;
+        let scroller = card.parentElement;
+        while (scroller && !(/auto|scroll/.test(getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight)) scroller = scroller.parentElement;
+        return {
+            top: scroller?.scrollTop ?? -1,
+            page: document.querySelector('.dl-pagination [aria-current="page"]')?.textContent,
+            focused: document.activeElement?.closest("[data-store-id]")?.getAttribute("data-store-id"),
+        };
+    }, before.id);
+    await page.screenshot({ path: join(OUT, "ui-store-back.png") });
+    check("Back from a plugin's page: the same page of the list, the same scroll and that card focused",
+        before.page === "2" && after.page === "2" && Math.abs(after.top - before.top) <= 5 && before.top > 0 && after.focused === before.id, { before, after });
+
+    // Alt+Left goes back too
+    await page.locator(`[data-store-id="${before.id}"] .dl-store-card-link`).click();
+    await page.waitForSelector(`[data-store-detail="${before.id}"]`, { timeout: 3000 });
+    await page.keyboard.press("Alt+ArrowLeft");
+    const altBack = await page.waitForSelector(`[data-store-id="${before.id}"]`, { timeout: 2000 }).then(() => true, () => false);
+    check("Alt+Left goes back from a plugin's page to the list", altBack);
+
+    await page.evaluate(async () => {
+        (window as any).__test.native.storeList = (window as any).__test.storeListBeforeFiller;
+        await (window as any).Evi.store.refresh();
+    });
+    await page.getByRole("button", { name: "Page 1", exact: true }).click().catch(() => { });
+    await page.waitForSelector('[data-store-id="store-clock"]', { timeout: 5000 });
+}
 
 const filters = await page.evaluate(() => document.querySelector(".dl-store-controls")?.textContent ?? "");
 check("Store filters by updates, installed and category, and sorts", ["All", "Updates", "Installed", "Official", "Community", "All categories", "Name"].every(t => filters.includes(t)), filters);
@@ -3074,6 +3325,61 @@ check("healthy start reported once plugins ran for a while", await page.evaluate
         && done.installs.every((id: string) => id === "voice-messages" || id === "fix-embeds") && done.enabled.every(Boolean) && !!done.text?.includes("You’re all set")
         && tourExit.closing && tourExit.gone,
         { welcome, cards, playing, done, tourExit });
+}
+
+// A required update: the Developers page requires a version, and an older Evi downloads it and restarts
+{
+    // Evi asks whether it's a developer's when the Account tab opens
+    await page.evaluate(() => { (window as any).__test.account.admin = true; (window as any).Evi.ui.open("general"); });
+    await page.waitForSelector("#dl-tab-general", { timeout: 5000 });
+    await openTab("general", "account");
+    await page.waitForSelector("#dl-tab-developers", { timeout: 5000 });
+    await page.click("#dl-tab-developers");
+    await page.click("#dl-subtab-developers-overview");
+    await page.waitForSelector("#dl-dev-require", { timeout: 5000 });
+    await page.locator("#dl-dev-require").scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => (document.querySelector("#dl-dev-req-version") as HTMLInputElement | null)?.value === "9.9.0", null, { timeout: 3000 }).catch(() => { });
+    const form = await page.evaluate(() => ({
+        version: (document.querySelector("#dl-dev-req-version") as HTMLInputElement | null)?.value,
+        text: document.querySelector("#dl-dev-require")?.textContent ?? "",
+    }));
+    await page.locator("#dl-dev-require").screenshot({ path: join(OUT, "ui-developers-require.png") });
+    await page.fill("#dl-dev-req-reason", "Fixes plugin toasts");
+    await page.locator("#dl-dev-require").getByRole("button", { name: "Require this version" }).click();
+    await page.waitForSelector("#dl-dev-req-confirm", { timeout: 3000 });
+    await page.screenshot({ path: join(OUT, "ui-developers-require-confirm.png") });
+    await page.locator("#dl-dev-req-confirm").getByRole("button", { name: "Make them update" }).click();
+    await page.waitForTimeout(300);
+    const sent = await page.evaluate(() => ((window as any).__test.devAdmin ?? []).filter((c: any) => c.path === "/admin/required-version" && c.method === "PUT"));
+    check("Developers: Require an update defaults to the latest release, asks first, then tells evi.rest",
+        form.version === "9.9.0" && form.text.includes("Latest release: 9.9.0") && sent.length === 1 && sent[0].body?.version === "9.9.0" && sent[0].body?.reason === "Fixes plugin toasts" && sent[0].body?.forcePlugins === false,
+        { form: { ...form, text: form.text.slice(0, 200) }, sent });
+    await page.keyboard.press("Escape");
+    await page.evaluate(() => { (window as any).Evi.ui.close?.(); (window as any).__test.account.admin = false; });
+    await page.waitForTimeout(300);
+
+    // evi.rest now requires a version newer than this Evi: it downloads at once and counts down to a restart
+    const installsBefore = await page.evaluate(() => (window as any).__test.updateInstalls);
+    await page.evaluate(() => {
+        const T = (window as any).__test;
+        T.required = { version: "99.0.0", reason: "Fixes plugin toasts", forcePlugins: false, at: Date.now() };
+        T.requiredChanged?.();
+    });
+    await page.waitForSelector(".dl-required", { timeout: 5000 }).catch(() => { });
+    await page.waitForFunction(() => document.querySelector(".dl-required")?.textContent?.includes("99.0.0"), null, { timeout: 5000 }).catch(() => { });
+    const first = await page.evaluate(() => document.querySelector(".dl-required")?.textContent ?? "");
+    await page.waitForTimeout(2200);
+    const later = await page.evaluate(() => ({ text: document.querySelector(".dl-required")?.textContent ?? "", prepared: (window as any).__test.prepared ?? [], buttons: [...document.querySelectorAll(".dl-required button")].map(b => b.textContent || b.getAttribute("aria-label")) }));
+    await page.locator(".dl-required").screenshot({ path: join(OUT, "ui-required-update.png") });
+    const seconds = (t: string) => Number(t.match(/in (\d+) s/)?.[1] ?? NaN);
+    check("a required update downloads at once and counts down to a restart, with Later and no way to hide it unseen",
+        later.prepared.includes("99.0.0") && first.includes("Evi 99.0.0 is ready") && later.text.includes("Fixes plugin toasts")
+        && seconds(later.text) < seconds(first) && later.buttons.includes("Later") && later.buttons.includes("Restart now") && !later.buttons.includes("Hide"),
+        { first, later });
+    await page.locator(".dl-required").getByRole("button", { name: "Restart now" }).click();
+    await page.waitForTimeout(300);
+    const restarted = await page.evaluate(() => ({ installs: (window as any).__test.updateInstalls, text: document.querySelector(".dl-required")?.textContent ?? "" }));
+    check("Restart now installs the downloaded update", restarted.installs === installsBefore + 1 && restarted.text.includes("Restarting Discord"), restarted);
 }
 
 // The broken plugin's start failures are the point of it

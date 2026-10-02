@@ -35,6 +35,26 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "2.0.0",
+        date: "2026-10-02",
+        sections: {
+            added: [
+                "**Twelve new plugins.** Desktop Voice Messages, Embed Builder with Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools and Hover Converter. All in the store, all off until you turn them on.",
+                "**A tour of what's new.** The first time 2.0 starts, it shows you the new plugins and turns on the ones you pick.",
+                "**Publish your own plugins.** A button on the Plugins page opens your author dashboard: installs, active users, ratings, reviews and how each Discord build treats your plugins.",
+            ],
+            improved: [
+                "**Menus look like Discord's.** Every dropdown in Evi and its plugins opens Discord's way, with no scrollbar and a filter for long lists.",
+                "**Back to where you were.** Going back from a plugin in the store returns to the same page, filters and scroll.",
+                "**Updates that matter arrive sooner.** When an update is needed, Evi downloads it straight away and restarts Discord when you're not in a call.",
+            ],
+            fixed: [
+                "**Plugins aren't called broken for nothing.** A plugin waiting for a part of Discord that hadn't opened yet was reported as broken.",
+                "**Dialogs open at the top.** Some opened scrolled halfway down inside Discord's settings.",
+            ],
+        },
+    },
+    {
         version: "1.5.0",
         date: "2026-10-01",
         sections: {

@@ -147,6 +147,9 @@ export const hasNotificationsEvent = (block: string) => hasEvent(block, "notific
 /** Whether an SSE chunk says an announcement was sent or withdrawn (shared/announcements.ts) */
 export const hasAnnouncementsEvent = (block: string) => hasEvent(block, "announcements");
 
+/** Whether an SSE chunk says the required Evi version changed (shared/required.ts) */
+export const hasRequiredEvent = (block: string) => hasEvent(block, "required");
+
 /** The `badges` events in an SSE chunk, as the etag each one carries */
 export function parseBadgeEvents(block: string): string[] {
     const etags: string[] = [];

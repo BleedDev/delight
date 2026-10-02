@@ -1,61 +1,140 @@
 /**
- * People with an evi.rest account: search by name or Discord id, with their badges and supporter
- * level, latest login first.
+ * People with an evi.rest account: search by name or Discord id, a page at a time, latest login
+ * first, with the badges they show in Discord. Clicking someone opens their page (PersonDialog):
+ * badges, supporter time, their plugins, and bans. "Manage badges" edits the badges themselves.
  */
-import { parsePeople, Person } from "@shared/devAdmin";
+import { AdminBadge, parseAdminBadges, parsePeople, Person } from "@shared/devAdmin";
 
 import { t, timeAgo } from "../../i18n";
 import { React } from "../../webpack/common";
-import { Badge, EmptyState, List, SearchField, Section, Text } from "../components";
+import { Badge, Button, EmptyState, Icon, Pagination, SearchField, Section, Text, Tooltip } from "../components";
+import { BadgesDialog } from "./BadgesDialog";
 import { LoadError } from "./common";
 import { useAdmin } from "./data";
+import { PersonDialog } from "./PersonDialog";
 
-const avatar = (p: Person) => p.user.avatar
-    ? `https://cdn.discordapp.com/avatars/${p.user.id}/${p.user.avatar}.png?size=64`
-    : `https://cdn.discordapp.com/embed/avatars/${/^\d+$/.test(p.user.id) ? Number((BigInt(p.user.id) >> 22n) % 6n) : 0}.png`;
+const PAGE_SIZE = 25;
 
-/** Badge ids read better with spaces: "early-supporter" → "early supporter" */
-const badgeName = (id: string) => id.replace(/[-_]+/g, " ");
+export const avatarUrl = (u: { id: string; avatar?: string; }, size = 64) => u.avatar
+    ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.${u.avatar.startsWith("a_") ? "gif" : "png"}?size=${size}`
+    : `https://cdn.discordapp.com/embed/avatars/${/^\d+$/.test(u.id) ? Number((BigInt(u.id) >> 22n) % 6n) : 0}.png`;
+
+/** The badges someone shows in Discord, as their icons, with each one's name on hover */
+export function BadgeIcons({ ids, catalogue, size = 18 }: { ids: string[]; catalogue: Map<string, AdminBadge>; size?: number; }) {
+    const shown = ids.map(id => catalogue.get(id)).filter((b): b is AdminBadge => !!b?.icon);
+    if (!shown.length) return null;
+    return (
+        <span className="dl-dev-badges" role="list" aria-label={t("dev.people.badges")}>
+            {shown.map(b => (
+                <Tooltip key={b.id} text={b.name}>
+                    {/* An icon that doesn't load leaves no broken image behind */}
+                    <img role="listitem" className="dl-dev-badge" src={b.icon} alt={b.name} width={size} height={size} loading="lazy" draggable={false} onError={e => void (e.currentTarget.hidden = true)} />
+                </Tooltip>
+            ))}
+        </span>
+    );
+}
+
+/** Every badge evi.rest has, by id; loaded once per People tab, again after the badges change */
+export function useBadgeCatalogue() {
+    const badges = useAdmin("/admin/badges", parseAdminBadges);
+    const map = React.useMemo(() => new Map((badges.value ?? []).map(b => [b.id, b])), [badges.value]);
+    return { list: badges.value ?? [], map, reload: badges.reload, error: badges.error };
+}
+
+function PersonRow({ person, catalogue, onOpen }: { person: Person; catalogue: Map<string, AdminBadge>; onOpen(): void; }) {
+    const { user } = person;
+    return (
+        <li className="dl-row dl-dev-person-row">
+            <button type="button" className="dl-dev-person" onClick={onOpen} aria-label={t("dev.people.open", { name: user.name })}>
+                <img className="dl-dev-avatar" src={avatarUrl(user, 64)} alt="" width={36} height={36} loading="lazy" />
+                <span className="dl-dev-person-text">
+                    <span className="dl-dev-person-names">
+                        <Text tag="span" variant="text-md/semibold" color="text-strong" className="dl-dev-name">{user.name}</Text>
+                        {user.username && user.username !== user.name && <Text tag="span" variant="text-sm/normal" color="text-muted" className="dl-dev-name">@{user.username}</Text>}
+                        <BadgeIcons ids={person.badges} catalogue={catalogue} />
+                        {person.admin && <Badge>{t("dev.people.admin")}</Badge>}
+                        {person.banned && <Badge tone="warning">{t("dev.people.banned")}</Badge>}
+                    </span>
+                    <Text tag="span" variant="text-xs/normal" color="text-muted">
+                        {[
+                            person.lastLogin ? t("dev.lastLogin", { time: timeAgo(person.lastLogin) }) : undefined,
+                            person.installs ? t("dev.people.evis", { count: person.installs }) : t("dev.people.noEvis"),
+                        ].filter(Boolean).join(" · ")}
+                    </Text>
+                </span>
+                <Icon name="chevronRight" size={16} className="dl-dev-person-chevron" />
+            </button>
+        </li>
+    );
+}
 
 export function PeopleTab() {
     const [query, setQuery] = React.useState("");
     const [debounced, setDebounced] = React.useState("");
+    const [page, setPage] = React.useState(0);
+    const [open, setOpen] = React.useState<Person>();
+    const [managing, setManaging] = React.useState(false);
+    const listRef = React.useRef<HTMLDivElement>(null);
     React.useEffect(() => {
-        const timer = setTimeout(() => setDebounced(query.trim()), 250);
+        const timer = setTimeout(() => {
+            setDebounced(query.trim());
+            setPage(0);
+        }, 250);
         return () => clearTimeout(timer);
     }, [query]);
-    const people = useAdmin(`/admin/people${debounced ? `?q=${encodeURIComponent(debounced)}` : ""}`, parsePeople);
+
+    const people = useAdmin(`/admin/people?page=${page + 1}&size=${PAGE_SIZE}${debounced ? `&q=${encodeURIComponent(debounced)}` : ""}`, parsePeople);
+    const badges = useBadgeCatalogue();
+    const value = people.value;
+    const pages = value ? Math.ceil(value.total / PAGE_SIZE) : 0;
+
+    const goTo = (p: number) => {
+        setPage(p);
+        listRef.current?.scrollIntoView({ block: "nearest" });
+    };
 
     return (
-        <div className="dl-dev">
+        <div className="dl-dev" ref={listRef}>
             <Section
                 title={t("dev.people")}
-                description={t("dev.peopleHint")}
+                description={value ? t("dev.people.total", { count: value.total }) : t("dev.peopleHint")}
                 id="dl-dev-people"
-                action={<div className="dl-dev-search"><SearchField id="dl-dev-people-search" label={t("dev.searchPeople")} placeholder={t("dev.searchPeople")} value={query} onChange={setQuery} /></div>}
+                action={(
+                    <div className="dl-dev-people-actions">
+                        <div className="dl-dev-search"><SearchField id="dl-dev-people-search" label={t("dev.searchPeople")} placeholder={t("dev.searchPeople")} value={query} onChange={setQuery} /></div>
+                        <Button icon="star" onClick={() => setManaging(true)}>{t("dev.people.manageBadges")}</Button>
+                    </div>
+                )}
             >
                 {people.error && <LoadError error={people.error} onRetry={people.reload} />}
-                {people.value && !people.value.length && <EmptyState icon="search" title={t("dev.noMatch")}>{t("dev.noPeopleBody")}</EmptyState>}
-                {!!people.value?.length && (
-                    <List>
-                        {people.value.map(p => (
-                            <li key={p.user.id} className="dl-row">
-                                <div className="dl-row-head">
-                                    <img className="dl-dev-avatar" src={avatar(p)} alt="" width={32} height={32} loading="lazy" />
-                                    <div className="dl-row-text">
-                                        <div className="dl-row-title">
-                                            <Text tag="h3" variant="text-md/semibold" color="text-strong">{p.user.name}</Text>
-                                            {p.user.username && <Text tag="span" variant="text-sm/normal" color="text-muted">@{p.user.username}</Text>}
-                                            {p.badges.map(b => <Badge key={b}>{badgeName(b)}</Badge>)}
-                                        </div>
-                                        <Text tag="p" variant="text-xs/normal" color="text-muted">{p.lastLogin ? t("dev.lastLogin", { time: timeAgo(p.lastLogin) }) : p.user.id}</Text>
-                                    </div>
-                                </div>
-                            </li>
-                        ))}
-                    </List>
+                {!value && !people.error && <EmptyState icon="clock" title={t("dev.loading")} />}
+                {value && !value.people.length && <EmptyState icon="search" title={t("dev.noMatch")}>{t("dev.noPeopleBody")}</EmptyState>}
+                {!!value?.people.length && (
+                    <ul className="dl-list dl-dev-people" aria-busy={people.loading}>
+                        {value.people.map(p => <PersonRow key={p.user.id} person={p} catalogue={badges.map} onOpen={() => setOpen(p)} />)}
+                    </ul>
                 )}
+                <Pagination page={page} count={pages} onChange={goTo} label={t("dev.people.pages")} />
             </Section>
+            {open && (
+                <PersonDialog
+                    person={open}
+                    catalogue={badges}
+                    onChanged={people.reload}
+                    onClose={() => setOpen(undefined)}
+                />
+            )}
+            {managing && (
+                <BadgesDialog
+                    catalogue={badges}
+                    onChanged={() => {
+                        badges.reload();
+                        people.reload();
+                    }}
+                    onClose={() => setManaging(false)}
+                />
+            )}
         </div>
     );
 }

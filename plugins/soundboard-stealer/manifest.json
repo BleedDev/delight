@@ -10,6 +10,7 @@
         "utility",
         "voice"
     ],
+    "minEviVersion": "2.0.0",
     "permissions": {
         "network": [
             "cdn.discordapp.com"

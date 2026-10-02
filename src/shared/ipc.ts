@@ -84,6 +84,11 @@ export const IPC = {
     UPDATE_PROGRESS: "evi:update-progress",
     /** main -> renderer: a silent update finished downloading (its version) and installs when Discord quits */
     UPDATE_READY: "evi:update-ready",
+    /** A required update (shared/required.ts): download it now whatever the update settings; it also installs when Discord quits */
+    UPDATE_PREPARE: "evi:update-prepare",
+    /** The Evi version evi.rest says every Evi has to be on, and main -> renderer when that changes */
+    REQUIRED: "evi:required",
+    REQUIRED_CHANGED: "evi:required-changed",
     /** main -> renderer: the badge list changed (evi.rest said so over its change stream) */
     BADGES_CHANGED: "evi:badges-changed",
     /** who this install is linked to on evi.rest; starting a link (opens the site to confirm it) */
@@ -283,6 +288,8 @@ export interface EviSettings {
     liveToasts?: boolean;
     /** Announcements from Evi's team already shown here (their ids), so each shows once */
     announcementsSeen?: number[];
+    /** When the last required plugin update ran (shared/required.ts `at`), so each runs once */
+    requiredPluginsAt?: number;
     /** The Evi 2.0 tour (ui/Tour2.tsx) was shown, or skipped: it shows once */
     tour2Seen?: boolean;
     /** `false`: crashes don't turn safe mode on; only starting Discord with --evi-safe does. Missing: on */

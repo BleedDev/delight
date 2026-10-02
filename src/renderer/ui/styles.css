@@ -5139,3 +5139,382 @@ button.dl-inbox-link:focus-visible { outline: 2px solid var(--dl-focus-ring); ou
 .dl-authorhub-empty { align-items: flex-start; }
 
 .dl-authorhub-loading { padding-block: 24px; }
+
+/* ---- Dropdown (components.tsx): the button, and its list in a layer on <body> ---------------- */
+
+.dl-select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    text-align: start;
+    cursor: pointer;
+    transition: border-color var(--dl-duration-fast);
+}
+.dl-select:hover:not(:disabled) { border-color: var(--dl-border-control-hover, var(--dl-border-control)); }
+.dl-select:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Plugins get it through @evi/api, wrapped so Evi's tokens reach it outside Evi's own views */
+.dl-dropdown-host { display: contents; }
+.dl-select-value {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dl-select-chevron {
+    flex: none;
+    color: var(--dl-text-muted);
+    transition: rotate var(--dl-duration-fast) ease;
+}
+.dl-select[aria-expanded="true"] .dl-select-chevron { rotate: 180deg; }
+
+.dl-select-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 10010;
+    pointer-events: none;
+}
+.dl-select-popout {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 6px;
+    border-radius: var(--dl-radius-control);
+    background: var(--background-surface-higher, var(--background-floating, #2b2d31));
+    border: 1px solid var(--border-subtle, rgb(255 255 255 / 0.06));
+    box-shadow: var(--shadow-high, 0 8px 24px rgb(0 0 0 / 0.32));
+    pointer-events: auto;
+    overflow: hidden;
+}
+.dl-select-filter {
+    flex: none;
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-block-size: 34px;
+    margin-block-end: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--dl-bg-input);
+    border: 1px solid var(--dl-border-control);
+    color: var(--dl-text-strong);
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+}
+.dl-select-filter:focus-visible { border-color: var(--dl-focus-ring); }
+.dl-select-options {
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+}
+.dl-select-options::-webkit-scrollbar { display: none; }
+.dl-select-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-block-size: 36px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: var(--dl-text-default);
+    font-size: 15px;
+    cursor: pointer;
+}
+.dl-select-option[data-active] { background: var(--dl-bg-hover); color: var(--dl-text-strong); }
+.dl-select-option[aria-selected="true"] { color: var(--dl-text-strong); font-weight: 500; }
+.dl-select-option[aria-selected="true"]:not([data-active]) { background: var(--dl-bg-selected); }
+.dl-select-option-label {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dl-select-check { flex: none; color: var(--dl-brand); }
+.dl-select-option[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.dl-select-option[aria-disabled="true"][data-active] { background: none; }
+.dl-select-empty {
+    padding: 10px;
+    color: var(--dl-text-muted);
+    font-size: 14px;
+}
+
+/* ---- A required update (RequiredUpdate.tsx): the announcement banner, a little lower when both show */
+
+/* Under an announcement showing at the same time (set from RequiredUpdate.tsx: no :has() on the page) */
+.dl-required-host[data-stacked] { inset-block-start: 104px; }
+
+.dl-required-actions {
+    display: flex;
+    flex: none;
+    gap: 8px;
+    align-self: center;
+}
+
+.dl-required-later {
+    min-block-size: 32px;
+    padding-inline: 12px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--dl-bg-hover);
+    color: var(--dl-text-default);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .dl-required-later:hover { background: var(--dl-bg-selected); }
+}
+
+.dl-required-later:active { scale: 0.97; }
+.dl-required-later:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 2px; }
+
+/* ---- Developers: requiring an update (developers/RequireUpdate.tsx) ---- */
+
+.dl-dev-required {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 16px;
+    border: 1px solid var(--dl-border-group);
+    border-radius: var(--dl-radius-group);
+    background: var(--dl-bg-group);
+}
+
+.dl-dev-required-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+
+.dl-dev-req-row {
+    display: grid;
+    grid-template-columns: minmax(0, 220px) 1fr;
+    gap: 16px;
+    align-items: end;
+}
+
+.dl-dev-req-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding-block-end: 10px;
+}
+
+/* ---- Developers: People (People.tsx, PersonDialog.tsx, BadgesDialog.tsx) ------------------- */
+
+.dl-dev-people-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dl-dev-people-actions > .dl-dev-search { inline-size: min(260px, 40vw); }
+
+.dl-dev-people[aria-busy="true"] { opacity: 0.6; transition: opacity var(--dl-duration-fast) ease-out; }
+
+/* A whole row is the button that opens the person */
+.dl-dev-person-row.dl-row { padding: 0; }
+.dl-dev-person {
+    all: unset;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    inline-size: 100%;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background-color var(--dl-duration-fast) ease-out;
+}
+.dl-dev-person:hover { background: var(--dl-bg-hover); }
+.dl-dev-person:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: -2px; border-radius: var(--dl-radius-control); }
+.dl-dev-person-row:first-child .dl-dev-person { border-start-start-radius: var(--dl-radius-group); border-start-end-radius: var(--dl-radius-group); }
+.dl-dev-person-row:last-child .dl-dev-person { border-end-start-radius: var(--dl-radius-group); border-end-end-radius: var(--dl-radius-group); }
+
+.dl-dev-person-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+
+.dl-dev-person-names {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-inline-size: 0;
+    flex-wrap: wrap;
+}
+
+.dl-dev-person-chevron { flex: none; color: var(--dl-text-muted); }
+
+/* Badge icons, like Discord's next to a name */
+.dl-dev-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+.dl-dev-badge {
+    flex: none;
+    display: block;
+    object-fit: contain;
+    border-radius: 4px;
+}
+.dl-dev-badge-empty {
+    inline-size: 24px;
+    block-size: 24px;
+    border: 1px dashed var(--dl-border-control);
+}
+.dl-dev-badge-medium { inline-size: 32px; block-size: 32px; }
+.dl-dev-badge-large { inline-size: 40px; block-size: 40px; }
+
+/* The person dialog: wider than a confirm, sections stacked */
+.dl-dev-person-dialog {
+    inline-size: min(640px, 100%);
+    max-block-size: min(820px, 100%);
+}
+.dl-dev-person-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-block-start: 4px;
+}
+.dl-dev-person-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.dl-dev-person-headtext {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+.dl-dev-person-id {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dl-dev-mono { font-family: var(--dl-font-code); }
+.dl-dev-copy {
+    all: unset;
+    cursor: pointer;
+    color: var(--dl-text-brand);
+    font-size: 12px;
+    font-weight: 500;
+}
+.dl-dev-copy:hover { text-decoration: underline; }
+.dl-dev-copy:focus-visible { outline: 2px solid var(--dl-focus-ring); outline-offset: 2px; border-radius: 2px; }
+.dl-dev-person-meta { margin: 0; }
+.dl-dev-person-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+.dl-dev-person-sections[aria-busy="true"] { opacity: 0.7; transition: opacity var(--dl-duration-fast) ease-out; }
+.dl-dev-person-sections .dl-section { gap: 12px; }
+.dl-dev-person-sections .dl-section-text > h2 { font-size: 16px; line-height: 20px; }
+
+/* Their badges: one row each, with move and take-away controls */
+.dl-dev-granted-list,
+.dl-dev-badge-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-radius: var(--dl-radius-group);
+    border: 1px solid var(--dl-border-group);
+    background: var(--dl-bg-group);
+}
+.dl-dev-granted {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 8px 8px 12px;
+}
+.dl-dev-granted + .dl-dev-granted,
+.dl-dev-badge-card + .dl-dev-badge-card { border-block-start: 1px solid var(--dl-border-divider); }
+.dl-dev-granted-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+}
+.dl-dev-granted-actions {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+}
+.dl-dev-up { display: contents; }
+.dl-dev-up svg { transform: rotate(180deg); }
+
+.dl-dev-inline-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.dl-dev-inline-form .dl-field { margin: 0; }
+.dl-dev-grow { flex: 1 1 200px; min-inline-size: 0; }
+
+.dl-dev-supporter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dl-dev-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dl-dev-ban-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.dl-dev-banlog {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.dl-dev-banlog > li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+.dl-stack-tight { display: flex; flex-direction: column; gap: 2px; }
+
+/* Managing badges */
+.dl-dev-badge-card { padding: 10px 12px; }
+.dl-dev-badge-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.dl-dev-badge-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-block-start: 12px;
+}
+.dl-dev-badge-icon-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.dl-dev-badge-list > .dl-dev-badge-card:only-child { border: 0; }

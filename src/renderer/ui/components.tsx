@@ -120,6 +120,7 @@ export function IconButton({ icon, label, onClick, className, ...props }: {
     className?: string;
     "aria-expanded"?: boolean;
     "aria-controls"?: string;
+    disabled?: boolean;
 }) {
     return (
         <Tooltip text={label}>
@@ -526,32 +527,303 @@ export function Collapse({ open, id, children }: { open: boolean; id: string; ch
 
 // ---- plugin settings --------------------------------------------------------------------------
 
-/** Discord's dropdown, or a native <select> when it isn't available */
-export function Dropdown<V extends string>({ id, label, labelledBy, options, value, onChange }: {
+/** Lists longer than this get a filter box */
+const FILTER_FROM = 12;
+const LIST_MAX = 320;
+
+/**
+ * A select that looks and moves like Discord's, with no browser popup: the list opens in a layer
+ * on <body>, so a dialog never clips it, with its scrollbar hidden. Focus stays on the button
+ * (aria-activedescendant points at the active option) except while typing in the filter box.
+ * Discord's own Select and the native <select> both showed a scrollbar in long lists.
+ */
+export function Dropdown<V extends string>({ id, label, labelledBy, options, value, onChange, disabled, className }: {
     id: string;
     label: string;
     labelledBy?: string;
-    options: readonly { label: string; value: V; }[];
+    /** A disabled option shows greyed out and can't be picked */
+    options: readonly { label: string; value: V; disabled?: boolean; }[];
     value: V;
     onChange(value: V): void;
+    disabled?: boolean;
+    /** Added to the button, for plugins that size it to their own layout */
+    className?: string;
 }) {
-    const Select = DiscordUI.Select.get;
-    if (Select) {
-        return (
-            <Select
-                options={options.map(o => ({ label: o.label, value: o.value }))}
-                select={v => onChange(v as V)}
-                isSelected={v => v === value}
-                serialize={String}
-                closeOnSelect
-                aria-label={label}
-            />
-        );
-    }
+    const [open, setOpen] = React.useState(false);
+    const [active, setActive] = React.useState(0);
+    const [query, setQuery] = React.useState("");
+    const button = React.useRef<HTMLButtonElement>(null);
+    const closeList = React.useRef<() => void>(() => setOpen(false));
+    const typed = React.useRef({ text: "", at: 0 });
+    const filterable = options.length > FILTER_FROM;
+    const shown = React.useMemo(() => {
+        const q = query.trim().toLocaleLowerCase();
+        return q ? options.filter(o => o.label.toLocaleLowerCase().includes(q)) : options;
+    }, [options, query]);
+    const current = options.find(o => o.value === value);
+    const listId = `${id}-list`;
+    const optionId = (i: number) => `${id}-option-${i}`;
+
+    const show = () => {
+        if (open || disabled) return;
+        setQuery("");
+        setActive(Math.max(0, options.findIndex(o => o.value === value)));
+        setOpen(true);
+    };
+    const hide = (refocus = true) => {
+        closeList.current();
+        if (refocus) button.current?.focus();
+    };
+    const choose = (option: { value: V; disabled?: boolean; } | undefined) => {
+        if (!option || option.disabled) return;
+        if (option.value !== value) onChange(option.value);
+        hide();
+    };
+
+    /** Jumps to the next option starting with what's been typed, like a native select */
+    const typeAhead = (key: string) => {
+        const now = Date.now();
+        const t = typed.current;
+        t.text = now - t.at > 600 ? key : t.text + key;
+        t.at = now;
+        const text = t.text.toLocaleLowerCase();
+        const from = open ? active : options.findIndex(o => o.value === value);
+        const list = open ? shown : options;
+        for (let n = 1; n <= list.length; n++) {
+            const i = (from + (t.text.length > 1 ? 0 : n) + list.length) % list.length;
+            if (!list[i]?.disabled && list[i]?.label.toLocaleLowerCase().startsWith(text)) {
+                if (open) setActive(i);
+                else onChange(list[i].value);
+                return;
+            }
+        }
+    };
+
+    /** Keys while the list is open, from the button or the filter box */
+    const onListKey = (e: ReactKeyboardEvent, inFilter: boolean) => {
+        const last = shown.length - 1;
+        const move = (to: number) => {
+            e.preventDefault();
+            setActive(Math.max(0, Math.min(last, to)));
+        };
+        switch (e.key) {
+            case "ArrowDown": return move(active + 1);
+            case "ArrowUp": return move(active - 1);
+            case "PageDown": return move(active + 8);
+            case "PageUp": return move(active - 8);
+            case "Home": if (!inFilter) return move(0); return;
+            case "End": if (!inFilter) return move(last); return;
+            case "Enter":
+                e.preventDefault();
+                return choose(shown[active]);
+            case " ":
+                if (inFilter) return;
+                e.preventDefault();
+                return choose(shown[active]);
+            case "Tab":
+                return hide(false);
+        }
+        if (inFilter || e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
+        e.preventDefault();
+        if (filterable) {
+            // Typing goes to the filter box
+            setQuery(q => q + e.key);
+            document.getElementById(`${id}-filter`)?.focus();
+        } else typeAhead(e.key);
+    };
+
+    const onButtonKey = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
+        if (open) return onListKey(e, false);
+        if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) {
+            e.preventDefault();
+            show();
+        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            typeAhead(e.key);
+        }
+    };
+
     return (
-        <select id={id} className="dl-select" value={value} aria-label={labelledBy ? undefined : label} aria-labelledby={labelledBy} onChange={e => onChange(e.currentTarget.value as V)}>
-            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <>
+            <button
+                ref={button}
+                id={id}
+                type="button"
+                className={cx("dl-select", className)}
+                disabled={disabled}
+                role="combobox"
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-controls={open ? listId : undefined}
+                aria-activedescendant={open && shown[active] ? optionId(active) : undefined}
+                aria-label={labelledBy ? undefined : label}
+                aria-labelledby={labelledBy ? `${labelledBy} ${id}` : undefined}
+                onClick={() => open ? hide() : show()}
+                onKeyDown={onButtonKey}
+            >
+                <span className="dl-select-value">{current?.label ?? ""}</span>
+                <Icon name="chevronDown" size={18} className="dl-select-chevron" />
+            </button>
+            {open && (
+                <SelectList
+                    anchor={button}
+                    id={listId}
+                    label={label}
+                    closeRef={closeList}
+                    focusInside={filterable}
+                    onClosed={() => setOpen(false)}
+                    onDismiss={hide}
+                >
+                    {filterable && (
+                        <input
+                            id={`${id}-filter`}
+                            className="dl-select-filter"
+                            type="text"
+                            autoComplete="off"
+                            spellCheck={false}
+                            placeholder={t("common.filter")}
+                            aria-label={t("common.filter")}
+                            aria-controls={listId}
+                            aria-activedescendant={shown[active] ? optionId(active) : undefined}
+                            value={query}
+                            onChange={e => {
+                                setQuery(e.currentTarget.value);
+                                setActive(0);
+                            }}
+                            onKeyDown={e => onListKey(e, true)}
+                        />
+                    )}
+                    <div className="dl-select-options" role="listbox" id={listId} aria-label={label}>
+                        {shown.map((o, i) => (
+                            <div
+                                key={o.value}
+                                id={optionId(i)}
+                                role="option"
+                                className="dl-select-option"
+                                aria-selected={o.value === value}
+                                aria-disabled={o.disabled || undefined}
+                                data-active={i === active ? "" : undefined}
+                                // Keeps focus where it is: the button, or the filter box
+                                onMouseDown={e => e.preventDefault()}
+                                onMouseMove={() => i !== active && setActive(i)}
+                                onClick={() => choose(o)}
+                            >
+                                <span className="dl-select-option-label">{o.label}</span>
+                                {o.value === value && <Icon name="circleCheck" size={18} className="dl-select-check" />}
+                            </div>
+                        ))}
+                        {!shown.length && <div className="dl-select-empty">{t("common.noMatches")}</div>}
+                    </div>
+                </SelectList>
+            )}
+        </>
+    );
+}
+
+/**
+ * The open list: fixed under its button (above it when there's no room below), as wide as it,
+ * following it on scroll and resize. Escape and clicks outside dismiss it; Escape never reaches
+ * the dialog or panel underneath. Counts as a dialog while open, for the same reason.
+ */
+function SelectList({ anchor, id, label, closeRef, focusInside, onClosed, onDismiss, children }: {
+    anchor: React.RefObject<HTMLButtonElement | null>;
+    id: string;
+    label: string;
+    closeRef: React.MutableRefObject<() => void>;
+    /** The filter box takes focus: inside Discord's settings it needs its own focus layer to keep it */
+    focusInside: boolean;
+    onClosed(): void;
+    onDismiss(refocus?: boolean): void;
+    children: ReactNode;
+}) {
+    const exit = useExit(onClosed);
+    closeRef.current = exit.close;
+    const popout = React.useRef<HTMLDivElement>(null);
+    const [place, setPlace] = React.useState<{ left: number; top: number; width: number; maxHeight: number; side: "top" | "bottom"; }>();
+
+    // Follows the button every frame while open: it can move without a scroll or resize, like
+    // while its dialog is still scaling in. Only a change re-renders.
+    React.useLayoutEffect(() => {
+        let frame = 0;
+        let last = "";
+        const measure = () => {
+            frame = requestAnimationFrame(measure);
+            const box = anchor.current?.getBoundingClientRect();
+            if (!box) return;
+            const gap = 8;
+            const want = Math.min(LIST_MAX, popout.current?.scrollHeight ?? LIST_MAX);
+            const below = window.innerHeight - box.bottom - gap * 2;
+            const above = box.top - gap * 2;
+            const side = below >= want || below >= above ? "bottom" : "top";
+            const maxHeight = Math.round(Math.max(120, Math.min(LIST_MAX, side === "bottom" ? below : above)));
+            const width = Math.round(Math.max(box.width, 180));
+            const left = Math.round(Math.min(Math.max(gap, box.left), window.innerWidth - width - gap));
+            const top = Math.round(side === "bottom" ? box.bottom + gap : box.top - gap);
+            const key = `${left} ${top} ${width} ${maxHeight} ${side}`;
+            if (key === last) return;
+            last = key;
+            setPlace({ left, width, maxHeight, side, top });
+        };
+        measure();
+        return () => cancelAnimationFrame(frame);
+    }, []);
+
+    // The chosen option in view on open, then the active one as the keys move it
+    React.useEffect(() => {
+        const list = popout.current;
+        if (!list || !place) return;
+        const observer = new MutationObserver(() => list.querySelector("[data-active]")?.scrollIntoView({ block: "nearest" }));
+        observer.observe(list, { attributes: true, subtree: true, attributeFilter: ["data-active"] });
+        list.querySelector("[data-active]")?.scrollIntoView({ block: "nearest" });
+        list.querySelector<HTMLInputElement>(".dl-select-filter")?.focus();
+        return () => observer.disconnect();
+    }, [!!place]);
+
+    React.useEffect(() => {
+        openDialogs++;
+        const self = {};
+        dialogStack.push(self);
+        // Capture phase on window, before the dialog's and the panel's own Escape handlers
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== "Escape" || dialogStack.at(-1) !== self) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            onDismiss();
+        };
+        const onDown = (e: PointerEvent) => {
+            const target = e.target as Node;
+            if (popout.current?.contains(target) || anchor.current?.contains(target)) return;
+            onDismiss(false);
+        };
+        window.addEventListener("keydown", onKey, true);
+        window.addEventListener("pointerdown", onDown, true);
+        return () => {
+            openDialogs--;
+            dialogStack.splice(dialogStack.indexOf(self), 1);
+            window.removeEventListener("keydown", onKey, true);
+            window.removeEventListener("pointerdown", onDown, true);
+        };
+    }, []);
+
+    const list = (
+                <div
+                    ref={popout}
+                    className="dl-select-popout evi-popout"
+                    data-side={place?.side}
+                    aria-label={label}
+                    data-list={id}
+                    style={place
+                        ? { left: place.left, width: place.width, maxHeight: place.maxHeight, ...(place.side === "bottom" ? { top: place.top } : { bottom: window.innerHeight - place.top }) }
+                        : { visibility: "hidden" }}
+                >
+                    {children}
+                </div>
+    );
+    return ReactDOM.createPortal(
+        <div className="dl-root dl-select-layer" {...exit.closingProps}>
+            {focusInside ? <FocusLayer containerRef={popout}>{list}</FocusLayer> : list}
+        </div>,
+        document.body,
     );
 }
 
@@ -877,6 +1149,33 @@ export function useExit(onClose: () => void) {
 export function Dialog({ title, onClose, children, id, className }: { title: ReactNode; onClose(): void; children: ReactNode | ((close: () => void) => ReactNode); id: string; /** On the dialog box, e.g. for a wider one */ className?: string; }) {
     const exit = useExit(onClose);
     const { ref, onKeyDown } = useModal(exit.close);
+    const body = React.useRef<HTMLDivElement>(null);
+
+    // A dialog opens at its top. Inside Discord's settings, Discord's focus lock can move focus to a
+    // field further down as the dialog opens, which scrolled the body there: until the user scrolls
+    // or presses a key themselves, any scroll that focus causes goes back to the top
+    React.useLayoutEffect(() => {
+        const el = body.current;
+        if (!el) return;
+        el.scrollTop = 0;
+        let settled = false;
+        const settle = () => void (settled = true);
+        const onScroll = () => { if (!settled) el.scrollTop = 0; };
+        el.addEventListener("scroll", onScroll);
+        el.addEventListener("wheel", settle, { passive: true });
+        el.addEventListener("pointerdown", settle);
+        el.addEventListener("keydown", settle);
+        el.addEventListener("touchstart", settle, { passive: true });
+        const timer = setTimeout(settle, 1000);
+        return () => {
+            clearTimeout(timer);
+            el.removeEventListener("scroll", onScroll);
+            el.removeEventListener("wheel", settle);
+            el.removeEventListener("pointerdown", settle);
+            el.removeEventListener("keydown", settle);
+            el.removeEventListener("touchstart", settle);
+        };
+    }, []);
 
     return ReactDOM.createPortal(
         <div className="dl-root" {...exit.closingProps}>
@@ -887,7 +1186,7 @@ export function Dialog({ title, onClose, children, id, className }: { title: Rea
                             <Text tag="h2" variant="heading-lg/semibold" color="text-strong" id={`${id}-title`}>{title}</Text>
                             <IconButton icon="close" label={t("common.close")} onClick={exit.close} />
                         </header>
-                        <div className="dl-dialog-body">{typeof children === "function" ? children(exit.close) : children}</div>
+                        <div className="dl-dialog-body" ref={body}>{typeof children === "function" ? children(exit.close) : children}</div>
                     </FocusLayer>
                 </div>
             </div>

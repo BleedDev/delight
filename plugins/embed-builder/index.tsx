@@ -15,7 +15,7 @@
  * - Drafts: the open message is kept per channel while you work, and named drafts are kept in the
  *   plugin's settings. Picked files aren't kept: they're only in memory while the dialog is open.
  */
-import { definePlugin, filters, find, getStore, Menu, openLayer, React } from "@evi/api";
+import { definePlugin, Dropdown, filters, find, getStore, Menu, openLayer, React } from "@evi/api";
 import type { CloseLayer, PluginContext } from "@evi/api";
 import type { ReactNode } from "react";
 
@@ -740,10 +740,13 @@ const KINDS: Kind[] = ["text", "section", "gallery", "buttons", "separator", "fi
 function FilePick({ files, onPick }: { files: string[]; onPick(name: string): void; }) {
     if (!files.length) return null;
     return (
-        <select className="evi-eb-filepick" aria-label={t("comp.useFile")} title={t("comp.useFile")} value="" onChange={e => e.currentTarget.value && onPick(e.currentTarget.value)}>
-            <option value="">{t("comp.useFile")}</option>
-            {files.map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
+        <Dropdown
+            className="evi-eb-filepick"
+            label={t("comp.useFile")}
+            value=""
+            onChange={name => name && onPick(name)}
+            options={[{ value: "", label: t("comp.useFile") }, ...files.map(f => ({ value: f, label: f }))]}
+        />
     );
 }
 
@@ -846,11 +849,19 @@ function ChildBody({ c, where, files, bad, onChange }: { c: Child; where: string
                         ? (
                             <div className="evi-eb-input">
                                 <label><span>{t("comp.fileName")}</span></label>
-                                <select data-where={where} value={c.name} aria-invalid={bad.has(where) || undefined} onChange={e => onChange({ ...c, name: e.currentTarget.value })}>
-                                    <option value="">{t("comp.filePick")}</option>
-                                    {files.map(f => <option key={f} value={f}>{f}</option>)}
-                                    {c.name && !files.includes(c.name) && <option value={c.name}>{c.name}</option>}
-                                </select>
+                                <div className="evi-eb-dropdown" data-where={where}>
+                                <Dropdown
+                                    className={bad.has(where) ? "evi-eb-select-bad" : undefined}
+                                    label={t("comp.fileName")}
+                                    value={c.name}
+                                    onChange={name => onChange({ ...c, name })}
+                                    options={[
+                                        { value: "", label: t("comp.filePick") },
+                                        ...files.map(f => ({ value: f, label: f })),
+                                        ...c.name && !files.includes(c.name) ? [{ value: c.name, label: c.name }] : [],
+                                    ]}
+                                />
+                                </div>
                             </div>
                         )
                         : <p className="evi-eb-note">{t("comp.fileNone")}</p>}
@@ -1085,7 +1096,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
         const el = editorRef.current?.querySelector<HTMLElement>(`[data-where="${CSS.escape(where)}"]`)
             ?? editorRef.current?.querySelector<HTMLElement>(`[data-where^="${CSS.escape(where)}."]`);
         el?.scrollIntoView({ block: "center", behavior: "smooth" });
-        el?.focus({ preventScroll: true });
+        (el?.matches("input, textarea, button") ? el : el?.querySelector<HTMLElement>("button") ?? el)?.focus({ preventScroll: true });
     });
 
     const toggle = (key: string) => setOpenKeys(prev => {
@@ -1291,9 +1302,13 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
                                     {webhooks === undefined && !loadError && <span className="evi-eb-note">{t("webhook.loading")}</span>}
                                     {loadError && <span className="evi-eb-note" data-error="">{loadError}</span>}
                                     {webhooks && webhooks.length > 0 && (
-                                        <select id="evi-eb-webhook" value={hookId} onChange={e => setHookId(e.currentTarget.value)}>
-                                            {webhooks.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                                        </select>
+                                        <Dropdown
+                                            id="evi-eb-webhook"
+                                            label={t("webhook.label")}
+                                            value={hookId}
+                                            onChange={setHookId}
+                                            options={webhooks.map(w => ({ value: w.id, label: w.name }))}
+                                        />
                                     )}
                                     {webhooks && webhooks.length === 0 && <span className="evi-eb-note">{t("webhook.none")}</span>}
                                     <button type="button" className="evi-eb-button" data-variant="secondary" disabled={!!busy} onClick={() => void newWebhook()}>
@@ -1584,7 +1599,11 @@ const css = `
 .evi-eb-input { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .evi-eb-input > label { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--text-muted, #b5bac1); }
 .evi-eb-input-row { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
-.evi-eb-input-row > :is(input, textarea, select):first-child { flex: 1; }
+.evi-eb-input-row > :is(input, textarea, select, .dl-dropdown-host):first-child { flex: 1; min-width: 0; }
+/* The dropdown host is display: contents, so its button is the row's flex item */
+.evi-eb-input-row > .dl-dropdown-host:first-child > .dl-select { flex: 1; min-width: 0; width: auto; }
+.evi-eb-dropdown .dl-select, .evi-eb-input-row .dl-select { min-height: 40px; font-size: 14px; }
+.evi-eb-select-bad { border-color: var(--status-danger, #f23f43) !important; }
 .evi-eb-input :is(input[type="text"], input[type="datetime-local"], textarea, select), .evi-eb-panel textarea, .evi-eb-hex {
   width: 100%; box-sizing: border-box; min-height: 40px; padding: 10px 12px; border-radius: 8px; font: inherit; font-size: 14px; line-height: 20px; color: var(--text-default, #dbdee1);
   border: 1px solid var(--input-border, var(--border-subtle, rgba(255,255,255,.08))); background: var(--input-background, var(--background-tertiary, #1e1f22));

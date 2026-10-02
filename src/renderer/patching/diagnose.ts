@@ -57,8 +57,9 @@ export function hasPatchProblems(plugin: string): boolean {
     // An optional patch finding nothing isn't a problem: often its module is in a chunk Discord loads
     // on demand (the image viewer), which isn't registered until it's first used. Once it loads, a
     // patch that doesn't fit still shows up above as failed or partial.
-    const pending = records.filter(r => r.state === "pending" && !r.patch.optional);
-    if (!pending.length) return false;
-    const sources = moduleSources();
-    return pending.some(r => !sources.some(([, src]) => matchesFind(src, r.patch.find)));
+    // A patch still waiting isn't one either, optional or not: its module may simply not have loaded
+    // yet. Volume Booster's patch the user right-click menu, which Discord loads the first time it
+    // opens, and every install that hadn't opened one yet reported it broken. A patch that doesn't
+    // fit once its module loads shows up above as failed or partial.
+    return false;
 }

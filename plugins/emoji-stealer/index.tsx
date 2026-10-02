@@ -15,7 +15,7 @@
  * Both fall back to Discord's HTTP client ({ get, post, put, patch, del }) if the creator moved.
  * Their errors are Discord's HTTP errors, whose body holds the reason shown in the toast.
  */
-import { definePlugin, filters, find, findByCode, findMenuGroup, getStore, Menu, openLayer, React } from "@evi/api";
+import { definePlugin, Dropdown, filters, find, findByCode, findMenuGroup, getStore, Menu, openLayer, React } from "@evi/api";
 import type { CloseLayer, PluginContext } from "@evi/api";
 import type { ReactNode } from "react";
 
@@ -279,15 +279,34 @@ function Dialog({ expression, initialGuildId, onClose }: { expression: Expressio
                         {t(isEmoji ? "dialog.hint.emoji" : "dialog.hint.sticker")}
                     </p>
 
-                    <label className="evi-es-label" htmlFor="evi-es-guild">{t("dialog.server")}</label>
+                    <label className="evi-es-label" id="evi-es-guild-label" htmlFor="evi-es-guild">{t("dialog.server")}</label>
                     {guilds.length ? (
-                        <select id="evi-es-guild" className="evi-es-input" value={guildId} disabled={busy} onChange={e => setGuildId(e.currentTarget.value)}>
-                            {guilds.map(({ guild, slots }) => (
-                                <option key={guild.id} value={guild.id} disabled={slots.left <= 0}>
-                                    {guild.name} ({slots.left <= 0 ? t("dialog.full") : slots.detail})
-                                </option>
-                            ))}
-                        </select>
+                        // Evi 2.0.0+ has its own dropdown; older Evi gets the system's
+                        Dropdown
+                            ? (
+                                <Dropdown
+                                    id="evi-es-guild"
+                                    labelledBy="evi-es-guild-label"
+                                    label={t("dialog.server")}
+                                    value={guildId}
+                                    disabled={busy}
+                                    onChange={setGuildId}
+                                    options={guilds.map(({ guild, slots }) => ({
+                                        value: guild.id,
+                                        label: `${guild.name} (${slots.left <= 0 ? t("dialog.full") : slots.detail})`,
+                                        disabled: slots.left <= 0,
+                                    }))}
+                                />
+                            )
+                            : (
+                                <select id="evi-es-guild" className="evi-es-input" value={guildId} disabled={busy} onChange={e => setGuildId(e.currentTarget.value)}>
+                                    {guilds.map(({ guild, slots }) => (
+                                        <option key={guild.id} value={guild.id} disabled={slots.left <= 0}>
+                                            {guild.name} ({slots.left <= 0 ? t("dialog.full") : slots.detail})
+                                        </option>
+                                    ))}
+                                </select>
+                            )
                     ) : (
                         <p className="evi-es-hint" data-error>{t(isEmoji ? "dialog.noPermission.emoji" : "dialog.noPermission.sticker")}</p>
                     )}

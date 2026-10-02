@@ -2,7 +2,7 @@
     "id": "emoji-stealer",
     "name": "Emoji Stealer",
     "description": "Right-click a custom emoji, reaction or sticker to add it to one of your servers, with a name check and the slots each server has left. Also copies emoji links and IDs.",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "authors": [
         "Evi"
     ],
@@ -17,6 +17,12 @@
         ]
     },
     "changelog": [
+        {
+            "version": "1.1.2",
+            "notes": [
+                "Its server menu looks like Discord's, with no scrollbar, on Evi 2.0 and newer."
+            ]
+        },
         {
             "version": "1.1.1",
             "notes": [
@@ -54,6 +60,9 @@
             "name": "Emoji Stealer",
             "description": "Klicke ein benutzerdefiniertes Emoji, eine Reaktion oder einen Sticker mit der rechten Maustaste an, um es zu einem deiner Server hinzuzufügen, mit Namensprüfung und den freien Plätzen jedes Servers. Kopiert auch Emoji-Links und IDs.",
             "changelog": {
+                "1.1.2": [
+                    "Das Servermenü sieht unter Evi 2.0 und neuer wie das von Discord aus, ohne Scrollleiste."
+                ],
                 "1.1.1": [
                     "Falls Discord seine Emoji- und Sticker-Funktionen wieder verschiebt, lädt der Ersatzweg jetzt wirklich hoch, statt still nichts zu tun."
                 ],
@@ -75,6 +84,9 @@
             "name": "Emoji Stealer",
             "description": "Haz clic derecho en un emoji personalizado, una reacción o un sticker para añadirlo a uno de tus servidores, con comprobación del nombre y los espacios que le quedan a cada servidor. También copia enlaces e ID de emojis.",
             "changelog": {
+                "1.1.2": [
+                    "Su menú de servidores se ve como el de Discord, sin barra de desplazamiento, en Evi 2.0 y posteriores."
+                ],
                 "1.1.1": [
                     "Si Discord vuelve a mover sus creadores de emojis y stickers, la alternativa ahora sí los sube en vez de no hacer nada."
                 ],
@@ -96,6 +108,9 @@
             "name": "Emoji Stealer",
             "description": "Fais un clic droit sur un émoji personnalisé, une réaction ou un sticker pour l'ajouter à l'un de tes serveurs, avec vérification du nom et des emplacements restants sur chaque serveur. Copie aussi les liens et les ID d'émojis.",
             "changelog": {
+                "1.1.2": [
+                    "Son menu des serveurs ressemble à celui de Discord, sans barre de défilement, sur Evi 2.0 et plus récent."
+                ],
                 "1.1.1": [
                     "Si Discord déplace encore ses créateurs d’emojis et d’autocollants, la solution de secours les envoie vraiment au lieu de ne rien faire."
                 ],
@@ -117,6 +132,9 @@
             "name": "Emoji Stealer",
             "description": "カスタム絵文字、リアクション、ステッカーを右クリックして、自分のサーバーに追加できます。名前のチェックと、各サーバーの空き枠の表示つき。絵文字のリンクやIDのコピーにも対応しています。",
             "changelog": {
+                "1.1.2": [
+                    "Evi 2.0以降では、サーバーのメニューがDiscordと同じ見た目になり、スクロールバーが表示されません。"
+                ],
                 "1.1.1": [
                     "Discord が絵文字とスタンプの作成機能を再び移動しても、代替手段で何もせずに終わることなく、実際にアップロードされるようになりました。"
                 ],
@@ -138,6 +156,9 @@
             "name": "Emoji Stealer",
             "description": "Kliknij prawym przyciskiem myszy niestandardowe emoji, reakcję lub naklejkę, aby dodać je do jednego ze swoich serwerów, ze sprawdzaniem nazwy i liczbą wolnych miejsc na każdym serwerze. Kopiuje też linki i ID emoji.",
             "changelog": {
+                "1.1.2": [
+                    "Menu serwerów wygląda jak w Discordzie, bez paska przewijania, w Evi 2.0 i nowszych."
+                ],
                 "1.1.1": [
                     "Jeśli Discord znów przeniesie tworzenie emoji i naklejek, zapasowa ścieżka naprawdę je wyśle, zamiast po cichu nic nie robić."
                 ],
@@ -159,6 +180,9 @@
             "name": "Emoji Stealer",
             "description": "Clique com o botão direito em um emoji personalizado, reação ou figurinha para adicioná-lo a um dos seus servidores, com verificação de nome e as vagas que cada servidor ainda tem. Também copia links e IDs de emojis.",
             "changelog": {
+                "1.1.2": [
+                    "O menu de servidores fica igual ao do Discord, sem barra de rolagem, no Evi 2.0 ou mais recente."
+                ],
                 "1.1.1": [
                     "Se o Discord mudar de novo onde cria emojis e figurinhas, o caminho alternativo agora envia de verdade em vez de não fazer nada."
                 ],
@@ -180,6 +204,9 @@
             "name": "Emoji Stealer",
             "description": "Нажмите правой кнопкой мыши на кастомное эмодзи, реакцию или стикер, чтобы добавить их на один из ваших серверов, с проверкой названия и количества свободных слотов на каждом сервере. Также копирует ссылки и ID эмодзи.",
             "changelog": {
+                "1.1.2": [
+                    "Меню серверов выглядит как в Discord, без полосы прокрутки, в Evi 2.0 и новее."
+                ],
                 "1.1.1": [
                     "Если Discord снова перенесёт создание эмодзи и стикеров, запасной путь теперь действительно загрузит их, а не молча ничего не сделает."
                 ],
@@ -201,6 +228,9 @@
             "name": "Emoji Stealer",
             "description": "Özel bir emojiye, tepkiye veya çıkartmaya sağ tıklayıp sunucularından birine ekle; ad denetimi ve her sunucuda kalan yuvalarla birlikte. Emoji bağlantılarını ve kimliklerini de kopyalar.",
             "changelog": {
+                "1.1.2": [
+                    "Sunucu menüsü Evi 2.0 ve sonrasında Discord'unki gibi görünür, kaydırma çubuğu olmadan."
+                ],
                 "1.1.1": [
                     "Discord emoji ve çıkartma oluşturucularını yine taşırsa, yedek yol artık sessizce hiçbir şey yapmamak yerine gerçekten yüklüyor."
                 ],
