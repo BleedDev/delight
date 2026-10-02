@@ -1264,6 +1264,23 @@ const logger = await page.evaluate(async () => {
     await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: a, channelId });
     const keptA = { inStore: !!store.getMessage(channelId, a), deleted: log.isDeleted(channelId, a) };
 
+    // Marked by element ids too, however Discord renders the row: red text, tint and a label
+    const row = document.createElement("li");
+    row.id = `chat-messages-${channelId}-${a}`;
+    row.innerHTML = `<div id="message-content-${a}">gone</div>`;
+    document.body.appendChild(row);
+    await sleep(50);
+    const content = row.firstElementChild as HTMLElement;
+    const marked = {
+        color: getComputedStyle(content).color,
+        rowShadow: getComputedStyle(row).boxShadow,
+        label: getComputedStyle(content, "::after").content,
+        labelWithTag: "",
+    };
+    row.insertAdjacentHTML("beforeend", `<span class="dl-ml-deleted">Deleted</span>`);
+    marked.labelWithTag = getComputedStyle(content, "::after").content;
+    row.remove();
+
     // Local deletes (ephemeral dismissals, failed sends) always go through
     await Dispatcher.dispatch({ type: "MESSAGE_DELETE", id: b, channelId, local: true });
     const localB = !!store.getMessage(channelId, b);
@@ -1383,7 +1400,7 @@ const logger = await page.evaluate(async () => {
 
     return {
         chunks: { total: chunkIds.length, loaded: chunksLoaded, loadMs, channelModule, moduleIds, requireErrors },
-        running, hooked, loaded, first: a, edits, storeContent, keptA, localB, keptC, seenBySubscribers, selfD, media, render, caps, beforeStop, stopped, stockDelete,
+        running, hooked, loaded, first: a, edits, storeContent, keptA, marked, localB, keptC, seenBySubscribers, selfD, media, render, caps, beforeStop, stopped, stockDelete,
         patches: diagnosePatches().filter((p: any) => p.plugin === "message-logger").length,
     };
 });
@@ -1393,6 +1410,8 @@ check("message-logger: no source patches to break", logger.patches === 0);
 check("MessageStore accepts a synthetic channel logged out", logger.loaded === 15, logger.loaded);
 check("edits record previous versions, embed-only updates don't", JSON.stringify(logger.edits) === JSON.stringify([`message ${logger.first}`, "edited **once**"]) && logger.storeContent === "edited twice", { edits: logger.edits, store: logger.storeContent });
 check("a deleted message stays in MessageStore, marked deleted", logger.keptA.inStore && logger.keptA.deleted, logger.keptA);
+check("a deleted message's row is marked by id: red text, tint, a label unless the tag is there", /^(rgb\(2\d\d, |oklab\([\d.]+ 0\.[1-9])/.test(logger.marked.color) && logger.marked.rowShadow !== "none"
+    && /deleted/i.test(logger.marked.label) && logger.marked.labelWithTag === "none", logger.marked);
 check("other stores and subscribers still get MESSAGE_DELETE", logger.seenBySubscribers.includes(logger.first), logger.seenBySubscribers);
 check("local deletes pass through", !logger.localB);
 check("bulk deletes are kept per message", logger.keptC);

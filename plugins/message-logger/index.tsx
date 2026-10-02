@@ -530,6 +530,39 @@ function install(ctx: Ctx, log: MessageLog, store: any, saver: ReturnType<typeof
     });
 }
 
+/**
+ * Deleted messages marked by their element ids, which Discord gives every message row
+ * (chat-messages-<channel>-<id>) and its text (message-content-<id>): red text, the row tint and a
+ * "Deleted" label, whatever Discord renders the message with. The tag under the message (Logged) adds
+ * the time and the edit history where the accessories hook runs, and the label then steps aside.
+ */
+function markDeleted(ctx: Ctx, log: MessageLog) {
+    const style = document.createElement("style");
+    style.id = "evi-message-logger-deleted";
+    document.head.append(style);
+    ctx.onDispose(() => style.remove());
+
+    const update = () => {
+        const label = JSON.stringify(` (${t("deleted").toLowerCase()})`);
+        const rules: string[] = [];
+        for (const [channelId, ids] of log.deleted()) {
+            for (const id of ids) {
+                const row = `#chat-messages-${channelId}-${id}`;
+                const text = `${row} #message-content-${id}`;
+                rules.push(
+                    `${row} { background: color-mix(in srgb, var(--status-danger, #f23f43) 8%, transparent); box-shadow: inset 2px 0 0 var(--status-danger, #f23f43); opacity: 1 !important; }`,
+                    `${text} { color: var(--text-feedback-critical, var(--status-danger, #f23f43)) !important; opacity: 1 !important; }`,
+                    `${row}:not(:has(.dl-ml-deleted)) #message-content-${id}::after { content: ${label}; font-size: 0.75rem; font-weight: 500; }`,
+                );
+            }
+        }
+        const css = rules.join("\n");
+        if (style.textContent !== css) style.textContent = css;
+    };
+    update();
+    ctx.onDispose(log.subscribe(update));
+}
+
 // ---- Menus --------------------------------------------------------------------------------------
 
 /** "3 deleted, 1 edited" */
@@ -581,6 +614,7 @@ export default definePlugin({
         ctx.addStyle(css);
 
         withStore(ctx, "MessageStore", store => install(ctx, log, store, saver));
+        markDeleted(ctx, log);
 
         // Attachments in the channel you're looking at, saved as they load: after a delete they're gone from Discord
         let selected: any;
