@@ -8,6 +8,8 @@
  * shape that only a measurement has.
  */
 
+import { zoneRegion } from "./zones";
+
 export type System = "metric" | "imperial";
 
 export interface Rates {
@@ -412,7 +414,7 @@ export function segments(text: string, prefs: Prefs, kinds?: Kinds): Segment[] |
     return out;
 }
 
-// ---- Defaults from your language ----------------------------------------------------------------
+// ---- Defaults from where you are ----------------------------------------------------------------
 
 const REGION_CURRENCY: Record<string, string> = {
     US: "USD", GB: "GBP", CA: "CAD", AU: "AUD", NZ: "NZD", IE: "EUR", DE: "EUR", AT: "EUR", FR: "EUR", BE: "EUR", NL: "EUR", ES: "EUR",
@@ -438,6 +440,14 @@ export function regionOf(locales: readonly string[]): string {
         if (LANGUAGE_REGION[lang]) return LANGUAGE_REGION[lang];
     }
     return "US";
+}
+
+/**
+ * Where you are: your time zone's country first, since most people leave Discord and their browser
+ * in "English (US)" wherever they live, then your languages
+ */
+export function regionFor(zone: string, locales: readonly string[]): string {
+    return zoneRegion(zone) ?? regionOf(locales);
 }
 
 export const currencyFor = (region: string) => REGION_CURRENCY[region] ?? "USD";

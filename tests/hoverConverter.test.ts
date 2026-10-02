@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { convert, currencyFor, find, offsetAt, parseNumber, regionOf, segments, systemFor } from "../plugins/hover-converter/convert";
+import { convert, currencyFor, find, offsetAt, parseNumber, regionFor, regionOf, segments, systemFor } from "../plugins/hover-converter/convert";
 import type { Prefs } from "../plugins/hover-converter/convert";
 
 const rates = { base: "EUR", rates: { USD: 1.1298, GBP: 0.85373, TRY: 55.3993, PLN: 4.3735, BRL: 5.862, JPY: 178.49, RUB: 95 } };
@@ -148,6 +148,11 @@ describe("hover converter: defaults from your language", () => {
         expect(regionOf(["pt-BR", "en-US"])).toBe("BR");
         expect(regionOf(["de", "en-GB"])).toBe("GB");
         expect(currencyFor("TR")).toBe("TRY");
+        // Your time zone says where you are better than "English (US)" does
+        expect(regionFor("Europe/Istanbul", ["en-US"])).toBe("TR");
+        expect(regionFor("Asia/Calcutta", ["en-US"])).toBe("IN");
+        expect(regionFor("America/New_York", ["tr-TR"])).toBe("US");
+        expect(regionFor("UTC", ["de-DE"])).toBe("DE");
         expect(currencyFor("BG")).toBe("EUR");
         expect(currencyFor("??")).toBe("USD");
         expect(systemFor("US")).toBe("imperial");

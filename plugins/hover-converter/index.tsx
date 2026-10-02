@@ -14,7 +14,7 @@
 import { Components, definePlugin, filters, I18n, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
-import { CODES, convert, currencyFor, find, regionOf, systemFor } from "./convert";
+import { CODES, convert, currencyFor, find, regionFor, systemFor } from "./convert";
 import type { Found, Kinds, Prefs, Rates } from "./convert";
 import { t } from "./strings";
 
@@ -25,7 +25,8 @@ const EXCHANGE_RATE_API = "https://open.er-api.com/v6/latest/EUR";
 /** How deep into Discord's output to look: messages nest a few levels (lists, quotes, bold) */
 const MAX_DEPTH = 12;
 
-const region = () => regionOf([...(navigator.languages ?? []), navigator.language, I18n.discordLocale].filter(Boolean));
+const zone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+const region = () => regionFor(zone(), [...(navigator.languages ?? []), navigator.language, I18n.discordLocale].filter(Boolean));
 const autoCurrency = () => currencyFor(region());
 
 function currencyName(code: string) {
@@ -122,7 +123,7 @@ function prefs(): Prefs {
             at, version, locale,
             currency: currency === "auto" ? currencyFor(r) : currency,
             system: units === "auto" ? systemFor(r) : units,
-            zone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+            zone: zone(),
         };
     }
     return { locale, currency: base.currency, system: base.system, zone: base.zone, now: new Date(at), rates, tr };
