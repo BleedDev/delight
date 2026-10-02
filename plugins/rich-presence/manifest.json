@@ -1,0 +1,101 @@
+{
+    "id": "rich-presence",
+    "name": "Rich Presence Builder",
+    "description": "Show your own \"Playing…\" on your profile, with your own pictures, text and buttons, without running any app. Save several presets and switch between them in one click.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "social",
+        "utility"
+    ],
+    "permissions": {
+        "network": [
+            "discord.com"
+        ]
+    },
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Rich Presence Builder",
+            "description": "Zeige ein eigenes „Spielt …“ in deinem Profil, mit eigenen Bildern, Text und Buttons, ganz ohne laufende App. Speichere mehrere Vorlagen und wechsle mit einem Klick.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Creador de Rich Presence",
+            "description": "Muestra un «Jugando a…» propio en tu perfil, con tus imágenes, texto y botones, sin ejecutar ninguna aplicación. Guarda varios ajustes y cambia entre ellos con un clic.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Créateur de Rich Presence",
+            "description": "Affiche ton propre « Joue à… » sur ton profil, avec tes images, ton texte et tes boutons, sans aucune application lancée. Garde plusieurs préréglages et passe de l'un à l'autre en un clic.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "リッチプレゼンス作成",
+            "description": "アプリを起動しなくても、自分の画像・テキスト・ボタン付きの「プレイ中」をプロフィールに表示できます。複数のプリセットを保存して、ワンクリックで切り替えられます。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Kreator Rich Presence",
+            "description": "Pokaż na profilu własne „Gra w…” z własnymi obrazami, tekstem i przyciskami, bez uruchamiania żadnej aplikacji. Zapisz kilka ustawień i przełączaj je jednym kliknięciem.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Criador de Rich Presence",
+            "description": "Mostre um \"Jogando…\" seu no perfil, com suas imagens, texto e botões, sem rodar nenhum aplicativo. Salve várias predefinições e troque entre elas com um clique.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Конструктор Rich Presence",
+            "description": "Показывайте в профиле своё «Играет в…» с собственными картинками, текстом и кнопками, без запуска каких-либо приложений. Сохраняйте несколько пресетов и переключайте их одним нажатием.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Rich Presence Oluşturucu",
+            "description": "Hiçbir uygulama çalıştırmadan profilinde kendi resimlerin, metnin ve butonlarınla özel bir \"Oynuyor…\" göster. Birkaç hazır ayar kaydet ve tek tıkla aralarında geçiş yap.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}

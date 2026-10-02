@@ -1,0 +1,97 @@
+{
+    "id": "role-colours",
+    "name": "Role Colours Everywhere",
+    "description": "People's role colours show in mentions, the typing indicator, voice channels and reactions, not only on names in chat.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "social",
+        "servers"
+    ],
+    "permissions": {},
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Rollenfarben überall",
+            "description": "Rollenfarben erscheinen in Erwähnungen, der Tippanzeige, Sprachkanälen und Reaktionen, nicht nur an Namen im Chat.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Colores de rol en todas partes",
+            "description": "Los colores de rol aparecen en menciones, el indicador de escritura, los canales de voz y las reacciones, no solo en los nombres del chat.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Couleurs de rôle partout",
+            "description": "Les couleurs de rôle apparaissent dans les mentions, l'indicateur d'écriture, les salons vocaux et les réactions, pas seulement sur les noms du chat.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "どこでもロールの色",
+            "description": "ロールの色を、チャットの名前だけでなく、メンション、入力中の表示、ボイスチャンネル、リアクションにも表示します。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Kolory ról wszędzie",
+            "description": "Kolory ról pokazują się we wzmiankach, wskaźniku pisania, kanałach głosowych i reakcjach, nie tylko przy imionach na czacie.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Cores de cargo em todo lugar",
+            "description": "As cores dos cargos aparecem em menções, no indicador de digitação, nos canais de voz e nas reações, não só nos nomes do chat.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Цвета ролей везде",
+            "description": "Цвета ролей видны в упоминаниях, индикаторе набора, голосовых каналах и реакциях, а не только у имён в чате.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Her Yerde Rol Renkleri",
+            "description": "Rol renkleri yalnızca sohbetteki isimlerde değil; bahsetmelerde, yazıyor göstergesinde, ses kanallarında ve tepkilerde de görünür.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,99 @@
+{
+    "id": "click-actions",
+    "name": "Click Actions",
+    "description": "Double-click your own message to edit it, double-click someone else's to reply, and Shift+click to delete.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "messages",
+        "utility"
+    ],
+    "permissions": {
+        "readMessages": true
+    },
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Klick-Aktionen",
+            "description": "Doppelklicke auf deine Nachricht zum Bearbeiten, auf die einer anderen Person zum Antworten, und Umschalt+Klick zum Löschen.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Acciones de clic",
+            "description": "Doble clic en tu mensaje para editarlo, en el de otra persona para responder, y Mayús+clic para eliminar.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Actions au clic",
+            "description": "Double-clique sur ton message pour le modifier, sur celui de quelqu'un d'autre pour répondre, et Maj+clic pour supprimer.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "クリック操作",
+            "description": "自分のメッセージをダブルクリックで編集、他の人のメッセージをダブルクリックで返信、Shift+クリックで削除します。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Akcje kliknięć",
+            "description": "Dwuklik na swoją wiadomość, aby ją edytować, na cudzą, aby odpowiedzieć, i Shift+klik, aby usunąć.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Ações de clique",
+            "description": "Clique duplo na sua mensagem para editar, na de outra pessoa para responder, e Shift+clique para apagar.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Действия по клику",
+            "description": "Двойной клик по своему сообщению — изменить, по чужому — ответить, Shift+клик — удалить.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Tıklama Eylemleri",
+            "description": "Mesajını düzenlemek için çift tıkla, başkasınınkini yanıtlamak için çift tıkla, silmek için Shift+tıkla.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}

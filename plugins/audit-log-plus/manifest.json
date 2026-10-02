@@ -1,0 +1,101 @@
+{
+    "id": "audit-log-plus",
+    "name": "Audit Log Plus",
+    "description": "A readable audit log: right-click a server to search who did what, filter by person, kind of action or date, see exactly what changed, and export it as CSV or JSON.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "servers",
+        "utility"
+    ],
+    "permissions": {
+        "network": [
+            "discord.com"
+        ]
+    },
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Audit Log Plus",
+            "description": "Ein lesbares Audit-Log: Rechtsklick auf einen Server, um zu durchsuchen, wer was getan hat, nach Person, Art der Aktion oder Datum zu filtern, genau zu sehen, was sich geändert hat, und es als CSV oder JSON zu exportieren.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Audit Log Plus",
+            "description": "Un registro de auditoría legible: haz clic derecho en un servidor para buscar quién hizo qué, filtrar por persona, tipo de acción o fecha, ver exactamente qué cambió y exportarlo como CSV o JSON.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Audit Log Plus",
+            "description": "Des logs lisibles : clic droit sur un serveur pour chercher qui a fait quoi, filtrer par personne, type d'action ou date, voir exactement ce qui a changé et exporter en CSV ou JSON.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "Audit Log Plus",
+            "description": "読みやすい監査ログ。サーバーを右クリックして、誰が何をしたかを検索し、人・操作の種類・日付で絞り込み、何が変わったかを確認して、CSVやJSONで書き出せます。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Audit Log Plus",
+            "description": "Czytelny dziennik zdarzeń: kliknij serwer prawym przyciskiem, aby sprawdzić, kto co zrobił, filtrować według osoby, rodzaju działania lub daty, zobaczyć dokładne zmiany i wyeksportować go jako CSV lub JSON.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Audit Log Plus",
+            "description": "Um registro de auditoria legível: clique com o botão direito em um servidor para pesquisar quem fez o quê, filtrar por pessoa, tipo de ação ou data, ver exatamente o que mudou e exportar como CSV ou JSON.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Audit Log Plus",
+            "description": "Понятный журнал аудита: щёлкните сервер правой кнопкой, чтобы искать, кто что сделал, фильтровать по человеку, типу действия или дате, видеть, что именно изменилось, и экспортировать в CSV или JSON.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Audit Log Plus",
+            "description": "Okunabilir bir denetim kaydı: kimin ne yaptığını aramak, kişiye, eylem türüne veya tarihe göre filtrelemek, neyin değiştiğini tam olarak görmek ve CSV ya da JSON olarak dışa aktarmak için bir sunucuya sağ tıkla.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}

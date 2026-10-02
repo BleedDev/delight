@@ -1,0 +1,101 @@
+{
+    "id": "soundboard-stealer",
+    "name": "Soundboard Stealer",
+    "description": "Right-click a soundboard sound to download it under its own name, copy its link, or add it to one of your servers after a listen.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "utility",
+        "voice"
+    ],
+    "permissions": {
+        "network": [
+            "cdn.discordapp.com"
+        ]
+    },
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Soundboard-Dieb",
+            "description": "Rechtsklicke einen Soundboard-Sound, um ihn unter seinem Namen herunterzuladen, seinen Link zu kopieren oder ihn nach dem Anhören einem deiner Server hinzuzufügen.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Ladrón de sonidos",
+            "description": "Haz clic derecho en un sonido de la mesa de sonidos para descargarlo con su nombre, copiar su enlace o añadirlo a uno de tus servidores tras escucharlo.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Voleur de sons",
+            "description": "Fais un clic droit sur un son de la soundboard pour le télécharger sous son nom, copier son lien ou l'ajouter à l'un de tes serveurs après l'avoir écouté.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "サウンドボードスティーラー",
+            "description": "サウンドボードのサウンドを右クリックして、名前付きでダウンロードしたり、リンクをコピーしたり、試聴してから自分のサーバーに追加したりできます。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Złodziej dźwięków",
+            "description": "Kliknij prawym przyciskiem dźwięk z soundboardu, aby pobrać go pod jego nazwą, skopiować link lub po odsłuchaniu dodać go do jednego ze swoich serwerów.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Ladrão de sons",
+            "description": "Clique com o botão direito em um som da mesa de sons para baixá-lo com o nome dele, copiar o link ou adicioná-lo a um dos seus servidores depois de ouvir.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Похититель звуков",
+            "description": "Нажмите правой кнопкой на звук из звуковой панели, чтобы скачать его под его названием, скопировать ссылку или, прослушав, добавить на свой сервер.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Ses Panosu Hırsızı",
+            "description": "Bir ses panosu sesine sağ tıklayıp adıyla indir, bağlantısını kopyala ya da dinledikten sonra sunucularından birine ekle.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}

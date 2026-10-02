@@ -1,0 +1,99 @@
+{
+    "id": "search-highlight",
+    "name": "Search Highlight",
+    "description": "When you jump to a search result, the words you searched for are highlighted in the message so you can spot them.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "messages",
+        "utility"
+    ],
+    "permissions": {
+        "readMessages": true
+    },
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Suchtreffer hervorheben",
+            "description": "Springst du zu einem Suchtreffer, leuchten die gesuchten Wörter in der Nachricht auf, damit du sie sofort siehst.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Resaltar búsqueda",
+            "description": "Al saltar a un resultado de búsqueda, las palabras que buscaste se resaltan en el mensaje para que las veas enseguida.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Surligner la recherche",
+            "description": "Quand tu sautes vers un résultat de recherche, les mots recherchés sont surlignés dans le message pour les repérer tout de suite.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "検索ハイライト",
+            "description": "検索結果にジャンプすると、検索した言葉がメッセージ内でハイライトされ、すぐに見つけられます。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Podświetlanie wyszukiwania",
+            "description": "Gdy przeskoczysz do wyniku wyszukiwania, szukane słowa są podświetlone w wiadomości, żebyś od razu je zauważył.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Destaque da busca",
+            "description": "Ao pular para um resultado da busca, as palavras que você buscou ficam destacadas na mensagem para você achá-las na hora.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Подсветка поиска",
+            "description": "Когда вы переходите к результату поиска, искомые слова подсвечиваются в сообщении, чтобы их было сразу видно.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Arama Vurgusu",
+            "description": "Bir arama sonucuna atladığında, aradığın kelimeler mesajda vurgulanır, böylece onları hemen görürsün.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,99 @@
+{
+    "id": "voice-messages",
+    "name": "Desktop Voice Messages",
+    "description": "Record and send Discord voice messages from your PC, with the waveform, like on your phone. Listen back and record again before you send.",
+    "version": "1.0.0",
+    "authors": [
+        "Evi"
+    ],
+    "tags": [
+        "messages",
+        "voice"
+    ],
+    "permissions": {
+        "sendMessages": true
+    },
+    "changelog": [
+        {
+            "version": "1.0.0",
+            "notes": [
+                "First release."
+            ]
+        }
+    ],
+    "enabledByDefault": false,
+    "locales": {
+        "de": {
+            "name": "Desktop-Sprachnachrichten",
+            "description": "Nimm Sprachnachrichten am PC auf und sende sie, mit Wellenform, wie am Handy. Vor dem Senden anhören und neu aufnehmen.",
+            "changelog": {
+                "1.0.0": [
+                    "Erste Version."
+                ]
+            }
+        },
+        "es": {
+            "name": "Mensajes de voz de escritorio",
+            "description": "Graba y envía mensajes de voz desde tu PC, con su forma de onda, como en el móvil. Escúchalo y vuelve a grabar antes de enviarlo.",
+            "changelog": {
+                "1.0.0": [
+                    "Primera versión."
+                ]
+            }
+        },
+        "fr": {
+            "name": "Messages vocaux sur ordinateur",
+            "description": "Enregistre et envoie des messages vocaux depuis ton PC, avec leur forme d'onde, comme sur mobile. Réécoute et réenregistre avant d'envoyer.",
+            "changelog": {
+                "1.0.0": [
+                    "Première version."
+                ]
+            }
+        },
+        "ja": {
+            "name": "デスクトップのボイスメッセージ",
+            "description": "スマホと同じように、PCから波形付きのボイスメッセージを録音して送信できます。送る前に聞き直したり録り直したりできます。",
+            "changelog": {
+                "1.0.0": [
+                    "初回リリース。"
+                ]
+            }
+        },
+        "pl": {
+            "name": "Wiadomości głosowe na komputerze",
+            "description": "Nagrywaj i wysyłaj wiadomości głosowe z komputera, z wykresem dźwięku, jak na telefonie. Przed wysłaniem odsłuchaj i nagraj ponownie.",
+            "changelog": {
+                "1.0.0": [
+                    "Pierwsze wydanie."
+                ]
+            }
+        },
+        "pt-BR": {
+            "name": "Mensagens de voz no computador",
+            "description": "Grave e envie mensagens de voz pelo PC, com a forma de onda, como no celular. Ouça e grave de novo antes de enviar.",
+            "changelog": {
+                "1.0.0": [
+                    "Primeira versão."
+                ]
+            }
+        },
+        "ru": {
+            "name": "Голосовые сообщения с компьютера",
+            "description": "Записывайте и отправляйте голосовые сообщения с компьютера, с волной, как на телефоне. Прослушайте и перезапишите перед отправкой.",
+            "changelog": {
+                "1.0.0": [
+                    "Первый выпуск."
+                ]
+            }
+        },
+        "tr": {
+            "name": "Masaüstü Sesli Mesajlar",
+            "description": "Telefondaki gibi, bilgisayardan dalga formuyla sesli mesaj kaydedip gönder. Göndermeden önce dinle ve yeniden kaydet.",
+            "changelog": {
+                "1.0.0": [
+                    "İlk sürüm."
+                ]
+            }
+        }
+    }
+}
