@@ -401,15 +401,55 @@ export default definePlugin({
         ctx.addStyle(css);
         const sessions = new Map<ListKind["key"], ReturnType<typeof createSession>>();
 
+        /** Lists waiting to be set up after Discord's next frame */
+        const pending = new Map<string, Element>();
+        let scheduled = false;
+
+        /**
+         * Sets up the waiting lists once Discord has drawn them. Doing it straight away, while Discord was
+         * still building a new channel, made finding the scroller lay out the whole page there and then:
+         * 270ms once on a big server. A frame later the layout is done and reading it costs nothing.
+         */
+        const schedule = () => {
+            if (scheduled) return;
+            scheduled = true;
+            requestAnimationFrame(() => setTimeout(() => {
+                scheduled = false;
+                for (const kind of LISTS) {
+                    const list = pending.get(kind.key);
+                    if (!list) continue;
+                    pending.delete(kind.key);
+                    if (!list.isConnected || !ctx.settings.get(kind.key)) continue;
+                    sessions.get(kind.key)?.dispose();
+                    sessions.set(kind.key, createSession(list, kind, ctx.settings.get("margin")));
+                }
+            }, 0));
+        };
+
         const refresh = (force = false) => {
             for (const kind of LISTS) {
-                const enabled = ctx.settings.get(kind.key);
-                const list = enabled ? document.querySelector(kind.list) : null;
                 const current = sessions.get(kind.key);
-                if (!force && current?.list === list && !current.stale()) continue;
-                current?.dispose();
-                sessions.delete(kind.key);
-                if (list) sessions.set(kind.key, createSession(list, kind, ctx.settings.get("margin")));
+                const enabled = ctx.settings.get(kind.key);
+                if (!enabled) {
+                    current?.dispose();
+                    sessions.delete(kind.key);
+                    pending.delete(kind.key);
+                    continue;
+                }
+                // The list we're on is still there and nothing changed: no page search (most ticks).
+                // stale() resets itself, so it's asked once.
+                const stale = !!current && current.list.isConnected && current.stale();
+                if (!force && !stale && current?.list.isConnected) continue;
+                const list = stale ? current!.list : document.querySelector(kind.list);
+                if (!list) {
+                    current?.dispose();
+                    sessions.delete(kind.key);
+                    pending.delete(kind.key);
+                    continue;
+                }
+                if (!force && !stale && current?.list === list) continue;
+                pending.set(kind.key, list);
+                schedule();
             }
         };
 
