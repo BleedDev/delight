@@ -2,7 +2,7 @@
     "id": "embed-builder",
     "name": "Embed Builder",
     "description": "Compose rich embeds with a title, colour, fields and images, see them exactly as they'll look, and send them through a channel's webhook, or edit one sent before. For server admins.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "authors": [
         "Evi"
     ],
@@ -18,6 +18,15 @@
         "sendMessages": true
     },
     "changelog": [
+        {
+            "version": "1.0.2",
+            "notes": [
+                "Calmer and roomier: more space between everything, and the optional parts of an embed (fields, images, author, footer) stay folded until you need them.",
+                "Nothing turns red while you're still writing. Empty parts are only pointed out when you press Send.",
+                "No webhook to set up: if the channel has none, sending makes one. The webhook picker only shows when there's more than one.",
+                "Adding a component is one button that shows what each kind is for."
+            ]
+        },
         {
             "version": "1.0.1",
             "notes": [
@@ -37,6 +46,12 @@
             "name": "Embed-Builder",
             "description": "Erstelle Embeds mit Titel, Farbe, Feldern und Bildern, sieh genau, wie sie aussehen, und sende sie über einen Webhook des Kanals oder bearbeite einen früher gesendeten. Für Server-Admins.",
             "changelog": {
+                "1.0.2": [
+                    "Ruhiger und luftiger: mehr Abstand überall, und die optionalen Teile eines Embeds (Felder, Bilder, Autor, Fußzeile) bleiben eingeklappt, bis du sie brauchst.",
+                    "Nichts wird mehr rot, während du noch schreibst. Leere Teile werden erst gezeigt, wenn du auf Senden drückst.",
+                    "Kein Webhook mehr einzurichten: Hat der Kanal keinen, wird beim Senden einer erstellt. Die Webhook-Auswahl erscheint nur, wenn es mehr als einen gibt.",
+                    "Eine Komponente hinzuzufügen ist ein einziger Button, der zeigt, wofür jede Art da ist."
+                ],
                 "1.0.1": [
                     "Schnellerer Start: Seine Styles werden erst geladen, wenn du den Builder zum ersten Mal öffnest, sodass Discord beim Start nicht die ganze App dafür neu gestalten muss."
                 ],
@@ -49,6 +64,12 @@
             "name": "Creador de embeds",
             "description": "Crea embeds con título, color, campos e imágenes, mira exactamente cómo se verán y envíalos con un webhook del canal, o edita uno enviado antes. Para administradores de servidores.",
             "changelog": {
+                "1.0.2": [
+                    "Más tranquilo y espacioso: más aire entre todo, y las partes opcionales de un embed (campos, imágenes, autor, pie) quedan plegadas hasta que las necesites.",
+                    "Nada se pone en rojo mientras sigues escribiendo. Las partes vacías solo se señalan al pulsar Enviar.",
+                    "Sin webhook que configurar: si el canal no tiene ninguno, al enviar se crea uno. El selector de webhooks solo aparece si hay más de uno.",
+                    "Añadir un componente es un solo botón que muestra para qué sirve cada tipo."
+                ],
                 "1.0.1": [
                     "Inicio más rápido: sus estilos se cargan la primera vez que abres el editor, así Discord no tiene que recalcular el estilo de toda la app al arrancar."
                 ],
@@ -61,6 +82,12 @@
             "name": "Créateur d'embeds",
             "description": "Compose des embeds avec titre, couleur, champs et images, vois exactement leur rendu et envoie-les via un webhook du salon, ou modifie un message déjà envoyé. Pour les admins de serveur.",
             "changelog": {
+                "1.0.2": [
+                    "Plus calme et plus aéré : plus d'espace partout, et les parties facultatives d'un embed (champs, images, auteur, pied de page) restent repliées jusqu'à ce que vous en ayez besoin.",
+                    "Plus rien ne devient rouge pendant que vous écrivez. Les parties vides ne sont signalées que lorsque vous appuyez sur Envoyer.",
+                    "Plus de webhook à configurer : si le salon n'en a aucun, l'envoi en crée un. Le choix du webhook n'apparaît que s'il y en a plusieurs.",
+                    "Ajouter un composant se fait avec un seul bouton qui montre à quoi sert chaque type."
+                ],
                 "1.0.1": [
                     "Démarrage plus rapide : ses styles se chargent la première fois que vous ouvrez l'éditeur, donc Discord n'a pas à recalculer le style de toute l'appli au démarrage."
                 ],
@@ -73,6 +100,12 @@
             "name": "埋め込みビルダー",
             "description": "タイトル、色、フィールド、画像付きの埋め込みを作成し、実際の見た目を確認してチャンネルのWebhookで送信、または送信済みのものを編集できます。サーバー管理者向け。",
             "changelog": {
+                "1.0.2": [
+                    "落ち着いたゆとりのあるレイアウトに。余白を広げ、埋め込みの任意項目(フィールド、画像、作成者、フッター)は必要になるまで折りたたまれます。",
+                    "入力中に赤く表示されることはなくなりました。空の項目は「送信」を押したときだけ指摘されます。",
+                    "ウェブフックの準備は不要に。チャンネルにない場合は送信時に作成されます。ウェブフックの選択は複数あるときだけ表示されます。",
+                    "コンポーネントの追加はボタン1つに。それぞれの種類の用途が表示されます。"
+                ],
                 "1.0.1": [
                     "起動が速くなりました。スタイルはビルダーを初めて開いたときに読み込むので、起動時に Discord 全体のスタイル再計算が起きません。"
                 ],
@@ -85,6 +118,12 @@
             "name": "Kreator embedów",
             "description": "Twórz embedy z tytułem, kolorem, polami i obrazami, zobacz dokładnie, jak będą wyglądać, i wysyłaj je webhookiem kanału albo edytuj wcześniej wysłane. Dla administratorów serwerów.",
             "changelog": {
+                "1.0.2": [
+                    "Spokojniej i przestronniej: więcej miejsca wszędzie, a opcjonalne części embeda (pola, obrazy, autor, stopka) pozostają zwinięte, dopóki ich nie potrzebujesz.",
+                    "Nic nie robi się czerwone, gdy wciąż piszesz. Puste części są wskazywane dopiero po naciśnięciu Wyślij.",
+                    "Nie trzeba konfigurować webhooka: jeśli kanał go nie ma, wysłanie go utworzy. Wybór webhooka pojawia się tylko, gdy jest ich więcej niż jeden.",
+                    "Dodawanie komponentu to jeden przycisk, który pokazuje, do czego służy każdy rodzaj."
+                ],
                 "1.0.1": [
                     "Szybszy start: style wczytują się dopiero przy pierwszym otwarciu kreatora, więc Discord nie musi przy starcie przeliczać stylów całej aplikacji."
                 ],
@@ -97,6 +136,12 @@
             "name": "Criador de embeds",
             "description": "Crie embeds com título, cor, campos e imagens, veja exatamente como vão ficar e envie por um webhook do canal, ou edite um enviado antes. Para admins de servidores.",
             "changelog": {
+                "1.0.2": [
+                    "Mais calmo e espaçoso: mais espaço entre tudo, e as partes opcionais de um embed (campos, imagens, autor, rodapé) ficam recolhidas até você precisar delas.",
+                    "Nada fica vermelho enquanto você ainda está escrevendo. Partes vazias só são apontadas quando você aperta Enviar.",
+                    "Sem webhook para configurar: se o canal não tiver nenhum, enviar cria um. A escolha de webhook só aparece quando há mais de um.",
+                    "Adicionar um componente é um único botão que mostra para que serve cada tipo."
+                ],
                 "1.0.1": [
                     "Início mais rápido: os estilos carregam na primeira vez que você abre o editor, então o Discord não precisa recalcular o estilo do app inteiro ao iniciar."
                 ],
@@ -109,6 +154,12 @@
             "name": "Конструктор эмбедов",
             "description": "Создавайте эмбеды с заголовком, цветом, полями и изображениями, смотрите, как они будут выглядеть, и отправляйте через вебхук канала или редактируйте отправленные ранее. Для админов серверов.",
             "changelog": {
+                "1.0.2": [
+                    "Спокойнее и просторнее: больше места между всем, а необязательные части эмбеда (поля, изображения, автор, подпись) свёрнуты, пока они вам не понадобятся.",
+                    "Пока вы пишете, ничего не краснеет. О пустых частях сообщается только после нажатия «Отправить».",
+                    "Вебхук настраивать не нужно: если в канале его нет, он создаётся при отправке. Выбор вебхука показывается, только если их больше одного.",
+                    "Добавление компонента — одна кнопка, которая показывает, для чего нужен каждый вид."
+                ],
                 "1.0.1": [
                     "Быстрее запуск: стили загружаются при первом открытии конструктора, поэтому Discord не пересчитывает стили всего приложения при старте."
                 ],
@@ -121,6 +172,12 @@
             "name": "Embed Oluşturucu",
             "description": "Başlık, renk, alan ve görsellerle embed'ler oluştur, tam olarak nasıl görüneceklerini gör ve kanalın webhook'u ile gönder ya da daha önce gönderileni düzenle. Sunucu yöneticileri için.",
             "changelog": {
+                "1.0.2": [
+                    "Daha sakin ve ferah: her şeyin arasında daha fazla boşluk var, bir embed'in isteğe bağlı kısımları (alanlar, görseller, yazar, alt bilgi) gerekene kadar kapalı kalıyor.",
+                    "Sen daha yazarken hiçbir şey kırmızı olmuyor. Boş kısımlar yalnızca Gönder'e bastığında gösteriliyor.",
+                    "Webhook kurmana gerek yok: kanalda hiç yoksa gönderince bir tane oluşturuluyor. Webhook seçimi yalnızca birden fazla webhook varsa görünüyor.",
+                    "Bileşen eklemek tek bir düğme; her türün ne işe yaradığını gösteriyor."
+                ],
                 "1.0.1": [
                     "Daha hızlı başlangıç: stilleri oluşturucuyu ilk açtığında yükleniyor, böylece Discord açılışta onun için tüm uygulamanın stilini yeniden hesaplamıyor."
                 ],

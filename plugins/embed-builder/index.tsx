@@ -394,13 +394,26 @@ function ChildPreview({ c, channelId, resolve, sizes }: { c: Child; channelId: s
     }
 }
 
+/** Whether a block shows anything yet: a text not written or a picture without a link is left out of the preview */
+function shows(b: Block): boolean {
+    switch (b.kind) {
+        case "text": return !!b.content.trim();
+        case "section": return b.texts.some(x => x.trim());
+        case "gallery": return b.items.some(m => m.url.trim());
+        case "buttons": return b.buttons.some(x => x.label.trim() || x.emoji.trim());
+        case "file": return !!b.name;
+        case "separator": return true;
+        case "container": return b.children.some(c => c.kind !== "separator" && shows(c));
+    }
+}
+
 function V2Preview({ blocks, channelId, resolve, sizes }: { blocks: Block[]; channelId: string; resolve: Resolve; sizes: Map<string, number>; }) {
     return (
         <div className="evi-eb-v2">
-            {blocks.map((b, i) => b.kind === "container"
+            {blocks.map((b, i) => !shows(b) ? null : b.kind === "container"
                 ? (
                     <div key={i} className="evi-eb-pcontainer" data-accent={hexToInt(b.color) !== undefined ? "" : undefined} data-spoiler={b.spoiler ? "" : undefined} style={{ ["--accent" as string]: hexToInt(b.color) !== undefined ? b.color : undefined }}>
-                        {b.children.map((c, j) => <ChildPreview key={j} c={c} channelId={channelId} resolve={resolve} sizes={sizes} />)}
+                        {b.children.filter(shows).map((c, j) => <ChildPreview key={j} c={c} channelId={channelId} resolve={resolve} sizes={sizes} />)}
                         {b.spoiler && <span className="evi-eb-spoiler-tag">{t("preview.spoiler")}</span>}
                     </div>
                 )
@@ -417,7 +430,8 @@ function MessagePreview({ draft, webhook, channelId, resolve, files }: { draft: 
     const sizes = new Map(files.map(f => [f.name, f.size]));
     // Classic messages show their files below; V2 ones only where a component uses them
     const loose = draft.mode === "classic" ? files.filter(f => !draft.embeds.some(e => [e.image, e.thumbnail, e.authorIcon, e.footerIcon].some(u => attachmentName(u) === f.name))) : [];
-    const empty = draft.mode === "v2" ? !draft.components.length : !draft.content.trim() && !draft.embeds.some(e => embedLength(e) || e.image || e.thumbnail) && !loose.length;
+    const filled = (e: Embed) => !!(embedLength(e) || e.image || e.thumbnail);
+    const empty = draft.mode === "v2" ? !draft.components.some(b => b.kind !== "separator" && shows(b)) : !draft.content.trim() && !draft.embeds.some(filled) && !loose.length;
     return (
         <div className="evi-eb-message">
             <img className="evi-eb-avatar" src={avatar} alt="" />
@@ -433,7 +447,7 @@ function MessagePreview({ draft, webhook, channelId, resolve, files }: { draft: 
                     : (
                         <>
                             {draft.content.trim() && <div className="evi-eb-content"><Markdown text={draft.content} channelId={channelId} /></div>}
-                            {draft.embeds.map((e, i) => <EmbedPreview key={i} e={e} channelId={channelId} resolve={resolve} />)}
+                            {draft.embeds.map((e, i) => filled(e) && <EmbedPreview key={i} e={e} channelId={channelId} resolve={resolve} />)}
                             {loose.map(f => f.type.startsWith("image/")
                                 ? <img key={f.name} className="evi-eb-loose-image" src={resolve(`attachment://${f.name}`)} alt="" />
                                 : <FileCard key={f.name} name={f.name} size={f.size} />)}
@@ -607,6 +621,21 @@ function Card({ icon, title, summary, open, onToggle, actions, children, tone, i
     );
 }
 
+/** Part of a card that stays folded until you need it: open from the start when it has something in it */
+function Fold({ title, filled, forced, children }: { title: string; filled: boolean; forced?: boolean; children: ReactNode; }) {
+    const [open, setOpen] = React.useState(filled);
+    const shown = open || !!forced;
+    return (
+        <div className="evi-eb-fold" data-open={shown ? "" : undefined}>
+            <button type="button" className="evi-eb-fold-toggle" aria-expanded={shown} onClick={() => setOpen(!shown)}>
+                <span className="evi-eb-chevron"><Icon name="chevron" /></span>
+                <span>{title}</span>
+            </button>
+            {shown && <div className="evi-eb-fold-body">{children}</div>}
+        </div>
+    );
+}
+
 /** Move, duplicate and remove, for anything in a list */
 function ListActions({ index, count, onMove, onDuplicate, onRemove, canDuplicate = true, removeLabel }: {
     index: number; count: number; onMove(by: number): void; onDuplicate?(): void; onRemove(): void; canDuplicate?: boolean; removeLabel: string;
@@ -655,6 +684,8 @@ function EmbedEditor({ embed, index, count, open, onToggle, onChange, onMove, on
     const p = `e${index + 1}`;
     const fields = embed.fields;
     const summary = plain(embed.title || embed.authorName || embed.description);
+    /** A problem shown inside: its fold opens, so the problem list can take you there */
+    const inside = (...prefixes: string[]) => [...bad].some(w => prefixes.some(x => w.startsWith(x)));
     const url = (key: "url" | "authorUrl" | "authorIcon" | "image" | "thumbnail" | "footerIcon", label: string, image = false) => (
         <TextInput label={label} where={`${p}.${key}`} value={embed[key]} placeholder="https://" invalid={bad.has(`${p}.${key}`)} onChange={set(key)}>
             {image && <FilePick files={files} onPick={name => set(key)(`attachment://${name}`)} />}
@@ -675,58 +706,65 @@ function EmbedEditor({ embed, index, count, open, onToggle, onChange, onMove, on
                 </>
             )}
         >
-            <h4>{t("group.author")}</h4>
-            <TextInput label={t("embed.authorName")} where={`${p}.authorName`} value={embed.authorName} limit={LIMITS.author} onChange={set("authorName")} />
             <div className="evi-eb-pair">
-                {url("authorUrl", t("embed.authorUrl"))}
-                {url("authorIcon", t("embed.authorIcon"), true)}
+                <TextInput label={t("embed.titleField")} where={`${p}.title`} value={embed.title} limit={LIMITS.title} onChange={set("title")} />
+                {url("url", t("embed.url"))}
             </div>
-
-            <h4>{t("group.body")}</h4>
-            <TextInput label={t("embed.titleField")} where={`${p}.title`} value={embed.title} limit={LIMITS.title} onChange={set("title")} />
-            {url("url", t("embed.url"))}
             <TextInput label={t("embed.description")} where={`${p}.description`} value={embed.description} limit={LIMITS.description} multiline rows={4} onChange={set("description")} />
             <ColorInput label={t("embed.color")} where={`${p}.color`} value={embed.color} invalid={bad.has(`${p}.color`)} onChange={set("color")} />
 
-            <h4>{t("group.fields", { count: fields.length, limit: LIMITS.fields })}</h4>
-            {fields.map((f, i) => (
-                <FieldEditor
-                    key={i}
-                    field={f}
-                    index={i}
-                    count={fields.length}
-                    where={`${p}.f${i + 1}`}
-                    onChange={next => set("fields")(fields.map((x, j) => j === i ? next : x))}
-                    onMove={by => set("fields")(move(fields, i, by))}
-                    onRemove={() => set("fields")(fields.filter((_, j) => j !== i))}
-                />
-            ))}
-            <button type="button" className="evi-eb-add-small" disabled={fields.length >= LIMITS.fields} onClick={() => set("fields")([...fields, emptyField()])}><Icon name="plus" />{t("action.addField")}</button>
+            <div className="evi-eb-folds">
+                <Fold title={t("group.fields", { count: fields.length, limit: LIMITS.fields })} filled={fields.length > 0} forced={inside(`${p}.f`)}>
+                    {fields.map((f, i) => (
+                        <FieldEditor
+                            key={i}
+                            field={f}
+                            index={i}
+                            count={fields.length}
+                            where={`${p}.f${i + 1}`}
+                            onChange={next => set("fields")(fields.map((x, j) => j === i ? next : x))}
+                            onMove={by => set("fields")(move(fields, i, by))}
+                            onRemove={() => set("fields")(fields.filter((_, j) => j !== i))}
+                        />
+                    ))}
+                    <button type="button" className="evi-eb-add-small" disabled={fields.length >= LIMITS.fields} onClick={() => set("fields")([...fields, emptyField()])}><Icon name="plus" />{t("action.addField")}</button>
+                </Fold>
 
-            <h4>{t("group.images")}</h4>
-            <div className="evi-eb-pair">
-                {url("image", t("embed.image"), true)}
-                {url("thumbnail", t("embed.thumbnail"), true)}
-            </div>
+                <Fold title={t("group.images")} filled={!!(embed.image || embed.thumbnail)} forced={inside(`${p}.image`, `${p}.thumbnail`)}>
+                    <div className="evi-eb-pair">
+                        {url("image", t("embed.image"), true)}
+                        {url("thumbnail", t("embed.thumbnail"), true)}
+                    </div>
+                </Fold>
 
-            <h4>{t("group.footer")}</h4>
-            <TextInput label={t("embed.footerText")} where={`${p}.footerText`} value={embed.footerText} limit={LIMITS.footer} onChange={set("footerText")} />
-            {url("footerIcon", t("embed.footerIcon"), true)}
-            <div className="evi-eb-input">
-                <label><span>{t("embed.timestamp")}</span></label>
-                <div className="evi-eb-input-row">
-                    <input
-                        type="datetime-local"
-                        data-where={`${p}.timestamp`}
-                        value={embed.timestamp ? toLocalInput(embed.timestamp) : ""}
-                        onChange={e => {
-                            const v = e.currentTarget.value;
-                            set("timestamp")(v ? new Date(v).toISOString() : "");
-                        }}
-                    />
-                    <button type="button" className="evi-eb-ghost" onClick={() => set("timestamp")(new Date().toISOString())}>{t("action.now")}</button>
-                    {embed.timestamp && <button type="button" className="evi-eb-ghost" onClick={() => set("timestamp")("")}>{t("action.clear")}</button>}
-                </div>
+                <Fold title={t("group.author")} filled={!!(embed.authorName || embed.authorUrl || embed.authorIcon)} forced={inside(`${p}.author`)}>
+                    <TextInput label={t("embed.authorName")} where={`${p}.authorName`} value={embed.authorName} limit={LIMITS.author} onChange={set("authorName")} />
+                    <div className="evi-eb-pair">
+                        {url("authorUrl", t("embed.authorUrl"))}
+                        {url("authorIcon", t("embed.authorIcon"), true)}
+                    </div>
+                </Fold>
+
+                <Fold title={t("group.footer")} filled={!!(embed.footerText || embed.footerIcon || embed.timestamp)} forced={inside(`${p}.footer`, `${p}.timestamp`)}>
+                    <TextInput label={t("embed.footerText")} where={`${p}.footerText`} value={embed.footerText} limit={LIMITS.footer} onChange={set("footerText")} />
+                    {url("footerIcon", t("embed.footerIcon"), true)}
+                    <div className="evi-eb-input">
+                        <label><span>{t("embed.timestamp")}</span></label>
+                        <div className="evi-eb-input-row">
+                            <input
+                                type="datetime-local"
+                                data-where={`${p}.timestamp`}
+                                value={embed.timestamp ? toLocalInput(embed.timestamp) : ""}
+                                onChange={e => {
+                                    const v = e.currentTarget.value;
+                                    set("timestamp")(v ? new Date(v).toISOString() : "");
+                                }}
+                            />
+                            <button type="button" className="evi-eb-ghost" onClick={() => set("timestamp")(new Date().toISOString())}>{t("action.now")}</button>
+                            {embed.timestamp && <button type="button" className="evi-eb-ghost" onClick={() => set("timestamp")("")}>{t("action.clear")}</button>}
+                        </div>
+                    </div>
+                </Fold>
             </div>
         </Card>
     );
@@ -889,16 +927,29 @@ function ChildBody({ c, where, files, bad, onChange }: { c: Child; where: string
     }
 }
 
-/** Where a new component goes: a row of kinds to pick from */
+/** Where a new component goes: one button, and the kinds to pick from once it's pressed */
 function AddBar({ kinds, onAdd, disabled, label }: { kinds: Kind[]; onAdd(k: Kind): void; disabled?: boolean; label: string; }) {
+    const [open, setOpen] = React.useState(false);
+    if (!open) {
+        return <button type="button" className="evi-eb-add" disabled={disabled} aria-expanded={false} onClick={() => setOpen(true)}><Icon name="plus" />{label}</button>;
+    }
     return (
         <div className="evi-eb-addbar" role="group" aria-label={label}>
-            <span className="evi-eb-addbar-label"><Icon name="plus" />{label}</span>
+            <div className="evi-eb-addbar-head">
+                <span className="evi-eb-addbar-label">{label}</span>
+                <IconButton label={t("action.cancel")} icon="close" onClick={() => setOpen(false)} />
+            </div>
             <div className="evi-eb-addbar-kinds">
                 {kinds.map(k => (
-                    <button key={k} type="button" className="evi-eb-kind" disabled={disabled} title={t(`kindHint.${k}`)} onClick={() => onAdd(k)}>
-                        <Icon name={k} />
-                        <span>{t(`kind.${k}`)}</span>
+                    <button key={k} type="button" className="evi-eb-kind" disabled={disabled} onClick={() => {
+                        onAdd(k);
+                        setOpen(false);
+                    }}>
+                        <Icon name={k} size={20} />
+                        <span className="evi-eb-kind-text">
+                            <span className="evi-eb-kind-name">{t(`kind.${k}`)}</span>
+                            <span className="evi-eb-kind-hint">{t(`kindHint.${k}`)}</span>
+                        </span>
                     </button>
                 ))}
             </div>
@@ -1029,11 +1080,16 @@ function Attachments({ files, kept, onAdd, onRemove }: { files: File[]; kept: Se
 
 type Panel = "none" | "import" | "edit" | "drafts";
 
+/** Cards open at the start: the first embed, or the first component and what's in it */
+const FIRST_OPEN = ["e1", "c1", "c1.c1"];
+/** Problems that only mean "not filled in yet" */
+const UNFINISHED = new Set<Problem["kind"]>(["empty", "emptyEmbed", "emptyComponent", "fieldNeedsBoth", "buttonNeedsLabel"]);
+
 interface Editing { messageId: string; attachments: SentAttachment[]; }
 
 function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
     const [draft, setDraftState] = React.useState<Draft>(() => loadOpen(channel.id) ?? emptyDraft());
-    const [openKeys, setOpenKeys] = React.useState<Set<string>>(() => new Set(["e1", "c1"]));
+    const [openKeys, setOpenKeys] = React.useState<Set<string>>(() => new Set(FIRST_OPEN));
     const [webhooks, setWebhooks] = React.useState<Webhook[] | undefined>();
     const [hookId, setHookId] = React.useState("");
     const [loadError, setLoadError] = React.useState<string>();
@@ -1046,7 +1102,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
     const [drafts, setDrafts] = React.useState<SavedDraft[]>(() => savedDrafts());
     const [showProblems, setShowProblems] = React.useState(false);
     const [files, setFiles] = React.useState<File[]>([]);
-    const [senderOpen, setSenderOpen] = React.useState(true);
+    const [tried, setTried] = React.useState(false);
     const editorRef = React.useRef<HTMLDivElement>(null);
     const focusWhere = React.useRef<string | undefined>(undefined);
 
@@ -1086,7 +1142,9 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
     }, [channel.id]);
 
     const found = problems(draft, fileNames);
-    const bad = new Set(found.flatMap(p => "where" in p ? [p.where] : []));
+    // Something not filled in yet isn't a mistake while you're still writing: those show once you press Send
+    const shown = tried ? found : found.filter(p => !UNFINISHED.has(p.kind));
+    const bad = new Set(shown.flatMap(p => "where" in p ? [p.where] : []));
 
     // After a problem opens its card: scroll to its input and focus it
     React.useEffect(() => {
@@ -1117,7 +1175,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
         if (mode === draft.mode || editing) return;
         if (mode === "v2" && !draft.components.length) {
             setDraft({ ...draft, mode, components: convertToV2(draft) });
-            setOpenKeys(new Set(["c1"]));
+            setOpenKeys(new Set(["c1", "c1.c1"]));
         } else setDraft({ ...draft, mode });
     }
 
@@ -1133,41 +1191,40 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
         setFiles(next);
     }
 
-    async function newWebhook() {
-        setBusy("create");
-        setError(undefined);
+    /** The channel has no webhook yet: make "Evi Embeds" for this message and the next ones */
+    async function makeWebhook() {
         try {
             const hook = await createWebhook(channel);
-            setWebhooks(list => [...(list ?? []), hook].sort((a, b) => a.name.localeCompare(b.name)));
+            setWebhooks([hook]);
             setHookId(hook.id);
-            setLoadError(undefined);
+            return hook;
         } catch (err) {
-            setError(errorText(err, t("error.createFailed")));
-        } finally {
-            setBusy(undefined);
+            throw new Error(errorText(err, t("error.createFailed")));
         }
     }
 
     async function send() {
         if (busy) return;
+        setTried(true);
         if (found.length) {
             setShowProblems(true);
             return;
         }
-        if (!webhook) {
+        if (!webhook && webhooks?.length !== 0) {
             setError(t("error.pickWebhook"));
             return;
         }
         setBusy("send");
         setError(undefined);
         try {
+            const hook = webhook ?? await makeWebhook();
             const v2 = draft.mode === "v2";
             const { json } = requestBody(payload(draft, !!editing), files, editing?.attachments ?? []);
             if (editing) {
-                await callWebhook(webhookUrl(webhook.id, webhook.token, { messageId: editing.messageId, threadId, components: v2 }), "PATCH", json, files);
+                await callWebhook(webhookUrl(hook.id, hook.token, { messageId: editing.messageId, threadId, components: v2 }), "PATCH", json, files);
                 context?.toast(t("toast.edited"), { type: "success" });
             } else {
-                await callWebhook(webhookUrl(webhook.id, webhook.token, { wait: true, threadId, components: v2 }), "POST", json, files);
+                await callWebhook(webhookUrl(hook.id, hook.token, { wait: true, threadId, components: v2 }), "POST", json, files);
                 context?.toast(t("toast.sent", { channel: channel.name ?? "" }), { type: "success" });
             }
             saveOpen(channel.id, undefined);
@@ -1217,7 +1274,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
                 : [];
             const { skipped, ...loaded } = draftFromJson(JSON.stringify({ content: message?.content ?? "", embeds: message?.embeds ?? [], flags: message?.flags ?? 0, components: message?.components ?? [] }), attachments);
             setDraft({ ...loaded, username: "", avatarUrl: "", embeds: loaded.embeds.length ? loaded.embeds : [emptyEmbed()] });
-            setOpenKeys(new Set(["e1", "c1"]));
+            setOpenKeys(new Set(FIRST_OPEN));
             setEditing({ messageId: link.messageId, attachments });
             setFiles([]);
             setPanel("none");
@@ -1233,7 +1290,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
         try {
             const { skipped, ...next } = draftFromJson(importText);
             setDraft({ ...next, embeds: next.embeds.length ? next.embeds : [emptyEmbed()] });
-            setOpenKeys(new Set(["e1", "c1"]));
+            setOpenKeys(new Set(FIRST_OPEN));
             setPanel("none");
             setImportText("");
             if (skipped) context?.toast(t("toast.skipped", { count: skipped }), { type: "message" });
@@ -1289,45 +1346,34 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
 
                 <div className="evi-eb-columns">
                     <div className="evi-eb-editor" ref={editorRef}>
-                        <Card
-                            icon={<Icon name="link" />}
-                            title={t("section.sender")}
-                            summary={webhook ? `${draft.username.trim() || webhook.name}` : undefined}
-                            open={senderOpen}
-                            onToggle={() => setSenderOpen(!senderOpen)}
-                        >
-                            <div className="evi-eb-input">
-                                <label htmlFor="evi-eb-webhook"><span>{t("webhook.label")}</span></label>
-                                <div className="evi-eb-input-row">
-                                    {webhooks === undefined && !loadError && <span className="evi-eb-note">{t("webhook.loading")}</span>}
-                                    {loadError && <span className="evi-eb-note" data-error="">{loadError}</span>}
-                                    {webhooks && webhooks.length > 0 && (
-                                        <Dropdown
-                                            id="evi-eb-webhook"
-                                            label={t("webhook.label")}
-                                            value={hookId}
-                                            onChange={setHookId}
-                                            options={webhooks.map(w => ({ value: w.id, label: w.name }))}
-                                        />
-                                    )}
-                                    {webhooks && webhooks.length === 0 && <span className="evi-eb-note">{t("webhook.none")}</span>}
-                                    <button type="button" className="evi-eb-button" data-variant="secondary" disabled={!!busy} onClick={() => void newWebhook()}>
-                                        {busy === "create" ? t("webhook.creating") : t("webhook.create")}
-                                    </button>
-                                </div>
-                            </div>
+                        <section className="evi-eb-sender" aria-labelledby="evi-eb-sender">
+                            <h3 className="evi-eb-group" id="evi-eb-sender">{t("section.sendAs")}</h3>
                             {!editing && (
                                 <div className="evi-eb-pair">
                                     <TextInput label={t("message.username")} where="username" value={draft.username} placeholder={webhook?.name ?? WEBHOOK_NAME} limit={LIMITS.username} onChange={username => setDraft({ ...draft, username })} />
                                     <TextInput label={t("message.avatar")} where="avatarUrl" value={draft.avatarUrl} placeholder="https://" invalid={bad.has("avatarUrl")} onChange={avatarUrl => setDraft({ ...draft, avatarUrl })} />
                                 </div>
                             )}
-                        </Card>
+                            {webhooks === undefined && !loadError && <p className="evi-eb-note">{t("webhook.loading")}</p>}
+                            {loadError && <p className="evi-eb-note" data-error="">{loadError}</p>}
+                            {webhooks?.length === 0 && <p className="evi-eb-note">{t("webhook.auto")}</p>}
+                            {webhooks && webhooks.length > 1 && (
+                                <div className="evi-eb-input">
+                                    <label htmlFor="evi-eb-webhook"><span>{t("webhook.label")}</span></label>
+                                    <Dropdown
+                                        id="evi-eb-webhook"
+                                        label={t("webhook.label")}
+                                        value={hookId}
+                                        onChange={setHookId}
+                                        options={webhooks.map(w => ({ value: w.id, label: w.name }))}
+                                    />
+                                </div>
+                            )}
+                        </section>
 
                         {v2
                             ? (
                                 <>
-                                    <p className="evi-eb-intro">{t("mode.v2Hint")}</p>
                                     {draft.components.length === 0 && <div className="evi-eb-empty">{t("empty.v2")}</div>}
                                     <div className="evi-eb-tree">
                                         {draft.components.map((b, i) => (
@@ -1429,6 +1475,8 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
                             <>
                                 <TextInput label={t("import.label")} value={importText} multiline rows={6} placeholder={'{ "content": "", "embeds": [ … ] }'} onChange={setImportText} />
                                 <div className="evi-eb-panel-actions">
+                                    <button type="button" className="evi-eb-ghost" onClick={() => void copy(draftToJson(draft), t("toast.jsonCopied"))}>{t("action.copyJson")}</button>
+                                    <span className="evi-eb-spacer" />
                                     <button type="button" className="evi-eb-button" data-variant="secondary" onClick={() => setPanel("none")}>{t("action.cancel")}</button>
                                     <button type="button" className="evi-eb-button" disabled={!importText.trim()} onClick={importJson}>{t("import.load")}</button>
                                 </div>
@@ -1456,7 +1504,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
                                             <button type="button" className="evi-eb-draft" onClick={() => {
                                                 if (editing) setEditing(undefined);
                                                 setDraft({ ...d.draft, embeds: d.draft.embeds.length ? d.draft.embeds : [emptyEmbed()] });
-                                                setOpenKeys(new Set(["e1", "c1"]));
+                                                setOpenKeys(new Set(FIRST_OPEN));
                                                 setPanel("none");
                                             }}>
                                                 <span className="evi-eb-draft-mode">{d.draft.mode === "v2" ? "V2" : t("mode.classic")}</span>
@@ -1472,9 +1520,9 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
                     </div>
                 )}
 
-                {showProblems && found.length > 0 && (
+                {showProblems && shown.length > 0 && (
                     <ul className="evi-eb-problems" role="alert">
-                        {found.slice(0, 8).map((p, i) => (
+                        {shown.slice(0, 8).map((p, i) => (
                             <li key={i}>
                                 <button type="button" disabled={!("where" in p)} onClick={() => goTo(p)}>
                                     <Icon name="warning" size={14} />
@@ -1482,7 +1530,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
                                 </button>
                             </li>
                         ))}
-                        {found.length > 8 && <li className="evi-eb-problems-more">{t("problem.more", { count: found.length - 8 })}</li>}
+                        {shown.length > 8 && <li className="evi-eb-problems-more">{t("problem.more", { count: shown.length - 8 })}</li>}
                     </ul>
                 )}
                 {error && <p className="evi-eb-error" role="alert">{error}</p>}
@@ -1490,26 +1538,26 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
                 <footer className="evi-eb-foot">
                     <div className="evi-eb-foot-left">
                         <button type="button" className="evi-eb-ghost" aria-pressed={panel === "drafts"} onClick={() => setPanel(panel === "drafts" ? "none" : "drafts")}>{t("drafts.button")}</button>
-                        <button type="button" className="evi-eb-ghost" aria-pressed={panel === "import"} onClick={() => setPanel(panel === "import" ? "none" : "import")}>{t("import.button")}</button>
-                        <button type="button" className="evi-eb-ghost" onClick={() => void copy(draftToJson(draft), t("toast.jsonCopied"))}>{t("action.copyJson")}</button>
+                        <button type="button" className="evi-eb-ghost" aria-pressed={panel === "import"} onClick={() => setPanel(panel === "import" ? "none" : "import")}>{t("json.button")}</button>
                         {editing
                             ? <button type="button" className="evi-eb-ghost" onClick={() => setEditing(undefined)}>{t("edit.stop")}</button>
                             : <button type="button" className="evi-eb-ghost" aria-pressed={panel === "edit"} onClick={() => setPanel(panel === "edit" ? "none" : "edit")}>{t("edit.button")}</button>}
                         <button type="button" className="evi-eb-ghost" onClick={() => {
                             setDraft(emptyDraft(draft.mode));
+                            setTried(false);
                             setEditing(undefined);
                             setFiles([]);
-                            setOpenKeys(new Set(["e1", "c1"]));
+                            setOpenKeys(new Set(FIRST_OPEN));
                         }}>{t("action.clearAll")}</button>
                     </div>
-                    {found.length > 0 && (
+                    {shown.length > 0 && (
                         <button type="button" className="evi-eb-problem-pill" aria-expanded={showProblems} onClick={() => setShowProblems(!showProblems)}>
                             <Icon name="warning" size={14} />
-                            {found.length === 1 ? t("problem.one") : t("problem.count", { count: found.length })}
+                            {shown.length === 1 ? t("problem.one") : t("problem.count", { count: shown.length })}
                         </button>
                     )}
                     <button type="button" className="evi-eb-button" data-variant="secondary" onClick={onClose} disabled={!!busy}>{t("action.cancel")}</button>
-                    <button type="button" className="evi-eb-button" disabled={!!busy || !webhook} title={t("action.sendShortcut")} onClick={() => void send()}>{sendLabel}</button>
+                    <button type="button" className="evi-eb-button" disabled={!!busy || (!webhook && webhooks?.length !== 0)} title={t("action.sendShortcut")} onClick={() => void send()}>{sendLabel}</button>
                 </footer>
             </div>
         </div>
@@ -1541,7 +1589,7 @@ const css = `
   border: 1px solid var(--border-subtle, rgba(255,255,255,.06)); box-shadow: var(--shadow-high, 0 8px 24px rgba(0,0,0,.4)); font-family: var(--font-primary); font-size: 14px; line-height: 1.286; }
 
 /* Head */
-.evi-eb-head { display: flex; align-items: center; gap: 16px; padding: 16px 16px 16px 24px; border-block-end: 1px solid var(--border-subtle, rgba(255,255,255,.06)); }
+.evi-eb-head { display: flex; align-items: center; gap: 16px; padding: 20px 20px 20px 24px; border-block-end: 1px solid var(--border-subtle, rgba(255,255,255,.06)); }
 .evi-eb-head-text { flex: 1; min-width: 0; }
 .evi-eb-head h2 { margin: 0; font-size: 20px; line-height: 24px; font-weight: 600; color: var(--text-strong, var(--header-primary, #f2f3f5)); }
 .evi-eb-head p { margin: 2px 0 0; font-size: 14px; color: var(--text-muted, #949ba4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1560,22 +1608,25 @@ const css = `
 .evi-eb-columns { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); min-height: 0; flex: 1; }
 .evi-eb-editor, .evi-eb-preview { min-height: 0; overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
 .evi-eb-editor::-webkit-scrollbar, .evi-eb-preview::-webkit-scrollbar, .evi-eb-drafts::-webkit-scrollbar, .evi-eb-input textarea::-webkit-scrollbar { display: none; }
-.evi-eb-editor { display: flex; flex-direction: column; gap: 8px; padding: 16px 16px 24px 24px; }
-.evi-eb-preview { padding: 16px 24px 24px; background: var(--background-base-lower, var(--background-primary, #313338)); border-inline-start: 1px solid var(--border-subtle, rgba(255,255,255,.06)); }
+.evi-eb-editor { display: flex; flex-direction: column; gap: 16px; padding: 24px 24px 32px; }
+.evi-eb-preview { padding: 24px 24px 32px; background: var(--background-base-lower, var(--background-primary, #313338)); border-inline-start: 1px solid var(--border-subtle, rgba(255,255,255,.06)); }
 .evi-eb-preview-chat { padding: 8px 0; }
-.evi-eb-group { margin: 16px 0 0; font-size: 12px; line-height: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted, #949ba4); }
-.evi-eb-preview .evi-eb-group { margin: 0 0 8px; }
+.evi-eb-group { margin: 8px 0 0; font-size: 12px; line-height: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted, #949ba4); }
+.evi-eb-preview .evi-eb-group { margin: 0 0 12px; }
+.evi-eb-sender { display: flex; flex-direction: column; gap: 12px; }
+.evi-eb-sender .evi-eb-group { margin: 0; }
+.evi-eb-spacer { flex: 1; }
 .evi-eb-intro { margin: 8px 0 0; font-size: 13px; line-height: 18px; color: var(--text-muted, #949ba4); }
 .evi-eb-empty { padding: 24px; border-radius: 8px; text-align: center; color: var(--text-muted, #949ba4); background: var(--background-mod-subtle, rgba(255,255,255,.02)); }
-.evi-eb-tree { display: flex; flex-direction: column; gap: 8px; }
+.evi-eb-tree { display: flex; flex-direction: column; gap: 12px; }
 .evi-eb-tree:empty { display: none; }
 
 /* Cards */
 .evi-eb-card { border-radius: 8px; border: 1px solid var(--border-subtle, rgba(255,255,255,.06)); background: var(--background-base-lower, rgba(0,0,0,.12)); transition: border-color .15s ease-out; }
 .evi-eb-card[data-tone="nested"] { background: var(--background-mod-subtle, rgba(255,255,255,.025)); }
-.evi-eb-card[data-invalid] { border-color: color-mix(in srgb, var(--status-danger, #f23f43) 45%, transparent); }
-.evi-eb-card-head { display: flex; align-items: center; gap: 2px; padding: 4px 4px 4px 4px; }
-.evi-eb-card-toggle { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; min-height: 36px; padding: 0 8px; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; cursor: pointer; text-align: start; transition: background-color .15s ease-out; }
+.evi-eb-card[data-invalid] { border-color: color-mix(in srgb, var(--status-danger, #f23f43) 35%, transparent); }
+.evi-eb-card-head { display: flex; align-items: center; gap: 2px; padding: 6px; }
+.evi-eb-card-toggle { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; min-height: 40px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; cursor: pointer; text-align: start; transition: background-color .15s ease-out; }
 .evi-eb-card-toggle:hover { background: var(--background-modifier-hover, rgba(255,255,255,.04)); }
 .evi-eb-chevron { display: grid; flex: none; color: var(--interactive-normal, #b5bac1); transition: rotate .2s cubic-bezier(.2,0,0,1); }
 .evi-eb-card[data-open] > .evi-eb-card-head .evi-eb-chevron { rotate: 90deg; }
@@ -1587,13 +1638,13 @@ const css = `
 .evi-eb-card-head:hover .evi-eb-card-actions, .evi-eb-card-head:focus-within .evi-eb-card-actions { opacity: 1; }
 .evi-eb-card-body-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .2s cubic-bezier(.2,0,0,1); }
 .evi-eb-card[data-open] > .evi-eb-card-body-wrap { grid-template-rows: 1fr; }
-.evi-eb-card-body { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 0 12px; }
-.evi-eb-card[data-open] > .evi-eb-card-body-wrap > .evi-eb-card-body { padding: 4px 12px 12px; }
-.evi-eb-card-body h4 { margin: 8px 0 0; font-size: 12px; line-height: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted, #949ba4); }
+.evi-eb-card-body { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 16px; padding: 0 16px; }
+.evi-eb-card[data-open] > .evi-eb-card-body-wrap > .evi-eb-card-body { padding: 4px 16px 16px; }
+.evi-eb-card-body h4 { margin: 4px 0 -4px; font-size: 12px; line-height: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted, #949ba4); }
 .evi-eb-card-body h4:first-child { margin-top: 4px; }
 
 /* Rows inside cards */
-.evi-eb-sub { display: flex; flex-direction: column; gap: 8px; padding: 8px 8px 12px 12px; border-radius: 8px; background: var(--background-modifier-hover, rgba(255,255,255,.03)); }
+.evi-eb-sub { display: flex; flex-direction: column; gap: 12px; padding: 8px 8px 16px 16px; border-radius: 8px; background: var(--background-modifier-hover, rgba(255,255,255,.03)); }
 .evi-eb-sub-head { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 13px; font-weight: 600; color: var(--text-strong, #f2f3f5); }
 .evi-eb-sub-head > span:first-child { flex: 1; }
 .evi-eb-inline-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
@@ -1624,7 +1675,16 @@ const css = `
 .evi-eb-input ::placeholder, .evi-eb-hex::placeholder { color: var(--input-placeholder-text, var(--text-muted, #6d6f78)); }
 .evi-eb-hint { font-size: 12px; line-height: 16px; color: var(--text-muted, #949ba4); }
 .evi-eb-filepick { flex: none !important; width: auto !important; max-width: 40%; }
-.evi-eb-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.evi-eb-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Folds: the optional parts of an embed, one row each until opened */
+.evi-eb-folds { display: flex; flex-direction: column; border-radius: 8px; border: 1px solid var(--border-subtle, rgba(255,255,255,.06)); }
+.evi-eb-fold + .evi-eb-fold { border-block-start: 1px solid var(--border-subtle, rgba(255,255,255,.06)); }
+.evi-eb-fold-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 12px; border: 0; border-radius: 8px; background: none;
+  font: inherit; font-size: 14px; font-weight: 500; color: var(--text-default, #dbdee1); text-align: start; cursor: pointer; transition: background-color .15s ease-out; }
+@media (hover: hover) { .evi-eb-fold-toggle:hover { background: var(--background-modifier-hover, rgba(255,255,255,.04)); } }
+.evi-eb-fold[data-open] > .evi-eb-fold-toggle .evi-eb-chevron { rotate: 90deg; }
+.evi-eb-fold-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 16px 16px; animation: evi-eb-rise .2s cubic-bezier(.2,0,0,1); }
 .evi-eb-pair[data-ratio="emoji"] { grid-template-columns: 96px 1fr; }
 .evi-eb-pair[data-ratio="color"] { grid-template-columns: 1fr; }
 .evi-eb-counter { font-weight: 500; color: var(--text-muted, #949ba4); font-variant-numeric: tabular-nums; }
@@ -1658,7 +1718,7 @@ const css = `
 .evi-eb-icon:disabled { opacity: .3; cursor: default; }
 .evi-eb-add, .evi-eb-add-small { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px dashed var(--border-strong, rgba(255,255,255,.16)); border-radius: 8px; background: none;
   color: var(--text-default, #dbdee1); font: inherit; font-weight: 500; cursor: pointer; transition: background-color .15s ease-out, border-color .15s ease-out; }
-.evi-eb-add { width: 100%; min-height: 40px; font-size: 14px; }
+.evi-eb-add { width: 100%; min-height: 44px; font-size: 14px; }
 .evi-eb-add-small { align-self: flex-start; min-height: 32px; padding: 0 12px; font-size: 13px; }
 .evi-eb-add:hover:not(:disabled), .evi-eb-add-small:hover:not(:disabled) { background: var(--background-modifier-hover, rgba(255,255,255,.04)); border-color: var(--interactive-normal, #b5bac1); }
 .evi-eb-add:disabled, .evi-eb-add-small:disabled { opacity: .45; cursor: default; }
@@ -1674,15 +1734,19 @@ const css = `
 .evi-eb-button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* Adding components */
-.evi-eb-addbar { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; border: 1px dashed var(--border-strong, rgba(255,255,255,.14)); }
-.evi-eb-addbar-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted, #949ba4); }
-.evi-eb-addbar-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
-.evi-eb-kind { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--border-subtle, rgba(255,255,255,.08)); border-radius: 16px;
-  background: var(--background-base-lower, rgba(0,0,0,.12)); font: inherit; font-size: 13px; font-weight: 500; color: var(--text-default, #dbdee1); cursor: pointer; transition: background-color .15s ease-out, border-color .15s ease-out, transform .15s ease-out; }
+.evi-eb-addbar { display: flex; flex-direction: column; gap: 12px; padding: 12px; border-radius: 8px; border: 1px solid var(--border-subtle, rgba(255,255,255,.08)); animation: evi-eb-rise .2s cubic-bezier(.2,0,0,1); }
+.evi-eb-addbar-head { display: flex; align-items: center; justify-content: space-between; padding-inline-start: 4px; }
+.evi-eb-addbar-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--text-muted, #949ba4); }
+.evi-eb-addbar-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.evi-eb-kind { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1px solid var(--border-subtle, rgba(255,255,255,.08)); border-radius: 8px; text-align: start;
+  background: var(--background-base-lower, rgba(0,0,0,.12)); font: inherit; color: var(--text-default, #dbdee1); cursor: pointer; transition: background-color .15s ease-out, border-color .15s ease-out, transform .15s ease-out; }
+.evi-eb-kind-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.evi-eb-kind-name { font-size: 14px; font-weight: 600; color: var(--text-strong, #f2f3f5); }
+.evi-eb-kind-hint { font-size: 12px; line-height: 16px; color: var(--text-muted, #949ba4); }
 .evi-eb-kind:hover:not(:disabled) { background: var(--background-modifier-hover, rgba(255,255,255,.06)); border-color: var(--interactive-normal, #b5bac1); }
 .evi-eb-kind:active:not(:disabled) { transform: scale(.97); }
 .evi-eb-kind:disabled { opacity: .45; cursor: default; }
-.evi-eb-kind svg { color: var(--interactive-normal, #b5bac1); }
+.evi-eb-kind svg { flex: none; margin-top: 1px; color: var(--interactive-normal, #b5bac1); }
 
 /* Files */
 .evi-eb-files { display: flex; flex-direction: column; gap: 8px; }
@@ -1704,7 +1768,7 @@ const css = `
 /* Panels, problems, errors */
 .evi-eb-panel { display: flex; flex-direction: column; gap: 12px; padding: 16px 24px; border-block-start: 1px solid var(--border-subtle, rgba(255,255,255,.06)); background: var(--background-base-lower, rgba(0,0,0,.08));
   animation: evi-eb-rise .2s cubic-bezier(.2,0,0,1); }
-.evi-eb-panel-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.evi-eb-panel-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .evi-eb-drafts { list-style: none; margin: 0; padding: 0; max-height: 200px; overflow-y: auto; scrollbar-width: none; }
 .evi-eb-drafts li { display: flex; align-items: center; gap: 4px; }
 .evi-eb-draft { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 8px 10px; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; font-size: 14px; text-align: start; cursor: pointer; }
@@ -1721,13 +1785,13 @@ const css = `
 @keyframes evi-eb-rise { from { opacity: 0; translate: 0 4px; } }
 
 /* Footer */
-.evi-eb-foot { display: flex; align-items: center; gap: 8px; padding: 12px 16px 12px 16px; border-block-start: 1px solid var(--border-subtle, rgba(255,255,255,.06)); background: var(--modal-footer-background, var(--background-base-lower, rgba(0,0,0,.08))); }
-.evi-eb-foot-left { display: flex; flex-wrap: wrap; gap: 2px; flex: 1; min-width: 0; }
+.evi-eb-foot { display: flex; align-items: center; gap: 8px; padding: 16px 24px; border-block-start: 1px solid var(--border-subtle, rgba(255,255,255,.06)); }
+.evi-eb-foot-left { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; min-width: 0; margin-inline-start: -10px; }
 .evi-eb-problem-pill { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 16px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
   color: var(--text-feedback-critical, #f23f43); background: color-mix(in srgb, var(--status-danger, #f23f43) 14%, transparent); transition: background-color .15s ease-out; }
 .evi-eb-problem-pill:hover, .evi-eb-problem-pill[aria-expanded="true"] { background: color-mix(in srgb, var(--status-danger, #f23f43) 22%, transparent); }
 
-:is(.evi-eb-button, .evi-eb-ghost, .evi-eb-icon, .evi-eb-close, .evi-eb-card-toggle, .evi-eb-add, .evi-eb-add-small, .evi-eb-draft, .evi-eb-kind, .evi-eb-segmented button, .evi-eb-problem-pill, .evi-eb-swatch-pick, .evi-eb-swatch-none, .evi-eb-problems button):focus-visible {
+:is(.evi-eb-button, .evi-eb-ghost, .evi-eb-icon, .evi-eb-fold-toggle, .evi-eb-close, .evi-eb-card-toggle, .evi-eb-add, .evi-eb-add-small, .evi-eb-draft, .evi-eb-kind, .evi-eb-segmented button, .evi-eb-problem-pill, .evi-eb-swatch-pick, .evi-eb-swatch-none, .evi-eb-problems button):focus-visible {
   outline: 2px solid var(--focus-primary, #00a8fc); outline-offset: 2px; }
 
 /* The preview, after Discord's own message, embed and V2 components */
@@ -1804,6 +1868,7 @@ const css = `
   .evi-eb-columns::-webkit-scrollbar { display: none; }
   .evi-eb-editor, .evi-eb-preview { overflow: visible; min-height: auto; }
   .evi-eb-editor { padding: 16px; }
+  .evi-eb-addbar-kinds { grid-template-columns: 1fr; }
   .evi-eb-preview { padding: 16px; }
   .evi-eb-preview { border-inline-start: 0; border-block-start: 1px solid var(--border-subtle, rgba(255,255,255,.06)); }
   .evi-eb-pair { grid-template-columns: 1fr; }
@@ -1811,7 +1876,7 @@ const css = `
 }
 @media (prefers-reduced-motion: reduce) {
   .evi-eb-chevron, .evi-eb-button, .evi-eb-add, .evi-eb-card-body-wrap, .evi-eb-toggle-track > span, .evi-eb-meter-bar > span { transition: none; }
-  .evi-eb-panel, .evi-eb-problems { animation: none; }
+  .evi-eb-panel, .evi-eb-problems, .evi-eb-fold-body, .evi-eb-addbar { animation: none; }
 }
 `;
 
