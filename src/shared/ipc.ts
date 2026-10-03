@@ -117,6 +117,14 @@ export const IPC = {
     POWER_ON_BATTERY: "evi:power-on-battery",
     /** main -> renderer: the computer switched between battery and mains power */
     POWER_CHANGED: "evi:power-changed",
+    /** renderer -> main, one-way: whether a call keeps Discord busy, and where it is (shared/idle.ts) */
+    IDLE_REPORT: "evi:idle-report",
+    /** main -> renderer: Discord's window was hidden a while, empty the page's caches */
+    MEMORY_TRIM: "evi:memory-trim",
+    /** Memory Discord's page and GPU process use now */
+    MEMORY_USAGE: "evi:memory-usage",
+    /** Once, after Evi restarted an idle Discord: the channel it was on */
+    IDLE_RESTORE: "evi:idle-restore",
     /** The store's community side on evi.rest (main/community.ts): its front page, ratings, a plugin's page */
     COMMUNITY_HOME: "evi:community-home",
     COMMUNITY_RATINGS: "evi:community-ratings",
@@ -296,6 +304,10 @@ export interface EviSettings {
     autoSafeMode?: boolean;
     /** Plugins you have or hearted that evi.rest said were broken, so a fix is told once */
     brokenSeen?: string[];
+    /** Restart Discord when its page uses more than idleRestartGb while you're away (shared/idle.ts). Off by default */
+    idleRestart?: boolean;
+    /** One of RESTART_GB_OPTIONS. Missing: DEFAULT_RESTART_GB */
+    idleRestartGb?: number;
 }
 
 /** An answer from evi.rest's community side; `unlinked` when it needs this Evi linked to an account */

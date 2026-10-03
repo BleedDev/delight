@@ -128,6 +128,7 @@ function fakeNative(bootData: BootData) {
         // The wallpaper main copied in: the test hands it the bytes when it turns one on
         readWallpaper: async () => (window as any).__test.wallpaper ?? { ok: false, error: "No wallpaper" },
         removeWallpaper: async () => { },
+        memoryUsage: async () => ({ renderer: 1.9 * 1024 ** 3, gpu: 300 * 1024 ** 2 }),
         onPluginChange: (cb: (c: unknown) => void) => void pluginListeners.push(cb),
         onThemeChange: (cb: (c: unknown) => void) => void themeListeners.push(cb),
         // Like main: refuse non-https, otherwise "download" a theme and announce it before resolving
@@ -2440,6 +2441,21 @@ await page.screenshot({ path: join(OUT, "ui-performance.png") });
 check("A recording lists the hook that ran during it: 3 calls, about 60 ms, where it hooked",
     recorded.cells?.[1] === "3" && parseFloat(recorded.cells?.[0] ?? "") >= 55 && recorded.sites.includes("after f"), recorded);
 check("A recording says how long Discord was held up by long tasks", /Recorded \d/.test(recorded.summary) && /Discord was busy for \d+ ms in \d+ long task/.test(recorded.summary), recorded.summary);
+
+// Memory: what main measured, and the restart while away, off until turned on
+const memoryBefore = await page.evaluate(() => ({
+    rows: [...document.querySelectorAll("#dl-perf-memory tbody tr")].map(tr => tr.textContent),
+    limitOpen: document.querySelector("#dl-perf-idle-limit")?.hasAttribute("data-open") ?? null,
+}));
+await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void (d.idleRestart = true)));
+await page.waitForTimeout(300);
+const memoryAfter = await page.evaluate(() => ({
+    limitOpen: document.querySelector("#dl-perf-idle-limit")?.hasAttribute("data-open") ?? null,
+    limit: document.querySelector("#dl-perf-idle-limit-select")?.textContent ?? null,
+}));
+await page.evaluate(() => (window as any).Evi.settings.update((d: any) => void delete d.idleRestart));
+check("Performance tab shows Discord's memory, and the limit only once the idle restart is on", memoryBefore.rows.some(r => r?.includes("1.9 GB")) && memoryBefore.rows.some(r => r?.includes("300 MB"))
+    && memoryBefore.limitOpen === false && memoryAfter.limitOpen === true && !!memoryAfter.limit?.includes("4 GB"), { memoryBefore, memoryAfter });
 
 await openTab("themes", "quickcss");
 await page.fill("#dl-quickcss", "body { outline: 3px solid rgb(255, 0, 128) !important; }");

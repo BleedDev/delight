@@ -10,7 +10,7 @@
  *
  *   bun scripts/test-electron.ts
  */
-import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 
 import { parseBackup } from "../src/shared/backup";
@@ -155,6 +155,11 @@ const { app, BrowserWindow, net, session } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
+// Like Discord's bootstrap, which sets its own feature list after Evi applied plugins' switches
+app.commandLine.appendSwitch("disable-features", "DiscordFeatureA,DiscordFeatureB");
+console.log("SWITCHES " + JSON.stringify({ disable: app.commandLine.getSwitchValue("disable-features") }));
+console.log("COMPILE_CACHE " + JSON.stringify(require("module").getCompileCacheDir?.() ?? null));
+
 app.whenReady().then(() => {
     // Trust the test registry's self-signed certificate, for 127.0.0.1 only
     session.defaultSession.setCertificateVerifyProc((req, cb) => cb(req.hostname === "127.0.0.1" ? 0 : -3));
@@ -225,6 +230,7 @@ app.whenReady().then(() => {
             console.log("REPORTS " + JSON.stringify({
                 crashNotStore: await crash("late-plugin", "1.0.0"),
                 healthNotStore: await invoke("evi:health-report", { plugin: "late-plugin", version: "1.0.0", discordBuild: "test", kind: "start" }),
+                memory: await invoke("evi:memory-usage"),
             }));
         } catch (err) {
             console.log("REPORTS " + JSON.stringify({ error: String(err && err.stack || err) }));
@@ -380,10 +386,14 @@ mkdirSync(DATA, { recursive: true });
 writeFileSync(join(DATA, "package.json"), JSON.stringify({ type: "commonjs" }));
 writeFileSync(join(DATA, "settings.json"), JSON.stringify({
     quickCss: true,
-    plugins: { experiments: { enabled: true, settings: { marker: "from-a" } }, "gpu-boost": { enabled: true } },
+    plugins: { experiments: { enabled: true, settings: { marker: "from-a" } }, "gpu-boost": { enabled: true }, "switch-test": { enabled: true } },
     enabledThemes: ["boot.css"],
 }));
 mkdirSync(join(DATA, "themes"));
+// A plugin with a feature list switch: Discord setting its own list afterwards must not drop it
+mkdirSync(join(DATA, "plugins", "switch-test"), { recursive: true });
+writeFileSync(join(DATA, "plugins", "switch-test", "manifest.json"), JSON.stringify({ id: "switch-test", name: "Switch Test", chromiumSwitches: { "disable-features": "EviTestFeature" } }));
+writeFileSync(join(DATA, "plugins", "switch-test", "index.js"), "module.exports = { default: { start() { } } };");
 writeFileSync(join(DATA, "themes", "boot.css"), `/**
  * @name Boot Theme
  * @author Tester
@@ -448,6 +458,13 @@ check("remote theme downloaded into the themes folder and turned on instead of t
     && r.addedStyles?.length === 1 && r.addedStyles[0].includes(r.addCss.file) && r.bootAfterAdd === "", { result: r.addCss, styles: r.addedStyles, boot: r.bootAfterAdd });
 check("settings were read from the data folder", existsSync(join(DATA, "settings.json")));
 check("enabled plugin's chromium switches applied at startup", stdout.includes("gpu-boost: --enable-zero-copy"));
+const switchesLine = stdout.split("\n").find(l => l.startsWith("SWITCHES "));
+const disabledFeatures: string = switchesLine ? JSON.parse(switchesLine.slice(9)).disable : "";
+check("a feature list Discord sets later adds to a plugin's instead of replacing it", ["EviTestFeature", "DiscordFeatureA", "DiscordFeatureB"].every(f => disabledFeatures.split(",").includes(f)), disabledFeatures);
+const cacheLine = stdout.split("\n").find(l => l.startsWith("COMPILE_CACHE "));
+const cacheDir: string | null = cacheLine ? JSON.parse(cacheLine.slice(14)) : null;
+const cacheFiles = (dir: string): number => readdirSync(dir, { withFileTypes: true }).reduce((n, e) => n + (e.isDirectory() ? cacheFiles(join(dir, e.name)) : 1), 0);
+check("the loader turned on Node's compile cache, and it was written before Discord quit", !!cacheDir && existsSync(cacheDir) && cacheFiles(cacheDir) > 0, cacheDir);
 const firstState = JSON.parse(readFileSync(join(DATA, "safe-mode.json"), "utf8"));
 check("healthy start reset the crash counter, installs were recorded", firstState.pendingStarts === 0 && firstState.changes.some((c: any) => c.id === "late-plugin" && c.action === "installed"), firstState);
 
@@ -508,6 +525,8 @@ const reports = reportsLine ? JSON.parse(reportsLine.slice(8)) : { error: "no RE
 check("reports: crash and health reports for a plugin the store didn't install are refused",
     reports.crashNotStore?.ok === false && /isn't installed from the store/.test(reports.crashNotStore.error)
     && reports.healthNotStore?.ok === false && /isn't installed from the store/.test(reports.healthNotStore.error), reports);
+
+check("Performance tab: memory of Discord's page and GPU process, from main", reports.memory?.renderer > 10 * 1024 ** 2 && (reports.memory.gpu === undefined || reports.memory.gpu > 0), reports.memory);
 
 const storeLine = stdout.split("\n").find(l => l.startsWith("STORE "));
 const s = storeLine ? JSON.parse(storeLine.slice(6)) : { error: "no STORE line" };

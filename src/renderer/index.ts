@@ -10,6 +10,7 @@ import { CrashDetective } from "./crashDetective";
 import { Developer } from "./developer";
 import { installCssFixes, warmUiFonts } from "./cssFixes";
 import { I18n } from "./i18n";
+import { startIdleReports } from "./idle";
 import { startHealthReports } from "./health";
 import { Logger } from "./logger";
 import { Native } from "./native";
@@ -133,6 +134,8 @@ function boot() {
         startUpdateChecks();
         // Evi's team requiring a version: downloads it now and restarts once nobody's in a call
         whenAppReady(startRequiredUpdates);
+        // Main empties Discord's caches when it's hidden a while, and can restart it if you asked, never in a call
+        whenAppReady(startIdleReports);
         if (SafeMode.active) {
             showSafeModeNotice();
         } else {

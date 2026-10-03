@@ -13,12 +13,14 @@ import { guardIpc } from "./ipcGuard";
 import { setLocale } from "./locale";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
+import { initIdle, relaunch } from "./idle";
 import { applyChromiumSwitches, askToEnable, enablesNeedingConsent, getPluginPayloads, initPlugins } from "./plugins";
 import { currentHotfixes, currentPulls, initReports } from "./reports";
 import { SafeMode } from "./safeMode";
 import { saveSettings, settings } from "./settings";
 import { initStars } from "./stars";
 import { initStore } from "./store";
+import { mergeListSwitches } from "./switches";
 import { initThemeSubmit } from "./themeSubmit";
 import { getThemePayloads, initThemes } from "./themes";
 import { initUpdater } from "./updater";
@@ -91,10 +93,7 @@ function registerIpc() {
         return shell.openPath(path);
     });
 
-    ipcMain.handle(IPC.RELAUNCH, () => {
-        app.relaunch();
-        app.exit(0);
-    });
+    ipcMain.handle(IPC.RELAUNCH, () => relaunch());
 
     ipcMain.on(IPC.BOOT_OK, () => SafeMode.bootOk());
     ipcMain.handle(IPC.SAFE_MODE_EXIT, () => SafeMode.exit());
@@ -202,6 +201,7 @@ function setup() {
     registerIpc();
     SafeMode.watchCrashes();
     enableDevTools();
+    mergeListSwitches();
     applyChromiumSwitches();
     app.on("session-created", addPreload);
     app.whenReady().then(() => addPreload(session.defaultSession));
@@ -218,13 +218,25 @@ function setup() {
     initBadges();
     initUpdater();
     initWallpaper();
+    initIdle();
     watchQuickCss();
     persistAcrossUpdates(shimAsar);
+}
+
+/**
+ * Discord's bundle compiles from Node's cache from the second start on (53 ms to 6 ms here), asar
+ * and all. Older loaders don't turn it on themselves; when the loader did, this changes nothing.
+ */
+function enableCompileCache() {
+    try {
+        require("module").enableCompileCache(join(DATA_DIR, "cc"));
+    } catch { }
 }
 
 if (vanilla) {
     console.log("[Evi] Vanilla mode, not loading.");
 } else {
+    enableCompileCache();
     try {
         // Counts this start, and decides whether it's safe mode (or, after repeated failures, vanilla)
         if (SafeMode.begin() !== "vanilla") setup();
@@ -241,3 +253,7 @@ globalThis.__eviLoadedDiscord = true;
 // Loaders from before the rename check this name
 (globalThis as any).__delightLoadedDiscord = true;
 require(require.main!.filename);
+// Node writes the cache when the process ends normally, which app.exit() and a killed Discord skip
+try {
+    require("module").flushCompileCache?.();
+} catch { }

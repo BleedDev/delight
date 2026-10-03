@@ -10,6 +10,7 @@ import type { AdminMethod } from "@shared/devAdmin";
 import type { DevLive } from "@shared/devLive";
 import type { HealthReportInput } from "@shared/health";
 import type { Hotfix } from "@shared/hotfixes";
+import type { IdleReport, MemoryUsage } from "@shared/idle";
 import { AddThemeResult, AuthorsResult, BackupApplyResult, BackupExportResult, BackupOpenResult, BootData, CommunityResult, CrashReportResult, EviSettings, HealthReportResult, HealthResult, IPC, OpenPathTarget, PluginChange, PluginReportResult, PreviewMediaResult, SettingsSaveResult, ThemeChange, ThemeSaveInput, ThemeSaveResult, ThemeSubmitResult, WallpaperPickResult, WallpaperReadResult } from "@shared/ipc";
 import type { EviNotification } from "@shared/notifications";
 import type { StorePreviewResult } from "@shared/pluginPermissions";
@@ -144,6 +145,20 @@ const EviNative = {
     credited: (): Promise<CommunityResult<boolean | null>> => ipcRenderer.invoke(IPC.COMMUNITY_CREDITED),
     setCredited: (on: boolean): Promise<CommunityResult<boolean>> => ipcRenderer.invoke(IPC.COMMUNITY_SET_CREDITED, on),
     storePreviewMedia: (url: string): Promise<PreviewMediaResult> => ipcRenderer.invoke(IPC.STORE_PREVIEW_MEDIA, url),
+    reportIdle: (report: IdleReport) => ipcRenderer.send(IPC.IDLE_REPORT, report),
+    /** Main asked, Discord's window having been hidden a while: empties the page's caches, then says what it freed */
+    onMemoryTrim(cb: (before?: Electron.ProcessMemoryInfo, after?: Electron.ProcessMemoryInfo) => void) {
+        ipcRenderer.on(IPC.MEMORY_TRIM, async () => {
+            const info = () => process.getProcessMemoryInfo().catch(() => undefined);
+            const before = await info();
+            webFrame.clearCache();
+            // What's freed goes back to the system over the next moments
+            await new Promise(r => setTimeout(r, 5000));
+            cb(before, await info());
+        });
+    },
+    memoryUsage: (): Promise<MemoryUsage> => ipcRenderer.invoke(IPC.MEMORY_USAGE),
+    idleRestorePath: (): Promise<string | null> => ipcRenderer.invoke(IPC.IDLE_RESTORE),
 };
 
 export type EviNativeApi = typeof EviNative;

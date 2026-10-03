@@ -26,6 +26,10 @@ const path = require("path");
 ${devPluginsDir ? `process.env.EVI_DEV_PLUGINS = ${JSON.stringify(devPluginsDir)};\n` : ""}
 // The bundler inlines __dirname at build time, so the core learns its location from us
 global.__eviCoreDir = path.dirname(${JSON.stringify(corePath)});
+// Evi's and Discord's code compile from a cache after the first start. A short folder: nodejs/node#66438
+try {
+    require("module").enableCompileCache(path.join(global.__eviCoreDir, "..", "cc"));
+} catch { }
 try {
     require(${JSON.stringify(corePath)});
 } catch (err) {

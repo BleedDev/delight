@@ -5,13 +5,16 @@
  * Opening settings covers Discord, so a recording has to outlive this tab: you start it, close
  * settings, do the slow thing, come back and stop it. Its state lives here at module level.
  */
+import { MemoryUsage, restartLimitGb, RESTART_GB_OPTIONS } from "@shared/idle";
 import type { ReactNode } from "react";
 
 import { I18n, t } from "../i18n";
+import { Native } from "../native";
 import { Perf, PluginReport, RecordingReport, SiteKind, SLOW_CALL_MS, Totals, WINDOW_S } from "../perf";
 import { PluginManager } from "../plugins/manager";
+import { Settings } from "../settings";
 import { React } from "../webpack/common";
-import { Badge, Button, Collapse, EmptyState, IconButton, Section, Status, Text, useStore } from "./components";
+import { Badge, Button, Collapse, Dropdown, EmptyState, IconButton, Section, Status, SwitchRow, Text, useStore } from "./components";
 
 /** A forgotten recording stops by itself */
 const MAX_RECORDING_MS = 60_000;
@@ -58,6 +61,10 @@ function ms(value: number) {
     if (value < 10) return t("perf.unit.ms", { n: num(value, 1) });
     return t("perf.unit.ms", { n: int(Math.round(value)) });
 }
+
+const MB = 1024 ** 2;
+const GB = 1024 ** 3;
+const bytes = (value: number) => value >= GB ? t("perf.unit.gb", { n: num(value / GB, 1) }) : t("perf.unit.mb", { n: int(Math.round(value / MB)) });
 
 const seconds = (value: number, digits = 0) => t("perf.unit.s", { n: num(value, digits) });
 const calls = (n: number) => t("perf.calls", { count: n });
@@ -194,6 +201,69 @@ function LiveTable({ plugins }: { plugins: PluginReport[]; }) {
     );
 }
 
+function MemoryRow({ name, value, loaded }: { name: string; value?: number; loaded: boolean; }) {
+    return (
+        <tr>
+            <th scope="row"><Text variant="text-md/medium" color="text-strong">{name}</Text></th>
+            <td><Text variant="text-sm/normal" tabular>{value !== undefined ? bytes(value) : loaded ? t("perf.memory.unknown") : ""}</Text></td>
+        </tr>
+    );
+}
+
+/** What Discord uses now (main's app.getAppMetrics), and the restart while you're away (main/idle.ts) */
+function Memory() {
+    const [usage, setUsage] = React.useState<MemoryUsage>();
+    const restart = useStore(Settings.subscribe, () => Settings.data.idleRestart === true);
+    const limit = useStore(Settings.subscribe, () => restartLimitGb(Settings.data.idleRestartGb));
+
+    React.useEffect(() => {
+        if (!Native.memoryUsage) return;
+        let live = true;
+        const load = () => void Native.memoryUsage().then(u => live && setUsage(u), () => live && setUsage({}));
+        load();
+        const timer = setInterval(load, 2000);
+        return () => {
+            live = false;
+            clearInterval(timer);
+        };
+    }, []);
+
+    const options = React.useMemo(() => RESTART_GB_OPTIONS.map(gb => ({ value: String(gb), label: t("perf.unit.gb", { n: int(gb) }) })), []);
+    return (
+        <Section id="dl-perf-memory" title={t("perf.memory.title")} description={t("perf.memory.description")}>
+            <Table label={t("perf.memory.table")} columns={[t("perf.memory.col.part"), t("perf.memory.col.memory")]}>
+                <MemoryRow name={t("perf.memory.window")} value={usage?.renderer} loaded={!!usage} />
+                <MemoryRow name={t("perf.memory.gpu")} value={usage?.gpu} loaded={!!usage} />
+            </Table>
+            <SwitchRow
+                id="dl-perf-idle-restart"
+                label={t("perf.restart.setting")}
+                description={t("perf.restart.settingHint")}
+                checked={restart}
+                onChange={on => Settings.update(d => {
+                    d.idleRestart = on;
+                })}
+            />
+            <Collapse open={restart} id="dl-perf-idle-limit">
+                <div className="dl-field">
+                    <Text variant="text-md/medium" color="text-strong" id="dl-perf-idle-limit-label">{t("perf.restart.limit")}</Text>
+                    <Text tag="p" variant="text-sm/normal" color="text-subtle">{t("perf.restart.limitHint")}</Text>
+                    <Dropdown
+                        id="dl-perf-idle-limit-select"
+                        label={t("perf.restart.limit")}
+                        labelledBy="dl-perf-idle-limit-label"
+                        options={options}
+                        value={String(limit)}
+                        onChange={v => Settings.update(d => {
+                            d.idleRestartGb = Number(v);
+                        })}
+                    />
+                </div>
+            </Collapse>
+        </Section>
+    );
+}
+
 export function PerformanceTab() {
     const result = useStore(subscribe, () => report);
     const [plugins, setPlugins] = React.useState(Perf.snapshot);
@@ -245,6 +315,7 @@ export function PerformanceTab() {
                 {" "}
                 {t("perf.note.rounding")}
             </Text>
+            <Memory />
         </div>
     );
 }
