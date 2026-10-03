@@ -12,8 +12,7 @@ import { PluginManager } from "../plugins/manager";
 import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
 import { openLayer } from "../toolkit/layer";
-import { React } from "../webpack/common";
-import { filters, waitFor } from "../webpack/find";
+import { onCreateRootReady, React } from "../webpack/common";
 import { whenAppReady } from "./appReady";
 import { Button, Icon, useExit } from "./components";
 import { ensureStyles } from "./index";
@@ -94,7 +93,7 @@ export async function showCrashDetective() {
     if (!suspect) return void Native.markCrashSeen?.();
 
     ensureStyles();
-    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => afterWhatsNew(() => {
+    onCreateRootReady(() => whenAppReady(() => afterWhatsNew(() => {
         // They may have turned it off themselves in the meantime
         if (!activeSuspect(record, Settings.data, PluginManager.getSnapshot().map(p => p.manifest))) return void Native.markCrashSeen?.();
         // The notice plays its own exit (useExit), then the layer goes at once

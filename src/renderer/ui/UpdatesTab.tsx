@@ -7,8 +7,7 @@ import { isPrerelease, UpdateProgress, UpdateStatus } from "@shared/release";
 import { t, useLocale } from "../i18n";
 import { Settings } from "../settings";
 import { Updates } from "../updates";
-import { createRoot, React } from "../webpack/common";
-import { filters, waitFor } from "../webpack/find";
+import { createRoot, onCreateRootReady, React } from "../webpack/common";
 import { whenAppReady } from "./appReady";
 import { Badge, Button, Icon, IconButton, Section, Status, SwitchRow, Text, useExit, useStore } from "./components";
 import { ensureStyles } from "./index";
@@ -195,7 +194,7 @@ let root: ReturnType<typeof createRoot> | undefined;
 function showUpdateNotice(status: Available) {
     if (!status.installable) return;
     ensureStyles();
-    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
+    onCreateRootReady(() => whenAppReady(() => {
         if (!root) {
             const container = document.createElement("div");
             container.className = "dl-root";

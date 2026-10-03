@@ -56,19 +56,46 @@ const showCode = (code: CodeMatcher[]) => code.map(c => typeof c === "string" ? 
 const withCode = (code: CodeMatcher[], filter: Filter): Filter => Object.assign(filter, { $code: code });
 const labeled = (label: string, filter: Filter): Filter => Object.assign(filter, { $label: label });
 
+/**
+ * Filters built by `filters` from equal arguments look for the same thing: waiters holding them test
+ * each module once between them (Evi's own UI alone waits for byProps("createRoot") several times).
+ */
+const filterArgs = new WeakMap<Filter, [kind: string, args: string | CodeMatcher[]]>();
+const keyed = (kind: string, args: string | CodeMatcher[], filter: Filter): Filter => (filterArgs.set(filter, [kind, args]), filter);
+
+function filterKey(filter: Filter): unknown {
+    const made = filterArgs.get(filter);
+    const key = made && argsKey(made[1]);
+    return key === undefined ? filter : made![0] + key;
+}
+
+/**
+ * A key equal for equal strings and RegExps, or undefined for anything else (plain JS callers can pass
+ * anything) and for global or sticky RegExps, whose every test depends on the last.
+ */
+function argsKey(args: string | CodeMatcher[]) {
+    const parts: (string | string[])[] = [];
+    for (const arg of [args].flat()) {
+        if (typeof arg === "string") parts.push(arg);
+        else if (arg instanceof RegExp && !arg.global && !arg.sticky) parts.push([arg.source, arg.flags]);
+        else return undefined;
+    }
+    return JSON.stringify(parts);
+}
+
 export const filters = {
     /** Objects that have every one of these properties */
-    byProps: (...props: string[]): Filter => labeled(`props ${props.join(", ")}`, v => props.every(p => v[p] !== undefined)),
+    byProps: (...props: string[]): Filter => keyed("props", props, labeled(`props ${props.join(", ")}`, v => props.every(p => v[p] !== undefined))),
     /** Functions whose source contains every snippet */
-    byCode: (...code: CodeMatcher[]): Filter => labeled(`code ${showCode(code)}`, withCode(code, v => typeof v === "function" && matchesAll(functionSource(v), code))),
+    byCode: (...code: CodeMatcher[]): Filter => keyed("code", code, labeled(`code ${showCode(code)}`, withCode(code, v => typeof v === "function" && matchesAll(functionSource(v), code)))),
     /** React components (including memo / forwardRef) whose render source contains every snippet */
-    componentByCode: (...code: CodeMatcher[]): Filter => labeled(`component ${showCode(code)}`, withCode(code, v => {
+    componentByCode: (...code: CodeMatcher[]): Filter => keyed("component", code, labeled(`component ${showCode(code)}`, withCode(code, v => {
         const fn = unwrapComponent(v);
         return !!fn && matchesAll(functionSource(fn), code);
-    })),
+    }))),
     /** Flux stores by name, e.g. "UserStore" */
-    byStoreName: (name: string): Filter => labeled(`store ${name}`, v =>
-        v?.constructor?.displayName === name || (typeof v?.getName === "function" && "_dispatchToken" in v && v.getName() === name)),
+    byStoreName: (name: string): Filter => keyed("store", name, labeled(`store ${name}`, v =>
+        v?.constructor?.displayName === name || (typeof v?.getName === "function" && "_dispatchToken" in v && v.getName() === name))),
 };
 
 /** What a filter looks for, in words. Hand-written filters without a label show their code hint or source. */
@@ -83,8 +110,10 @@ const CANARY = "__eviCanary__";
 
 function isSearchable(value: any) {
     if (value == null) return false;
-    if (typeof value !== "object" && typeof value !== "function") return false;
-    if (value === window || value === document || value === document.documentElement) return false;
+    const type = typeof value;
+    if (type !== "object" && type !== "function") return false;
+    // Runs for every export value: a function can't be one of these, so it skips reading document twice
+    if (type === "object" && (value === window || value === document || value === document.documentElement)) return false;
     try {
         return value[CANARY] === undefined;
     } catch {
@@ -100,10 +129,12 @@ function test(filter: Filter, value: any) {
     }
 }
 
+type Candidate = [value: any, key: string | undefined];
+
 /** Exports worth testing: the exports object itself, then each export value */
-function collectCandidates(exports: any): [value: any, key: string | undefined][] {
+function collectCandidates(exports: any): Candidate[] {
     if (!isSearchable(exports)) return [];
-    const out: [any, string | undefined][] = [[exports, undefined]];
+    const out: Candidate[] = [[exports, undefined]];
     if (typeof exports !== "object") return out;
     for (const key in exports) {
         let value;
@@ -176,9 +207,10 @@ export const findComponent = <T = any>(...code: CodeMatcher[]) => find<T>(filter
 /**
  * Stores by name. Plugins ask on every message, row render and presence update, and finding one
  * walks every loaded module (~10k, 10-20 ms), so the first lookup walks once and files every store it
- * passes, and modules that run after that file theirs as they load: every later lookup, for any store,
- * is a map read. Safe to keep: stores are singletons, and live replacement never re-runs a module
- * that holds one (patching/live.ts).
+ * passes, and modules that run after that are filed by the next lookup that misses: every later lookup,
+ * for any store, is a map read, and new modules' exports are only read for stores when one is missing.
+ * Safe to keep: stores are singletons, and live replacement never re-runs a module that holds one
+ * (patching/live.ts).
  * A store that still isn't there is searched for the old way at most once a second, and only once more
  * modules have run since: a store Discord renamed would otherwise cost a full walk every second, forever.
  */
@@ -186,11 +218,13 @@ const stores = new Map<string, unknown>();
 const missing = new Map<string, { at: number; modules: number; }>();
 const MISS_RETRY_MS = 1000;
 let storesIndexed = false;
+/** Exports of modules that ran since the stores were last filed, in the order they ran */
+const unfiled: any[] = [];
 
 /** Files a Flux store under its names (see filters.byStoreName). The first one of a name wins, like find. */
 function fileStore(value: any) {
     try {
-        if (!isSearchable(value) || typeof value !== "object" || !("_dispatchToken" in value)) return;
+        if (typeof value !== "object" || !("_dispatchToken" in value)) return;
         const displayName = value.constructor?.displayName;
         if (typeof displayName === "string" && !stores.has(displayName)) stores.set(displayName, value);
         const name = typeof value.getName === "function" ? value.getName() : undefined;
@@ -198,35 +232,28 @@ function fileStore(value: any) {
     } catch { }
 }
 
-function fileStores(exports: any) {
-    if (!isSearchable(exports)) return;
-    fileStore(exports);
-    if (typeof exports !== "object") return;
-    for (const key in exports) {
-        let value;
-        try {
-            value = exports[key];
-        } catch {
-            continue;
-        }
-        fileStore(value);
-    }
+/** Files the stores among a module's candidates (collectCandidates) */
+function fileStores(candidates: Candidate[]) {
+    for (const [value] of candidates) fileStore(value);
 }
 
-function indexStores(wreq: WebpackRequire) {
+function indexStores() {
+    if (storesIndexed) {
+        for (let i = 0; i < unfiled.length; i++) fileStores(collectCandidates(unfiled[i]));
+        unfiled.length = 0;
+        return;
+    }
+    const { c } = requireWreq();
     storesIndexed = true;
-    for (const id in wreq.c) fileStores(wreq.c[id]?.exports);
-    moduleListeners.add(exports => fileStores(exports));
+    for (const id in c) fileStores(collectCandidates(c[id]?.exports));
 }
 
 export function findStore<T = any>(name: string): T | undefined {
     const cached = stores.get(name);
     if (cached) return cached as T;
-    if (!storesIndexed) {
-        indexStores(requireWreq());
-        const indexed = stores.get(name);
-        if (indexed) return indexed as T;
-    }
+    indexStores();
+    const indexed = stores.get(name);
+    if (indexed) return indexed as T;
     const miss = missing.get(name);
     if (miss && (miss.modules === stats.modules || performance.now() - miss.at < MISS_RETRY_MS)) return undefined;
     const store = find<T>(filters.byStoreName(name));
@@ -244,13 +271,17 @@ export function findStore<T = any>(name: string): T | undefined {
  * is listed under both). Indexes the loaded modules on first use, like findStore.
  */
 export function listStores(): string[] {
-    if (!storesIndexed) indexStores(requireWreq());
+    indexStores();
     return [...stores.keys()].sort((a, b) => a.localeCompare(b));
 }
 
 interface Waiter {
     filter: Filter;
     callback: (value: any, found: FoundExport) => void;
+    /** See filterKey */
+    key: unknown;
+    /** The same for filter.$code: undefined without one, null when a stateful RegExp makes it unshareable */
+    codeKey: string | null | undefined;
 }
 
 const waiters = new Set<Waiter>();
@@ -258,32 +289,46 @@ const waiters = new Set<Waiter>();
 export const pendingWaiters = () => [...waiters].map(w => describeFilter(w.filter));
 
 /**
- * One listener serves every waiter: each new module's exports are read once, and code-based
- * waiters skip modules whose source can't contain their target.
+ * One listener serves every waiter: each new module's exports are read once, code-based waiters
+ * skip modules whose source can't contain their target, and waiters looking for the same thing
+ * share one source search and one filter run per module. It also queues modules for the store index.
  */
 moduleListeners.add((exports, id, source) => {
-    if (!waiters.size) return;
-    let candidates: ReturnType<typeof collectCandidates> | undefined;
+    if (!waiters.size && !storesIndexed) return;
+    let candidates: Candidate[] | undefined;
 
-    for (const waiter of waiters) {
-        const { $code } = waiter.filter;
-        if ($code && !matchesAll(source(), $code)) continue;
+    if (waiters.size) {
+        let codeHits: Map<string, boolean> | undefined;
+        let matches: Map<unknown, number> | undefined;
+        for (const waiter of waiters) {
+            const { filter, key, codeKey } = waiter;
+            if (codeKey === null) {
+                if (!matchesAll(source(), filter.$code!)) continue;
+            } else if (codeKey !== undefined) {
+                let hit = codeHits?.get(codeKey);
+                if (hit === undefined) (codeHits ??= new Map()).set(codeKey, hit = matchesAll(source(), filter.$code!));
+                if (!hit) continue;
+            }
 
-        candidates ??= collectCandidates(exports);
-        for (const [value, key] of candidates) {
-            if (!test(waiter.filter, value)) continue;
+            candidates ??= collectCandidates(exports);
+            let index = matches?.get(key);
+            if (index === undefined) (matches ??= new Map()).set(key, index = candidates.findIndex(([value]) => test(filter, value)));
+            if (index === -1) continue;
+
+            const [value, exportKey] = candidates[index];
             waiters.delete(waiter);
             const t = performance.now();
             try {
-                waiter.callback(value, { id, exports, key, value });
+                waiter.callback(value, { id, exports, key: exportKey, value });
             } catch (err) {
                 console.error("[Evi] waitFor callback threw", err);
             }
             // Callback work (plugin startup, hooking) isn't per-module overhead, account for it separately
             stats.callbackMs += performance.now() - t;
-            break;
         }
     }
+
+    if (storesIndexed) unfiled.push(exports);
 });
 
 /**
@@ -297,7 +342,12 @@ export function waitFor<T = any>(filter: Filter, callback: (value: T, found: Fou
         return () => { };
     }
 
-    const waiter: Waiter = { filter, callback };
+    const waiter: Waiter = {
+        filter,
+        callback,
+        key: filterKey(filter),
+        codeKey: filter.$code && (argsKey(filter.$code) ?? null),
+    };
     waiters.add(waiter);
     return () => void waiters.delete(waiter);
 }
