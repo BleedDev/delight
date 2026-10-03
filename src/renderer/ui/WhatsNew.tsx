@@ -11,8 +11,7 @@ import type { ReactNode } from "react";
 
 import { I18n, t, useLocale } from "../i18n";
 import { Settings } from "../settings";
-import { React, ReactDOM } from "../webpack/common";
-import { filters, waitFor } from "../webpack/find";
+import { onCreateRootReady, React, ReactDOM } from "../webpack/common";
 import { whenAppReady } from "./appReady";
 import { cx, FocusLayer, Icon, useExit, useModal } from "./components";
 import { coverUrl } from "./covers";
@@ -197,7 +196,7 @@ export function showWhatsNewIfUpdated() {
     startupOpen = true;
     ensureStyles();
     // Not over Discord's loading screen: once the app is showing
-    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
+    onCreateRootReady(() => whenAppReady(() => {
         const mount = () => {
             mountRoot(<Startup releases={releases} />);
         };

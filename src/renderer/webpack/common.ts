@@ -28,9 +28,33 @@ export const React: typeof ReactTypes = lazy(
 
 export const ReactDOM: typeof import("react-dom") = lazy(() => required(find(filters.byProps("createPortal", "flushSync")), "ReactDOM"));
 
+const reactDomClientFilter = filters.byProps("createRoot");
 export const createRoot: typeof import("react-dom/client").createRoot = lazy(
-    () => required(find<typeof import("react-dom/client")>(filters.byProps("createRoot")), "react-dom/client").createRoot,
+    () => required(find<typeof import("react-dom/client")>(reactDomClientFilter), "react-dom/client").createRoot,
 );
+
+let reactDomClientLoaded = false;
+let reactDomClientQueue: (() => void)[] | undefined;
+
+/** Calls back once createRoot can be used: one lookup for every popup of Evi's that waits for it */
+export function onCreateRootReady(callback: () => void) {
+    if (reactDomClientLoaded) return callback();
+    if (reactDomClientQueue) return void reactDomClientQueue.push(callback);
+    reactDomClientQueue = [];
+    waitFor(reactDomClientFilter, () => {
+        reactDomClientLoaded = true;
+        for (const queued of reactDomClientQueue!.splice(0)) {
+            try {
+                queued();
+            } catch (err) {
+                console.error("[Evi] waitFor callback threw", err);
+            }
+        }
+    });
+    // Already loaded: waitFor called back right away, and so does this, throwing to the caller like it would
+    if (reactDomClientLoaded) callback();
+    else reactDomClientQueue.push(callback);
+}
 
 /** Discord's own react/jsx-runtime, used by our JSX shim */
 export const JsxRuntime: typeof import("react/jsx-runtime") = lazy(() => required(find(filters.byProps("jsx", "jsxs", "Fragment")), "jsx-runtime"));

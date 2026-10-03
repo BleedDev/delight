@@ -15,8 +15,7 @@ import { t, useLocale } from "../i18n";
 import { PluginManager } from "../plugins/manager";
 import { Settings } from "../settings";
 import { Store } from "../store";
-import { createRoot, React, ReactDOM } from "../webpack/common";
-import { filters, waitFor } from "../webpack/find";
+import { createRoot, onCreateRootReady, React, ReactDOM } from "../webpack/common";
 import { whenAppReady } from "./appReady";
 import { Button, FocusLayer, Icon, Switch, useExit, useModal, useStore } from "./components";
 import { DiscordContext } from "./discordContext";
@@ -384,7 +383,7 @@ export function Tour2({ onClose }: { onClose(): void; }) {
 export function showTour2(onClosed?: () => void) {
     Settings.update(d => void (d.tour2Seen = true));
     ensureStyles();
-    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
+    onCreateRootReady(() => whenAppReady(() => {
         const mount = () => {
             const container = document.createElement("div");
             document.body.append(container);

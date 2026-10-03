@@ -10,8 +10,7 @@ import { t } from "../i18n";
 import { PluginManager } from "../plugins/manager";
 import { Settings } from "../settings";
 import { Store } from "../store";
-import { React } from "../webpack/common";
-import { filters, waitFor } from "../webpack/find";
+import { onCreateRootReady, React } from "../webpack/common";
 import { whenAppReady } from "./appReady";
 import { Button, SwitchRow, Text, useStore } from "./components";
 import { ensureStyles } from "./index";
@@ -99,7 +98,7 @@ function show(updates: PluginUpdate[]) {
     if (mounted) return;
     mounted = true;
     ensureStyles();
-    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
+    onCreateRootReady(() => whenAppReady(() => {
         mountRoot(<Popup />);
     }));
 }

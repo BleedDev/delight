@@ -11,8 +11,7 @@ import { PluginManager } from "../plugins/manager";
 import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
 import { Themes } from "../themes";
-import { React } from "../webpack/common";
-import { filters, waitFor } from "../webpack/find";
+import { onCreateRootReady, React } from "../webpack/common";
 import { whenAppReady } from "./appReady";
 import { Button, Icon, IconButton, useExit, useStore } from "./components";
 import { SuspectLine } from "./CrashDetective";
@@ -142,7 +141,7 @@ export function showSafeModeNotice() {
         mountRoot(<Floating />, "dl-root");
     };
     // react-dom/client loads after React and Flux, which is all onCommonReady waits for
-    waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
+    onCreateRootReady(() => whenAppReady(() => {
         if (document.body) mount();
         else document.addEventListener("DOMContentLoaded", mount, { once: true });
     }));
