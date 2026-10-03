@@ -163,6 +163,7 @@ const EviNative = {
     },
     memoryUsage: (): Promise<MemoryUsage> => ipcRenderer.invoke(IPC.MEMORY_USAGE),
     idleRestorePath: (): Promise<string | null> => ipcRenderer.invoke(IPC.IDLE_RESTORE),
+    saveFindCache: (data: string) => ipcRenderer.send(IPC.FIND_CACHE_SAVE, data),
 };
 
 export type EviNativeApi = typeof EviNative;

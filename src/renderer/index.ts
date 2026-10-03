@@ -15,6 +15,7 @@ import { startHealthReports } from "./health";
 import { Logger } from "./logger";
 import { Native } from "./native";
 import { diagnosePatches } from "./patching/diagnose";
+import { startFindCache } from "./patching/findIndex";
 import { Perf } from "./perf";
 import { diagnoseLookups } from "./plugins/lookups";
 import { PluginManager, PublicPlugins } from "./plugins/manager";
@@ -122,6 +123,8 @@ function boot() {
     const runs = (p: typeof data.plugins[number]) => isPluginEnabled(data.settings, p.manifest) && (p.source === "dev" || !pullFor(data.pulled, p.manifest.id, p.manifest.version));
     // Main sends the code of exactly these (main/plugins.ts getBootPlugins)
     if (!SafeMode.active) registerToolkitPatches(data.plugins.filter(runs).map(p => p.code ?? ""));
+    // Before Discord's first module runs: patches only search modules the saved index can't answer for
+    if (!SafeMode.active) startFindCache(data.findCache, Native.saveFindCache);
     PluginManager.boot(data.plugins, data.pulled, data.hotfixes);
     installHotkey();
     installSettingsEntry();
