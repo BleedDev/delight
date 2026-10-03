@@ -147,6 +147,8 @@ export const IPC = {
     COMMUNITY_SET_CREDITED: "evi:community-set-credited",
     /** A store plugin's preview video or GIF, as bytes (only ones the registry lists) */
     STORE_PREVIEW_MEDIA: "evi:store-preview-media",
+    /** renderer -> main, one-way: which modules source patch finds match on this Discord build (renderer/patching/findCache.ts) */
+    FIND_CACHE_SAVE: "evi:find-cache-save",
 } as const;
 
 export interface PluginManifest {
@@ -330,6 +332,8 @@ export interface BootData {
     pulled?: PulledPlugins;
     /** Evi's fixes for plugins a Discord update broke, as evi.rest last said: applied before their patches register */
     hotfixes?: Hotfix[];
+    /** The saved find index (renderer/patching/findCache.ts), as JSON */
+    findCache?: string;
     /**
      * Only the web test's fake bridge sets this: `Evi.plugins` is then the plugin manager itself,
      * contexts and all, so the test can drive plugins. Main never does.

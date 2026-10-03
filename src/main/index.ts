@@ -9,6 +9,7 @@ import { initAccount } from "./account";
 import { initBackup } from "./backup";
 import { initBadges } from "./badges";
 import { initCommunity } from "./community";
+import { initFindCache, readFindCache } from "./findCache";
 import { guardIpc } from "./ipcGuard";
 import { setLocale } from "./locale";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
@@ -67,6 +68,7 @@ function registerIpc() {
             safeMode: SafeMode.info,
             pulled: currentPulls(),
             hotfixes: currentHotfixes(),
+            findCache: readFindCache(),
         };
         e.returnValue = boot;
     });
@@ -218,6 +220,7 @@ function setup() {
     initBadges();
     initUpdater();
     initWallpaper();
+    initFindCache();
     watchQuickCss();
     persistAcrossUpdates(shimAsar);
 }

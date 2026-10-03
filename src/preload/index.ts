@@ -144,6 +144,7 @@ const EviNative = {
     credited: (): Promise<CommunityResult<boolean | null>> => ipcRenderer.invoke(IPC.COMMUNITY_CREDITED),
     setCredited: (on: boolean): Promise<CommunityResult<boolean>> => ipcRenderer.invoke(IPC.COMMUNITY_SET_CREDITED, on),
     storePreviewMedia: (url: string): Promise<PreviewMediaResult> => ipcRenderer.invoke(IPC.STORE_PREVIEW_MEDIA, url),
+    saveFindCache: (data: string) => ipcRenderer.send(IPC.FIND_CACHE_SAVE, data),
 };
 
 export type EviNativeApi = typeof EviNative;

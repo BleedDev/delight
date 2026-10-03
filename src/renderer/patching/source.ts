@@ -8,6 +8,7 @@
  */
 import { Logger } from "../logger";
 import type { ModuleFactory } from "../webpack/runtime";
+import { FindCache, findKey } from "./findCache";
 
 export interface Replacement {
     match: string | RegExp;
@@ -53,6 +54,13 @@ export interface PatchRecord {
 const logger = new Logger("SourcePatcher", "#f7a072");
 const records: PatchRecord[] = [];
 
+/** Which modules each find matches, from an earlier start on this build (findIndex.ts) */
+let findCache: FindCache | undefined;
+export const setFindCache = (cache: FindCache | undefined) => void (findCache = cache);
+
+/** findKey of each record's find, by position in `records` */
+const findKeys: string[] = [];
+
 const IDENT = String.raw`(?:[A-Za-z_$][\w$]*)`;
 
 /** Expands `\i` in a RegExp match into the identifier pattern. Strings are matched literally. */
@@ -96,17 +104,62 @@ export function tryCompile(code: string, moduleId: string): CompileResult {
 export function registerPatches(plugin: string, patches: SourcePatch[]) {
     patches.forEach((patch, index) => {
         records.push({ plugin, index, patch, state: "pending", modules: [], errors: [] });
+        findKeys.push(findKey(patch.find));
     });
 }
 
 export function unregisterPatches(plugin: string) {
     for (let i = records.length - 1; i >= 0; i--) {
-        if (records[i].plugin === plugin) records.splice(i, 1);
+        if (records[i].plugin !== plugin) continue;
+        records.splice(i, 1);
+        findKeys.splice(i, 1);
     }
 }
 
 export function getPatchRecords(plugin?: string) {
     return plugin ? records.filter(r => r.plugin === plugin) : [...records];
+}
+
+interface Step {
+    record: PatchRecord;
+    /** Whether the record already listed this module before this run */
+    appliedHere: boolean;
+    /** Code before and after this patch */
+    before: string;
+    next: string;
+    replacements: number;
+    failed: number;
+    errors: string[];
+    /** A broad optional patch that turned out to have nothing to do here */
+    skipped?: boolean;
+}
+
+function runReplacements(step: Step, moduleId: string) {
+    const { record: { patch, plugin }, before } = step;
+    const replacements = Array.isArray(patch.replace) ? patch.replace : [patch.replace];
+    const errors: string[] = [];
+    let next = before;
+    let failed = 0;
+
+    replacements.forEach((r, i) => {
+        const prev = next;
+        try {
+            next = next.replace(canonicalizeMatch(r.match) as any, canonicalizeReplace(r.with, plugin) as any);
+        } catch (err) {
+            errors.push(`module ${moduleId}, replacement ${i}: ${err}`);
+        }
+        if (next === prev) {
+            failed++;
+            errors.push(`module ${moduleId}, replacement ${i} matched nothing: ${String(r.match)}`);
+        }
+    });
+
+    // A broad optional patch with nothing to do in this module: neither applied nor failed here
+    step.skipped = patch.all && patch.optional && next === before && !step.appliedHere;
+    step.next = patch.group && failed ? before : next;
+    step.replacements = replacements.length;
+    step.failed = failed;
+    step.errors = errors;
 }
 
 /**
@@ -127,16 +180,20 @@ export function applySourcePatches(
 
     let originalCode: string | undefined;
     let code = "";
-    let current = factory;
+    const steps: Step[] = [];
+    const known = findCache?.lookup(moduleId, source());
 
-    for (const record of records) {
+    for (let r = 0; r < records.length; r++) {
+        const record = records[r];
         const { patch } = record;
-        const appliedHere = record.modules.includes(moduleId);
         // A single-module patch is done once it found its module
-        if (!patch.all && record.modules.length && !(rerun && appliedHere)) continue;
+        if (!patch.all && record.modules.length && !(rerun && record.modules.includes(moduleId))) continue;
 
+        // The index knows this module doesn't match: same answer as searching it, without the search
+        if (known && !known.has(findKeys[r]) && findCache!.covers(findKeys[r])) continue;
         // Always match against the original, so plugins can't break each other's finds
         if (!matchesFind(source(), patch.find)) continue;
+        const appliedHere = record.modules.includes(moduleId);
         if (originalCode === undefined) {
             originalCode = normalizeFactorySource(source());
             code = originalCode;
@@ -149,48 +206,53 @@ export function applySourcePatches(
             continue;
         }
 
-        const replacements = Array.isArray(patch.replace) ? patch.replace : [patch.replace];
-        const errors: string[] = [];
-        let next = code;
-        let failed = 0;
-
-        replacements.forEach((r, i) => {
-            const before = next;
-            try {
-                next = next.replace(canonicalizeMatch(r.match) as any, canonicalizeReplace(r.with, record.plugin) as any);
-            } catch (err) {
-                errors.push(`module ${moduleId}, replacement ${i}: ${err}`);
-            }
-            if (next === before) {
-                failed++;
-                errors.push(`module ${moduleId}, replacement ${i} matched nothing: ${String(r.match)}`);
-            }
-        });
-
-        // A broad optional patch with nothing to do in this module: neither applied nor failed here
-        if (patch.all && patch.optional && next === code && !appliedHere) continue;
+        const step = { record, appliedHere, before: code } as Step;
+        runReplacements(step, moduleId);
+        steps.push(step);
+        if (step.skipped) continue;
         if (!appliedHere) record.modules.push(moduleId);
+        code = step.next;
+    }
+    if (!steps.length) return { factory, patchedBy };
 
-        if (patch.group && failed) next = code;
-
-        if (next !== code) {
-            const compiled = tryCompile(next, moduleId);
-            if (compiled.ok) {
-                current = compiled.factory;
-                code = next;
-                patchedBy.push(record.plugin);
+    // Compiling is the expensive part: once for all patches together, and patch by patch only when
+    // that fails, to revert just the patch that breaks the module
+    let compiled = code !== originalCode ? tryCompile(code, moduleId) : undefined;
+    if (compiled && !compiled.ok) {
+        compiled = undefined;
+        code = originalCode!;
+        for (const step of steps) {
+            if (step.before !== code) {
+                // An earlier patch was reverted: this one applies to different code now
+                const { skipped } = step;
+                step.before = code;
+                runReplacements(step, moduleId);
+                const { modules } = step.record;
+                if (step.skipped && !skipped && !step.appliedHere) modules.splice(modules.indexOf(moduleId), 1);
+                if (!step.skipped && skipped && !step.appliedHere) modules.push(moduleId);
+            }
+            if (step.skipped || step.next === code) continue;
+            const result = tryCompile(step.next, moduleId);
+            if (result.ok) {
+                compiled = result;
+                code = step.next;
             } else {
-                failed = replacements.length;
-                errors.push(`module ${moduleId}: patched code does not compile, patch reverted: ${compiled.error}`);
+                step.failed = step.replacements;
+                step.errors.push(`module ${moduleId}: patched code does not compile, patch reverted: ${result.error}`);
+                step.next = code;
             }
         }
+    }
 
-        record.state = failed === 0 ? "applied" : failed < replacements.length && !patch.group ? "partial" : "failed";
+    for (const { record, before, next, replacements, failed, errors, skipped } of steps) {
+        if (skipped) continue;
+        if (next !== before) patchedBy.push(record.plugin);
+        record.state = failed === 0 ? "applied" : failed < replacements && !record.patch.group ? "partial" : "failed";
         if (!rerun || record.state !== "applied") record.errors.push(...errors);
         if (record.state !== "applied" && !rerun) {
             logger.warn(`Patch ${record.index} of ${record.plugin} ${record.state} on module ${moduleId}`, errors);
         }
     }
 
-    return { factory: current, patchedBy };
+    return { factory: compiled?.ok ? compiled.factory : factory, patchedBy };
 }
