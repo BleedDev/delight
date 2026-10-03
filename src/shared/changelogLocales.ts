@@ -11,6 +11,11 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 /** Language -> version -> section -> lines */
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
+        "2.1.0": {
+            improved: [
+                "**Aufgeräumt unter der Haube.** Evis Code wurde durchgehend entrümpelt, mit weniger doppelter Arbeit. Alles, was du nutzt, funktioniert wie bisher.",
+            ],
+        },
         "2.0.0": {
             added: [
                 "**Zwölf neue Plugins.** Desktop Voice Messages, Embed Builder mit Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools und Hover Converter. Alle im Store, alle aus, bis du sie einschaltest.",
@@ -309,6 +314,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     es: {
+        "2.1.0": {
+            improved: [
+                "**Más ordenado por dentro.** El código de Evi se ha ordenado de punta a punta, con menos trabajo repetido. Todo lo que usas funciona igual.",
+            ],
+        },
         "2.0.0": {
             added: [
                 "**Doce plugins nuevos.** Desktop Voice Messages, Embed Builder con Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools y Hover Converter. Todos en la tienda, todos desactivados hasta que los actives.",
@@ -607,6 +617,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     fr: {
+        "2.1.0": {
+            improved: [
+                "**Plus net sous le capot.** Le code d'Evi a été rangé de bout en bout, avec moins de travail en double. Tout ce que tu utilises marche pareil.",
+            ],
+        },
         "2.0.0": {
             added: [
                 "**Douze nouveaux plugins.** Desktop Voice Messages, Embed Builder avec Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools et Hover Converter. Tous dans la boutique, tous désactivés tant que tu ne les actives pas.",
@@ -905,6 +920,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ja: {
+        "2.1.0": {
+            improved: [
+                "**内部を整理しました。** Evi のコード全体を整理し、重複した処理を減らしました。使っている機能はそのまま動きます。",
+            ],
+        },
         "2.0.0": {
             added: [
                 "**12個の新しいプラグイン。** Desktop Voice Messages、Components V2対応のEmbed Builder、Audit Log Plus、Role Colours Everywhere、Rich Presence Builder、Search Highlight、Click Actions、Soundboard Stealer、Quick Markup、Fix Embeds、Code Block Tools、Hover Converter。すべてストアにあり、オンにするまで無効のままです。",
@@ -1203,6 +1223,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     pl: {
+        "2.1.0": {
+            improved: [
+                "**Porządki pod maską.** Kod Evi został uporządkowany od początku do końca, z mniejszą ilością powtarzanej pracy. Wszystko, czego używasz, działa tak samo.",
+            ],
+        },
         "2.0.0": {
             added: [
                 "**Dwanaście nowych pluginów.** Desktop Voice Messages, Embed Builder z Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools i Hover Converter. Wszystkie w sklepie, wszystkie wyłączone, dopóki ich nie włączysz.",
@@ -1501,6 +1526,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     "pt-BR": {
+        "2.1.0": {
+            improved: [
+                "**Mais organizado por dentro.** O código do Evi foi arrumado de ponta a ponta, com menos trabalho repetido. Tudo o que você usa funciona igual.",
+            ],
+        },
         "2.0.0": {
             added: [
                 "**Doze plugins novos.** Desktop Voice Messages, Embed Builder com Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools e Hover Converter. Todos na loja, todos desativados até você ativá-los.",
@@ -1799,6 +1829,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     ru: {
+        "2.1.0": {
+            improved: [
+                "**Порядок под капотом.** Код Evi приведён в порядок целиком, лишней повторной работы стало меньше. Всё, чем вы пользуетесь, работает как прежде.",
+            ],
+        },
         "2.0.0": {
             added: [
                 "**Двенадцать новых плагинов.** Desktop Voice Messages, Embed Builder с Components V2, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools и Hover Converter. Все в магазине и выключены, пока вы их не включите.",
@@ -2097,6 +2132,11 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
         },
     },
     tr: {
+        "2.1.0": {
+            improved: [
+                "**Kaputun altı toparlandı.** Evi'nin kodu baştan sona düzenlendi, tekrarlanan iş azaldı. Kullandığın her şey aynı şekilde çalışıyor.",
+            ],
+        },
         "2.0.0": {
             added: [
                 "**On iki yeni eklenti.** Desktop Voice Messages, Components V2 destekli Embed Builder, Audit Log Plus, Role Colours Everywhere, Rich Presence Builder, Search Highlight, Click Actions, Soundboard Stealer, Quick Markup, Fix Embeds, Code Block Tools ve Hover Converter. Hepsi mağazada, sen açana kadar hepsi kapalı.",

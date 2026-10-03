@@ -28,6 +28,15 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
     {
+        version: "2.1.0",
+        date: "2026-10-03",
+        sections: {
+            improved: [
+                "**Tidier under the hood.** Evi's code was cleaned up throughout, with less repeated work. Everything you use works the same.",
+            ],
+        },
+    },
+    {
         version: "2.0.0",
         date: "2026-10-02",
         sections: {
