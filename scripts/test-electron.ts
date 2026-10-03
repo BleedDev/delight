@@ -457,7 +457,7 @@ check("remote themes: http refused, web pages refused", r.addHttp?.ok === false 
 check("remote theme downloaded into the themes folder and turned on instead of the one that was on", r.addCss?.ok === true && existsSync(join(DATA, "themes", r.addCss.file))
     && r.addedStyles?.length === 1 && r.addedStyles[0].includes(r.addCss.file) && r.bootAfterAdd === "", { result: r.addCss, styles: r.addedStyles, boot: r.bootAfterAdd });
 check("settings were read from the data folder", existsSync(join(DATA, "settings.json")));
-check("enabled plugin's chromium switches applied at startup", stdout.includes("gpu-boost: --enable-zero-copy"));
+check("enabled plugin's chromium switches applied at startup", stdout.includes("gpu-boost: --force_high_performance_gpu"));
 const switchesLine = stdout.split("\n").find(l => l.startsWith("SWITCHES "));
 const disabledFeatures: string = switchesLine ? JSON.parse(switchesLine.slice(9)).disable : "";
 check("a feature list Discord sets later adds to a plugin's instead of replacing it", ["EviTestFeature", "DiscordFeatureA", "DiscordFeatureB"].every(f => disabledFeatures.split(",").includes(f)), disabledFeatures);
