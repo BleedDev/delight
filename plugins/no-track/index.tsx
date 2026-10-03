@@ -1,15 +1,23 @@
 import { definePlugin, React, useLocale } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
+import { PATCHES } from "./patches";
 import { t } from "./strings";
+
+/** Analytics events the page patches stopped before Discord queued them */
+let dropped = 0;
 
 function BlockedCounter({ ctx }: { ctx: PluginContext; }) {
     useLocale();
     const [count, setCount] = React.useState<number | null>(null);
+    const [stopped, setStopped] = React.useState(dropped);
 
     React.useEffect(() => {
         let alive = true;
-        const refresh = () => ctx.native.call<number>("getBlockedCount").then(n => alive && setCount(n));
+        const refresh = () => {
+            setStopped(dropped);
+            ctx.native.call<number>("getBlockedCount").then(n => alive && setCount(n));
+        };
         refresh();
         const timer = setInterval(refresh, 2000);
         return () => {
@@ -19,13 +27,23 @@ function BlockedCounter({ ctx }: { ctx: PluginContext; }) {
     }, []);
 
     return (
-        <p className="dl-hint" role="status" style={{ fontVariantNumeric: "tabular-nums" }}>
-            {count === null ? t("counter.loading") : t("counter.blocked", { count })}
-        </p>
+        <div role="status" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <p className="dl-hint">{t("counter.stopped", { count: stopped })}</p>
+            <p className="dl-hint">{count === null ? t("counter.loading") : t("counter.blocked", { count })}</p>
+        </div>
     );
 }
 
-/** The blocking itself happens in native.ts, in the main process. This part only shows stats. */
+/**
+ * Two layers: patches.ts stops Discord's analytics, metrics and Sentry in the page, so the events
+ * are never built, queued or retried; native.ts blocks whatever still tries to leave, in the main
+ * process, Discord's own Sentry there included.
+ */
 export default definePlugin({
+    patches: [PATCHES.analytics, PATCHES.metrics, PATCHES.sentry],
     settingsPanel: ctx => <BlockedCounter ctx={ctx} />,
+    /** Called by the patched analytics code for every event it stops */
+    dropped() {
+        dropped++;
+    },
 });

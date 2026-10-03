@@ -2,7 +2,7 @@
     "id": "fast-lists",
     "name": "Fast Lists",
     "description": "Keeps Discord smooth with hundreds of servers and long chats. Servers, messages and members far out of view skip rendering work, without ever being removed, so nothing flickers, disappears or jumps.",
-    "version": "2.1.2",
+    "version": "2.2.0",
     "minEviVersion": "1.1.0",
     "authors": [
         "Evi"
@@ -12,6 +12,13 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "2.2.0",
+            "notes": [
+                "Skipping far messages in chat is now on by default, measured: redrawing a long chat after a resize takes about a seventh of the time. If you changed this setting yourself, your choice stays.",
+                "The member list option stays off: Discord already draws only the members near your screen, so there's nothing to skip."
+            ]
+        },
         {
             "version": "2.1.2",
             "notes": [
@@ -56,6 +63,10 @@
             "name": "Schnelle Listen",
             "description": "Hält Discord flüssig, auch mit Hunderten Servern und langen Chats. Server, Nachrichten und Mitglieder weit außerhalb des Sichtbereichs sparen sich die Renderarbeit, ohne je entfernt zu werden, sodass nichts flackert, verschwindet oder springt.",
             "changelog": {
+                "2.2.0": [
+                    "Das Überspringen weit entfernter Nachrichten im Chat ist jetzt standardmäßig an, gemessen: Einen langen Chat nach einer Größenänderung neu aufzubauen dauert nur noch etwa ein Siebtel der Zeit. Hast du die Einstellung selbst geändert, bleibt deine Wahl.",
+                    "Die Mitgliederliste bleibt aus: Discord zeichnet ohnehin nur die Mitglieder in der Nähe deines Bildschirms, es gibt also nichts zu überspringen."
+                ],
                 "2.1.2": [
                     "Sparsamer im Leerlauf: Die sekündliche Prüfung sucht alle Listen in einem Durchgang durch die Seite und misst das Layout nie mitten im Bild."
                 ],
@@ -81,6 +92,10 @@
             "name": "Listas rápidas",
             "description": "Mantiene Discord fluido con cientos de servidores y chats largos. Los servidores, mensajes y miembros muy fuera de la vista se ahorran el trabajo de renderizado sin eliminarse nunca, así que nada parpadea, desaparece ni da saltos.",
             "changelog": {
+                "2.2.0": [
+                    "Omitir los mensajes lejanos del chat ahora viene activado, medido: volver a dibujar un chat largo tras cambiar el tamaño tarda cerca de una séptima parte. Si cambiaste este ajuste tú mismo, se mantiene tu elección.",
+                    "La opción de la lista de miembros sigue desactivada: Discord ya dibuja solo los miembros cerca de tu pantalla, así que no hay nada que omitir."
+                ],
                 "2.1.2": [
                     "Más ligero en reposo: su comprobación cada segundo busca todas las listas en una sola pasada por la página y nunca mide el diseño a mitad de un fotograma."
                 ],
@@ -106,6 +121,10 @@
             "name": "Listes rapides",
             "description": "Garde Discord fluide avec des centaines de serveurs et de longs chats. Les serveurs, messages et membres très loin de la vue évitent le travail de rendu sans jamais être supprimés, donc rien ne clignote, ne disparaît ni ne saute.",
             "changelog": {
+                "2.2.0": [
+                    "Ignorer les messages lointains du chat est maintenant activé par défaut, mesuré : redessiner un long chat après un redimensionnement prend environ un septième du temps. Si tu avais changé ce réglage toi-même, ton choix est conservé.",
+                    "L'option de la liste des membres reste désactivée : Discord n'affiche déjà que les membres proches de ton écran, il n'y a donc rien à ignorer."
+                ],
                 "2.1.2": [
                     "Plus léger au repos : sa vérification chaque seconde cherche toutes les listes en un seul passage sur la page et ne mesure jamais la mise en page en plein affichage."
                 ],
@@ -131,6 +150,10 @@
             "name": "高速リスト",
             "description": "数百のサーバーや長いチャットでも Discord をなめらかに保ちます。画面から大きく外れたサーバー、メッセージ、メンバーは削除されることなく描画処理だけを省くので、ちらつきや消失、ジャンプは起きません。",
             "changelog": {
+                "2.2.0": [
+                    "チャットで離れたメッセージの描画を省く設定が、計測のうえ既定でオンになりました。サイズ変更後に長いチャットを描き直す時間が約7分の1になります。この設定を自分で変えていた場合は、その選択がそのまま残ります。",
+                    "メンバーリストの設定はオフのままです。Discordはもともと画面付近のメンバーしか描画しないため、省くものがありません。"
+                ],
                 "2.1.2": [
                     "待機中の負荷が軽くなりました。毎秒のチェックはページを一度たどるだけで全リストを探し、描画の途中でレイアウトを計測しません。"
                 ],
@@ -156,6 +179,10 @@
             "name": "Szybkie listy",
             "description": "Utrzymuje płynność Discorda przy setkach serwerów i długich czatach. Serwery, wiadomości i członkowie daleko poza widokiem pomijają pracę renderowania, ale nigdy nie są usuwani, więc nic nie migocze, nie znika ani nie skacze.",
             "changelog": {
+                "2.2.0": [
+                    "Pomijanie dalekich wiadomości na czacie jest teraz domyślnie włączone, po pomiarach: ponowne rysowanie długiego czatu po zmianie rozmiaru trwa około jednej siódmej czasu. Jeśli zmieniłeś to ustawienie sam, Twój wybór zostaje.",
+                    "Opcja listy członków zostaje wyłączona: Discord i tak rysuje tylko członków blisko ekranu, więc nie ma czego pomijać."
+                ],
                 "2.1.2": [
                     "Lżejszy w bezczynności: sprawdzanie co sekundę szuka wszystkich list jednym przejściem po stronie i nigdy nie mierzy układu w trakcie rysowania klatki."
                 ],
@@ -181,6 +208,10 @@
             "name": "Listas rápidas",
             "description": "Mantém o Discord fluido com centenas de servidores e chats longos. Servidores, mensagens e membros bem fora da tela pulam o trabalho de renderização sem nunca serem removidos, então nada pisca, some ou pula.",
             "changelog": {
+                "2.2.0": [
+                    "Pular mensagens distantes no chat agora vem ligado, medido: redesenhar um chat longo depois de redimensionar leva cerca de um sétimo do tempo. Se você mudou essa opção, sua escolha continua valendo.",
+                    "A opção da lista de membros continua desligada: o Discord já desenha só os membros perto da sua tela, então não há nada para pular."
+                ],
                 "2.1.2": [
                     "Mais leve quando ocioso: a verificação a cada segundo procura todas as listas em uma única passada pela página e nunca mede o layout no meio de um quadro."
                 ],
@@ -206,6 +237,10 @@
             "name": "Быстрые списки",
             "description": "Сохраняет плавность Discord при сотнях серверов и длинных чатах. Серверы, сообщения и участники далеко за пределами экрана не отрисовываются, но никогда не удаляются, поэтому ничего не мерцает, не пропадает и не прыгает.",
             "changelog": {
+                "2.2.0": [
+                    "Пропуск далёких сообщений в чате теперь включён по умолчанию, по замерам: перерисовка длинного чата после изменения размера занимает примерно седьмую часть прежнего времени. Если вы меняли эту настройку сами, ваш выбор сохраняется.",
+                    "Список участников остаётся выключенным: Discord и так рисует только участников рядом с экраном, пропускать нечего."
+                ],
                 "2.1.2": [
                     "Меньше нагрузки в простое: ежесекундная проверка ищет все списки за один проход по странице и никогда не измеряет раскладку посреди кадра."
                 ],
@@ -231,6 +266,10 @@
             "name": "Hızlı Listeler",
             "description": "Yüzlerce sunucu ve uzun sohbetlerle Discord'u akıcı tutar. Görüş alanının çok dışındaki sunucular, mesajlar ve üyeler hiç kaldırılmadan oluşturma işinden muaf tutulur; böylece hiçbir şey titremez, kaybolmaz veya sıçramaz.",
             "changelog": {
+                "2.2.0": [
+                    "Sohbette uzaktaki mesajları atlamak artık varsayılan olarak açık, ölçülerek: uzun bir sohbeti yeniden boyutlandırmadan sonra yeniden çizmek yaklaşık yedide bir süre alıyor. Bu ayarı kendin değiştirdiysen seçimin korunur.",
+                    "Üye listesi seçeneği kapalı kalıyor: Discord zaten yalnızca ekranına yakın üyeleri çizer, yani atlanacak bir şey yok."
+                ],
                 "2.1.2": [
                     "Boştayken daha hafif: saniyede bir yapılan kontrol tüm listeleri sayfada tek geçişte arıyor ve düzeni asla bir karenin ortasında ölçmüyor."
                 ],

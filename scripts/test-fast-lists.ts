@@ -1,7 +1,8 @@
 /**
  * Runs the Fast Server List plugin against a synthetic 185-server sidebar in headless Chrome and
  * checks the guarantees that matter: no visible server is ever hidden, no stale state survives a
- * strategy switch or disabling, and rows added later (opened folders) are handled.
+ * strategy switch or disabling, and rows added later (opened folders) are handled. The chat and a
+ * Discord-like virtualized member list get the same checks, and the chat's gain is measured.
  *
  *   node scripts/test-fast-lists.ts
  */
@@ -26,7 +27,8 @@ await page.setContent(`<!doctype html><style>
     img { width: 48px; height: 48px; display: block; }
 </style>
 <nav><ul data-list-id="guildsnav" class="scroller"><div class="list"></div></ul></nav>
-<main><div class="chatScroller" style="height:500px;overflow-y:auto;width:300px"><ol data-list-id="chat-messages" class="chatList"></ol></div></main>`);
+<main><div class="chatScroller" style="height:500px;overflow-y:auto;width:300px"><ol data-list-id="chat-messages" class="chatList"></ol></div></main>
+<aside><div data-list-id="members-1" class="memberScroller" style="height:600px;overflow-y:auto;width:240px"><ul class="memberList" style="margin:0;padding:0;list-style:none"></ul></div></aside>`);
 
 const results = await page.evaluate(async (pluginCode) => {
     const list = document.querySelector(".list")!;
@@ -224,6 +226,64 @@ const results = await page.evaluate(async (pluginCode) => {
     out.stuckSteps = stuckSteps;
     out.pluginScrollWrites = pluginScrollWrites;
 
+    // Member list, rendered like Discord's: fixed 42px rows, only the 256px chunks around the view
+    // (plus one each side) are in the DOM, re-rendered on scroll
+    const members = document.querySelector<HTMLElement>(".memberScroller")!;
+    const memberList = members.querySelector<HTMLElement>(".memberList")!;
+    const MEMBERS = 1000, ROW_H = 42, CHUNK = 256;
+    const renderMembers = () => {
+        const top = members.scrollTop;
+        const from = Math.max(0, Math.floor((Math.floor(top / CHUNK) - 1) * CHUNK / ROW_H));
+        const to = Math.min(MEMBERS, Math.ceil((Math.ceil((top + members.clientHeight) / CHUNK) + 1) * CHUNK / ROW_H));
+        memberList.style.paddingTop = `${from * ROW_H}px`;
+        memberList.style.height = `${MEMBERS * ROW_H}px`;
+        memberList.style.boxSizing = "border-box";
+        const keep = new Map([...memberList.children].map(el => [el.getAttribute("data-list-item-id"), el]));
+        const rowsNow: Element[] = [];
+        for (let i = from; i < to; i++) {
+            const id = `members-1___u${i}`;
+            let li = keep.get(id);
+            if (!li) {
+                li = document.createElement("li");
+                li.setAttribute("data-list-item-id", id);
+                (li as HTMLElement).style.height = `${ROW_H}px`;
+                li.textContent = `member ${i}`;
+            }
+            rowsNow.push(li);
+        }
+        memberList.replaceChildren(...rowsNow);
+    };
+    renderMembers();
+    members.addEventListener("scroll", renderMembers);
+    await new Promise(r => setTimeout(r, 1200));
+    await frame();
+    const hiddenInView = (scroller: HTMLElement) => {
+        const view = scroller.getBoundingClientRect();
+        return [...scroller.querySelectorAll(".dl-fl-far")].filter(r => {
+            const b = r.getBoundingClientRect();
+            return b.bottom > view.top && b.top < view.bottom;
+        }).length;
+    };
+    let memberWorst = 0, memberFar = 0;
+    for (let i = 0; i < 150; i++) {
+        (window as any).__setScroll(members, members.scrollTop + 250);
+        await frame();
+        memberWorst = Math.max(memberWorst, hiddenInView(members));
+        memberFar = Math.max(memberFar, members.querySelectorAll(".dl-fl-far").length);
+    }
+    for (const to of [0, members.scrollHeight / 2]) {
+        (window as any).__setScroll(members, to);
+        await frame();
+        memberWorst = Math.max(memberWorst, hiddenInView(members));
+    }
+    // Rows are worked out in idle time
+    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => requestIdleCallback(() => requestIdleCallback(r)));
+    out.membersMarked = memberList.querySelectorAll(".dl-fl-row").length;
+    out.membersWorstHiddenVisible = memberWorst;
+    out.membersMaxFar = memberFar;
+    out.pluginScrollWritesWithMembers = pluginScrollWrites;
+
     // Rebuilt sidebar: plugin re-attaches within its polling interval
     const nav = document.querySelector("nav")!;
     const clone = nav.cloneNode(true) as HTMLElement;
@@ -238,6 +298,75 @@ const results = await page.evaluate(async (pluginCode) => {
     out.afterDisable = counts();
     out.styleRemoved = ![...document.querySelectorAll("style")].some(s => s.textContent?.includes("dl-fl")) && !document.getElementById("evi-fl-flatten");
     return out;
+}, code);
+
+// The gain in chat: a relayout (window resize, member list toggled) of a 150-message chat with
+// Discord-like messages, before and after the plugin skips the far ones
+const gainPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+await gainPage.setContent(`<!doctype html><style>
+    body { margin: 0; font: 16px sans-serif; }
+    .chatScroller { height: 700px; overflow-y: auto; width: 800px; }
+    .msg { display: flex; gap: 16px; padding: 2px 16px 2px 72px; position: relative; min-height: 44px; }
+    .av { position: absolute; left: 16px; width: 40px; height: 40px; border-radius: 50%; }
+    .hdr { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 16px; }
+    .body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .content { white-space: pre-wrap; overflow-wrap: break-word; line-height: 1.375; }
+    .embed { display: grid; grid-template-columns: auto min-content; max-width: 432px; border-left: 4px solid #5865f2; padding: 8px 16px; margin-top: 4px; border-radius: 4px; }
+    .embed img { width: 300px; height: 160px; grid-column: 1 / 3; }
+    .reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .reactions button { display: flex; align-items: center; gap: 6px; padding: 2px 6px; border-radius: 8px; }
+</style><main><div class="chatScroller"><ol data-list-id="chat-messages-1-2" class="chatList" style="list-style:none;margin:0;padding:0"></ol></div></main>`);
+const gain = await gainPage.evaluate(async (pluginCode) => {
+    const icon = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="purple"/></svg>');
+    const chat = document.querySelector(".chatList")!;
+    const sc = document.querySelector<HTMLElement>(".chatScroller")!;
+    const words = "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua".split(" ");
+    for (let i = 0; i < 150; i++) {
+        const li = document.createElement("li");
+        li.setAttribute("data-list-item-id", `chat-messages-1-2___m${i}`);
+        const text = Array.from({ length: 10 + (i * 7) % 60 }, (_, j) => words[(i + j) % words.length]).join(" ");
+        const embed = i % 5 === 0 ? `<article class="embed"><div><a>Link ${i}</a><div>${text}</div></div><img src="${icon}"></article>` : "";
+        const reactions = i % 3 === 0 ? `<div class="reactions">${`<button><img src="${icon}" width="16" height="16"><span>3</span></button>`.repeat(4)}</div>` : "";
+        li.innerHTML = `<div class="msg"><img class="av" src="${icon}"><div class="body"><h3 class="hdr"><span>user${i % 9}</span><time>Today at 12:${i % 60}</time></h3><div class="content">${text} <b>bold</b> <code>code</code></div>${embed}${reactions}</div></div>`;
+        chat.append(li);
+    }
+    sc.scrollTop = sc.scrollHeight;
+    const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await frame();
+    const relayout = () => {
+        const t0 = performance.now();
+        for (let k = 0; k < 40; k++) {
+            sc.style.width = `${k % 2 ? 780 : 800}px`;
+            void sc.offsetHeight;
+        }
+        return (performance.now() - t0) / 40;
+    };
+    relayout();
+    const before = relayout();
+    const settings: Record<string, any> = { servers: true, chat: true, members: true, margin: 2 };
+    const ctx = {
+        addStyle(css: string) {
+            const el = document.createElement("style");
+            el.textContent = css;
+            document.head.append(el);
+        },
+        onDispose() { },
+        setInterval: (fn: () => void, ms: number) => void setInterval(fn, ms),
+        settings: { get: (k: string) => settings[k], onChange() { } },
+    };
+    const module = { exports: {} as any };
+    new Function("module", "exports", "require", pluginCode)(module, module.exports, () => ({ definePlugin: (d: any) => d, defineStrings: (s: any) => (k: string) => s.en[k] ?? k }));
+    const plugin = module.exports.default;
+    plugin.start(ctx);
+    await new Promise(r => setTimeout(r, 1500));
+    await frame();
+    relayout();
+    return {
+        beforeMs: +before.toFixed(2),
+        afterMs: +relayout().toFixed(2),
+        far: chat.querySelectorAll(".dl-fl-far").length,
+        defaults: { chat: plugin.settings.chat.default, members: plugin.settings.members.default },
+    };
 }, code);
 
 await browser.close();
@@ -262,6 +391,13 @@ check("chat: new messages are picked up", r.newMessagesMarked);
 check("resync stays cheap (frame time with a new message every frame)", r.resyncMsPerFrame < 20, { msPerFrame: r.resyncMsPerFrame });
 check("fast scroll up through loading history never gets stuck", r.historyLoads === 5 && r.stuckSteps <= r.historyLoads, { loads: r.historyLoads, stuckSteps: r.stuckSteps });
 check("the plugin never writes the scroll position", r.pluginScrollWrites === 0, r.pluginScrollWrites);
+check("members: rows are tracked", r.membersMarked > 0, r.membersMarked);
+check("members: no visible member is ever hidden", r.membersWorstHiddenVisible === 0, r.membersWorstHiddenVisible);
+// Why the member list is off by default: Discord renders only rows near the view, none is ever far
+check("members: Discord's virtualized list leaves nothing far to skip", r.membersMaxFar === 0, r.membersMaxFar);
+check("members: the plugin never writes the scroll position", r.pluginScrollWritesWithMembers === 0, r.pluginScrollWritesWithMembers);
 check("re-attaches when Discord rebuilds the sidebar", r.reattached);
+check("chat: skipping far messages makes a relayout much cheaper", gain.far > 100 && gain.afterMs < gain.beforeMs / 2, gain);
+check("chat is on by default, the member list off", gain.defaults.chat === true && gain.defaults.members === false, gain.defaults);
 check("disabling leaves no trace", r.afterDisable.rows === 0 && r.afterDisable.far === 0 && r.styleRemoved, r.afterDisable);
 process.exit(failed ? 1 : 0);

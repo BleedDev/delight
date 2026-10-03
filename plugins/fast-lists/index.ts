@@ -14,6 +14,9 @@ import { t } from "./strings";
  *
  * Measured on a 185-server account on a ~300Hz display: p95 frame gap 6.7ms -> 3.7ms (server list).
  * Measured and rejected: `contain: layout style` on every row made frames slower (p95 10ms).
+ * Chat, 150 messages in headless Chrome: a relayout of the chat (window resize) 3.3-4ms -> 0.45ms.
+ * The member list stays off by default: Discord's list already renders only a chunk or two around
+ * the view, closer than our render distance, so there is never a far row to skip.
  *
  * The server list additionally has Discord's `translateZ(0)` hack on every unread pill removed
  * (flattened to the identical 2D transform): 132 compositor layers -> 39, animations unchanged.
@@ -383,7 +386,7 @@ export default definePlugin({
             type: "boolean",
             get label() { return t("settings.chat"); },
             get description() { return t("settings.chat.description"); },
-            default: false,
+            default: true,
         },
         members: {
             type: "boolean",
