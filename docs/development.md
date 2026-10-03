@@ -95,10 +95,10 @@ Official plugins ship in `plugins/` and are turned on or off in the Plugins tab.
 |---|---|---|
 | Clear URLs | on | Removes tracking parameters (utm_source, si...) from links you send |
 | Fast Lists | on | Skips rendering work for servers, messages and members far out of view |
-| No Track | on | Blocks Discord's analytics and metrics requests |
+| No Track | on | Turns off Discord's analytics, metrics and Sentry, and blocks their requests |
 | Smooth Typing | on | Batches draft saves while you type, halving the worst frame drops |
 | Experiments | off | Unlocks the Experiments and developer settings tabs |
-| GPU Boost | off | Turns on Chromium's zero-copy GPU uploads (after a restart) |
+| Dedicated GPU | off | Runs Discord on the dedicated GPU on computers with two (after a restart) |
 | Silent Typing | off | Others don't see you typing. Toggle with `/silenttyping` or the keyboard button in the chat bar |
 
 ## Themes
@@ -331,7 +331,7 @@ Settings and Quick CSS are flushed synchronously when the page unloads.
 | `test:electron` | Main process and preload in real Electron against a fake Discord install: preload, IPC boot, native request blocking, live plugin install, themes (startup, live, ordering, remote), backup export and restore into a second profile, store install/update/uninstall against a local fake registry (tampered files rejected, native needs confirmation), safe mode (crash loops, `--evi-safe`, mid-session crashes), auto-injection after an update. `EVI_TEST_APP_NAME` gives parallel runs their own profile. |
 | `test:cli` | Installer against a fake `%LOCALAPPDATA%`: install, reinstall, uninstall byte-for-byte, refusal to install over other mods. `evi update` against a local fake of GitHub's API (`EVI_UPDATE_API`): up to date, newer release, no releases, network and API errors. `--exe` runs it against the compiled binary and also checks checksum rejection, self-replacement on a copy of the exe, and that updates only refresh Discords that already have Evi |
 | `test:installer` | Evi Setup (`dist/Evi-Setup.exe`, headless) against a fake `%LOCALAPPDATA%` and a fake GitHub: the loader matches the CLI's byte for byte, checksum mismatches and missing releases change nothing, removed/retired/your own plugins, `--latest` and the fallback to the latest release, uninstall of every version folder, other mods, flavors, the Delight rename |
-| `test:plugins` | Fast Lists on a synthetic 185-server sidebar and chat: no visible row ever hidden, never writes the scroll position, never gets stuck scrolling up through loading history |
+| `test:plugins` | Fast Lists on a synthetic 185-server sidebar, chat and member list: no visible row ever hidden, never writes the scroll position, never gets stuck scrolling up through loading history, stands down while a screen reader is on |
 
 None of the tests touch your real Discord install or profile.
 

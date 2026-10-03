@@ -1,8 +1,8 @@
 {
     "id": "gpu-boost",
-    "name": "GPU Zero-Copy",
-    "description": "Lets the GPU read rendered tiles directly instead of copying them first (Chromium's zero-copy uploads), which can help high refresh rate displays. Discord already has GPU rendering on; this is the one extra switch it leaves off. Takes effect after restarting Discord.",
-    "version": "1.1.0",
+    "name": "Dedicated GPU",
+    "description": "On computers with two GPUs, such as most gaming laptops, runs Discord on the dedicated one instead of the power-saving one. Smoother scrolling and animations, but more battery use. Does nothing with a single GPU. Takes effect after restarting Discord.",
+    "version": "2.0.0",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
     ],
     "permissions": {},
     "changelog": [
+        {
+            "version": "2.0.0",
+            "notes": [
+                "Now runs Discord on your dedicated GPU if your computer has two. The zero-copy switch it turned on before did nothing, because Discord already draws with the GPU."
+            ]
+        },
         {
             "version": "1.1.0",
             "notes": [
@@ -31,13 +37,16 @@
         }
     ],
     "chromiumSwitches": {
-        "enable-zero-copy": true
+        "force_high_performance_gpu": true
     },
     "locales": {
         "de": {
-            "name": "GPU Zero-Copy",
-            "description": "Lässt die GPU gerenderte Kacheln direkt lesen, statt sie vorher zu kopieren (Zero-Copy-Uploads von Chromium). Das kann bei Displays mit hoher Bildwiederholrate helfen. Discord nutzt die GPU-Darstellung bereits; das ist der eine zusätzliche Schalter, den es ausgeschaltet lässt. Wirkt nach einem Neustart von Discord.",
+            "name": "Dedizierte GPU",
+            "description": "Auf Rechnern mit zwei GPUs, etwa den meisten Gaming-Laptops, läuft Discord auf der dedizierten statt auf der stromsparenden. Flüssigeres Scrollen und flüssigere Animationen, aber mehr Akkuverbrauch. Bewirkt nichts bei nur einer GPU. Wirkt nach einem Neustart von Discord.",
             "changelog": {
+                "2.0.0": [
+                    "Lässt Discord jetzt auf deiner dedizierten GPU laufen, wenn dein Rechner zwei hat. Der Zero-Copy-Schalter von vorher bewirkte nichts, weil Discord ohnehin mit der GPU zeichnet."
+                ],
                 "1.1.0": [
                     "Folgt der Sprache von Discord: Deutsch, Spanisch, Französisch, Japanisch, Polnisch, Portugiesisch, Russisch und Türkisch, dazu Englisch."
                 ],
@@ -50,9 +59,12 @@
             }
         },
         "es": {
-            "name": "GPU Zero-Copy",
-            "description": "Permite que la GPU lea directamente los mosaicos renderizados en lugar de copiarlos primero (las cargas zero-copy de Chromium), lo que puede ayudar en pantallas de alta frecuencia de actualización. Discord ya tiene activado el renderizado por GPU; este es el único ajuste extra que deja desactivado. Se aplica al reiniciar Discord.",
+            "name": "GPU dedicada",
+            "description": "En equipos con dos GPU, como la mayoría de portátiles gaming, ejecuta Discord en la dedicada en lugar de la de bajo consumo. Desplazamiento y animaciones más fluidos, pero más consumo de batería. No hace nada con una sola GPU. Se aplica al reiniciar Discord.",
             "changelog": {
+                "2.0.0": [
+                    "Ahora ejecuta Discord en tu GPU dedicada si tu equipo tiene dos. El ajuste zero-copy que activaba antes no hacía nada, porque Discord ya dibuja con la GPU."
+                ],
                 "1.1.0": [
                     "Sigue el idioma de Discord: alemán, español, francés, japonés, polaco, portugués, ruso y turco, además de inglés."
                 ],
@@ -65,9 +77,12 @@
             }
         },
         "fr": {
-            "name": "GPU Zero-Copy",
-            "description": "Permet au GPU de lire directement les tuiles rendues au lieu de les copier d'abord (les envois zero-copy de Chromium), ce qui peut aider sur les écrans à taux de rafraîchissement élevé. Discord a déjà le rendu GPU activé ; c'est le seul réglage supplémentaire qu'il laisse désactivé. Pris en compte après le redémarrage de Discord.",
+            "name": "GPU dédié",
+            "description": "Sur les ordinateurs à deux GPU, comme la plupart des PC portables gaming, fait tourner Discord sur le GPU dédié plutôt que sur celui à basse consommation. Défilement et animations plus fluides, mais batterie plus sollicitée. Sans effet avec un seul GPU. Pris en compte après le redémarrage de Discord.",
             "changelog": {
+                "2.0.0": [
+                    "Fait maintenant tourner Discord sur ton GPU dédié si ton ordinateur en a deux. Le réglage zero-copy activé avant ne faisait rien, car Discord dessine déjà avec le GPU."
+                ],
                 "1.1.0": [
                     "Suit la langue de Discord : allemand, espagnol, français, japonais, polonais, portugais, russe et turc, en plus de l'anglais."
                 ],
@@ -80,9 +95,12 @@
             }
         },
         "ja": {
-            "name": "GPUゼロコピー",
-            "description": "描画済みのタイルをコピーせず、GPUが直接読み取れるようにします(Chromiumのゼロコピーアップロード)。高リフレッシュレートのディスプレイで効果が出ることがあります。DiscordはすでにGPUレンダリングが有効ですが、これだけは追加でオフになっているスイッチです。Discordを再起動すると反映されます。",
+            "name": "専用GPU",
+            "description": "ゲーミングノートPCなどGPUを2基搭載したPCで、省電力GPUではなく専用GPUでDiscordを動かします。スクロールやアニメーションが滑らかになりますが、バッテリーの消費は増えます。GPUが1基の場合は何もしません。Discordを再起動すると反映されます。",
             "changelog": {
+                "2.0.0": [
+                    "GPUを2基搭載したPCでは、Discordを専用GPUで動かすようになりました。以前オンにしていたゼロコピーのスイッチは、DiscordがすでにGPUで描画しているため効果がありませんでした。"
+                ],
                 "1.1.0": [
                     "Discordの言語設定に合わせて表示されます。英語のほか、ドイツ語、スペイン語、フランス語、日本語、ポーランド語、ポルトガル語、ロシア語、トルコ語に対応しています。"
                 ],
@@ -95,9 +113,12 @@
             }
         },
         "pl": {
-            "name": "GPU Zero-Copy",
-            "description": "Pozwala GPU czytać wyrenderowane kafelki bezpośrednio, bez wcześniejszego kopiowania (przesyłanie zero-copy w Chromium), co może pomóc na wyświetlaczach o wysokiej częstotliwości odświeżania. Discord ma już włączone renderowanie na GPU; to jedyny dodatkowy przełącznik, który zostawia wyłączony. Działa po ponownym uruchomieniu Discorda.",
+            "name": "Dedykowane GPU",
+            "description": "Na komputerach z dwoma GPU, jak większość laptopów do gier, uruchamia Discorda na dedykowanym zamiast na energooszczędnym. Płynniejsze przewijanie i animacje, ale większe zużycie baterii. Nic nie zmienia przy jednym GPU. Działa po ponownym uruchomieniu Discorda.",
             "changelog": {
+                "2.0.0": [
+                    "Uruchamia teraz Discorda na dedykowanym GPU, jeśli komputer ma dwa. Przełącznik zero-copy, który włączał wcześniej, nic nie robił, bo Discord już rysuje na GPU."
+                ],
                 "1.1.0": [
                     "Mówi w języku Discorda: po niemiecku, hiszpańsku, francusku, japońsku, polsku, portugalsku, rosyjsku i turecku, oprócz angielskiego."
                 ],
@@ -110,9 +131,12 @@
             }
         },
         "pt-BR": {
-            "name": "GPU Zero-Copy",
-            "description": "Permite que a GPU leia diretamente os blocos renderizados em vez de copiá-los antes (os uploads zero-copy do Chromium), o que pode ajudar em telas com taxa de atualização alta. O Discord já usa renderização por GPU; este é o único ajuste extra que ele deixa desligado. Vale depois de reiniciar o Discord.",
+            "name": "GPU dedicada",
+            "description": "Em computadores com duas GPUs, como a maioria dos notebooks gamer, roda o Discord na dedicada em vez da econômica. Rolagem e animações mais suaves, mas mais gasto de bateria. Não faz nada com uma só GPU. Vale depois de reiniciar o Discord.",
             "changelog": {
+                "2.0.0": [
+                    "Agora roda o Discord na sua GPU dedicada se o seu computador tiver duas. O ajuste zero-copy que ele ligava antes não fazia nada, porque o Discord já desenha com a GPU."
+                ],
                 "1.1.0": [
                     "Segue o idioma do Discord: alemão, espanhol, francês, japonês, polonês, português, russo e turco, além do inglês."
                 ],
@@ -125,9 +149,12 @@
             }
         },
         "ru": {
-            "name": "GPU Zero-Copy",
-            "description": "Позволяет GPU читать отрисованные тайлы напрямую, не копируя их сначала (zero-copy загрузки Chromium), что может помочь на дисплеях с высокой частотой обновления. Отрисовка на GPU в Discord уже включена; это единственный дополнительный переключатель, который он оставляет выключенным. Вступает в силу после перезапуска Discord.",
+            "name": "Дискретная видеокарта",
+            "description": "На компьютерах с двумя видеокартами, например на большинстве игровых ноутбуков, запускает Discord на дискретной, а не на энергосберегающей. Прокрутка и анимации плавнее, но батарея расходуется быстрее. С одной видеокартой ничего не меняет. Вступает в силу после перезапуска Discord.",
             "changelog": {
+                "2.0.0": [
+                    "Теперь запускает Discord на дискретной видеокарте, если их в компьютере две. Переключатель zero-copy, который он включал раньше, ничего не делал: Discord и так рисует на видеокарте."
+                ],
                 "1.1.0": [
                     "Говорит на языке Discord: немецком, испанском, французском, японском, польском, португальском, русском и турецком, а также на английском."
                 ],
@@ -140,9 +167,12 @@
             }
         },
         "tr": {
-            "name": "GPU Zero-Copy",
-            "description": "GPU'nun işlenmiş karoları önce kopyalamak yerine doğrudan okumasını sağlar (Chromium'un zero-copy yüklemeleri); yüksek yenileme hızlı ekranlarda işe yarayabilir. Discord'da GPU ile işleme zaten açık; bu, kapalı bıraktığı tek ek anahtardır. Discord yeniden başlatıldıktan sonra geçerli olur.",
+            "name": "Harici GPU",
+            "description": "Çoğu oyun dizüstüsü gibi iki GPU'lu bilgisayarlarda Discord'u güç tasarruflu GPU yerine harici GPU'da çalıştırır. Daha akıcı kaydırma ve animasyonlar, ama daha fazla pil kullanımı. Tek GPU'da hiçbir şey yapmaz. Discord yeniden başlatıldıktan sonra geçerli olur.",
             "changelog": {
+                "2.0.0": [
+                    "Bilgisayarında iki GPU varsa Discord'u artık harici GPU'da çalıştırır. Önceden açtığı zero-copy anahtarı hiçbir şey yapmıyordu, çünkü Discord zaten GPU ile çiziyor."
+                ],
                 "1.1.0": [
                     "Discord'un dilini kullanır: İngilizcenin yanı sıra Almanca, İspanyolca, Fransızca, Japonca, Lehçe, Portekizce, Rusça ve Türkçe."
                 ],

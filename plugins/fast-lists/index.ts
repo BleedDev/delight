@@ -14,6 +14,12 @@ import { t } from "./strings";
  *
  * Measured on a 185-server account on a ~300Hz display: p95 frame gap 6.7ms -> 3.7ms (server list).
  * Measured and rejected: `contain: layout style` on every row made frames slower (p95 10ms).
+ * Chat, 150 messages in headless Chrome: a relayout of the chat (window resize) 3.3-4ms -> 0.45ms.
+ * The member list stays off by default: Discord's list already renders only a chunk or two around
+ * the view, closer than our render distance, so there is never a far row to skip.
+ *
+ * Hidden rows are hidden from screen readers too, so while assistive technology is on (Electron's
+ * accessibility support, asked from native.ts) every list stands down and all rows render normally.
  *
  * The server list additionally has Discord's `translateZ(0)` hack on every unread pill removed
  * (flattened to the identical 2D transform): 132 compositor layers -> 39, animations unchanged.
@@ -383,7 +389,7 @@ export default definePlugin({
             type: "boolean",
             get label() { return t("settings.chat"); },
             get description() { return t("settings.chat.description"); },
-            default: false,
+            default: true,
         },
         members: {
             type: "boolean",
@@ -406,6 +412,16 @@ export default definePlugin({
         ctx.addStyle(css);
         const sessions = new Map<ListKind["key"], ReturnType<typeof createSession>>();
 
+        /** A screen reader or other assistive technology is on: nothing may be hidden from it */
+        let assistive = false;
+        const checkAssistive = (): Promise<void> => (ctx.native?.call<boolean>("accessibilityOn") ?? Promise.resolve(false))
+            .then(on => {
+                if ((on === true) === assistive) return;
+                assistive = on === true;
+                refresh(true);
+            }, () => { });
+        const active = (key: ListKind["key"]) => !assistive && !!ctx.settings.get(key);
+
         /** Lists waiting to be set up after Discord's next frame */
         const pending = new Map<string, Element>();
         /** Pending lists to set up again even if they are the current session's (settings changed) */
@@ -427,7 +443,7 @@ export default definePlugin({
                     if (!list) continue;
                     pending.delete(kind.key);
                     const forced = rebuild.delete(kind.key);
-                    if (!list.isConnected || !ctx.settings.get(kind.key)) continue;
+                    if (!list.isConnected || !active(kind.key)) continue;
                     const current = sessions.get(kind.key);
                     // A stale check: only start over once the list really can scroll
                     if (current?.list === list && !forced && !current.scrollable()) continue;
@@ -464,8 +480,7 @@ export default definePlugin({
             const missing: ListKind[] = [];
             for (const kind of LISTS) {
                 const current = sessions.get(kind.key);
-                const enabled = ctx.settings.get(kind.key);
-                if (!enabled) {
+                if (!active(kind.key)) {
                     drop(kind.key);
                     continue;
                 }
@@ -495,7 +510,8 @@ export default definePlugin({
             }
         };
 
-        refresh();
+        // Asked before the first look, so a screen reader never sees a row hidden
+        void checkAssistive().then(() => refresh());
         ctx.onDispose(() => {
             for (const session of sessions.values()) session.dispose();
             // Belt and braces: nothing of ours may survive a disable
@@ -504,6 +520,9 @@ export default definePlugin({
         ctx.settings.onChange(() => refresh(true));
 
         // Chats and member lists are replaced when you switch channels: re-attach to the new ones
-        ctx.setInterval(() => refresh(), 1000);
+        ctx.setInterval(() => {
+            refresh();
+            void checkAssistive();
+        }, 1000);
     },
 });
