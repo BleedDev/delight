@@ -104,6 +104,10 @@ function boot() {
     I18n.subscribe(() => Native.setLocale?.(I18n.locale));
     // Before anything that applies plugins or CSS, they all check it
     SafeMode.init(data.safeMode);
+    // Lets anything that hides content from rendering (Fast Lists) stand down for a screen reader
+    const markAssistive = (on?: boolean) => document.documentElement.toggleAttribute("data-evi-assistive", !!on);
+    markAssistive(data.assistive);
+    Native.onAssistiveChange?.(markAssistive);
     // Before Discord adds its first stylesheet: some of its rules must never match anything
     if (!SafeMode.active) installCssFixes();
     Settings.init(data.settings);

@@ -32,6 +32,8 @@ export const IPC = {
     PLUGIN_NATIVE_STATE: "evi:plugin-native-state",
     /** sync: a plugin's renderer code, for one the boot data left it out of (BootPlugin) */
     PLUGIN_CODE: "evi:plugin-code",
+    /** main -> renderer: a screen reader or other assistive technology turned on or off */
+    ASSISTIVE_CHANGED: "evi:assistive-changed",
     /** main -> renderer: a theme file was added, changed or removed on disk */
     THEME_CHANGED: "evi:theme-changed",
     /** download a theme from an https URL into the themes folder */
@@ -341,6 +343,8 @@ export interface BootData {
     plugins: BootPlugin[];
     quickCss: string;
     themes: ThemePayload[];
+    /** A screen reader or other assistive technology is on (Electron's accessibility support) */
+    assistive?: boolean;
     /** Set when this start is in safe mode: no plugins, themes or Quick CSS */
     safeMode?: SafeModeInfo;
     /** Plugins Evi turned off everywhere, from the last health answer on disk: they never start */

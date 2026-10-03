@@ -18,8 +18,8 @@ import { t } from "./strings";
  * The member list stays off by default: Discord's list already renders only a chunk or two around
  * the view, closer than our render distance, so there is never a far row to skip.
  *
- * Hidden rows are hidden from screen readers too, so while assistive technology is on (Electron's
- * accessibility support, asked from native.ts) every list stands down and all rows render normally.
+ * Hidden rows are hidden from screen readers too, so while assistive technology is on (Evi marks the
+ * page with data-evi-assistive) every list stands down and all rows render normally.
  *
  * The server list additionally has Discord's `translateZ(0)` hack on every unread pill removed
  * (flattened to the identical 2D transform): 132 compositor layers -> 39, animations unchanged.
@@ -413,13 +413,15 @@ export default definePlugin({
         const sessions = new Map<ListKind["key"], ReturnType<typeof createSession>>();
 
         /** A screen reader or other assistive technology is on: nothing may be hidden from it */
-        let assistive = false;
-        const checkAssistive = (): Promise<void> => (ctx.native?.call<boolean>("accessibilityOn") ?? Promise.resolve(false))
-            .then(on => {
-                if ((on === true) === assistive) return;
-                assistive = on === true;
-                refresh(true);
-            }, () => { });
+        const root = document.documentElement;
+        let assistive = root.hasAttribute("data-evi-assistive");
+        const watchAssistive = new MutationObserver(() => {
+            if (root.hasAttribute("data-evi-assistive") === assistive) return;
+            assistive = !assistive;
+            refresh(true);
+        });
+        watchAssistive.observe(root, { attributes: true, attributeFilter: ["data-evi-assistive"] });
+        ctx.onDispose(() => watchAssistive.disconnect());
         const active = (key: ListKind["key"]) => !assistive && !!ctx.settings.get(key);
 
         /** Lists waiting to be set up after Discord's next frame */
@@ -510,8 +512,7 @@ export default definePlugin({
             }
         };
 
-        // Asked before the first look, so a screen reader never sees a row hidden
-        void checkAssistive().then(() => refresh());
+        refresh();
         ctx.onDispose(() => {
             for (const session of sessions.values()) session.dispose();
             // Belt and braces: nothing of ours may survive a disable
@@ -522,7 +523,6 @@ export default definePlugin({
         // Chats and member lists are replaced when you switch channels: re-attach to the new ones
         ctx.setInterval(() => {
             refresh();
-            void checkAssistive();
         }, 1000);
     },
 });

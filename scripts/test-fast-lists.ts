@@ -64,10 +64,9 @@ const results = await page.evaluate(async (pluginCode) => {
     (window as any).__setScroll = (el: Element, v: number) => { writingFromTest = true; el.scrollTop = v; writingFromTest = false; };
     const changeListeners: (() => void)[] = [];
     const disposers: (() => void)[] = [];
-    // What native.ts answers: Electron's accessibility support (a screen reader is on)
-    let assistive = false;
+    // Evi marks the page while a screen reader is on (Electron's accessibility support)
+    const setAssistive = (on: boolean) => document.documentElement.toggleAttribute("data-evi-assistive", on);
     const ctx = {
-        native: { call: async (name: string) => name === "accessibilityOn" ? assistive : undefined },
         addStyle(css: string) {
             const el = document.createElement("style");
             el.textContent = css;
@@ -297,13 +296,13 @@ const results = await page.evaluate(async (pluginCode) => {
 
     // A screen reader turned on mid-session: every row renders again, so it can read them all
     out.beforeAssistive = counts();
-    assistive = true;
-    await new Promise(r => setTimeout(r, 1300));
+    setAssistive(true);
+    await new Promise(r => setTimeout(r, 300));
     await frame();
     out.withAssistive = counts();
     // ...and off again: rows are skipped again
-    assistive = false;
-    await new Promise(r => setTimeout(r, 1300));
+    setAssistive(false);
+    await new Promise(r => setTimeout(r, 300));
     await frame();
     await new Promise(r => setTimeout(r, 100));
     await new Promise(r => requestIdleCallback(() => requestIdleCallback(r)));

@@ -39,6 +39,9 @@ const EviNative = {
     onPluginChange(cb: (change: PluginChange) => void) {
         ipcRenderer.on(IPC.PLUGIN_CHANGED, (_, change) => cb(change));
     },
+    onAssistiveChange(cb: (on: boolean) => void) {
+        ipcRenderer.on(IPC.ASSISTIVE_CHANGED, (_, on) => cb(on));
+    },
     onThemeChange(cb: (change: ThemeChange) => void) {
         ipcRenderer.on(IPC.THEME_CHANGED, (_, change) => cb(change));
     },

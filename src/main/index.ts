@@ -24,6 +24,7 @@ import { mergeListSwitches } from "./switches";
 import { initThemeSubmit } from "./themeSubmit";
 import { getThemePayloads, initThemes } from "./themes";
 import { initUpdater } from "./updater";
+import { broadcast } from "./util";
 import { initWallpaper } from "./wallpaper";
 
 // Loaders installed before the rename to Evi still pass the old name
@@ -65,6 +66,7 @@ function registerIpc() {
             settings,
             plugins: getBootPlugins(),
             quickCss: readQuickCss(),
+            assistive: app.isAccessibilitySupportEnabled(),
             themes: getThemePayloads(),
             safeMode: SafeMode.info,
             pulled: currentPulls(),
@@ -206,6 +208,7 @@ function setup() {
     app.on("session-created", addPreload);
     app.whenReady().then(() => addPreload(session.defaultSession));
     app.whenReady().then(initPlugins);
+    app.on("accessibility-support-changed", (_, on) => broadcast(IPC.ASSISTIVE_CHANGED, on));
     initBackup();
     // Themes need nothing from Electron to load, have them ready for the first window's boot
     initThemes();
