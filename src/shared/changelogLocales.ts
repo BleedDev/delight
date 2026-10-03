@@ -12,8 +12,16 @@ export type ReleaseNotes = Partial<Record<SectionKind, string[]>>;
 export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     de: {
         "2.1.0": {
+            added: [
+                "**Arbeitsspeicher im Leistungs-Tab.** Sieh, wie viel Discord nutzt, und lass Evi es auf Wunsch neu starten, wenn es zu viel braucht, während du weg bist. Nie während eines Anrufs und höchstens einmal am Tag.",
+                "**Spielmodus.** Discords eigener versteckter Spielmodus als Schalter im Leistungs-Tab: Während du spielst, wird Discord im Hintergrund langsamer und stoppt GIFs. In Anrufen bleibt er aus.",
+            ],
             improved: [
-                "**Aufgeräumt unter der Haube.** Evis Code wurde durchgehend entrümpelt, mit weniger doppelter Arbeit. Alles, was du nutzt, funktioniert wie bisher.",
+                "**Startet schneller.** Evi merkt sich, wo Plugins in Discord eingreifen. Ab dem zweiten Start einer Discord-Version ist es mit vielen Plugins etwa viermal so schnell bereit. Ausgeschaltete Plugins laden erst, wenn du sie einschaltest.",
+                "**Leichter im Alltag.** Die Tipp-Punkte werden nicht mehr in jedem Frame per JavaScript neu gezeichnet, Anruf-Buttons zeichnen das Video dahinter nicht mehr ständig unscharf, und ist Discord 10 Minuten ausgeblendet, leert Evi seine Bild-Caches (nie während eines Anrufs).",
+            ],
+            fixed: [
+                "**Chromium-Einstellungen von Plugins bleiben.** Discord hat sie beim Start still überschrieben.",
             ],
         },
         "2.0.0": {
@@ -315,8 +323,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     },
     es: {
         "2.1.0": {
+            added: [
+                "**Memoria en la pestaña Rendimiento.** Mira cuánto usa Discord y, si quieres, deja que Evi lo reinicie cuando use demasiada mientras no estás. Nunca durante una llamada, y como mucho una vez al día.",
+                "**Modo juego.** El modo juego oculto del propio Discord, como interruptor en la pestaña Rendimiento: mientras juegas, Discord va más lento en segundo plano y detiene los GIF. Se queda apagado durante las llamadas.",
+            ],
             improved: [
-                "**Más ordenado por dentro.** El código de Evi se ha ordenado de punta a punta, con menos trabajo repetido. Todo lo que usas funciona igual.",
+                "**Arranca más rápido.** Evi recuerda dónde se enganchan los plugins en Discord, así que desde el segundo arranque de una versión de Discord está listo unas cuatro veces más rápido con muchos plugins. Los plugins que tienes apagados no se cargan hasta que los enciendes.",
+                "**Más ligero mientras lo usas.** Los puntos de escritura ya no se redibujan con JavaScript en cada fotograma, los botones de llamada dejan de desenfocar una y otra vez el vídeo de detrás, y cuando Discord lleva 10 minutos oculto, Evi vacía sus cachés de imágenes (nunca durante una llamada).",
+            ],
+            fixed: [
+                "**Los ajustes de Chromium de los plugins se mantienen.** Discord los sobrescribía sin avisar al arrancar.",
             ],
         },
         "2.0.0": {
@@ -618,8 +634,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     },
     fr: {
         "2.1.0": {
+            added: [
+                "**La mémoire dans l'onglet Performances.** Vois ce que Discord utilise et, si tu veux, laisse Evi le redémarrer quand il en utilise trop pendant ton absence. Jamais pendant un appel, et au plus une fois par jour.",
+                "**Mode jeu.** Le mode jeu caché de Discord, en interrupteur dans l'onglet Performances : pendant que tu joues, Discord ralentit en arrière-plan et arrête les GIF. Il reste coupé pendant les appels.",
+            ],
             improved: [
-                "**Plus net sous le capot.** Le code d'Evi a été rangé de bout en bout, avec moins de travail en double. Tout ce que tu utilises marche pareil.",
+                "**Démarre plus vite.** Evi retient où les plugins s'accrochent à Discord : dès le deuxième démarrage d'une version de Discord, il est prêt environ quatre fois plus vite avec beaucoup de plugins. Les plugins que tu as coupés ne se chargent plus tant que tu ne les actives pas.",
+                "**Plus léger à l'usage.** Les points de saisie ne sont plus redessinés en JavaScript à chaque image, les boutons d'appel arrêtent de reflouter sans cesse la vidéo derrière eux, et quand Discord est caché depuis 10 minutes, Evi vide ses caches d'images (jamais pendant un appel).",
+            ],
+            fixed: [
+                "**Les réglages Chromium des plugins tiennent.** Discord les écrasait discrètement au démarrage.",
             ],
         },
         "2.0.0": {
@@ -921,8 +945,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     },
     ja: {
         "2.1.0": {
+            added: [
+                "**パフォーマンスタブにメモリ表示。** Discord が使っているメモリを確認でき、離席中に使いすぎたときは Evi に再起動させることもできます。通話中は行わず、1 日 1 回までです。",
+                "**ゲームモード。** Discord に隠れているゲームモードを、パフォーマンスタブのスイッチで使えます。プレイ中は Discord がバックグラウンドで動きを抑え、GIF を止めます。通話中はオフのままです。",
+            ],
             improved: [
-                "**内部を整理しました。** Evi のコード全体を整理し、重複した処理を減らしました。使っている機能はそのまま動きます。",
+                "**起動が速くなりました。** Evi はプラグインが Discord のどこに組み込まれるかを覚えるので、同じ Discord バージョンの 2 回目以降の起動では、プラグインが多い場合に約 4 倍速く準備が整います。オフにしたプラグインは、オンにするまで読み込まれません。",
+                "**使っている間も軽く。** 入力中のドットを毎フレーム JavaScript で描き直さなくなり、通話ボタンが背後の映像を何度もぼかし直すこともなくなりました。Discord が 10 分間隠れていると、Evi が画像キャッシュを空にします (通話中は行いません)。",
+            ],
+            fixed: [
+                "**プラグインの Chromium 設定が保たれるように。** 起動時に Discord が気づかないうちに上書きしていました。",
             ],
         },
         "2.0.0": {
@@ -1224,8 +1256,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     },
     pl: {
         "2.1.0": {
+            added: [
+                "**Pamięć w karcie Wydajność.** Zobacz, ile używa Discord, i jeśli chcesz, pozwól Evi uruchomić go ponownie, gdy pod twoją nieobecność zużywa za dużo. Nigdy podczas rozmowy i najwyżej raz dziennie.",
+                "**Tryb gry.** Ukryty tryb gry samego Discorda jako przełącznik w karcie Wydajność: gdy grasz, Discord zwalnia w tle i zatrzymuje GIF-y. Podczas rozmów pozostaje wyłączony.",
+            ],
             improved: [
-                "**Porządki pod maską.** Kod Evi został uporządkowany od początku do końca, z mniejszą ilością powtarzanej pracy. Wszystko, czego używasz, działa tak samo.",
+                "**Szybszy start.** Evi pamięta, gdzie pluginy wpinają się w Discorda, więc od drugiego uruchomienia danej wersji Discorda jest gotowy mniej więcej cztery razy szybciej przy wielu pluginach. Wyłączone pluginy nie ładują się, dopóki ich nie włączysz.",
+                "**Lżejszy w użyciu.** Kropki pisania nie są już co klatkę rysowane od nowa przez JavaScript, przyciski rozmowy przestają w kółko rozmywać wideo za sobą, a gdy Discord jest ukryty od 10 minut, Evi opróżnia jego pamięć podręczną obrazów (nigdy podczas rozmowy).",
+            ],
+            fixed: [
+                "**Ustawienia Chromium z pluginów zostają.** Discord po cichu nadpisywał je przy starcie.",
             ],
         },
         "2.0.0": {
@@ -1527,8 +1567,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     },
     "pt-BR": {
         "2.1.0": {
+            added: [
+                "**Memória na aba Desempenho.** Veja quanto o Discord usa e, se quiser, deixe o Evi reiniciá-lo quando ele usar demais enquanto você está ausente. Nunca durante uma chamada e no máximo uma vez por dia.",
+                "**Modo de jogo.** O modo de jogo escondido do próprio Discord, como uma chave na aba Desempenho: enquanto você joga, o Discord desacelera em segundo plano e para os GIFs. Ele fica desligado durante chamadas.",
+            ],
             improved: [
-                "**Mais organizado por dentro.** O código do Evi foi arrumado de ponta a ponta, com menos trabalho repetido. Tudo o que você usa funciona igual.",
+                "**Inicia mais rápido.** O Evi lembra onde os plugins se conectam ao Discord, então a partir da segunda inicialização de uma versão do Discord ele fica pronto cerca de quatro vezes mais rápido com muitos plugins. Plugins desligados não carregam até você ligá-los.",
+                "**Mais leve no dia a dia.** Os pontinhos de digitação não são mais redesenhados com JavaScript a cada quadro, os botões de chamada param de desfocar de novo e de novo o vídeo atrás deles, e quando o Discord fica oculto por 10 minutos o Evi esvazia os caches de imagens (nunca durante uma chamada).",
+            ],
+            fixed: [
+                "**As configurações do Chromium dos plugins ficam.** O Discord as sobrescrevia sem avisar ao iniciar.",
             ],
         },
         "2.0.0": {
@@ -1830,8 +1878,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     },
     ru: {
         "2.1.0": {
+            added: [
+                "**Память во вкладке «Производительность».** Смотрите, сколько использует Discord, и при желании разрешите Evi перезапускать его, когда он занимает слишком много, пока вас нет. Никогда во время звонка и не чаще раза в день.",
+                "**Игровой режим.** Скрытый игровой режим самого Discord в виде переключателя во вкладке «Производительность»: пока вы играете, Discord в фоне замедляется и останавливает GIF. Во время звонков он выключен.",
+            ],
             improved: [
-                "**Порядок под капотом.** Код Evi приведён в порядок целиком, лишней повторной работы стало меньше. Всё, чем вы пользуетесь, работает как прежде.",
+                "**Быстрее запускается.** Evi запоминает, где плагины подключаются к Discord, поэтому со второго запуска той же версии Discord он готов примерно в четыре раза быстрее при большом числе плагинов. Выключенные плагины не загружаются, пока вы их не включите.",
+                "**Легче в работе.** Точки набора текста больше не перерисовываются JavaScript каждый кадр, кнопки звонка перестали постоянно заново размывать видео под собой, а когда Discord скрыт 10 минут, Evi очищает его кэш изображений (никогда во время звонка).",
+            ],
+            fixed: [
+                "**Настройки Chromium из плагинов сохраняются.** Discord незаметно перезаписывал их при запуске.",
             ],
         },
         "2.0.0": {
@@ -2133,8 +2189,16 @@ export const CHANGELOG_LOCALES: Record<string, Record<string, ReleaseNotes>> = {
     },
     tr: {
         "2.1.0": {
+            added: [
+                "**Performans sekmesinde bellek.** Discord'un ne kadar kullandığını gör, istersen sen yokken çok fazla kullandığında Evi onu yeniden başlatsın. Asla bir arama sırasında değil ve günde en fazla bir kez.",
+                "**Oyun Modu.** Discord'un kendi gizli Oyun Modu, Performans sekmesinde bir anahtar olarak: sen oynarken Discord arka planda yavaşlar ve GIF'leri durdurur. Aramalarda kapalı kalır.",
+            ],
             improved: [
-                "**Kaputun altı toparlandı.** Evi'nin kodu baştan sona düzenlendi, tekrarlanan iş azaldı. Kullandığın her şey aynı şekilde çalışıyor.",
+                "**Daha hızlı açılıyor.** Evi, eklentilerin Discord'a nereden bağlandığını hatırlıyor; bu sayede bir Discord sürümünün ikinci açılışından itibaren çok eklentiyle yaklaşık dört kat daha hızlı hazır oluyor. Kapattığın eklentiler sen açana kadar yüklenmiyor.",
+                "**Kullanırken daha hafif.** Yazıyor noktaları artık her karede JavaScript ile yeniden çizilmiyor, arama düğmeleri arkalarındaki videoyu sürekli yeniden bulanıklaştırmıyor ve Discord 10 dakika gizli kaldığında Evi resim önbelleklerini boşaltıyor (asla bir arama sırasında değil).",
+            ],
+            fixed: [
+                "**Eklentilerin Chromium ayarları kalıcı.** Discord açılışta bunları sessizce eziyordu.",
             ],
         },
         "2.0.0": {

@@ -31,8 +31,16 @@ export const RELEASES: Release[] = [
         version: "2.1.0",
         date: "2026-10-03",
         sections: {
+            added: [
+                "**Memory in the Performance tab.** See how much Discord uses, and if you like, let Evi restart it when it uses too much while you're away. Never during a call, and at most once a day.",
+                "**Game Mode.** Discord's own hidden Game Mode, as a switch in the Performance tab: while you play, Discord slows down in the background and stops GIFs. It stays off during calls.",
+            ],
             improved: [
-                "**Tidier under the hood.** Evi's code was cleaned up throughout, with less repeated work. Everything you use works the same.",
+                "**Starts faster.** Evi remembers where plugins hook into Discord, so from the second start on a Discord version it's ready about four times faster with many plugins. Plugins you've turned off don't load until you turn them on.",
+                "**Lighter while you use it.** Typing dots no longer redraw with JavaScript every frame, call buttons stop re-blurring the video behind them, and once Discord has been hidden for 10 minutes Evi empties its image caches (never during a call).",
+            ],
+            fixed: [
+                "**Plugins' Chromium settings stick.** Discord was quietly overwriting them at startup.",
             ],
         },
     },
