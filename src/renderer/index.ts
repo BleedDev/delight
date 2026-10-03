@@ -112,7 +112,14 @@ function boot() {
     // Before anything that applies plugins or CSS, they all check it
     SafeMode.init(data.safeMode);
     // Lets anything that hides content from rendering (Fast Lists) stand down for a screen reader
-    const markAssistive = (on?: boolean) => document.documentElement.toggleAttribute("data-evi-assistive", !!on);
+    // Evi starts before the page has its <html>: the mark goes on once there is one
+    let assistive = !!data.assistive;
+    const applyAssistive = () => document.documentElement?.toggleAttribute("data-evi-assistive", assistive);
+    const markAssistive = (on?: boolean) => {
+        assistive = !!on;
+        applyAssistive();
+    };
+    if (!document.documentElement) document.addEventListener("readystatechange", applyAssistive, { once: true });
     markAssistive(data.assistive);
     Native.onAssistiveChange?.(markAssistive);
     // Before Discord adds its first stylesheet: some of its rules must never match anything
