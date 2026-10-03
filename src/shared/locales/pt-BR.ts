@@ -1486,4 +1486,7 @@ export const ptBR = {
     "perf.note.measuring": "A medição está sempre ligada.",
     "perf.note.cost": "A medição está sempre ligada e custa cerca de {time} por chamada.",
     "perf.note.rounding": "Tempos menores que 0,1 ms são arredondados pelo relógio do navegador, então uma única chamada rápida aparece como 0 ou 0,1 ms. Com muitas chamadas, isso se equilibra.",
+    "perf.gameMode.title": "Modo de jogo",
+    "perf.gameMode.switch": "Usar o modo de jogo do Discord",
+    "perf.gameMode.hint": "Enquanto você joga e o Discord não está em primeiro plano, o Discord desenha a 10 quadros por segundo e pausa GIFs, emojis animados e figurinhas até você voltar. Ele fica desligado enquanto você está em um canal de voz ou chamada, para que transmissões e câmeras continuem fluidas. O Discord criou, mas ainda não ativou para todo mundo.",
 } satisfies Translation;

@@ -680,6 +680,108 @@ const patch = await page.evaluate(() => {
 check("experiments source patch applied", patch.health === "applied", patch);
 check("DeveloperExperimentStore.isDeveloper is true", patch.isDeveloper === true);
 
+// Core fixes to Discord's own rendering: its typing dots in CSS, its Game Mode behind Evi's switch
+const discordFixes = await page.evaluate(async () => {
+    const D = (window as any).Evi;
+    const { api } = D;
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+    const health = (find: string) => D.diagnosePatches().find((d: any) => d.plugin === "evi" && d.patch.find === find)?.health;
+    const out: Record<string, any> = {};
+    try {
+        const [dotsId] = api.findModuleIds("dotCycle:2.8}");
+        const dots = dotsId ? api.requireModule(dotsId) : undefined;
+        out.dotsPatch = health("dotCycle:2.8}");
+        const exported = Object.values(dots ?? {}) as any[];
+        const fn = (c: any) => api.functionSource(c?.type ?? c);
+        const Indicator = exported.find(c => fn(c).includes(".animated.g,"));
+        const Circles = exported.find(c => fn(c).includes(".animated.circle,"));
+        const host = document.createElement("div");
+        host.id = "evi-test-dots";
+        host.style.cssText = "position:fixed;left:16px;top:16px;z-index:2147483647;display:flex;gap:16px;padding:12px;background:#313338;color:#dbdee1";
+        document.body.append(host);
+        const h = api.React.createElement;
+        // Discord's indicator as patched, Discord's own circles, and Evi's dots animating
+        api.createRoot(host).render([
+            h("span", { key: "a", className: "patched" }, h(Indicator, { dotRadius: 3.5, themed: true })),
+            h("span", { key: "b", className: "original" }, h("svg", { width: 24.5, height: 7 }, h(Circles, { dotRadius: 3.5 }))),
+            h("span", { key: "c", className: "animated" }, h("svg", { width: 24.5, height: 7 }, h(D.typingDots, { dotRadius: 3.5, focused: true }))),
+        ]);
+        await sleep(600);
+        const patched = host.querySelector(".patched svg");
+        const box = (el: Element) => {
+            const r = el.getBoundingClientRect();
+            return [r.left, r.top, r.width].map(n => Math.round(n * 100) / 100);
+        };
+        out.patchedDots = [...(patched?.querySelectorAll("foreignObject > div") ?? [])].map(box);
+        out.patchedCircles = patched?.querySelectorAll("circle").length ?? -1;
+        out.originalCircles = [...host.querySelectorAll(".original circle")].map(box);
+        out.animations = [...host.querySelectorAll(".animated foreignObject > div")].map(d => d.getAnimations().map(a => (a as CSSAnimation).animationName).join());
+        out.color = patched && getComputedStyle(patched.querySelector("foreignObject > div")!).backgroundColor;
+        out.svgColor = patched && getComputedStyle(patched).color;
+    } catch (err) {
+        out.error = String(err);
+    }
+
+    for (const id of api.findModuleIds('displayName="GameModeStore"')) api.requireModule(id);
+    const store = api.findStore("GameModeStore");
+    out.gameModePatch = health('displayName="GameModeStore"');
+    out.offEnabled = store?.enabled;
+    out.available = D.gameMode.available;
+    D.settings.update((s: any) => void (s.gameMode = true));
+    out.onEnabled = store?.enabled;
+    out.onActive = store?.isActive === store?.hasRunningGame;
+    D.settings.update((s: any) => void (s.gameMode = undefined));
+    out.offAgain = store?.enabled;
+    return out;
+});
+await page.screenshot({ path: join(OUT, "typing-dots.png"), clip: { x: 0, y: 0, width: 160, height: 60 } });
+await page.evaluate(() => document.getElementById("evi-test-dots")?.remove());
+check("typing dots: Discord's indicator draws Evi's HTML dots, no circles", !discordFixes.error && discordFixes.dotsPatch === "applied" && discordFixes.patchedDots?.length === 3 && discordFixes.patchedCircles === 0, discordFixes);
+// Left edges from the first dot, and widths: within a fraction of a pixel of Discord's circles
+const relative = (boxes?: number[][]) => boxes?.flatMap(b => [b[0] - boxes[0][0], b[2]]) ?? [];
+const sameBoxes = relative(discordFixes.patchedDots).length === 6 && relative(discordFixes.patchedDots).every((n, i) => Math.abs(n - relative(discordFixes.originalCircles)[i]) < 0.3);
+check("typing dots: same places and size as Discord's circles, in the indicator's color", sameBoxes && discordFixes.color === discordFixes.svgColor, { patched: discordFixes.patchedDots, original: discordFixes.originalCircles, color: discordFixes.color, svgColor: discordFixes.svgColor });
+check("typing dots: animate with CSS while focused", discordFixes.animations?.length === 3 && discordFixes.animations.every((a: string) => a === "evi-typing-dot"), discordFixes.animations);
+check("Game Mode: GameModeStore patched; Evi's switch turns it on and back off", discordFixes.gameModePatch === "applied" && discordFixes.available && discordFixes.offEnabled === false && discordFixes.onEnabled === true && discordFixes.onActive && discordFixes.offAgain === false, discordFixes);
+
+// A stylesheet added the way Discord adds its lazy ones, cleaned before it applies. Served from
+// Discord's origin: a blob: sheet's rules can't be read there.
+await page.route("https://discord.com/evi-test-css-fixes.css", route => route.fulfill({
+    contentType: "text/css",
+    body: `
+        .t-blur { backdrop-filter: blur(4px); background-color: var(--t-c) !important; }
+        .t-blur:hover { background-color: var(--t-h) !important; }
+        .t-glass { backdrop-filter: blur(20px); background: var(--t-c); }
+        .t-has :not(:has(*)) { outline: 1px solid red; }
+        .t-keep > :has(.x), .t-any:has(*), :has(.y) { color: red; }
+        @media (min-width: 1px) { :not(:has(*)) { color: blue; } }
+    `,
+}));
+const cssFixes = await page.evaluate(async () => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "/evi-test-css-fixes.css";
+    const loaded = new Promise(r => link.addEventListener("load", r));
+    document.head.append(link);
+    await new Promise(r => setTimeout(r, 0));
+    const heldAtFirst = link.media === "not all";
+    await loaded;
+    await new Promise(r => setTimeout(r, 50));
+    const rules = [...link.sheet!.cssRules].map(r => r.cssText.replace(/\s+/g, " "));
+    const el = document.createElement("div");
+    el.className = "t-blur";
+    el.style.cssText = "--t-c: rgba(0, 0, 0, 0.22); --t-h: rgba(0, 0, 0, 0.33)";
+    document.body.append(el);
+    const computed = { background: getComputedStyle(el).backgroundColor, backdrop: getComputedStyle(el).backdropFilter };
+    el.remove();
+    link.remove();
+    return { heldAtFirst, released: !link.hasAttribute("media"), rules, computed };
+});
+const ruleText = cssFixes.rules.join("\n");
+check("css fixes: a small backdrop blur becomes its tint, near-opaque, its hover state too; big blurs stay", cssFixes.heldAtFirst && cssFixes.released && /^(rgba\(0, 0, 0, 0\.85\)|color\(srgb 0 0 0 \/ 0\.85\))$/.test(cssFixes.computed.background) && cssFixes.computed.backdrop === "none"
+    && ruleText.includes(".t-blur:hover { background-color: rgb(from var(--t-h) r g b / max(alpha, 0.85)) !important; }") && ruleText.includes(".t-glass { backdrop-filter: blur(20px)"), cssFixes);
+check("css fixes: :has() on any element dropped, anchored ones kept, inside @media too", !ruleText.includes(".t-has") && ruleText.includes(".t-keep > :has(.x), .t-any:has(*) { color: red; }") && !ruleText.includes(":has(.y)") && !ruleText.includes("color: blue"), cssFixes.rules);
+
 const hooks = await page.evaluate(async () => {
     const { api, plugins } = (window as any).Evi;
     // MessageActions may be lazy on the login page, load it the way Discord would
@@ -2440,6 +2542,27 @@ await page.screenshot({ path: join(OUT, "ui-performance.png") });
 check("A recording lists the hook that ran during it: 3 calls, about 60 ms, where it hooked",
     recorded.cells?.[1] === "3" && parseFloat(recorded.cells?.[0] ?? "") >= 55 && recorded.sites.includes("after f"), recorded);
 check("A recording says how long Discord was held up by long tasks", /Recorded \d/.test(recorded.summary) && /Discord was busy for \d+ ms in \d+ long task/.test(recorded.summary), recorded.summary);
+
+// Discord's Game Mode: off until switched on here
+const gameModeToggle = () => page.evaluate(() => {
+    const el = document.querySelector<HTMLElement>("#dl-perf-game-mode input[type=checkbox], #dl-perf-game-mode [role=switch]");
+    el?.click();
+    return !!el;
+});
+const gameModeBefore = await page.evaluate(() => {
+    const section = document.querySelector("#dl-perf-game-mode");
+    const el = section?.querySelector<HTMLInputElement>("input[type=checkbox], [role=switch]");
+    return { shown: !!el, checked: el ? el.checked ?? el.getAttribute("aria-checked") === "true" : null, label: section?.textContent ?? null };
+});
+await page.locator("#dl-perf-game-mode").scrollIntoViewIfNeeded().catch(() => { });
+await page.screenshot({ path: join(OUT, "ui-performance-game-mode.png") });
+await gameModeToggle();
+await page.waitForTimeout(100);
+const gameModeOn = await page.evaluate(() => ({ setting: (window as any).Evi.settings.data.gameMode, enabled: (window as any).Evi.api.findStore("GameModeStore")?.enabled }));
+await gameModeToggle();
+await page.waitForTimeout(100);
+const gameModeOff = await page.evaluate(() => (window as any).Evi.settings.data.gameMode);
+check("Performance tab: Discord's Game Mode switch, off by default, turns it on and off", gameModeBefore.shown && gameModeBefore.checked === false && !!gameModeBefore.label?.includes("Use Discord’s Game Mode") && gameModeOn.setting === true && gameModeOn.enabled === true && gameModeOff === false, { gameModeBefore, gameModeOn, gameModeOff });
 
 await openTab("themes", "quickcss");
 await page.fill("#dl-quickcss", "body { outline: 3px solid rgb(255, 0, 128) !important; }");

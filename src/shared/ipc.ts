@@ -296,6 +296,8 @@ export interface EviSettings {
     autoSafeMode?: boolean;
     /** Plugins you have or hearted that evi.rest said were broken, so a fix is told once */
     brokenSeen?: string[];
+    /** Discord's own Game Mode, which Discord keeps behind an experiment (renderer/gameMode.ts). Missing: off */
+    gameMode?: boolean;
 }
 
 /** An answer from evi.rest's community side; `unlinked` when it needs this Evi linked to an account */

@@ -7,11 +7,13 @@
  */
 import type { ReactNode } from "react";
 
+import { GameMode } from "../gameMode";
 import { I18n, t } from "../i18n";
 import { Perf, PluginReport, RecordingReport, SiteKind, SLOW_CALL_MS, Totals, WINDOW_S } from "../perf";
 import { PluginManager } from "../plugins/manager";
+import { Settings } from "../settings";
 import { React } from "../webpack/common";
-import { Badge, Button, Collapse, EmptyState, IconButton, Section, Status, Text, useStore } from "./components";
+import { Badge, Button, Collapse, EmptyState, IconButton, Section, Status, SwitchRow, Text, useStore } from "./components";
 
 /** A forgotten recording stops by itself */
 const MAX_RECORDING_MS = 60_000;
@@ -194,6 +196,23 @@ function LiveTable({ plugins }: { plugins: PluginReport[]; }) {
     );
 }
 
+/** Discord's own Game Mode, when this Discord has it (gameMode.ts) */
+function GameModeSetting() {
+    const settings = useStore(Settings.subscribe, () => Settings.data);
+    if (!GameMode.available) return null;
+    return (
+        <Section id="dl-perf-game-mode" title={t("perf.gameMode.title")}>
+            <SwitchRow
+                id="dl-game-mode"
+                label={t("perf.gameMode.switch")}
+                description={t("perf.gameMode.hint")}
+                checked={settings.gameMode === true}
+                onChange={on => GameMode.set(on)}
+            />
+        </Section>
+    );
+}
+
 export function PerformanceTab() {
     const result = useStore(subscribe, () => report);
     const [plugins, setPlugins] = React.useState(Perf.snapshot);
@@ -238,6 +257,7 @@ export function PerformanceTab() {
             >
                 <LiveTable plugins={plugins} />
             </Section>
+            <GameModeSetting />
             <Text tag="p" variant="text-xs/normal" color="text-muted" tabular className="dl-perf-note">
                 {overhead === undefined
                     ? t("perf.note.measuring")

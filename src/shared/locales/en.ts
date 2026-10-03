@@ -1489,4 +1489,7 @@ export const en = {
     "perf.note.measuring": "Measuring is always on.",
     "perf.note.cost": "Measuring is always on and costs about {time} per call.",
     "perf.note.rounding": "Times shorter than 0.1 ms are rounded by the browser’s clock, so a single fast call reads as 0 or 0.1 ms. Over many calls that evens out.",
+    "perf.gameMode.title": "Game Mode",
+    "perf.gameMode.switch": "Use Discord’s Game Mode",
+    "perf.gameMode.hint": "While you play and Discord isn’t in front, Discord draws at 10 frames per second and pauses GIFs, animated emoji and stickers until you come back. It stays off while you’re in a voice channel or call, so streams and cameras stay smooth. Discord made it but hasn’t turned it on for everyone yet.",
 } satisfies Record<string, string | { one?: string; other: string; }>;

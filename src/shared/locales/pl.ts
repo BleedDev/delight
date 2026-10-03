@@ -1488,4 +1488,7 @@ export const pl = {
     "perf.note.measuring": "Pomiar jest zawsze włączony.",
     "perf.note.cost": "Pomiar jest zawsze włączony i kosztuje około {time} na wywołanie.",
     "perf.note.rounding": "Czasy krótsze niż 0,1 ms są zaokrąglane przez zegar przeglądarki, więc pojedyncze szybkie wywołanie pokazuje 0 lub 0,1 ms. Przy wielu wywołaniach to się wyrównuje.",
+    "perf.gameMode.title": "Tryb gry",
+    "perf.gameMode.switch": "Używaj trybu gry Discorda",
+    "perf.gameMode.hint": "Gdy grasz, a Discord nie jest na pierwszym planie, Discord rysuje 10 klatek na sekundę i wstrzymuje GIF-y, animowane emoji i naklejki, dopóki nie wrócisz. Pozostaje wyłączony, gdy jesteś na kanale głosowym lub w rozmowie, żeby transmisje i kamery były płynne. Discord go stworzył, ale jeszcze nie włączył go dla wszystkich.",
 } satisfies Translation;

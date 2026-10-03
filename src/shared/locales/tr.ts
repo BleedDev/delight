@@ -1486,4 +1486,7 @@ export const tr = {
     "perf.note.measuring": "Ölçüm her zaman açıktır.",
     "perf.note.cost": "Ölçüm her zaman açıktır ve çağrı başına yaklaşık {time} tutar.",
     "perf.note.rounding": "0,1 ms’den kısa süreler tarayıcının saati tarafından yuvarlanır; bu yüzden tek bir hızlı çağrı 0 veya 0,1 ms görünür. Çok sayıda çağrıda bu dengelenir.",
+    "perf.gameMode.title": "Oyun Modu",
+    "perf.gameMode.switch": "Discord’un Oyun Modunu kullan",
+    "perf.gameMode.hint": "Oyun oynarken Discord önde değilse, Discord saniyede 10 kare çizer ve sen dönene kadar GIF’leri, animasyonlu emojileri ve çıkartmaları duraklatır. Bir ses kanalında veya aramadayken kapalı kalır, böylece yayınlar ve kameralar akıcı kalır. Discord bunu yaptı ama henüz herkes için açmadı.",
 } satisfies Translation;

@@ -1483,4 +1483,7 @@ export const ja = {
     "perf.note.measuring": "計測は常にオンです。",
     "perf.note.cost": "計測は常にオンで、1 回の呼び出しあたり約 {time} かかります。",
     "perf.note.rounding": "0,1 ms より短い時間はブラウザーの時計によって丸められるため、速い呼び出しが 1 回だけだと 0 または 0,1 ms と表示されます。呼び出しが多ければ平均化されます。",
+    "perf.gameMode.title": "ゲームモード",
+    "perf.gameMode.switch": "Discordのゲームモードを使う",
+    "perf.gameMode.hint": "ゲーム中にDiscordが前面にないとき、Discordは毎秒10フレームで描画し、戻るまでGIF、アニメーション絵文字、スタンプを一時停止します。ボイスチャンネルや通話中はオフのままなので、配信やカメラは滑らかなままです。Discordが作った機能ですが、まだ全員には有効になっていません。",
 } satisfies Translation;

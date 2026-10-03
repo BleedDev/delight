@@ -1486,4 +1486,7 @@ export const fr = {
     "perf.note.measuring": "La mesure est toujours active.",
     "perf.note.cost": "La mesure est toujours active et coûte environ {time} par appel.",
     "perf.note.rounding": "Les durées inférieures à 0,1 ms sont arrondies par l’horloge du navigateur, donc un seul appel rapide s’affiche comme 0 ou 0,1 ms. Sur de nombreux appels, cela s’équilibre.",
+    "perf.gameMode.title": "Mode jeu",
+    "perf.gameMode.switch": "Utiliser le mode jeu de Discord",
+    "perf.gameMode.hint": "Pendant que tu joues et que Discord n’est pas au premier plan, Discord s’affiche à 10 images par seconde et met en pause les GIF, les emojis animés et les stickers jusqu’à ton retour. Il reste désactivé pendant que tu es dans un salon vocal ou un appel, pour que les streams et les caméras restent fluides. Discord l’a créé, mais ne l’a pas encore activé pour tout le monde.",
 } satisfies Translation;

@@ -1486,4 +1486,7 @@ export const de = {
     "perf.note.measuring": "Die Messung läuft immer.",
     "perf.note.cost": "Die Messung läuft immer und kostet etwa {time} pro Aufruf.",
     "perf.note.rounding": "Zeiten unter 0,1 ms werden von der Uhr des Browsers gerundet, ein einzelner schneller Aufruf zeigt daher 0 oder 0,1 ms. Über viele Aufrufe gleicht sich das aus.",
+    "perf.gameMode.title": "Spielmodus",
+    "perf.gameMode.switch": "Discords Spielmodus verwenden",
+    "perf.gameMode.hint": "Während du spielst und Discord nicht im Vordergrund ist, zeichnet Discord 10 Bilder pro Sekunde und pausiert GIFs, animierte Emojis und Sticker, bis du zurückkommst. In einem Sprachkanal oder Anruf bleibt er aus, damit Streams und Kameras flüssig bleiben. Discord hat ihn gebaut, aber noch nicht für alle eingeschaltet.",
 } satisfies Translation;
