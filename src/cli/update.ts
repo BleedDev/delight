@@ -2,9 +2,6 @@ import { renameSync, rmSync, writeFileSync } from "fs";
 
 import { CHECKSUM_ASSET, cleanVersion, EXE_ASSET, fetchReleaseApi, isNewerRelease, pickRelease, releaseApis } from "../shared/release";
 
-export { CHECKSUM_ASSET, cleanVersion, EXE_ASSET };
-export const REPO = "BleedDev/evi";
-
 /** evi.rest's mirror of GitHub's release API, then GitHub itself. EVI_UPDATE_API alone when set: tests serve fake releases from a local server */
 const APIS = releaseApis(process.env.EVI_UPDATE_API);
 const HEADERS = { "User-Agent": "evi-cli", Accept: "application/vnd.github+json" };

@@ -1,23 +1,23 @@
 import { BootData, EviSettings, IPC, isPluginEnabled, OpenPathTarget, PluginManifest, SettingsSaveResult } from "@shared/ipc";
 import { diffSettings } from "@shared/safeMode";
 import { ORIGINAL_ASAR } from "@shared/shim";
-import { app, ipcMain, Session, session, shell, WebContents } from "electron";
+import { app, ipcMain, Session, session, shell, WebContents, webContents } from "electron";
 import { existsSync, readFileSync, watch, writeFileSync } from "fs";
 import { dirname, join } from "path";
 
 import { initAccount } from "./account";
-import { setLocale } from "./locale";
 import { initBackup } from "./backup";
+import { initBadges } from "./badges";
+import { initCommunity } from "./community";
+import { guardIpc } from "./ipcGuard";
+import { setLocale } from "./locale";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
-import { guardIpc } from "./ipcGuard";
 import { applyChromiumSwitches, askToEnable, enablesNeedingConsent, getPluginPayloads, initPlugins } from "./plugins";
+import { currentHotfixes, currentPulls, initReports } from "./reports";
 import { SafeMode } from "./safeMode";
 import { saveSettings, settings } from "./settings";
-import { initBadges } from "./badges";
-import { currentHotfixes, currentPulls, initReports } from "./reports";
 import { initStars } from "./stars";
-import { initCommunity } from "./community";
 import { initStore } from "./store";
 import { initThemeSubmit } from "./themeSubmit";
 import { getThemePayloads, initThemes } from "./themes";
@@ -157,7 +157,7 @@ function watchQuickCss() {
             const css = readQuickCss();
             // Our own saves land here too: every edit is recorded, wherever it's made
             SafeMode.recordChange({ kind: "quickCss", id: "quick.css", action: "edited" });
-            for (const wc of require("electron").webContents.getAllWebContents()) wc.send(IPC.CSS_CHANGED, css);
+            for (const wc of webContents.getAllWebContents()) wc.send(IPC.CSS_CHANGED, css);
         }, 50);
     });
 }

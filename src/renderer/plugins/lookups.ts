@@ -4,8 +4,8 @@
  * update that looks exactly like a working plugin, so every lookup is tracked here and diagnosed the
  * way source patches are (see patching/diagnose.ts).
  */
-import { wreq } from "../webpack/runtime";
 import { describeFilter, Filter, findModuleIds } from "../webpack/find";
+import { wreq } from "../webpack/runtime";
 
 export type LookupHealth =
     | "found"    // its export exists, the callback ran

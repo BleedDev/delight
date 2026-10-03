@@ -29,7 +29,7 @@ if (APP_NAME.toLowerCase().startsWith("discord")) throw new Error("Refusing to r
 
 rmSync(BASE, { recursive: true, force: true });
 
-// ---- plugin store: a local fake registry over https, never the real network ----------------------
+// Plugin store: a local fake registry over https, never the real network
 
 const CERT_DIR = join(BASE, "tls");
 mkdirSync(CERT_DIR, { recursive: true });
@@ -408,10 +408,8 @@ async function launch(dataDir: string, env: Record<string, string> = {}) {
         stdout: "pipe",
         stderr: "pipe",
     });
-    const started = performance.now();
-    let timedOut = false;
     // Page checks start at 16s, theme downloads may take up to 20s, the healthy start report up to 15s
-    const timeout = setTimeout(() => (timedOut = true, proc.kill()), 90_000);
+    const timeout = setTimeout(() => proc.kill(), 90_000);
     const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
     clearTimeout(timeout);
 
@@ -455,7 +453,7 @@ check("healthy start reset the crash counter, installs were recorded", firstStat
 
 if (failed) printLogs(stdout, stderr);
 
-// ---- backup: export from the first data folder, restore into a second one ------------------------
+// Backup: export from the first data folder, restore into a second one
 
 const parsed = existsSync(BACKUP_FILE) ? parseBackup(readFileSync(BACKUP_FILE, "utf8")) : null;
 const backup = parsed?.ok ? parsed.backup : null;
@@ -536,9 +534,7 @@ if (failed) {
     console.log(`--- stdout ---\n${stdout.slice(-2500)}\n--- stderr (Evi lines) ---\n${eviLines.slice(-4000)}`);
 }
 
-// ---- safe mode ----------------------------------------------------------------------------------
-//
-// Each "start" is a new Electron process against the same data folder, like restarting Discord.
+// Safe mode. Each "start" is a new Electron process against the same data folder, like restarting Discord.
 // The crasher plugin crashes the renderer from its native side as soon as it starts. Its native file is
 // .cjs: test-results/ sits under this repo, whose package.json makes .js files ES modules.
 

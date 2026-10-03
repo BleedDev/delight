@@ -57,8 +57,6 @@ function displayName(id: string, guildId?: string) {
     return nick ?? user?.globalName ?? user?.username ?? t("someone");
 }
 
-// ---- the "is typing" line ---------------------------------------------------------------------
-
 function TypingName({ userId, guildId, children }: { userId: string; guildId?: string; children: ReactNode; }) {
     const { avatars, roleColors } = context!.settings.use();
     const color = roleColors && guildId ? store("GuildMemberStore")?.getMember?.(guildId, userId)?.colorString : undefined;
@@ -79,8 +77,6 @@ function typingText(names: string[]): string {
     if (names.length === 3) return t("typing.three", { a, b, c });
     return t("typing.many", { a, b, count: names.length - 2 });
 }
-
-// ---- dots in the lists ------------------------------------------------------------------------
 
 function TypingIndicator({ channelId, guildId }: { channelId: string; guildId?: string; }) {
     // The ids, not the store's object, so a change elsewhere doesn't re-render every row

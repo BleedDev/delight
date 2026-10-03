@@ -48,8 +48,6 @@ function useInterval(fn: () => void, ms: number) {
     }, [ms]);
 }
 
-// ---- JSON tree ------------------------------------------------------------------------------------
-
 /** A value's children, read when its node opens */
 function JsonChildren({ value, ancestors }: { value: unknown; ancestors: readonly unknown[]; }) {
     const { children, more } = React.useMemo(() => treeChildren(value, ancestors), [value]);
@@ -96,8 +94,6 @@ export function JsonTree({ value, label }: { value: unknown; label: string; }) {
         </div>
     );
 }
-
-// ---- Flux log -------------------------------------------------------------------------------------
 
 const FLUX_CAPACITY = 500;
 /** Rows drawn at once; the rest stay in the buffer for the filter */
@@ -219,8 +215,6 @@ function FluxLog() {
     );
 }
 
-// ---- stores ---------------------------------------------------------------------------------------
-
 /** A store changes as often as Discord does: its getters run again at most this often */
 const STORE_REFRESH_MS = 500;
 
@@ -336,8 +330,6 @@ function StoreInspector() {
     );
 }
 
-// ---- patch hits -----------------------------------------------------------------------------------
-
 const patchState: Record<PatchState, { tone: Tone; label: EviKey; }> = {
     applied: { tone: "success", label: "patches.applied" },
     pending: { tone: "muted", label: "patches.waiting" },
@@ -415,8 +407,6 @@ function PatchHitsView() {
     );
 }
 
-// ---- timings --------------------------------------------------------------------------------------
-
 const TOP_PLUGINS = 8;
 
 function Timings() {
@@ -460,8 +450,6 @@ function Timings() {
     );
 }
 
-// ---- API reference --------------------------------------------------------------------------------
-
 const API_PAGE = 20;
 
 function ApiEntry({ doc }: { doc: ApiDoc; }) {
@@ -500,8 +488,6 @@ function ApiReference() {
         </Section>
     );
 }
-
-// ---- API changes ----------------------------------------------------------------------------------
 
 const changeLabel: Record<ApiChange["kind"], EviKey> = {
     added: "devtools.changes.added",
@@ -545,8 +531,6 @@ function ApiChanges() {
         </Section>
     );
 }
-
-// ---- the tab --------------------------------------------------------------------------------------
 
 const sections: { id: SectionId; label: EviKey; View: () => ReactNode; }[] = [
     { id: "flux", label: "devtools.section.flux", View: FluxLog },

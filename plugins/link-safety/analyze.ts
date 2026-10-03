@@ -55,14 +55,10 @@ export interface AnalyzeOptions {
 
 const RANK: Record<FindingLevel | RiskLevel, number> = { safe: 0, info: 0, caution: 1, danger: 2 };
 
-export const rankOf = (level: RiskLevel) => RANK[level];
-
 /** Whether a result should show the warning, for a threshold of "caution" or "danger" */
 export function meetsThreshold(level: RiskLevel, threshold: RiskLevel) {
     return RANK[level] > 0 && RANK[level] >= RANK[threshold];
 }
-
-// ---- Domains ------------------------------------------------------------------------------------
 
 /** Two-part public suffixes that matter for the domains people link, plus free hosting platforms */
 const MULTI_SUFFIXES = new Set([
@@ -126,8 +122,6 @@ function suffixOf(domain: string) {
 }
 
 const withinDomain = (host: string, domain: string) => host === domain || host.endsWith("." + domain);
-
-// ---- Brands -------------------------------------------------------------------------------------
 
 interface Brand {
     name: string;
@@ -214,8 +208,6 @@ export function officialBrand(domain: string): Brand | undefined {
     return undefined;
 }
 
-// ---- Confusables --------------------------------------------------------------------------------
-
 /** Characters that look like Latin letters or digits that look like letters, mapped to what they imitate */
 const CONFUSABLES: Record<string, string> = {
     // Cyrillic
@@ -252,8 +244,6 @@ export function editDistance(a: string, b: string) {
     }
     return d[rows - 1][cols - 1];
 }
-
-// ---- Punycode and scripts -----------------------------------------------------------------------
 
 /** RFC 3492 decoding of one label's payload (without the "xn--") */
 function punycodeDecode(input: string): string | null {
@@ -324,8 +314,6 @@ export function mixedScriptLabels(host: string) {
     });
 }
 
-// ---- Masked links -------------------------------------------------------------------------------
-
 const DOMAIN_LIKE = /^(?:[a-z][a-z0-9+.-]*:\/\/)?(?:[^\s/@:]+(?::[^\s/@]*)?@)?((?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+[\p{L}]{2,}|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:[/?#]\S*)?$/iu;
 const DOMAIN_IN_TEXT = /(?:^|[\s(<"'])((?:https?:\/\/)?(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:com|net|org|gg|gift|io|co|app|dev|tv|me|xyz|ru|gl|ly|be|info|link|site|shop|store|online|top|click|live|pro|uk|de|fr|us)(?:[/?#][^\s)>"']*)?)(?=$|[\s)>"'.,!?:;])/iu;
 
@@ -353,8 +341,6 @@ export function hostnameInText(text: string): { host: string; whole: boolean; } 
     return null;
 }
 
-// ---- Scams and files ----------------------------------------------------------------------------
-
 const SCAM_WORDS = ["gift", "nitro", "free", "promo", "claim", "drop", "airdrop", "login", "verify", "verification", "auth", "oauth", "trade",
     "giveaway", "bonus", "reward", "secure", "account", "support", "qr", "wallet", "skins", "case", "offer", "event", "prize", "appeal", "staff"];
 
@@ -376,8 +362,6 @@ const DANGEROUS_EXTENSIONS = new Set([
 /** TLDs that read like file names */
 const FILE_LIKE_TLDS = new Set(["zip", "mov"]);
 
-// ---- Analysis -----------------------------------------------------------------------------------
-
 function brandLookalike(domain: string, displayDomain: string): Finding | null {
     if (officialBrand(domain) || KNOWN_SAFE.has(domain)) return null;
     const suffix = suffixOf(displayDomain);
@@ -387,6 +371,7 @@ function brandLookalike(domain: string, displayDomain: string): Finding | null {
     const tokens = name.split(/[-.]/).filter(t => t.length >= 3);
     const hasScamWord = SCAM_WORDS.some(w => name.includes(w));
     const nameSkeleton = skeleton(name);
+    const candidates = new Set([nameSkeleton, ...tokens.map(skeleton)]);
 
     // Exact names and lookalikes first, for every brand, so "discordapp.io" isn't reported as merely mentioning "discord"
     for (const brand of BRANDS) {
@@ -416,7 +401,6 @@ function brandLookalike(domain: string, displayDomain: string): Finding | null {
             }
             if (key.length < 6) continue;
             const max = key.length >= 10 ? 2 : 1;
-            const candidates = new Set([nameSkeleton, ...tokens.map(skeleton)]);
             for (const candidate of candidates) {
                 if (Math.abs(candidate.length - keySkeleton.length) > max) continue;
                 if (editDistance(candidate, keySkeleton) <= max) {
@@ -522,12 +506,13 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
         }
 
         // discord.com.evil.xyz
-        for (const b of BRANDS) {
-            if (official) break;
-            const hit = b.domains.find(d => host.startsWith(d + ".") && d !== domain);
-            if (hit) {
-                add("danger", "subdomain-trick", `Starts with ${hit} but the site is really ${displayDomain}. Everything to the left of it is just a label its owner picked.`, { hit, domain: displayDomain });
-                break;
+        if (!official) {
+            for (const b of BRANDS) {
+                const hit = b.domains.find(d => host.startsWith(d + ".") && d !== domain);
+                if (hit) {
+                    add("danger", "subdomain-trick", `Starts with ${hit} but the site is really ${displayDomain}. Everything to the left of it is just a label its owner picked.`, { hit, domain: displayDomain });
+                    break;
+                }
             }
         }
 
@@ -540,8 +525,9 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
         if (SHORTENERS.has(domain) || SHORTENERS.has(host)) {
             add("info", "shortener", `${displayDomain} is a link shortener: where it really leads is hidden until you open it.`, { domain: displayDomain });
         }
-        if (HOSTING_SUFFIXES.has(suffixOf(domain)) && !official) {
-            add("info", "free-hosting", `Hosted on ${suffixOf(domain)}, where anyone can make a site for free.`, { suffix: suffixOf(domain) });
+        const suffix = suffixOf(domain);
+        if (HOSTING_SUFFIXES.has(suffix) && !official) {
+            add("info", "free-hosting", `Hosted on ${suffix}, where anyone can make a site for free.`, { suffix });
         }
     }
 
@@ -569,14 +555,15 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
         const ext = pieces[pieces.length - 1];
         const isDomainRoot = url.pathname === "/" || url.pathname === "";
         if (DANGEROUS_EXTENSIONS.has(ext) && !isDomainRoot) {
-            const doubled = pieces.length >= 3 && /^(?:png|jpe?g|gif|webp|mp4|mp3|pdf|txt|docx?|xlsx?|zip|rar)$/.test(pieces[pieces.length - 2]);
+            const fake = pieces[pieces.length - 2];
+            const doubled = pieces.length >= 3 && /^(?:png|jpe?g|gif|webp|mp4|mp3|pdf|txt|docx?|xlsx?|zip|rar)$/.test(fake);
             add(
                 doubled ? "danger" : "caution",
                 "dangerous-file",
                 doubled
-                    ? `Downloads "${file}", a program disguised as a .${pieces[pieces.length - 2]} file.`
+                    ? `Downloads "${file}", a program disguised as a .${fake} file.`
                     : `Downloads a .${ext} file ("${file}"), which can run code on your computer. Only open it if you trust the sender.`,
-                doubled ? { file, fake: pieces[pieces.length - 2] } : { file, ext },
+                doubled ? { file, fake } : { file, ext },
                 doubled ? "dangerous-file-disguised" : "dangerous-file",
             );
         }
@@ -588,8 +575,6 @@ export function analyzeLink(href: string, options: AnalyzeOptions = {}): Analysi
 
     return done();
 }
-
-// ---- Source patch -------------------------------------------------------------------------------
 
 /**
  * Discord's link click handler (the one behind masked links, plain links and embeds). Right after

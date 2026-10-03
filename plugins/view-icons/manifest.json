@@ -2,7 +2,7 @@
     "id": "view-icons",
     "name": "View Icons",
     "description": "Download avatars and banners from someone's profile. Click their avatar or banner to open it full size, then Download sits next to zoom.",
-    "version": "2.4.0",
+    "version": "2.4.1",
     "authors": [
         "Evi"
     ],
@@ -11,6 +11,12 @@
         "utility"
     ],
     "changelog": [
+        {
+            "version": "2.4.1",
+            "notes": [
+                "Text in profile details keeps its spacing and colour on touch-only screens too."
+            ]
+        },
         {
             "version": "2.4.0",
             "notes": [
@@ -71,6 +77,9 @@
             "name": "Profilbilder ansehen",
             "description": "Lade Avatare und Banner aus dem Profil anderer herunter. Klicke auf einen Avatar oder ein Banner, um es in voller Größe zu öffnen, und neben dem Zoom findest du „Herunterladen“.",
             "changelog": {
+                "2.4.1": [
+                    "Texte in den Profildetails behalten ihren Abstand und ihre Farbe auch auf reinen Touchscreens."
+                ],
                 "2.4.0": [
                     "Profildetails sind übersichtlicher: Jede Farbe steht in einer Zeile mit Namen, Hexwert und Knöpfen zum Kopieren oder Verwenden in deinem Profil, ohne Menüs. Ein ganzes Design oder einen Namensstil übernimmst du mit einem Knopf darunter, und das Fenster hat keine Scrollleiste mehr."
                 ],
@@ -100,6 +109,9 @@
             "name": "Ver iconos",
             "description": "Descarga avatares y banners del perfil de cualquier persona. Haz clic en su avatar o banner para abrirlo a tamaño completo y verás Descargar junto al zoom.",
             "changelog": {
+                "2.4.1": [
+                    "El texto de los detalles del perfil mantiene su espaciado y su color también en pantallas solo táctiles."
+                ],
                 "2.4.0": [
                     "Los detalles del perfil son más claros: cada color está en una fila con su nombre, su hex y botones para copiarlo o usarlo en tu perfil, sin menús. Usar un tema o estilo de nombre completo es un botón debajo, y la ventana ya no tiene barra de desplazamiento."
                 ],
@@ -129,6 +141,9 @@
             "name": "Voir les icônes",
             "description": "Télécharge les avatars et les bannières du profil de quelqu'un. Clique sur son avatar ou sa bannière pour l'ouvrir en taille réelle, et Télécharger apparaît à côté du zoom.",
             "changelog": {
+                "2.4.1": [
+                    "Le texte des détails du profil garde son espacement et sa couleur aussi sur les écrans uniquement tactiles."
+                ],
                 "2.4.0": [
                     "Les détails du profil sont plus clairs : chaque couleur est sur une ligne avec son nom, son code hex et des boutons pour la copier ou l'utiliser sur votre profil, sans menu. Un thème ou un style de pseudo entier s'applique avec un bouton en dessous, et la fenêtre n'a plus de barre de défilement."
                 ],
@@ -158,6 +173,9 @@
             "name": "アイコンを表示",
             "description": "相手のプロフィールからアバターやバナーをダウンロードできます。アバターやバナーをクリックして原寸で開くと、ズームの隣にダウンロードが表示されます。",
             "changelog": {
+                "2.4.1": [
+                    "タッチ操作のみの画面でも、プロフィールの詳細の文字の間隔と色が正しく表示されます。"
+                ],
                 "2.4.0": [
                     "プロフィールの詳細が見やすくなりました。各色は名前とHEX値、コピーやプロフィールに使うボタンと一緒に1行に並び、メニューを開く必要はありません。テーマや名前スタイル全体はその下のボタンひとつで使え、ウィンドウにスクロールバーも出ません。"
                 ],
@@ -187,6 +205,9 @@
             "name": "Podgląd ikon",
             "description": "Pobieraj awatary i banery z profilu innych osób. Kliknij awatar lub baner, aby otworzyć go w pełnym rozmiarze, a obok powiększenia znajdziesz przycisk Pobierz.",
             "changelog": {
+                "2.4.1": [
+                    "Tekst w szczegółach profilu zachowuje odstępy i kolor także na ekranach wyłącznie dotykowych."
+                ],
                 "2.4.0": [
                     "Szczegóły profilu są czytelniejsze: każdy kolor ma swój wiersz z nazwą, kodem hex i przyciskami do skopiowania lub użycia w profilu, bez menu. Cały motyw lub styl nazwy ustawisz jednym przyciskiem pod spodem, a okno nie ma już paska przewijania."
                 ],
@@ -216,6 +237,9 @@
             "name": "Ver ícones",
             "description": "Baixe avatares e banners do perfil de qualquer pessoa. Clique no avatar ou no banner para abrir em tamanho real e o botão Baixar aparece ao lado do zoom.",
             "changelog": {
+                "2.4.1": [
+                    "O texto dos detalhes do perfil mantém o espaçamento e a cor também em telas só de toque."
+                ],
                 "2.4.0": [
                     "Os detalhes do perfil estão mais claros: cada cor fica numa linha com nome, hex e botões para copiá-la ou usá-la no seu perfil, sem menus. Usar um tema ou estilo de nome inteiro é um botão logo abaixo, e a janela não tem mais barra de rolagem."
                 ],
@@ -245,6 +269,9 @@
             "name": "Просмотр значков",
             "description": "Скачивайте аватары и баннеры из чужих профилей. Щёлкните по аватару или баннеру, чтобы открыть его в полном размере, и рядом с увеличением появится кнопка «Скачать».",
             "changelog": {
+                "2.4.1": [
+                    "Текст в деталях профиля сохраняет отступы и цвет и на сенсорных экранах без мыши."
+                ],
                 "2.4.0": [
                     "Детали профиля стали понятнее: каждый цвет в своей строке с названием, hex-кодом и кнопками, чтобы скопировать его или применить к своему профилю, без меню. Всю тему или стиль имени можно применить одной кнопкой под ними, а у окна больше нет полосы прокрутки."
                 ],
@@ -274,6 +301,9 @@
             "name": "Simgeleri Görüntüle",
             "description": "Birinin profilindeki avatarları ve banner'ları indir. Avatarına veya banner'ına tıklayıp tam boyutta aç, İndir düğmesi yakınlaştırmanın yanında olacak.",
             "changelog": {
+                "2.4.1": [
+                    "Profil ayrıntılarındaki metin, yalnızca dokunmatik ekranlarda da aralığını ve rengini korur."
+                ],
                 "2.4.0": [
                     "Profil ayrıntıları daha anlaşılır: her renk adı, hex kodu ve kopyalama ya da profiline uygulama düğmeleriyle kendi satırında, menü açmaya gerek yok. Bütün bir temayı veya ad stilini altındaki tek düğmeyle kullanırsın ve pencerede artık kaydırma çubuğu yok."
                 ],

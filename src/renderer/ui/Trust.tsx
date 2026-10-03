@@ -14,8 +14,6 @@ import { Native } from "../native";
 import { React } from "../webpack/common";
 import { Button, Dialog, Icon, Status, Text } from "./components";
 
-// ---- pulled -----------------------------------------------------------------------------------
-
 /**
  * Why a plugin is off and can't be turned on, and the way back when there is one: a newer version
  * that isn't pulled. Its switch stays as the user left it, so lifting the pull brings it back.
@@ -41,8 +39,6 @@ export function PulledNotice({ pull, update }: {
     );
 }
 
-// ---- hotfixed ---------------------------------------------------------------------------------
-
 /**
  * Evi repaired this plugin after a Discord update (shared/hotfixes.ts). Nothing to do about it, so
  * it's one quiet line: that it happened, and what Evi's team says it fixed.
@@ -54,8 +50,6 @@ export function HotfixNote({ hotfix }: { hotfix: Hotfix; }) {
         </Text>
     );
 }
-
-// ---- reporting --------------------------------------------------------------------------------
 
 /** Plugins and themes reported this session, as kind:id: the button says so instead of offering it again */
 const reported = new Set<string>();

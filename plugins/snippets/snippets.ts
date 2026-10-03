@@ -1,5 +1,11 @@
 import type { SourcePatch } from "@evi/api";
 
+/**
+ * Pure pieces of Snippets: the saved replies, every change to them, placeholder expansion and
+ * search. No Discord or Evi runtime imports, so tests can run all of it. Every change returns a new
+ * state (or the same object when nothing changed) and never mutates its input.
+ */
+
 /** The wording of the messages this file returns. English here; index.tsx passes its translations in (strings.ts) */
 export type SayKey =
     | "err.nameEmpty" | "err.nameLong" | "err.nameTaken" | "err.textEmpty" | "err.textLong"
@@ -20,12 +26,6 @@ const ENGLISH: Record<SayKey, string> = {
 };
 
 const english: Say = (key, vars) => ENGLISH[key].replace(/\{(\w+)\}/g, (whole, name: string) => vars && name in vars ? String(vars[name]) : whole);
-
-/**
- * Pure pieces of Snippets: the saved replies, every change to them, placeholder expansion and
- * search. No Discord or Evi runtime imports, so tests can run all of it. Every change returns a new
- * state (or the same object when nothing changed) and never mutates its input.
- */
 
 export interface Snippet {
     id: string;
@@ -197,8 +197,6 @@ export function suggestName(state: SnippetState, text: string) {
     return uniqueName(state, name || words[0]?.slice(0, 24) || "Snippet");
 }
 
-// ---- Placeholders -------------------------------------------------------------------------------
-
 export const PLACEHOLDERS = [
     { key: "user", description: "The person you're replying to, or the other person in a DM" },
     { key: "me", description: "Your own display name" },
@@ -246,8 +244,6 @@ export function dateValues(now: Date, locale?: string): Pick<PlaceholderValues, 
         time: now.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" }),
     };
 }
-
-// ---- Search -------------------------------------------------------------------------------------
 
 const fold = (s: string) => s.toLocaleLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
@@ -308,7 +304,8 @@ export function resolveSnippet(state: SnippetState, input: unknown, say: Say = e
     if (!state.snippets.length) return { error: say("err.none") };
     const value = typeof input === "string" ? input.trim() : "";
     const list = (items: Snippet[]) => items.slice(0, 10).map(s => `\`${s.name}\``).join(", ") + (items.length > 10 ? say("err.more", { n: items.length - 10 }) : "");
-    if (!value) return { error: say("err.which", { list: list([...state.snippets].sort(compareByName)) }) };
+    const listAll = () => list([...state.snippets].sort(compareByName));
+    if (!value) return { error: say("err.which", { list: listAll() }) };
 
     const exact = getSnippet(state, value) ?? findByName(state, value);
     if (exact) return { snippet: exact };
@@ -322,7 +319,7 @@ export function resolveSnippet(state: SnippetState, input: unknown, say: Say = e
 
     const close = matches.length ? matches.map(m => m.snippet) : searchSnippets(state, value);
     if (close.length) return { error: say("err.noneCalledClose", { value, list: list(close) }) };
-    return { error: say("err.noneCalled", { value, list: list([...state.snippets].sort(compareByName)) }) };
+    return { error: say("err.noneCalled", { value, list: listAll() }) };
 }
 
 /**
@@ -333,8 +330,6 @@ export function commandChoices(state: SnippetState): { name: string; value: stri
     if (!state.snippets.length || state.snippets.length > MAX_CHOICES) return undefined;
     return [...state.snippets].sort(compareByName).map(s => ({ name: s.name, value: s.id }));
 }
-
-// ---- Chat bar button ----------------------------------------------------------------------------
 
 /**
  * ChannelTextAreaButtons pushes its buttons into an array, the send button last:

@@ -76,9 +76,11 @@ function store(name: string): any {
 const selfId = (): string | undefined => store("UserStore")?.getCurrentUser?.()?.id;
 const getChannel = (id: string | null | undefined) => id ? store("ChannelStore")?.getChannel?.(id) : undefined;
 const guildOf = (channel: any): string | null => channel?.guild_id ?? channel?.getGuildId?.() ?? null;
+const voiceChannelId = (): string | null => (selectedChannels ??= store("SelectedChannelStore"))?.getVoiceChannelId?.() ?? null;
 
 function nameOf(userId: string, guildId: string | null) {
-    const nick = guildId ? store("GuildMemberStore")?.getNick?.(guildId, userId) ?? store("GuildMemberStore")?.getMember?.(guildId, userId)?.nick : undefined;
+    const members = guildId ? store("GuildMemberStore") : undefined;
+    const nick = guildId ? members?.getNick?.(guildId, userId) ?? members?.getMember?.(guildId, userId)?.nick : undefined;
     if (nick) return nick;
     const friendNick = store("RelationshipStore")?.getNickname?.(userId);
     if (friendNick) return friendNick;
@@ -103,17 +105,17 @@ function avatarOf(userId: string, guildId: string | null | undefined): string | 
 /** Reads the stores and feeds the log. `moves` comes from a VOICE_STATE_UPDATES payload. */
 function sync(moves?: Map<string, Move>) {
     if (!log || !context) return;
-    const voiceChannelId: string | null = (selectedChannels ??= store("SelectedChannelStore"))?.getVoiceChannelId?.() ?? null;
-    if (!voiceChannelId && !log.current) return;
+    const channelId = voiceChannelId();
+    if (!channelId && !log.current) return;
     const voice = store("VoiceStateStore");
-    const channel = getChannel(voiceChannelId);
+    const channel = getChannel(channelId);
     const guildId = guildOf(channel);
     const me = selfId();
     const s = context.settings.all;
     const added = log.sync({
-        channelId: voiceChannelId,
+        channelId,
         guildId,
-        snapshot: voiceChannelId ? snapshotOf(voice?.getVoiceStatesForChannel?.(voiceChannelId), me) : {},
+        snapshot: channelId ? snapshotOf(voice?.getVoiceStatesForChannel?.(channelId), me) : {},
         selfId: me,
         options: { moves: s.moves, streams: s.streams, muteDeafen: s.muteDeafen },
         moveOf: userId => moves?.get(userId) ?? { to: voice?.getVoiceState?.(guildId, userId)?.channelId ?? null },
@@ -137,15 +139,11 @@ function movesOf(action: FluxAction): Map<string, Move> {
     return moves;
 }
 
-// ---- Clipboard ----------------------------------------------------------------------------------
-
 async function copy(text: string) {
     const native = (window as any).DiscordNative?.clipboard;
     if (native?.copy) native.copy(text);
     else await navigator.clipboard.writeText(text);
 }
-
-// ---- The dialog ---------------------------------------------------------------------------------
 
 let closeOpen: CloseLayer | undefined;
 
@@ -317,8 +315,6 @@ function LogDialog({ log, onClose }: { log: VoiceLog; onClose(): void; }) {
     );
 }
 
-// ---- The panel button ---------------------------------------------------------------------------
-
 function LogIcon() {
     return (
         <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
@@ -486,8 +482,7 @@ export default definePlugin({
         /** The session you're in, while you're still in its channel: updates elsewhere can't change it */
         const settled = () => {
             const session = current.current;
-            const channelId = (selectedChannels ??= store("SelectedChannelStore"))?.getVoiceChannelId?.() ?? null;
-            return session && session.channelId === channelId ? session : undefined;
+            return session && session.channelId === voiceChannelId() ? session : undefined;
         };
         const onVoiceStates = (action: FluxAction) => {
             const session = settled();

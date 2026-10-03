@@ -22,15 +22,15 @@ const td = (key: string, vars?: Record<string, string | number>) => (t as (key: 
 /** A permission's name in Discord's language */
 const permName = (p: { key: string; }) => p.key.startsWith("BIT_") ? t("perm.unknown", { bit: p.key.slice(4) }) : td(`perm.${p.key}`);
 
-// ---- Discord's stores ---------------------------------------------------------------------------
-
-const store = (name: string): any => {
+const attempt = <T,>(fn: () => T): T | undefined => {
     try {
-        return getStore(name);
+        return fn();
     } catch {
         return undefined;
     }
 };
+
+const store = (name: string): any => attempt(() => getStore(name));
 
 interface Role extends RoleInput {
     name: string;
@@ -78,14 +78,6 @@ function userName(guildId: string | undefined, userId: string) {
     return nick || user?.globalName || user?.username || userId;
 }
 
-const attempt = <T,>(fn: () => T): T | undefined => {
-    try {
-        return fn();
-    } catch {
-        return undefined;
-    }
-};
-
 /** Threads take their parent's overwrites */
 function overwritesOf(channel: any): OverwriteInput[] {
     const source = channel?.isThread?.() ? getChannel(channel.parent_id) ?? channel : channel;
@@ -95,8 +87,7 @@ function overwritesOf(channel: any): OverwriteInput[] {
 
 const channelLabel = (channel: any) => channel?.name ? `#${channel.name}` : t("this.channel");
 
-// ---- Categories, in the order Discord's role editor uses ----------------------------------------
-
+/** Categories, in the order Discord's role editor uses */
 const CATEGORIES: [string, string[]][] = [
     ["General", ["VIEW_CHANNEL", "MANAGE_CHANNELS", "MANAGE_ROLES", "CREATE_GUILD_EXPRESSIONS", "MANAGE_GUILD_EXPRESSIONS", "VIEW_AUDIT_LOG", "VIEW_GUILD_INSIGHTS", "VIEW_CREATOR_MONETIZATION_ANALYTICS", "MANAGE_WEBHOOKS", "MANAGE_GUILD"]],
     ["Membership", ["CREATE_INSTANT_INVITE", "CHANGE_NICKNAME", "MANAGE_NICKNAMES", "KICK_MEMBERS", "BAN_MEMBERS", "MODERATE_MEMBERS"]],
@@ -115,8 +106,6 @@ function byCategory<T extends { key: string; }>(items: T[]): [string, T[]][] {
     for (const list of groups.values()) list.sort((a, b) => (ORDER.get(a.key)?.i ?? 99) - (ORDER.get(b.key)?.i ?? 99));
     return [...groups].filter(([, list]) => list.length);
 }
-
-// ---- The dialog ---------------------------------------------------------------------------------
 
 type State = "allow" | "deny" | "none";
 
@@ -343,8 +332,6 @@ function Row({ item }: { item: Item; }) {
     );
 }
 
-// ---- What each menu shows -----------------------------------------------------------------------
-
 function sourceChip(source: Source, granted: boolean, guildId: string, roles: Map<string, Role>): Chip | undefined {
     const name = (id: string) => roles.get(id)?.name ?? t("chip.deletedRole");
     switch (source.kind) {
@@ -486,8 +473,6 @@ function viewGuild(guild: any) {
     }, sections);
 }
 
-// ---- Styles -------------------------------------------------------------------------------------
-
 const css = `
 .evi-pv-scrim { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; background: rgba(0,0,0,.7); }
 .evi-pv-modal {
@@ -586,20 +571,29 @@ const css = `
 }
 `;
 
-// ---- Menus --------------------------------------------------------------------------------------
-
-const item = (id: string, action: () => void) => (
-    <Menu.Group key={`${id}-group`}>
-        <Menu.Item id={id} label={t("menu.view")} action={action} />
-    </Menu.Group>
-);
-
 export default definePlugin({
     start(ctx) {
         ctx.addStyle(css);
         ctx.onDispose(() => closeOpen?.({ instant: true }));
 
         const fail = () => ctx.toast(t("toast.fail"), { type: "failure" });
+        /** A menu item whose action reports failure (false or a throw) with a toast */
+        const item = (id: string, what: string, view: () => boolean | void) => (
+            <Menu.Group key={`${id}-group`}>
+                <Menu.Item
+                    id={id}
+                    label={t("menu.view")}
+                    action={() => {
+                        try {
+                            if (view() === false) fail();
+                        } catch (err) {
+                            ctx.logger.error(`Viewing ${what} permissions failed`, err);
+                            fail();
+                        }
+                    }}
+                />
+            </Menu.Group>
+        );
 
         ctx.contextMenu("user-context", (children, props) => {
             const userId: string | undefined = props.user?.id;
@@ -611,14 +605,7 @@ export default definePlugin({
                 const viewed = getChannel(store("SelectedChannelStore")?.getChannelId?.());
                 if (viewed?.guild_id === guildId) channel = viewed;
             }
-            children.push(item("evi-pv-user", () => {
-                try {
-                    if (!viewMember(guildId, userId, channel)) fail();
-                } catch (err) {
-                    ctx.logger.error("Viewing member permissions failed", err);
-                    fail();
-                }
-            }));
+            children.push(item("evi-pv-user", "member", () => viewMember(guildId, userId, channel)));
         });
 
         // Right-clicking a role pill (Developer Mode) or a role in server settings
@@ -628,40 +615,19 @@ export default definePlugin({
             if (!roleId || !guildId) return;
             const role = guildRole(guildId, roleId);
             if (!role) return;
-            children.push(item("evi-pv-role", () => {
-                try {
-                    viewRole(guildId, role);
-                } catch (err) {
-                    ctx.logger.error("Viewing role permissions failed", err);
-                    fail();
-                }
-            }));
+            children.push(item("evi-pv-role", "role", () => viewRole(guildId, role)));
         });
 
         ctx.contextMenu(["channel-context", "thread-context"], (children, props) => {
             const channel = props.channel;
             if (!channel?.guild_id) return;
-            children.push(item("evi-pv-channel", () => {
-                try {
-                    viewChannel(channel);
-                } catch (err) {
-                    ctx.logger.error("Viewing channel permissions failed", err);
-                    fail();
-                }
-            }));
+            children.push(item("evi-pv-channel", "channel", () => viewChannel(channel)));
         });
 
         ctx.contextMenu("guild-context", (children, props) => {
             const guild = props.guild;
             if (!guild?.id) return;
-            children.push(item("evi-pv-guild", () => {
-                try {
-                    viewGuild(getGuild(guild.id) ?? guild);
-                } catch (err) {
-                    ctx.logger.error("Viewing server permissions failed", err);
-                    fail();
-                }
-            }));
+            children.push(item("evi-pv-guild", "server", () => viewGuild(getGuild(guild.id) ?? guild)));
         });
     },
 

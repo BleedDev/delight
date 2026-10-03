@@ -84,8 +84,6 @@ let rates: Rates | undefined;
 type Storage = { get(key: string): unknown; set(key: string, value: unknown): void; };
 const storage = () => context?.settings as unknown as Storage | undefined;
 
-// ---- Re-render signal ---------------------------------------------------------------------------
-
 let version = 0;
 const listeners = new Set<() => void>();
 const bump = () => {
@@ -98,8 +96,6 @@ function useVersion() {
         return () => void listeners.delete(cb);
     }, () => version);
 }
-
-// ---- Preferences --------------------------------------------------------------------------------
 
 const tr: Prefs["tr"] = (key, vars) => t(key, vars);
 
@@ -139,8 +135,6 @@ function worth(found: Found, p: Prefs, k: Kinds) {
     return found.kind === "currency" && k.currency && !p.rates && found.code !== p.currency;
 }
 
-// ---- Rates --------------------------------------------------------------------------------------
-
 type Source = { rates?: Record<string, number>; error?: string; };
 
 async function loadRates() {
@@ -163,8 +157,6 @@ async function loadRates() {
     storage()?.set(RATES_KEY, { ...rates, at: Date.now() });
     bump();
 }
-
-// ---- The underline ------------------------------------------------------------------------------
 
 function Converted({ text, found }: { text: string; found: Found; }) {
     useVersion();

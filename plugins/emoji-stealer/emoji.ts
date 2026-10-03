@@ -29,8 +29,6 @@ export const ADMINISTRATOR = 1n << 3n;
 export const MANAGE_GUILD_EXPRESSIONS = 1n << 30n;
 export const CREATE_GUILD_EXPRESSIONS = 1n << 43n;
 
-// ---- Names --------------------------------------------------------------------------------------
-
 /**
  * A name Discord takes for an emoji: 2 to 32 of A-Z, a-z, 0-9 and _. Discord's pickers suffix
  * duplicate names with "~1", which is dropped; anything else invalid becomes "_".
@@ -58,9 +56,10 @@ export function sanitizeStickerName(raw: string | null | undefined, fallback = "
     return name.slice(0, STICKER_NAME_MAX);
 }
 
-export const isValidStickerName = (name: string) => name.trim().length >= STICKER_NAME_MIN && name.trim().length <= STICKER_NAME_MAX;
-
-// ---- Slots --------------------------------------------------------------------------------------
+export function isValidStickerName(name: string) {
+    const length = name.trim().length;
+    return length >= STICKER_NAME_MIN && length <= STICKER_NAME_MAX;
+}
 
 export interface GuildLimitsInput {
     premiumTier?: number | null;
@@ -116,8 +115,6 @@ export function stickerSlots(guild: GuildLimitsInput, stickers: readonly unknown
     return { limit, used, left: Math.max(0, limit - used) };
 }
 
-// ---- Permissions --------------------------------------------------------------------------------
-
 export function toBits(value: unknown): bigint {
     if (typeof value === "bigint") return value;
     if (typeof value === "number" && Number.isFinite(value)) return BigInt(Math.trunc(value));
@@ -146,8 +143,6 @@ export function canAddExpressions(input: ExpressionPermissionInput): boolean {
     for (const id of input.memberRoleIds) perms |= toBits(byId.get(id)?.permissions);
     return !!(perms & (ADMINISTRATOR | CREATE_GUILD_EXPRESSIONS | MANAGE_GUILD_EXPRESSIONS));
 }
-
-// ---- What was right-clicked ---------------------------------------------------------------------
 
 export interface ParsedEmoji {
     kind: "emoji";
@@ -312,8 +307,6 @@ export function expressionFromMenuProps(props: Record<string, any> | null | unde
     return completeFromMessage(found, props.message);
 }
 
-// ---- URLs ---------------------------------------------------------------------------------------
-
 export const emojiUrl = (id: string, animated: boolean, size?: number) =>
     `https://cdn.discordapp.com/emojis/${id}.${animated ? "gif" : "png"}${size ? `?size=${size}` : ""}`;
 
@@ -329,8 +322,6 @@ export const canCopySticker = (formatType?: number) => formatType !== StickerFor
 export function stickerMime(formatType?: number) {
     return formatType === StickerFormat.GIF ? "image/gif" : "image/png";
 }
-
-// ---- Errors -------------------------------------------------------------------------------------
 
 /**
  * Discord's reason for a failed request. Its HTTP errors carry the response body: usually

@@ -6,14 +6,15 @@
  * Hovering or focusing a toast holds it, and so does Discord being in the background: its timer is a
  * CSS animation on the bar at its foot, paused by the same rules, so what you see is what's left.
  */
-import { EviNotification, freshArrivals, NotificationKind } from "@shared/notifications";
+import { EviNotification, freshArrivals } from "@shared/notifications";
 
 import { Inbox } from "../inbox";
 import { t, timeAgo as ago, useLocale } from "../i18n";
 import { Settings } from "../settings";
-import { createRoot, React } from "../webpack/common";
-import { Icon, IconButton, IconName, Text, useExit, useStore } from "./components";
-import { DiscordContext } from "./discordContext";
+import { React } from "../webpack/common";
+import { Icon, IconButton, Text, useExit, useStore } from "./components";
+import { mountRoot } from "./discordContext";
+import { kindIcon } from "./InboxTab";
 import { ensureStyles, SettingsUI } from "./index";
 import { openStore, showTab } from "./nav";
 
@@ -21,17 +22,6 @@ import { openStore, showTab } from "./nav";
 const VISIBLE = 3;
 /** A batch bigger than this arriving together shows as one summary instead */
 const BATCH = 3;
-
-const kindIcon: Record<NotificationKind, IconName> = {
-    review: "star",
-    submission: "puzzle",
-    theme: "palette",
-    follow: "people",
-    api: "code",
-    wishlist: "heart",
-    fixed: "circleCheck",
-    update: "download",
-};
 
 type Toast =
     | { key: string; kind: "one"; n: EviNotification; }
@@ -177,8 +167,5 @@ export function startLiveToasts() {
         emit();
     });
 
-    const container = document.createElement("div");
-    container.className = "dl-root";
-    document.body.append(container);
-    createRoot(container).render(<DiscordContext><Stack /></DiscordContext>);
+    mountRoot(<Stack />, "dl-root");
 }

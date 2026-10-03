@@ -1,18 +1,17 @@
 import { IPC, WallpaperPickResult, WallpaperReadResult } from "@shared/ipc";
 import { extensionOf, MAX_WALLPAPER_BYTES, WALLPAPER_EXTENSIONS, wallpaperKind, wallpaperMime } from "@shared/wallpaper";
-import { app, BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent, powerMonitor, webContents } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent, powerMonitor } from "electron";
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from "fs";
 import { join } from "path";
 
 import { DATA_DIR } from "./paths";
+import { broadcast, errorOf } from "./util";
 
 /** Holds one file at most: the wallpaper, copied here so it survives the original being moved */
 const WALLPAPER_DIR = join(DATA_DIR, "wallpaper");
 
 /** Tests can't click through the native dialog: with this set, it answers with this path (like EVI_TEST_BACKUP_PATH) */
 const TEST_PATH = process.env.EVI_TEST_WALLPAPER_PATH;
-
-const errorOf = (err: unknown) => String((err as Error)?.message ?? err);
 
 async function pickPath(e: IpcMainInvokeEvent) {
     if (TEST_PATH) return TEST_PATH;
@@ -60,12 +59,6 @@ function copyIn(source: string): WallpaperPickResult {
     return { ok: true, file, kind };
 }
 
-function broadcastPower(onBattery: boolean) {
-    for (const wc of webContents.getAllWebContents()) {
-        if (!wc.isDestroyed()) wc.send(IPC.POWER_CHANGED, onBattery);
-    }
-}
-
 export function initWallpaper() {
     ipcMain.handle(IPC.WALLPAPER_PICK, async (e): Promise<WallpaperPickResult> => {
         try {
@@ -94,7 +87,7 @@ export function initWallpaper() {
     // powerMonitor can only be used once the app is ready; the page asks long after that
     ipcMain.handle(IPC.POWER_ON_BATTERY, () => powerMonitor.isOnBatteryPower());
     app.whenReady().then(() => {
-        powerMonitor.on("on-battery", () => broadcastPower(true));
-        powerMonitor.on("on-ac", () => broadcastPower(false));
+        powerMonitor.on("on-battery", () => broadcast(IPC.POWER_CHANGED, true));
+        powerMonitor.on("on-ac", () => broadcast(IPC.POWER_CHANGED, false));
     });
 }

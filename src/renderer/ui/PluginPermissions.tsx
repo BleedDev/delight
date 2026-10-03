@@ -20,8 +20,6 @@ import { HotfixNote, PulledNotice, ReportRow } from "./Trust";
 const riskTone: Record<Risk, Tone> = { low: "success", medium: "warning", high: "danger" };
 const riskIcon: Record<Risk, IconName> = { low: "circleCheck", medium: "info", high: "warning" };
 
-// ---- declared ---------------------------------------------------------------------------------
-
 const flagIcon: Record<PermissionFlag, IconName> = { readMessages: "search", sendMessages: "pencil", changeSettings: "settings" };
 
 function DeclaredRow({ icon, title, hint, details, risk, permission }: {
@@ -146,8 +144,6 @@ export function PermissionsList({ report, pending, error, note }: {
     );
 }
 
-// ---- installed plugins ------------------------------------------------------------------------
-
 export function reportForInstalled(state: PluginState) {
     return analyzePermissions({
         code: state.code,
@@ -246,8 +242,6 @@ export function PluginDetailsButton({ state }: { state: PluginState; }) {
         </>
     );
 }
-
-// ---- store plugins ----------------------------------------------------------------------------
 
 const previews = new Map<string, Promise<StorePreviewResult>>();
 

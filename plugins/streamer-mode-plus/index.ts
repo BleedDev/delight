@@ -160,8 +160,8 @@ function update(manual = false, quiet = false) {
     const auto = autoActive(mode, state);
 
     // A manual toggle lasts until the automatic state flips
-    if (lastAuto !== undefined && auto !== lastAuto) override = null;
     const autoChanged = lastAuto !== undefined && auto !== lastAuto;
+    if (autoChanged) override = null;
     lastAuto = auto;
 
     const active = shouldActivate(mode, state, override);

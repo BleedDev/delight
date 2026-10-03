@@ -1,7 +1,7 @@
 import { AddThemeResult, IPC, ThemeChange, ThemePayload, ThemeSaveResult } from "@shared/ipc";
 import { isEditorTheme, themeSlug } from "@shared/themeEditor";
 import { isPlainThemeFileName, isThemeFile, MAX_THEME_BYTES, parseThemeMeta, themeFileName, whyNotCss } from "@shared/themes";
-import { ipcMain, webContents } from "electron";
+import { ipcMain } from "electron";
 import { existsSync, FSWatcher, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, watch, writeFileSync } from "fs";
 import { basename, join } from "path";
 
@@ -9,6 +9,7 @@ import { downloadHttps } from "./download";
 import { mt } from "./locale";
 import { DATA_DIR, THEMES_DIR } from "./paths";
 import { SafeMode } from "./safeMode";
+import { broadcast, errorOf } from "./util";
 
 const themes = new Map<string, ThemePayload>();
 
@@ -23,11 +24,7 @@ function readTheme(file: string): ThemePayload | null {
     }
 }
 
-function broadcast(change: ThemeChange) {
-    for (const wc of webContents.getAllWebContents()) {
-        if (!wc.isDestroyed()) wc.send(IPC.THEME_CHANGED, change);
-    }
-}
+const announce = (change: ThemeChange) => broadcast(IPC.THEME_CHANGED, change);
 
 export function reloadTheme(file: string) {
     const previous = themes.get(file);
@@ -38,13 +35,13 @@ export function reloadTheme(file: string) {
     if (!next) {
         if (previous) {
             themes.delete(file);
-            broadcast({ type: "remove", file });
+            announce({ type: "remove", file });
         }
         return;
     }
     themes.set(file, next);
     SafeMode.recordChange({ kind: "theme", id: file, action: previous ? "updated" : "installed" });
-    broadcast({ type: "upsert", theme: next });
+    announce({ type: "upsert", theme: next });
 }
 
 /** Re-reads every theme, including ones that disappeared while the watcher was down */
@@ -179,7 +176,7 @@ export function deleteTheme(file: unknown): { ok: true; } | { ok: false; error: 
     try {
         rmSync(path);
     } catch (err) {
-        return { ok: false, error: String((err as Error)?.message ?? err) };
+        return { ok: false, error: errorOf(err) };
     }
     // Don't wait for the watcher: broadcasts the removal like it would
     reloadTheme(file);

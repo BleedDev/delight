@@ -47,8 +47,6 @@ function canSendHere(channel: any): boolean {
     return canSendVoice(isPrivate, p => !!perms?.can?.(p, channel));
 }
 
-// ---- Recording ----------------------------------------------------------------------------------
-
 interface Recording { ogg: Uint8Array; url: string; duration: number; wave: Uint8Array; }
 
 type State =
@@ -130,8 +128,6 @@ class Recorder {
     }
 }
 
-// ---- Sending ------------------------------------------------------------------------------------
-
 function send(channelId: string, rec: Recording, onProgress: (p: number) => void): Promise<void> {
     const CloudUpload = findCloudUpload();
     const client = http();
@@ -163,8 +159,6 @@ function send(channelId: string, rec: Recording, onProgress: (p: number) => void
         upload.upload();
     });
 }
-
-// ---- The recorder popover -----------------------------------------------------------------------
 
 const ICONS = {
     mic: "M12 2a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4ZM6 11a1 1 0 1 0-2 0 8 8 0 0 0 7 7.94V21H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.06A8 8 0 0 0 20 11a1 1 0 1 0-2 0 6 6 0 0 1-12 0Z",

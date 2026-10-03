@@ -124,8 +124,6 @@ if (!values.only) {
     entries.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// ---- themes ---------------------------------------------------------------------------------------
-
 const themeEntries: ThemeEntry[] = [];
 const themesSrc = join(ROOT, "themes");
 const themeFiles = values.only || !existsSync(themesSrc) ? [] : readdirSync(themesSrc).filter(f => f.endsWith(".css")).sort();
@@ -144,6 +142,7 @@ for (const name of themeFiles) {
     const version = meta.version ?? "1.0.0";
     // A thank-you for supporters (@supporters true): listed for everyone, installable by supporters
     const supporters = /^\s*\/\*[\s\S]*?@supporters[ \t]+true\b/.test(css);
+    const sha256 = await sha256Hex(raw);
 
     themeEntries.push({
         id,
@@ -159,7 +158,7 @@ for (const name of themeFiles) {
         ...supporters && { supporters: true },
         ...meta.locales && { locales: meta.locales },
         minEviVersion: pkg.version,
-        file: { url: versioned(`${themesBase}/${storeThemeFile(id)}`, await sha256Hex(raw)), sha256: await sha256Hex(raw) },
+        file: { url: versioned(`${themesBase}/${storeThemeFile(id)}`, sha256), sha256 },
     });
     cpSync(join(themesSrc, name), join(themesDir, storeThemeFile(id)));
 }

@@ -9,21 +9,21 @@
  */
 import { describeGrowth, permissionGrowth, readPermissions } from "@shared/declaredPermissions";
 import { imageDataUrl } from "@shared/images";
-import { cleanSwitches, StorePreviewResult } from "@shared/pluginPermissions";
 import { IPC, isPluginEnabled, PluginManifest, PreviewMediaResult } from "@shared/ipc";
+import { cleanSwitches, StorePreviewResult } from "@shared/pluginPermissions";
 import {
     betaOf,
     DEFAULT_REGISTRY_URL,
-    MAX_PREVIEW_BYTES,
-    previewType,
     InstalledPlugin,
     InstalledTheme,
     isPluginId,
     MAX_FILE_BYTES,
     MAX_IMAGE_BYTES,
+    MAX_PREVIEW_BYTES,
     MAX_REGISTRY_BYTES,
     meetsMinEvi,
     parseRegistry,
+    previewType,
     RegistryEntry,
     STORE_MARKER,
     StoreFileName,
@@ -46,9 +46,9 @@ import { basename, dirname, join, resolve } from "path";
 
 import { confirmWithUser } from "./confirm";
 import { downloadHttps } from "./download";
+import { mt } from "./locale";
 import { DATA_DIR, PLUGINS_DIR, THEMES_DIR } from "./paths";
 import { consentToRun, hideDevPlugin, pluginLocation, refreshUserPlugin, setRemoved } from "./plugins";
-import { mt } from "./locale";
 import { authorBanners } from "./reports";
 import { settings } from "./settings";
 import { reloadTheme } from "./themes";
@@ -207,6 +207,21 @@ function decodeText(name: string, data: Uint8Array) {
     }
 }
 
+/** Downloads one file a registry entry lists and checks it against the registry's hash */
+async function downloadVerified(name: string, file: { url: string; sha256: string; }) {
+    const download = await downloadHttps(file.url, MAX_FILE_BYTES, { what: name, cache: "no-store" });
+    if (!download.ok) throw new Error(`${name}: ${download.error}`);
+    const badHash = await whyNotHash(name, download.body, file.sha256);
+    if (badHash) throw new Error(badHash);
+    return download.body;
+}
+
+function assertMeetsMinEvi(entry: { name: string; minEviVersion?: string; }) {
+    if (!meetsMinEvi(EVI_VERSION, entry.minEviVersion)) {
+        throw new Error(mt("main.store.needsEvi", { name: entry.name, min: entry.minEviVersion ?? "", version: EVI_VERSION }));
+    }
+}
+
 /** What the installed copy of a store plugin declares, read from its own manifest on disk */
 function installedPermissions(dir: string) {
     try {
@@ -222,9 +237,7 @@ async function install(id: string, sender: WebContents, pageAllowed: { native: b
     // says) and this Evi can run it; checked and held to exactly like a stable version
     const beta = settings.pluginBetas?.includes(id) ? betaOf(stable) : undefined;
     const entry = beta && meetsMinEvi(EVI_VERSION, beta.minEviVersion) ? beta : stable;
-    if (!meetsMinEvi(EVI_VERSION, entry.minEviVersion)) {
-        throw new Error(mt("main.store.needsEvi", { name: entry.name, min: entry.minEviVersion ?? "", version: EVI_VERSION }));
-    }
+    assertMeetsMinEvi(entry);
 
     const dir = join(PLUGINS_DIR, id);
     const existing = existsSync(dir);
@@ -270,11 +283,7 @@ async function install(id: string, sender: WebContents, pageAllowed: { native: b
     const files = new Map<StoreFileName, Uint8Array>();
     for (const [i, name] of names.entries()) {
         report({ id, phase: "downloading", done: i, total: names.length });
-        const download = await downloadHttps(entry.files[name]!.url, MAX_FILE_BYTES, { what: name, cache: "no-store" });
-        if (!download.ok) throw new Error(`${name}: ${download.error}`);
-        const badHash = await whyNotHash(name, download.body, entry.files[name]!.sha256);
-        if (badHash) throw new Error(badHash);
-        files.set(name, download.body);
+        files.set(name, await downloadVerified(name, entry.files[name]!));
     }
 
     report({ id, phase: "verifying", done: names.length, total: names.length });
@@ -366,14 +375,10 @@ async function uninstall(id: string, sender: WebContents, report: (p: StoreProgr
     return { ok: true, id, version };
 }
 
-// ---- themes -----------------------------------------------------------------------------------
-
 async function installTheme(id: string, report: (p: StoreProgress) => void): Promise<StoreResult> {
     const entry = (await current()).themes.get(id);
     if (!entry) throw new Error(mt("main.store.notInStore", { id }));
-    if (!meetsMinEvi(EVI_VERSION, entry.minEviVersion)) {
-        throw new Error(mt("main.store.needsEvi", { name: entry.name, min: entry.minEviVersion ?? "", version: EVI_VERSION }));
-    }
+    assertMeetsMinEvi(entry);
 
     const file = storeThemeFile(id);
     const record = readThemesRecord();
@@ -419,8 +424,6 @@ function uninstallTheme(id: string, report: (p: StoreProgress) => void): StoreRe
     return { ok: true, id, version: installed.version };
 }
 
-// ---- screenshots ------------------------------------------------------------------------------
-
 const images = new Map<string, Promise<StoreImageResult>>();
 
 /**
@@ -449,8 +452,6 @@ async function fetchImage(url: unknown): Promise<StoreImageResult> {
     }
     return pending;
 }
-
-// ---- preview videos and GIFs -----------------------------------------------------------------------
 
 const media = new Map<string, Promise<PreviewMediaResult>>();
 
@@ -488,8 +489,6 @@ async function fetchPreviewMedia(url: unknown): Promise<PreviewMediaResult> {
     return pending;
 }
 
-// ---- previews ---------------------------------------------------------------------------------
-
 const previews = new Map<string, Promise<StorePreviewResult>>();
 
 /**
@@ -509,14 +508,7 @@ async function previewPlugin(id: unknown): Promise<StorePreviewResult> {
     const key = `${id}:${entry.files["manifest.json"].sha256}:${entry.files["index.js"].sha256}`;
     let pending = previews.get(key);
     if (!pending) {
-        const text = async (name: "manifest.json" | "index.js") => {
-            const file = entry.files[name];
-            const download = await downloadHttps(file.url, MAX_FILE_BYTES, { what: name, cache: "no-store" });
-            if (!download.ok) throw new Error(`${name}: ${download.error}`);
-            const badHash = await whyNotHash(name, download.body, file.sha256);
-            if (badHash) throw new Error(badHash);
-            return decodeText(name, download.body);
-        };
+        const text = async (name: "manifest.json" | "index.js") => decodeText(name, await downloadVerified(name, entry.files[name]));
         pending = (async (): Promise<StorePreviewResult> => {
             try {
                 const [manifestText, code] = await Promise.all([text("manifest.json"), text("index.js")]);

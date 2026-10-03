@@ -66,8 +66,6 @@ const MIN_STRIP_WIDTH = 180;
 
 let ctx: PluginContext<Settings> | undefined;
 
-// ---- State ----------------------------------------------------------------------------------------
-
 /** What we changed on a video, undone on stop */
 interface Touched { rate?: boolean; loop?: boolean; pip?: boolean; }
 
@@ -97,8 +95,6 @@ function touch(video: HTMLVideoElement, change: Touched) {
     touched.set(video, { ...touched.get(video), ...change });
 }
 
-// ---- Finding videos -------------------------------------------------------------------------------
-
 function isEligible(video: HTMLVideoElement): boolean {
     if (!video.isConnected || video.srcObject || video.classList.contains("media-engine-video")) return false;
     if (!(video.currentSrc || video.src || video.querySelector("source"))) return false;
@@ -119,8 +115,6 @@ function videoFor(target: EventTarget | null): HTMLVideoElement | null {
 
 const playerOf = (video: HTMLVideoElement) => video.closest<HTMLElement>(PLAYER);
 const playerButton = (video: HTMLVideoElement, name: string) => playerOf(video)?.querySelector<HTMLElement>(PLAYER_BUTTON(name)) ?? null;
-
-// ---- Per-video setup ------------------------------------------------------------------------------
 
 function rememberedSpeed(): number {
     return clampSpeed(storage()?.get(LAST_SPEED_KEY) ?? 1);
@@ -185,8 +179,6 @@ function attach(video: HTMLVideoElement) {
     }
     if (!video.paused) sampleFps(video);
 }
-
-// ---- Actions --------------------------------------------------------------------------------------
 
 function togglePlay(video: HTMLVideoElement) {
     const button = playerButton(video, "play-pause");
@@ -277,8 +269,6 @@ function perform(action: Action, video: HTMLVideoElement) {
 
 /** Actions that toggle something, which a held key shouldn't repeat */
 const NO_REPEAT: ReadonlySet<Action> = new Set(["togglePlay", "mute", "fullscreen", "pip"]);
-
-// ---- Overlay --------------------------------------------------------------------------------------
 
 let root: HTMLDivElement | undefined;
 let strip: HTMLDivElement | undefined;
@@ -579,8 +569,6 @@ function setHovered(video: HTMLVideoElement | null) {
     }
 }
 
-// ---- Document listeners ---------------------------------------------------------------------------
-
 function onPointerOver(e: PointerEvent) {
     if (root?.contains(e.target as Node)) return;
     setHovered(videoFor(e.target));
@@ -645,8 +633,6 @@ function onKeyDown(e: KeyboardEvent) {
         ctx.logger.error(`Couldn't ${action}`, err);
     }
 }
-
-// ---- Plugin ---------------------------------------------------------------------------------------
 
 function restore() {
     for (const [video, change] of touched) {

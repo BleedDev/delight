@@ -37,7 +37,7 @@ function isStore(value: any) {
 }
 
 /** Every patch currently registered that targets this module */
-function patchesFor(id: string, source: string): SourcePatch[] {
+function patchesFor(source: string): SourcePatch[] {
     return getPatchRecords().map(r => r.patch).filter(p => matchesFind(source, p.find));
 }
 
@@ -118,7 +118,7 @@ function replaceModule(id: string): LiveOutcome {
     if (!original) return { id, ok: false, reason: "its factory is gone" };
     const source = Function.prototype.toString.call(original);
 
-    const reason = unsafeReason(module, patchesFor(id, source));
+    const reason = unsafeReason(module, patchesFor(source));
     if (reason) return { id, ok: false, reason };
 
     const { factory } = applySourcePatches(id, original, () => source, true);

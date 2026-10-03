@@ -174,6 +174,12 @@ function reconcileAudio(off = false) {
     if ([...ours].join() !== before) saveMuted?.([...ours]);
 }
 
+function refreshDms() {
+    try {
+        dmSort?.emitChange?.();
+    } catch { }
+}
+
 /**
  * The DM list asks for its ids on every render. Each answer is kept for the array Discord handed us
  * and the version it was worked out under, so the same question isn't filtered again
@@ -273,9 +279,7 @@ export default definePlugin({
             pending = setTimeout(() => {
                 reconcileVoice();
                 reconcileAudio();
-                try {
-                    dmSort?.emitChange?.();
-                } catch { }
+                refreshDms();
             }, 0);
         };
         if (!relationships) ctx.logger.warn("RelationshipStore not found, only Discord's own blocked flags are used");
@@ -314,9 +318,7 @@ export default definePlugin({
             options = was && { ...was, active: false };
             reconcileVoice();
             reconcileAudio(true);
-            try {
-                dmSort?.emitChange?.();
-            } catch { }
+            refreshDms();
             hiddenVoice.clear();
             lastDmIn = lastDmOut = undefined;
             lastDmVersion = -1;

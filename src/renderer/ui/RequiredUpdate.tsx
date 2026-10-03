@@ -19,9 +19,8 @@ import { Settings } from "../settings";
 import { Store } from "../store";
 import { showToast } from "../toolkit/toasts";
 import { findStore } from "../webpack/find";
-import { createRoot, React } from "../webpack/common";
 import { Icon, IconButton, Text, useExit, useStore } from "./components";
-import { DiscordContext } from "./discordContext";
+import { mountRoot } from "./discordContext";
 import { ensureStyles } from "./index";
 
 const logger = new Logger("RequiredUpdate", "#f0b232");
@@ -49,7 +48,6 @@ let postponedUntil = 0;
 let usedLater = false;
 let inCall = false;
 let retryTimer: ReturnType<typeof setTimeout> | undefined;
-let tickTimer: ReturnType<typeof setInterval> | undefined;
 
 const listeners = new Set<() => void>();
 let version = 0;
@@ -168,8 +166,6 @@ async function check() {
     if (mustUpdate(required, EVI_VERSION)) void download();
 }
 
-// ---- the banner --------------------------------------------------------------------------------
-
 function message(p: Phase): { title: string; body: string; } {
     switch (p.kind) {
         case "downloading": return { title: t("required.title"), body: t("required.downloading") };
@@ -236,29 +232,14 @@ export function startRequiredUpdates() {
     if (started || !Native.required) return;
     started = true;
     ensureStyles();
-    const container = document.createElement("div");
-    container.className = "dl-root dl-announcements dl-required-host";
-    document.body.append(container);
-    host = container;
+    host = mountRoot(<Host />, "dl-root dl-announcements dl-required-host");
     listeners.add(placeHost);
-    createRoot(container).render(<DiscordContext><Host /></DiscordContext>);
 
     void check();
     setInterval(() => void check(), EVERY);
     Native.onRequiredChange?.(() => void check());
-    tickTimer = setInterval(() => {
+    setInterval(() => {
         tick();
         if (phase.kind !== "idle") placeHost();
     }, 1000);
 }
-
-/** For tests: where it is */
-export const RequiredUpdates = {
-    get phase() {
-        return phase;
-    },
-    check,
-    get tickTimer() {
-        return tickTimer;
-    },
-};

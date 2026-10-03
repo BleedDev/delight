@@ -16,12 +16,16 @@ pub const FLAVORS: [(&str, &str, &str); 4] = [
     ("development", "DiscordDevelopment", "Development"),
 ];
 
+fn flavor_entry(flavor: &str) -> Option<&'static (&'static str, &'static str, &'static str)> {
+    FLAVORS.iter().find(|f| f.0 == flavor)
+}
+
 pub fn flavor_folder(flavor: &str) -> &'static str {
-    FLAVORS.iter().find(|f| f.0 == flavor).map(|f| f.1).unwrap_or("Discord")
+    flavor_entry(flavor).map_or("Discord", |f| f.1)
 }
 
 pub fn flavor_label(flavor: &str) -> &'static str {
-    FLAVORS.iter().find(|f| f.0 == flavor).map(|f| f.2).unwrap_or("Discord")
+    flavor_entry(flavor).map_or("Discord", |f| f.2)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Debug)]
@@ -213,8 +217,6 @@ pub fn core_version(core_dir: &Path) -> Option<String> {
     let version = &main[start..start + len];
     (!version.is_empty() && version.len() < 40).then(|| version.to_string())
 }
-
-// ── Processes ──
 
 #[cfg(windows)]
 fn discord_processes(install: &DiscordInstall) -> Vec<u32> {

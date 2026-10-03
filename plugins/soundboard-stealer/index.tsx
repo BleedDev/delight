@@ -27,8 +27,6 @@ import { t } from "./strings";
 
 let context: PluginContext | undefined;
 
-// ---- Discord ------------------------------------------------------------------------------------
-
 const store = (name: string): any => {
     try {
         return getStore(name);
@@ -116,8 +114,10 @@ async function measure(bytes: Uint8Array): Promise<number | undefined> {
     }
 }
 
+const tooBigMessage = (bytes: Uint8Array) => t("error.tooBig", { size: Math.ceil(bytes.length / 1024), limit: SOUND_MAX_BYTES / 1024 });
+
 async function upload(sound: Sound, file: Fetched, guildId: string, name: string) {
-    if (file.bytes.length > SOUND_MAX_BYTES) throw new Error(t("error.tooBig", { size: Math.ceil(file.bytes.length / 1024), limit: SOUND_MAX_BYTES / 1024 }));
+    if (file.bytes.length > SOUND_MAX_BYTES) throw new Error(tooBigMessage(file.bytes));
     const data = `data:${file.kind.mime};base64,${toBase64(file.bytes)}`;
     const { emojiId, emojiName } = emojiFor(sound, guildId, emojiGuildId(sound.emojiId));
     const body = { guildId, name, sound: data, volume: sound.volume, emojiId, emojiName };
@@ -170,8 +170,6 @@ async function copy(text: string, done: string) {
         context?.toast(t("toast.copyFailed"), { type: "failure" });
     }
 }
-
-// ---- The dialog ---------------------------------------------------------------------------------
 
 let closeOpen: CloseLayer | undefined;
 
@@ -292,7 +290,7 @@ function Dialog({ sound, initialGuildId, onClose }: { sound: Sound; initialGuild
                                 {loadError
                                     ? loadError
                                     : !file ? t("dialog.loading")
-                                        : tooBig ? t("error.tooBig", { size: Math.ceil(file.bytes.length / 1024), limit: SOUND_MAX_BYTES / 1024 })
+                                        : tooBig ? tooBigMessage(file.bytes)
                                             : tooLong ? t("dialog.tooLong", { seconds: seconds!.toFixed(1), limit: SOUND_MAX_SECONDS })
                                                 : t("dialog.details", { seconds: seconds !== undefined ? seconds.toFixed(1) : "?", size: Math.ceil(file.bytes.length / 1024), type: file.kind.ext.toUpperCase() })}
                             </span>
@@ -386,8 +384,6 @@ const css = `
 .evi-ss-button:focus-visible, .evi-ss-close:focus-visible, .evi-ss-play:focus-visible { outline: 2px solid var(--focus-primary, #5865f2); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .evi-ss-button, .evi-ss-play { transition: none; } }
 `;
-
-// ---- Menus --------------------------------------------------------------------------------------
 
 function itemsFor(sound: Sound, children: ReactNode[], key: string): ReactNode[] {
     const items: ReactNode[] = [];

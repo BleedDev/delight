@@ -1,4 +1,5 @@
 import { net } from "electron";
+
 import { mt } from "./locale";
 
 export type Download = { ok: true; body: Uint8Array; contentType: string; } | { ok: false; error: string; };

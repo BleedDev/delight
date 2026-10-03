@@ -41,17 +41,17 @@ let ctx: PluginContext<typeof settings> | undefined;
 
 /** Discord's generic file attachment card: ({ url, fileName, fileSize, onContextMenu, renderAdjacentContent }) */
 const fileCardFilter = filters.byCode("renderAdjacentContent:", ".filesize(", "href:", "onContextMenu:");
+const DOWNLOAD_ANCHOR = /^downloadAnchor_+[\da-f]+$/;
 /** The plaintext preview's CSS module: its download button's class makes ours look the same */
 const previewClassesFilter: Filter = Object.assign(
     (v: any) => !!v && typeof v === "object" && !Array.isArray(v)
-        && Object.values(v).some(c => typeof c === "string" && /^downloadAnchor_+[\da-f]+$/.test(c))
+        && Object.values(v).some(c => typeof c === "string" && DOWNLOAD_ANCHOR.test(c))
         && Object.values(v).some(c => typeof c === "string" && /^languageIcon_+[\da-f]+$/.test(c)),
     { $code: ['"downloadAnchor_', '"languageIcon_'] },
 );
 let footerButtonClass = "";
 
-// ---- Which text files are pretty printed (by attachment URL), for the preview's re-render -------
-
+/** Attachment URLs of the text files shown pretty printed */
 const prettyFiles = new Set<string>();
 let version = 0;
 const listeners = new Set<() => void>();
@@ -87,8 +87,6 @@ function gutterProps(text: string) {
     if (lastGutter?.text !== text) lastGutter = { text, props: { "data-dl-cbt-lines": "", style: { "--dl-cbt-gutter": gutterCss(text) } } };
     return lastGutter.props;
 }
-
-// ---- Clipboard and files ---------------------------------------------------------------------
 
 async function copyText(text: string, partOf?: number) {
     try {
@@ -139,8 +137,6 @@ async function fetchText(url: string): Promise<{ text: string; partial: boolean;
     return { text: new TextDecoder("utf-8", { fatal: false }).decode(bytes.slice(0, MAX_FILE_BYTES)).replace(/\uFFFD$/, ""), partial };
 }
 
-// ---- Buttons -----------------------------------------------------------------------------------
-
 const PATHS = {
     copy: "M3 16a1 1 0 0 1-1-1V5a3 3 0 0 1 3-3h10a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H5a1 1 0 0 0-1 1v10a1 1 0 0 1-1 1H3Zm4-5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z",
     download: "M12 2a1 1 0 0 1 1 1v10.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V3a1 1 0 0 1 1-1ZM3 20a1 1 0 1 0 0 2h18a1 1 0 1 0 0-2H3Z",
@@ -174,8 +170,6 @@ function JsonCode({ text, className }: { text: string; className?: string; }) {
     const tokens = React.useMemo(() => jsonTokens(text), [text]);
     return <code className={className}>{tokens.map((tok, i) => tok.className ? <span key={i} className={tok.className}>{tok.text}</span> : tok.text)}</code>;
 }
-
-// ---- Code blocks -------------------------------------------------------------------------------
 
 interface CodeNode { content?: string; lang?: string; }
 
@@ -253,8 +247,6 @@ function CodeTools({ node }: { node: CodeNode; }) {
     );
 }
 
-// ---- Text files Discord previews -----------------------------------------------------------------
-
 function PreviewTools({ url, text, bytesLeft }: { url: string; fileName: string; text: string | null; bytesLeft: number; }) {
     useVersion();
     // Pretty printing needs the whole file, and Discord reads only the first 50 KB. Parsed once per
@@ -280,8 +272,6 @@ function PreviewTools({ url, text, bytesLeft }: { url: string; fileName: string;
         </>
     );
 }
-
-// ---- Text files Discord shows only as a download card -------------------------------------------
 
 type Loaded = { state: "loading"; } | { state: "error"; } | { state: "done"; text: string; partial: boolean; };
 
@@ -334,8 +324,6 @@ function FileCard({ card, url, fileName }: { card: React.ReactElement<any>; url:
         </div>
     );
 }
-
-// ---- Styles --------------------------------------------------------------------------------------
 
 const css = `
 /* The code block's container, marked by our component (see CodeTools) */
@@ -483,7 +471,7 @@ export default definePlugin({
     start(context) {
         ctx = context;
         if (!footerButtonClass) context.waitFor(previewClassesFilter, (classes: Record<string, unknown>) => {
-            footerButtonClass = Object.values(classes).find((c): c is string => typeof c === "string" && /^downloadAnchor_+[\da-f]+$/.test(c)) ?? "";
+            footerButtonClass = Object.values(classes).find((c): c is string => typeof c === "string" && DOWNLOAD_ANCHOR.test(c)) ?? "";
         });
         context.hookExport("after", fileCardFilter, ({ args, result }) => {
             const props = args[0];

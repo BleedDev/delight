@@ -69,8 +69,6 @@ export function backupFileName(now = new Date()) {
     return `evi-backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`;
 }
 
-// ---- validation -------------------------------------------------------------------------------
-
 export type ParseResult = { ok: true; backup: EviBackup; } | { ok: false; error: string; };
 
 class Invalid extends Error { }
@@ -198,8 +196,6 @@ export function parseBackup(text: string, tr: Tr = englishTr): ParseResult {
         throw err;
     }
 }
-
-// ---- import planning --------------------------------------------------------------------------
 
 export interface ImportPreview {
     mode: ImportMode;

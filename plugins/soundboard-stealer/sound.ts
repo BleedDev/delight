@@ -28,8 +28,6 @@ export const soundUrl = (soundId: string) => `https://cdn.discordapp.com/soundbo
 /** Discord's built-in sounds aren't in any server */
 export const isDefaultSound = (guildId: string | null | undefined) => !guildId || guildId === "0" || guildId === "DEFAULT";
 
-// ---- What was right-clicked ---------------------------------------------------------------------
-
 export interface Sound {
     soundId: string;
     guildId?: string;
@@ -85,8 +83,6 @@ export function soundsFromMenuProps(props: any, lookup: (soundId: string) => any
     return parseSoundMarkup(content).map(({ guildId, soundId }) => soundFromObject(lookup(soundId)) ?? { soundId, guildId, volume: 1 });
 }
 
-// ---- Files --------------------------------------------------------------------------------------
-
 export type AudioKind = { ext: "mp3"; mime: "audio/mpeg"; } | { ext: "ogg"; mime: "audio/ogg"; };
 const MP3: AudioKind = { ext: "mp3", mime: "audio/mpeg" };
 const OGG: AudioKind = { ext: "ogg", mime: "audio/ogg" };
@@ -108,8 +104,6 @@ export function fileName(name: string | undefined, fallback: string, ext: string
     return `${base || fallback}.${ext}`;
 }
 
-// ---- Names --------------------------------------------------------------------------------------
-
 /** Discord's name rules: 2 to 32 characters, trimmed */
 export function sanitizeSoundName(name: string | undefined): string {
     const clean = String(name ?? "").replace(/\s+/g, " ").trim().slice(0, SOUND_NAME_MAX);
@@ -120,8 +114,6 @@ export const isValidSoundName = (name: string) => {
     const n = name.trim().length;
     return n >= SOUND_NAME_MIN && n <= SOUND_NAME_MAX;
 };
-
-// ---- Slots --------------------------------------------------------------------------------------
 
 export interface GuildLimitsInput {
     premiumTier?: number | null;
@@ -148,8 +140,6 @@ export function soundSlots(guild: GuildLimitsInput, sounds: readonly unknown[] |
     const used = sounds?.length ?? 0;
     return { limit, used, left: Math.max(0, limit - used) };
 }
-
-// ---- Permissions --------------------------------------------------------------------------------
 
 export function toBits(value: unknown): bigint {
     if (typeof value === "bigint") return value;
@@ -185,8 +175,6 @@ export function emojiFor(sound: Sound, targetGuildId: string, emojiGuildId?: str
     if (sound.emojiId) return emojiGuildId === targetGuildId ? { emojiId: sound.emojiId, emojiName: null } : { emojiId: null, emojiName: null };
     return { emojiId: null, emojiName: sound.emojiName || null };
 }
-
-// ---- Errors -------------------------------------------------------------------------------------
 
 /** Discord's HTTP errors keep the reason in their body */
 export function describeError(err: any, fallback = "Something went wrong"): string {

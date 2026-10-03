@@ -11,13 +11,13 @@ import type { ReactNode } from "react";
 
 import { I18n, t, useLocale } from "../i18n";
 import { Settings } from "../settings";
-import { createRoot, React, ReactDOM } from "../webpack/common";
+import { React, ReactDOM } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
 import { whenAppReady } from "./appReady";
 import { cx, FocusLayer, Icon, useExit, useModal } from "./components";
 import { coverUrl } from "./covers";
 import { ensureStyles } from "./index";
-import { DiscordContext } from "./discordContext";
+import { mountRoot } from "./discordContext";
 import { showTour2, tourDue } from "./Tour2";
 
 /** The markdown Evi's notes use: **bold** lead-ins and `code` */
@@ -199,9 +199,7 @@ export function showWhatsNewIfUpdated() {
     // Not over Discord's loading screen: once the app is showing
     waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
         const mount = () => {
-            const container = document.createElement("div");
-            document.body.append(container);
-            createRoot(container).render(<DiscordContext><Startup releases={releases} /></DiscordContext>);
+            mountRoot(<Startup releases={releases} />);
         };
         if (document.body) mount();
         else document.addEventListener("DOMContentLoaded", mount, { once: true });

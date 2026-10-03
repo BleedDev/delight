@@ -137,7 +137,7 @@ function Placed({ url, kind, natural, look, box, offset = { left: 0, top: 0 }, o
         : <img className="dl-wp-placed" src={url} alt="" draggable={false} style={style} onLoad={e => onNatural?.({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} />;
 }
 
-// ---- Edit Image, like Discord's ---------------------------------------------------------------------
+// Edit Image, like Discord's
 
 /** Room around the frame inside the editor, px */
 const EDGE = 24;
@@ -285,8 +285,6 @@ function Thumb({ w, url, kind, onEdit }: { w: WallpaperSettings; url: string; ki
         </div>
     );
 }
-
-// ---- The tab --------------------------------------------------------------------------------------
 
 const PANEL_ROWS: [WallpaperPanel, EviKey][] = [
     ["frame", "wallpaper.panel.frame"],

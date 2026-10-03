@@ -13,7 +13,7 @@ export interface VoiceAttachment {
     duration_secs?: number;
 }
 
-const AUDIO_NAME = /\.(?:ogg|oga|opus|mp3|m4a|wav|webm)(?:$|[?#])/i;
+const AUDIO_NAME = /\.(ogg|oga|opus|mp3|m4a|wav|webm)(?:$|[?#])/i;
 
 /** Whether an attachment is audio, by content type or, without one, by file name or voice metadata */
 export function isAudioAttachment(a: VoiceAttachment | null | undefined): boolean {
@@ -62,7 +62,7 @@ export function formatStamp(date: Date): string {
 
 /** The recording's extension from its file name or URL, "ogg" by default */
 export function audioExtension(a: VoiceAttachment | undefined): string {
-    const match = /\.(ogg|oga|opus|mp3|m4a|wav|webm)(?:$|[?#])/i.exec(a?.filename ?? "") ?? /\.(ogg|oga|opus|mp3|m4a|wav|webm)(?:$|[?#])/i.exec(a?.url ?? "");
+    const match = AUDIO_NAME.exec(a?.filename ?? "") ?? AUDIO_NAME.exec(a?.url ?? "");
     return match ? match[1].toLowerCase() : "ogg";
 }
 

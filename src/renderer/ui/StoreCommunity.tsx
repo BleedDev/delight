@@ -17,7 +17,7 @@ import { Settings } from "../settings";
 import { Store, StoreKind } from "../store";
 import { React } from "../webpack/common";
 import { findStore } from "../webpack/find";
-import { Badge, Button, Icon, Status, SwitchRow, Text, useStore } from "./components";
+import { Badge, Button, discordAvatarUrl, Icon, Status, SwitchRow, Text, useStore } from "./components";
 import { showTab } from "./nav";
 
 /** The Discord account Evi runs under, for "you" in the store: supporters, your own review */
@@ -32,13 +32,7 @@ export function currentUserId(): string | undefined {
 /** Whether you support Evi, as evi.rest's badge list says */
 export const isSupporter = () => Badges.supporterSince(currentUserId()) !== undefined;
 
-const avatarOf = (user: { id: string; avatar: string | null; }) => user.avatar
-    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
-    : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(user.id) >> 22n) % 6n)}.png`;
-
 const oneDecimal = (n: number) => n.toLocaleString(I18n.discordLocale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-// ---- ratings -----------------------------------------------------------------------------------
 
 /** Five stars filled to `value` (0-5), for showing a rating; the words carry it for screen readers */
 export function Stars({ value, size = 14 }: { value: number; size?: number; }) {
@@ -64,8 +58,6 @@ export function RatingMini({ rating }: { rating?: RatingSummary; }) {
     );
 }
 
-// ---- hearts ------------------------------------------------------------------------------------
-
 /** A heart: you hear in the inbox when it updates, gets a beta or works again */
 export function WishButton({ kind, id, name, large }: { kind: StoreKind; id: string; name: string; large?: boolean; }) {
     useStore(Settings.subscribe, () => Settings.data.wishlist);
@@ -85,8 +77,6 @@ export function WishButton({ kind, id, name, large }: { kind: StoreKind; id: str
         </button>
     );
 }
-
-// ---- the front page ----------------------------------------------------------------------------
 
 interface Tile {
     id: string;
@@ -157,8 +147,6 @@ export function StoreHome({ kind, onOpen }: { kind: StoreKind; onOpen(id: string
     ];
     return <div className="dl-home">{rows}</div>;
 }
-
-// ---- a plugin's page ---------------------------------------------------------------------------
 
 /** The plugin in use: a short video (muted, looping, paused for reduced motion) or GIF */
 export function PreviewPlayer({ url, name }: { url: string; name: string; }) {
@@ -355,7 +343,7 @@ function ReviewItem({ review }: { review: Review; }) {
     const mine = review.user.id === currentUserId();
     return (
         <li className="dl-review">
-            <img className="dl-review-avatar" src={avatarOf(review.user)} alt="" width={32} height={32} loading="lazy" />
+            <img className="dl-review-avatar" src={discordAvatarUrl(review.user.id, review.user.avatar, 64)} alt="" width={32} height={32} loading="lazy" />
             <div className="dl-review-main">
                 <div className="dl-row-title">
                     <Text variant="text-sm/semibold" color="text-strong">{review.user.name}</Text>
@@ -419,8 +407,6 @@ export function ReviewsSection({ id, headingId }: { id: string; headingId: strin
         </section>
     );
 }
-
-// ---- authors -----------------------------------------------------------------------------------
 
 /** Following an author puts their new plugins and versions in your inbox. Needs a linked Evi. */
 export function FollowButton({ profile }: { profile: AuthorProfile; }) {

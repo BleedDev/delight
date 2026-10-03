@@ -89,8 +89,6 @@ export interface RecordingReport {
 // plugin id -> "kind name" -> site
 const sites = new Map<string, Map<string, Site>>();
 
-// ---- measuring --------------------------------------------------------------------------------
-
 const MAX_DEPTH = 1024;
 /** Time spent in measurements nested inside the one at each depth */
 const nested = new Float64Array(MAX_DEPTH);
@@ -185,8 +183,6 @@ function measure<F extends (...args: any[]) => any>(site: Site, fn: F): F {
     } as F;
 }
 
-// ---- $self --------------------------------------------------------------------------------------
-
 const selves = new WeakMap<object, object>();
 
 const isClass = (fn: Function) => !!fn.prototype?.isReactComponent || /^class\b/.test(Function.prototype.toString.call(fn));
@@ -236,8 +232,6 @@ function wrapSelf(plugin: string, definition: object, self: object, key: string,
     Object.defineProperty(measured, "name", { value: fn.name, configurable: true });
     return measured;
 }
-
-// ---- reports ------------------------------------------------------------------------------------
 
 const byTime = <T extends Totals & { recent?: Totals; }>(a: T, b: T) => (b.recent?.ms ?? 0) - (a.recent?.ms ?? 0) || b.ms - a.ms || b.calls - a.calls;
 
@@ -306,8 +300,6 @@ function busiest(seconds: number, limit: number, include?: (plugin: string) => b
     return out.sort((a, b) => b.ms - a.ms).slice(0, limit);
 }
 
-// ---- recording ----------------------------------------------------------------------------------
-
 let longTasks: PerformanceEntry[] = [];
 let observer: PerformanceObserver | undefined;
 
@@ -368,8 +360,6 @@ function stopRecording(): RecordingReport {
     return { ms: wasRecording ? ms : 0, pluginMs, plugins: plugins.sort(byTime), slowCalls, longTasks: tasks };
 }
 
-// ---- overhead -----------------------------------------------------------------------------------
-
 let overhead: number | undefined;
 
 /**
@@ -387,8 +377,6 @@ function measureOverhead(iterations = 200_000) {
     recording = wasRecording;
     return overhead = took / iterations * 1000;
 }
-
-// ---- public -------------------------------------------------------------------------------------
 
 export const Perf = {
     begin,

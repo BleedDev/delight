@@ -207,7 +207,7 @@ export const PATCHES = {
     },
 } satisfies Record<string, SourcePatch>;
 
-// ---- Everything else they'd leave behind (from Lodestone's Erase Blocked Users) -----------------
+// Everything else they'd leave behind (from Lodestone's Erase Blocked Users)
 
 /** What a voice state needs to put a user back in a channel (VOICE_STATE_UPDATES' fields) */
 export const VOICE_FIELDS = ["channelId", "deaf", "mute", "requestToSpeakTimestamp", "selfDeaf", "selfMute", "selfStream",

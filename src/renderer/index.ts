@@ -124,9 +124,11 @@ function boot() {
         if (!SafeMode.active) logger.info("Discord core modules ready, starting plugins");
         PluginManager.startAll().then(() => SafeMode.scheduleBootOk());
         // Part of Evi itself, not a plugin: on for everyone. Safe mode keeps even this off.
-        if (!SafeMode.active) startBadges();
-        if (!SafeMode.active) startAccountSync();
-        if (!SafeMode.active) startPluginShare();
+        if (!SafeMode.active) {
+            startBadges();
+            startAccountSync();
+            startPluginShare();
+        }
         // Even in safe mode: a new version may be the fix
         startUpdateChecks();
         // Evi's team requiring a version: downloads it now and restarts once nobody's in a call

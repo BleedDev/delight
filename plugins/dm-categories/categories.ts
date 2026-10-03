@@ -139,8 +139,6 @@ export function assign(state: CategoryState, channelId: string, categoryId: stri
     return { categories };
 }
 
-// ---- Laying out the DM list ---------------------------------------------------------------------
-
 export interface LaidOutCategory {
     category: Category;
     /** Indexes into the DM list's channel ids, in display order. While collapsed, only the ones it keeps showing */

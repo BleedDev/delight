@@ -1,5 +1,3 @@
-import { Logger } from "./logger";
-
 /**
  * Takes rules out of Discord's own stylesheets that cost a lot and do nothing for the user.
  *
@@ -14,6 +12,7 @@ import { Logger } from "./logger";
  * has loaded and been cleaned, then released. Rules are recognised by what they are, never by
  * Discord's hashed class names.
  */
+import { Logger } from "./logger";
 
 const logger = new Logger("CssFixes");
 
@@ -36,7 +35,6 @@ const FIXES: Fix[] = [
 
 const HELD = "data-evi-held";
 const cleaned = new WeakSet<CSSStyleSheet>();
-let removed = 0;
 
 function clean(sheet: CSSStyleSheet) {
     if (cleaned.has(sheet)) return;
@@ -52,7 +50,6 @@ function clean(sheet: CSSStyleSheet) {
         const fix = FIXES.find(f => f.matches(rules[i]));
         if (!fix) continue;
         sheet.deleteRule(i);
-        removed++;
         logger.info(`Removed Discord's ${fix.name} (${(sheet.href ?? "").split("/").pop()})`);
     }
 }
@@ -103,8 +100,6 @@ export function installCssFixes() {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", narrow, { once: true });
     else narrow();
 }
-
-export const cssFixStats = () => ({ removed });
 
 /**
  * Discord's UI fonts load on first use, and a face arriving makes Chromium lay out all text in that

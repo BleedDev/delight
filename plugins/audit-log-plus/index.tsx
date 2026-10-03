@@ -13,17 +13,14 @@
  */
 import { Components, definePlugin, Dropdown, filters, find, getStore, I18n, Menu, openLayer, React, useLocale } from "@evi/api";
 import type { CloseLayer, PluginContext } from "@evi/api";
-import type { ReactNode } from "react";
 
 import {
-    actionInfo, ChangeView, Described, describe, Directory, durationParts, exportName, ExportRow, Filters, Group, GROUPS, groupRuns, humanize,
+    ChangeView, Described, describe, Directory, durationParts, exportName, ExportRow, Filters, Group, GROUPS, groupRuns, hexColor, humanize,
     matches, Person, RawEntry, RawLog, Target, toCsv,
 } from "./audit";
 import { t } from "./strings";
 
 let context: PluginContext | undefined;
-
-// ---- Discord ------------------------------------------------------------------------------------
 
 const store = (name: string): any => {
     try {
@@ -90,8 +87,6 @@ function copy(text: string) {
     void navigator.clipboard?.writeText(text).then(() => context?.toast(t("toast.copied"), { type: "success" }));
 }
 
-// ---- Text ---------------------------------------------------------------------------------------
-
 const label = (d: Pick<Described, "info" | "entry">) => {
     const { info } = d;
     if (info.kind && info.op) return t(`op.${info.op}`, { kind: t(`kind.${info.kind}`) });
@@ -122,18 +117,18 @@ function relativeTime(ms: number, now = Date.now()) {
     return rtf.format(0, "second");
 }
 
-const permName = (p: string) => humanize(p);
+const yesNo = (v: boolean | undefined) => v === undefined ? t("value.none") : v ? t("value.yes") : t("value.no");
 
 /** A change as one line of plain text, for search and export */
 function changeText(c: ChangeView): string {
     const k = keyLabel(c.key);
     switch (c.type) {
-        case "perms": return `${k}: ${[...c.added.map(p => `+${permName(p)}`), ...c.removed.map(p => `-${permName(p)}`)].join(", ")}`;
+        case "perms": return `${k}: ${[...c.added.map(p => `+${humanize(p)}`), ...c.removed.map(p => `-${humanize(p)}`)].join(", ")}`;
         case "roles": return `${k}: ${c.roles.map(r => r.name).join(", ")}`;
         case "color": return `${k}: ${c.old ?? t("value.none")} → ${c.new ?? t("value.none")}`;
         case "seconds": return `${k}: ${duration(c.old, c.key)} → ${duration(c.new, c.key)}`;
         case "date": return `${k}: ${c.old ? exactTime(c.old) : t("value.none")} → ${c.new ? exactTime(c.new) : t("value.none")}`;
-        case "bool": return `${k}: ${c.old === undefined ? t("value.none") : c.old ? t("value.yes") : t("value.no")} → ${c.new === undefined ? t("value.none") : c.new ? t("value.yes") : t("value.no")}`;
+        case "bool": return `${k}: ${yesNo(c.old)} → ${yesNo(c.new)}`;
         case "text": return `${k}: ${c.old ?? t("value.none")} → ${c.new ?? t("value.none")}`;
     }
 }
@@ -155,8 +150,9 @@ function optionLines(entry: RawEntry, dir: Directory, guildId: string): string[]
             break;
         case 13: case 14: case 15:
             if (o.id) {
-                const name = String(o.type) === "0" || o.type === "role" ? (o.role_name ?? lookup(guildId).role(o.id)?.name ?? o.id) : (dir.person(o.id)?.name ?? o.id);
-                out.push(t("detail.overwrite", { name: String(o.type) === "0" || o.type === "role" ? `@${name}` : name }));
+                const isRole = String(o.type) === "0" || o.type === "role";
+                const name = isRole ? `@${o.role_name ?? lookup(guildId).role(o.id)?.name ?? o.id}` : (dir.person(o.id)?.name ?? o.id);
+                out.push(t("detail.overwrite", { name }));
             }
             break;
         case 143: case 144: case 145: case 146: case 180:
@@ -210,8 +206,6 @@ function download(name: string, body: string, type: string) {
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-// ---- Loading ------------------------------------------------------------------------------------
-
 const PAGE = 100;
 /** Pages are at least this far apart; Discord's audit log endpoint is rate limited */
 const PAGE_GAP = 700;
@@ -242,8 +236,6 @@ async function fetchPage(guildId: string, before: string | undefined, actorId: s
     }
 }
 
-// ---- The dialog ---------------------------------------------------------------------------------
-
 const Icon = ({ d, size = 16 }: { d: string; size?: number; }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d={d} /></svg>
 );
@@ -259,7 +251,7 @@ function Tip({ text, children }: { text: string; children: React.ReactElement; }
 
 function TargetChip({ target, guildId, onNavigate }: { target: Target; guildId: string; onNavigate(): void; }) {
     if (!target.name) return null;
-    const color = target.color ? `#${(target.color & 0xffffff).toString(16).padStart(6, "0")}` : undefined;
+    const color = target.color ? hexColor(target.color) : undefined;
     const prefix = target.type === "channel" || target.type === "thread" ? "#" : target.type === "role" ? "@" : "";
     let action: (() => void) | undefined;
     let tip = target.id ? t("target.copyId") : "";
@@ -292,8 +284,8 @@ function ChangeLine({ c }: { c: ChangeView; }) {
                 <div className="evi-alp-change">
                     <span className="evi-alp-key">{k}</span>
                     <span className="evi-alp-perms">
-                        {c.added.map(p => <span key={`+${p}`} className="evi-alp-perm" data-sign="+">+ {permName(p)}</span>)}
-                        {c.removed.map(p => <span key={`-${p}`} className="evi-alp-perm" data-sign="-">− {permName(p)}</span>)}
+                        {c.added.map(p => <span key={`+${p}`} className="evi-alp-perm" data-sign="+">+ {humanize(p)}</span>)}
+                        {c.removed.map(p => <span key={`-${p}`} className="evi-alp-perm" data-sign="-">− {humanize(p)}</span>)}
                         {!c.added.length && !c.removed.length && none}
                     </span>
                 </div>

@@ -76,15 +76,14 @@ export function safeFileName(name: string): string {
 /** "name-avatar.png" */
 export const fileName = (picture: Picture) => `${picture.baseName}.${extensionOf(picture.url)}`;
 
-function picture(kind: PictureKind, url: string | null, owner: string, aspect = ASPECTS[kind]): Picture | null {
-    if (!url) return null;
+function picture(kind: PictureKind, url: string, owner: string): Picture {
     return {
         kind,
         label: LABELS[kind],
         url,
         animated: extensionOf(url) === "gif",
         baseName: safeFileName(`${owner} ${LABELS[kind].toLowerCase()}`).replace(/ /g, "-"),
-        aspect,
+        aspect: ASPECTS[kind],
     };
 }
 
@@ -151,5 +150,5 @@ export function pictureFromUrl(link: unknown): LinkedPicture | null {
 
 /** A linked picture as a downloadable one, named after its owner */
 export function linkedPicture(linked: LinkedPicture, owner: string): Picture {
-    return picture(linked.kind, linked.url, owner)!;
+    return picture(linked.kind, linked.url, owner);
 }

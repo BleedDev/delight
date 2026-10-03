@@ -95,8 +95,6 @@ export function hostAllowed(declared: DeclaredPermissions, host: string) {
     return declared.network.some(h => bare === h || bare.endsWith(`.${h}`));
 }
 
-// ---- what needs what ------------------------------------------------------------------------------
-
 /**
  * Flux actions that carry message content: arriving, edited, deleted and loaded messages, search
  * results, and your drafts as you type. Reactions, typing and read states don't.
@@ -145,8 +143,6 @@ export function checkRequest(declared: DeclaredPermissions, input: string, metho
     return undefined;
 }
 
-// ---- updates -------------------------------------------------------------------------------------
-
 export interface PermissionGrowth {
     /** Sites the new version contacts that the old one's didn't cover */
     hosts: string[];
@@ -179,8 +175,6 @@ export function describeGrowth(growth: PermissionGrowth, tr: Tr = englishTr) {
     const parts = [...growth.hosts.length ? [tr("main.growth.contact", { hosts: growth.hosts.join(tr("common.listSeparator")) })] : [], ...growth.flags.map(f => words[f])];
     return tr("main.growth.also", { parts: parts.join(tr("common.listSeparator")) });
 }
-
-// ---- refusing --------------------------------------------------------------------------------------
 
 const PERMISSION_WORDS: Record<PermissionKey, string> = {
     network: "contact",

@@ -38,8 +38,6 @@ function say(f: Finding): string {
     return f.vars ? t(`finding.${f.key ?? f.code}` as Parameters<typeof t>[0], f.vars) : f.code === "unreadable" || f.code === "http" ? t(`finding.${f.code}`) : f.message;
 }
 
-// ---- The dialog ---------------------------------------------------------------------------------
-
 function openWarning(analysis: Analysis, onOpen: () => void, onCancel: () => void) {
     closeOpen?.();
     let settled = false;

@@ -97,11 +97,16 @@ const toDataUrl = (blob: Blob) => new Promise<string>((resolve, reject) => {
     reader.readAsDataURL(blob);
 });
 
-function fail(error: string) {
+/** Takes down the layer and the see-through stylesheet */
+function hide() {
     unmount();
-    // Nothing behind the see-through panels otherwise
     style?.remove();
     style = undefined;
+}
+
+function fail(error: string) {
+    // Nothing behind the see-through panels otherwise
+    hide();
     set({ status: "error", error });
 }
 
@@ -204,9 +209,7 @@ function apply(force = false) {
 
     if (loaded && loaded.file !== wanted) unload();
     if (!wanted) {
-        unmount();
-        style?.remove();
-        style = undefined;
+        hide();
         loadToken++;
         loadingFile = undefined;
         return set({ status: "off", url: undefined, kind: undefined, error: undefined, paused: false });
@@ -217,9 +220,7 @@ function apply(force = false) {
     }
 
     if (!show) {
-        unmount();
-        style?.remove();
-        style = undefined;
+        hide();
         if (state.status !== "error") set({ status: "off" });
         return;
     }

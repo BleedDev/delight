@@ -211,11 +211,12 @@ function Indicators({ userId, where }: IndicatorProps) {
     const [p, s] = key.split(":") as [Platform, Status];
     const Tooltip = Components.Tooltip;
     const icon = <Icon platform={p} status={s} />;
+    const label = tooltip(p, s);
     return (
         <span className="evi-platforms" data-where={where}>
             {Tooltip
-                ? <Tooltip key={p} text={tooltip(p, s)}><span>{icon}</span></Tooltip>
-                : <span key={p} title={tooltip(p, s)}>{icon}</span>}
+                ? <Tooltip key={p} text={label}><span>{icon}</span></Tooltip>
+                : <span key={p} title={label}>{icon}</span>}
         </span>
     );
 }
@@ -266,7 +267,10 @@ export default definePlugin({
 
         // On profiles and in Discord's badge directory, through Evi's badges
         ctx.profileBadges(userId => ctx.settings.get("showOnProfiles")
-            ? devicesOf(userId).map(([p, s]) => ({ id: `platform-${p}`, name: tooltip(p, s), description: tooltip(p, s), iconSrc: iconSrc(p, s) }))
+            ? devicesOf(userId).map(([p, s]) => {
+                const label = tooltip(p, s);
+                return { id: `platform-${p}`, name: label, description: label, iconSrc: iconSrc(p, s) };
+            })
             : []);
 
         ctx.hookExport("before", usernameFilter, ({ args }) => {

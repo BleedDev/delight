@@ -2,7 +2,7 @@ import { Components, definePlugin, Dispatcher, filters, findStore, React } from 
 import type { FluxAction, HookContext, PluginContext } from "@evi/api";
 
 import { t } from "./strings";
-import { decide, NotificationKind, NotificationLog, RelationshipNotification, storeLookup, Tracker } from "./events";
+import { decide, NotificationKind, NotificationLog, RelationshipNotification, Scope, storeLookup, Tracker } from "./events";
 
 /**
  * Tells you when someone removes you as a friend, declines your friend request, or removes you
@@ -38,7 +38,7 @@ function store(name: string): any {
 }
 
 /** Hooks each of `methods` that exists on the export, marking its first argument as your own action */
-function markOwn(ctx: Ctx, tracker: Tracker, props: string[], methods: string[], scope: "relationship" | "channel" | "guild") {
+function markOwn(ctx: Ctx, tracker: Tracker, props: string[], methods: string[], scope: Scope) {
     ctx.waitFor(filters.byProps(...props), module => {
         for (const method of methods) {
             if (typeof module?.[method] !== "function") continue;

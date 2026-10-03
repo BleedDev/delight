@@ -110,10 +110,12 @@ let countAgain = false;
 /** Longest a count runs before waiting for the next idle moment */
 const SLICE_MS = 5;
 
+const notify = () => listeners.forEach(l => l());
+
 function setUnreadCount(next: number) {
     if (next === unreadCount) return;
     unreadCount = next;
-    listeners.forEach(l => l());
+    notify();
 }
 
 /**
@@ -257,7 +259,7 @@ export default definePlugin({
             countAgain = false;
             cachedStores = undefined;
             unreadCount = 0;
-            listeners.forEach(l => l());
+            notify();
         });
 
         // ReadStateStore changes on every new message and ack; GuildStore on joining or leaving
@@ -268,7 +270,7 @@ export default definePlugin({
         ctx.settings.onChange(values => {
             if (values.showButton !== showButton) {
                 showButton = values.showButton;
-                listeners.forEach(l => l());
+                notify();
             }
             scheduleRecount();
         });

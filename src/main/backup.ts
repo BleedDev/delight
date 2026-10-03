@@ -1,15 +1,16 @@
 import { backupFileName, BackupSource, buildBackup, EviBackup, ImportMode, MAX_BACKUP_BYTES, parseBackup, planImport } from "@shared/backup";
 import { BackupApplyResult, BackupExportResult, BackupOpenResult, EviSettings, IPC } from "@shared/ipc";
 import { randomUUID } from "crypto";
-import { app, BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent, WebContents, webContents } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent, WebContents } from "electron";
 import { existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "fs";
 import { basename, join } from "path";
 
+import { mt } from "./locale";
 import { QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { askToEnable, enablesNeedingConsent, getPluginPayloads } from "./plugins";
 import { saveSettings, settings } from "./settings";
 import { getThemePayloads, reloadTheme } from "./themes";
-import { mt } from "./locale";
+import { broadcast, errorOf } from "./util";
 
 /**
  * Tests can't click through native dialogs: with this set, both dialogs answer with this path.
@@ -27,8 +28,6 @@ function currentState(): BackupSource {
     } catch { }
     return { settings, quickCss, themes: getThemePayloads(), plugins: getPluginPayloads() };
 }
-
-const errorOf = (err: unknown) => String((err as Error)?.message ?? err);
 
 async function pickSavePath(e: IpcMainInvokeEvent) {
     if (TEST_PATH) return TEST_PATH;
@@ -155,9 +154,7 @@ export async function applyBackup(backup: EviBackup, mode: ImportMode, sender?: 
 
     // Don't wait for the watchers, the renderer should have everything when this resolves
     for (const { file } of plan.themes) reloadTheme(basename(file));
-    if (plan.quickCss !== null) {
-        for (const wc of webContents.getAllWebContents()) if (!wc.isDestroyed()) wc.send(IPC.CSS_CHANGED, plan.quickCss);
-    }
+    if (plan.quickCss !== null) broadcast(IPC.CSS_CHANGED, plan.quickCss);
     console.log(`[Evi] Restored a backup (${mode}), ${plan.preview.changes} changes`);
     return { ok: true, settings: plan.settings, preview: plan.preview };
 }

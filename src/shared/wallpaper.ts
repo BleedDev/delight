@@ -72,7 +72,6 @@ export interface WallpaperSettings {
 
 export const DIM_MIN = 0;
 export const DIM_MAX = 90;
-export const DIM_STEP = 5;
 export const BLUR_MIN = 0;
 export const BLUR_MAX = 20;
 export const ZOOM_MIN = 100;

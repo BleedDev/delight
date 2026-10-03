@@ -10,13 +10,13 @@ import { t } from "../i18n";
 import { PluginManager } from "../plugins/manager";
 import { Settings } from "../settings";
 import { Store } from "../store";
-import { createRoot, React } from "../webpack/common";
+import { React } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
 import { whenAppReady } from "./appReady";
 import { Button, SwitchRow, Text, useStore } from "./components";
 import { ensureStyles } from "./index";
 import { afterWhatsNew, ChangelogModal, inline } from "./WhatsNew";
-import { DiscordContext } from "./discordContext";
+import { mountRoot } from "./discordContext";
 
 export function PluginChangelogModal({ updates, onClose, onTurnOff }: { updates: PluginUpdate[]; onClose(): void; onTurnOff?(): void; }) {
     const single = updates.length === 1 ? updates[0] : undefined;
@@ -61,8 +61,6 @@ export function PluginChangelogModal({ updates, onClose, onTurnOff }: { updates:
     );
 }
 
-// ---- when to show it --------------------------------------------------------------------------
-
 let shown: PluginUpdate[] = [];
 const listeners = new Set<() => void>();
 let mounted = false;
@@ -102,9 +100,7 @@ function show(updates: PluginUpdate[]) {
     mounted = true;
     ensureStyles();
     waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {
-        const container = document.createElement("div");
-        document.body.append(container);
-        createRoot(container).render(<DiscordContext><Popup /></DiscordContext>);
+        mountRoot(<Popup />);
     }));
 }
 

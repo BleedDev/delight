@@ -9,10 +9,10 @@ import { authorPageUrl } from "@shared/authors";
 
 import { I18n, t, timeAgo } from "../../i18n";
 import { React } from "../../webpack/common";
-import { Badge, Button, Dialog, Dropdown, EmptyState, IconButton, Notice, Section, Text, TextField, Tooltip } from "../components";
+import { Badge, Button, Dialog, discordAvatarUrl, Dropdown, EmptyState, IconButton, Notice, Section, Text, TextField, Tooltip } from "../components";
 import { Confirm, LoadError } from "./common";
 import { admin, AdminResult, useAdmin } from "./data";
-import { avatarUrl, BadgeIcons } from "./People";
+import { BadgeIcons } from "./People";
 
 type Catalogue = { list: AdminBadge[]; map: Map<string, AdminBadge>; };
 
@@ -263,7 +263,7 @@ export function PersonDialog({ person, catalogue, onChanged, onClose }: {
         <Dialog id="dl-dev-person" title={t("dev.people.title")} onClose={onClose} className="dl-dev-person-dialog">
             <div className="dl-dev-person-body">
                 <header className="dl-dev-person-head">
-                    <img className="dl-dev-avatar" src={avatarUrl(user, 128)} alt="" width={64} height={64} />
+                    <img className="dl-dev-avatar" src={discordAvatarUrl(user.id, user.avatar, 128, "auto")} alt="" width={64} height={64} />
                     <div className="dl-dev-person-headtext">
                         <div className="dl-dev-person-names">
                             <Text tag="h3" variant="heading-lg/semibold" color="text-strong" className="dl-dev-name">{user.name}</Text>

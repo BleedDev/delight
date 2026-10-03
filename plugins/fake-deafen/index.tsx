@@ -1,4 +1,4 @@
-import { definePlugin, filters, getStore, React } from "@evi/api";
+import { definePlugin, filters, getStore } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
 import { t } from "./strings";
@@ -15,7 +15,7 @@ import type { ResendResult, VoiceState } from "./voice";
  *    state committer (captured by a source patch) when it has it, or by repeating the last call the
  *    hook saw. The committer's module runs at startup, so after turning the plugin on mid-session
  *    only the second works, and only once Discord has sent something (mute, deafen, join).
- *  - A source patch puts a headphones button right of Discord's deafen button.
+ *  - Its switch sits in the user panel, while the showButton setting is on.
  *
  * Fake deafen itself isn't saved: it starts off with every Discord launch, so nobody stays
  * "deafened" by accident. Stopping the plugin resends the real state.
@@ -50,6 +50,10 @@ const listeners = new Set<() => void>();
 function setEnabled(value: boolean) {
     enabled = value;
     for (const listener of listeners) listener();
+}
+function subscribe(onChange: () => void) {
+    listeners.add(onChange);
+    return () => void listeners.delete(onChange);
 }
 
 /** Sends the real voice state again, through our hook */
@@ -86,12 +90,6 @@ function toggle() {
     context.toast(t(enabled ? TOASTS[result] : "toast.off"), { type: "success" });
 }
 
-function subscribe(onChange: () => void) {
-    listeners.add(onChange);
-    return () => void listeners.delete(onChange);
-}
-
-
 interface IconProps { width?: number; height?: number; }
 
 /** A ghost: you "appear" deafened. Its own shape, so it isn't mistaken for Discord's deafen button */
@@ -109,7 +107,6 @@ function GhostIcon({ width = 20, height = 20 }: IconProps) {
 function GhostIconOn(props: IconProps) {
     return <span className="dl-fake-deafen-on"><GhostIcon {...props} /></span>;
 }
-
 
 /** Its switch in the user panel, while the showButton setting is on */
 function panelSwitch(ctx: PluginContext<Settings>) {

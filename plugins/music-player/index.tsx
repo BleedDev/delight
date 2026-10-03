@@ -83,11 +83,8 @@ type Action = "play" | "pause" | "previous" | "next" | "seek";
 
 async function spotifyControl(action: Action, before: Playback, position?: number) {
     const device: Record<string, string> = before.deviceId ? { device_id: before.deviceId } : {};
-    if (action === "play") await request("PUT", "/me/player/play", device);
-    else if (action === "pause") await request("PUT", "/me/player/pause", device);
-    else if (action === "next") await request("POST", "/me/player/next", device);
-    else if (action === "previous") await request("POST", "/me/player/previous", device);
-    else await request("PUT", "/me/player/seek", { ...device, position_ms: String(Math.round(position ?? 0)) });
+    if (action === "seek") await request("PUT", "/me/player/seek", { ...device, position_ms: String(Math.round(position ?? 0)) });
+    else await request(action === "play" || action === "pause" ? "PUT" : "POST", `/me/player/${action}`, device);
 }
 
 async function eviControl(action: Action, before: Playback, position?: number) {
@@ -115,8 +112,6 @@ async function control(action: Action, position?: number) {
         showToast(t(`error.${kind}`), { type: "failure" });
     }
 }
-
-// ---- Evi's desktop app --------------------------------------------------------------------------
 
 /** Where its electron/control.js listens: the first of these that was free */
 const EVI_PORTS = [38519, 38520, 38521];
@@ -206,8 +201,6 @@ function seed() {
         })
         .catch(() => { });
 }
-
-// ---- UI -----------------------------------------------------------------------------------------
 
 const Icon = ({ d, hidden }: { d: string; hidden?: boolean; }) => (
     <svg viewBox="0 0 24 24" aria-hidden="true" data-hidden={hidden || undefined}><path fill="currentColor" d={d} /></svg>

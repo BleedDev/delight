@@ -67,23 +67,22 @@ const appIcon = (app: AppInfo) => app.icon ? `https://cdn.discordapp.com/app-ico
 const listeners = new Set<() => void>();
 const subscribe = (fn: () => void) => (listeners.add(fn), () => void listeners.delete(fn));
 const useState$ = () => React.useSyncExternalStore(subscribe, () => state);
+const emit = () => { for (const fn of [...listeners]) fn(); };
 
 function commit(next: PresetState) {
     if (next === state) return;
     state = next;
     storage()?.set(STORAGE_KEY, state);
-    for (const fn of [...listeners]) fn();
+    emit();
     scheduleApply();
 }
 
 function load() {
     state = parseState(storage()?.get(STORAGE_KEY));
-    for (const fn of [...listeners]) fn();
+    emit();
 }
 
 const activePreset = () => state.presets.find(p => p.id === state.active);
-
-// ---- Discord ------------------------------------------------------------------------------------
 
 /**
  * Discord's API client: exactly { get, post, put, patch, del }. The HTTP library under it (superagent)
@@ -91,6 +90,12 @@ const activePreset = () => state.presets.find(p => p.id === state.active);
  */
 const http = (): any => find(v => typeof v?.post === "function" && typeof v?.del === "function"
     && typeof v?.patch === "function" && !("getXHR" in v) && !("Request" in v));
+
+function client() {
+    const c = http();
+    if (!c) throw new Error("Discord's HTTP client wasn't found");
+    return c;
+}
 
 /** https link -> mp: key, per application. Links Discord refused are remembered as "" */
 const assetCache = new Map<string, string>();
@@ -102,9 +107,7 @@ const artCache = new Map<string, Map<string, string>>();
 async function artAssets(app: string, refresh = false): Promise<Map<string, string>> {
     const cached = artCache.get(app);
     if (cached && !refresh) return cached;
-    const client = http();
-    if (!client) throw new Error("Discord's HTTP client wasn't found");
-    const res = await client.get({ url: `/oauth2/applications/${app}/assets`, oldFormErrors: true });
+    const res = await client().get({ url: `/oauth2/applications/${app}/assets`, oldFormErrors: true });
     const map = new Map<string, string>();
     if (Array.isArray(res?.body)) {
         for (const a of res.body) if (typeof a?.name === "string" && typeof a?.id === "string") map.set(a.name.toLowerCase(), a.id);
@@ -116,9 +119,7 @@ async function artAssets(app: string, refresh = false): Promise<Map<string, stri
 async function resolveAssets(app: string, urls: string[], keys: string[] = []): Promise<Record<string, string>> {
     const missing = urls.filter(u => !assetCache.has(cacheKey(app, u)));
     if (missing.length) {
-        const client = http();
-        if (!client) throw new Error("Discord's HTTP client wasn't found");
-        const res = await client.post({ url: `/applications/${app}/external-assets`, body: { urls: missing }, oldFormErrors: true });
+        const res = await client().post({ url: `/applications/${app}/external-assets`, body: { urls: missing }, oldFormErrors: true });
         const body: unknown = res?.body;
         const found = new Map<string, string>();
         if (Array.isArray(body)) {
@@ -192,8 +193,6 @@ async function apply() {
     if (run !== applying || !ctx) return;
     dispatch(toActivity(preset, app, { since: since.get(preset.id)!, now }, assets, name));
 }
-
-// ---- Editor -------------------------------------------------------------------------------------
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -359,7 +358,6 @@ function useNow() {
     return now;
 }
 
-/** Shaped like the activity card on Discord's profiles */
 /** What the preview shows for a picture: the link itself, or an art asset from Discord's CDN */
 function pictureSrc(value: string, app: string, art: Map<string, string> | undefined) {
     const ref = imageRef(value);
@@ -369,6 +367,7 @@ function pictureSrc(value: string, app: string, art: Map<string, string> | undef
     return id ? `https://cdn.discordapp.com/app-assets/${app}/${id}.png` : undefined;
 }
 
+/** Shaped like the activity card on Discord's profiles */
 function Preview({ preset, art }: { preset: Preset; art?: Map<string, string>; }) {
     const now = useNow();
     const app = appId();
@@ -409,13 +408,9 @@ function Preview({ preset, art }: { preset: Preset; art?: Map<string, string>; }
     );
 }
 
-// ---- Setup guide --------------------------------------------------------------------------------
-
 /** Discord's public info about an application: what GET /applications/:id/rpc gives anyone */
 async function checkApp(id: string): Promise<AppInfo> {
-    const client = http();
-    if (!client) throw new Error("Discord's HTTP client wasn't found");
-    const res = await client.get({ url: `/applications/${id}/rpc`, oldFormErrors: true });
+    const res = await client().get({ url: `/applications/${id}/rpc`, oldFormErrors: true });
     const body = res?.body;
     if (typeof body?.id !== "string" || typeof body?.name !== "string") throw new Error("Unexpected answer from Discord");
     return { id: body.id, name: body.name, icon: typeof body.icon === "string" ? body.icon : null };
@@ -765,8 +760,6 @@ const CSS = `
 .evi-rp-button:focus-visible, .evi-rp-chip:focus-visible { outline: 2px solid var(--evi-rp-brand); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .evi-rp-chip, .evi-rp-button { transition: none; } }
 `;
-
-// ---- Plugin -------------------------------------------------------------------------------------
 
 export default definePlugin({
     settings,

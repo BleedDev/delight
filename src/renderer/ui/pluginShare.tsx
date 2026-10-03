@@ -12,7 +12,6 @@ import { isShareUrl, sharedPluginIds } from "@shared/share";
 
 import { PluginContext } from "../plugins/context";
 import { filters } from "../webpack/find";
-import { React } from "../webpack/common";
 import { ensureStyles } from "./index";
 import { SharedPluginCard } from "./Store";
 

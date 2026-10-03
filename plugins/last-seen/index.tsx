@@ -11,8 +11,8 @@
  *   scrolling a channel) backfills it from history.
  * - Presences and history are recorded when the browser is idle, never inside Discord's dispatch.
  * - Storage: IndexedDB (Discord removes window.localStorage), one record kept as columns (track.ts
- *   pack), written at most every 30 seconds and on stop/unload. Capped at 25000 people, least recently seen dropped first (a
- *   few hundred at a time), friends and DM contacts last.
+ *   pack), written at most every 30 seconds and on stop/unload. Capped at 25000 people, least
+ *   recently seen dropped first (a few hundred at a time), friends and DM contacts last.
  * - Profiles: a clock badge through ctx.profileBadges, also listed in Discord's badge directory;
  *   hovering shows the full summary, clicking jumps to their last message.
  * - Member list, friends list, DM list: a line under offline people's names (source patches).
@@ -26,10 +26,10 @@ import { friendsMethods, friendsPatches } from "./friends";
 import { lastSeenLine, lineCss } from "./line";
 import { SettingsPanel } from "./panel";
 import {
-    bumpNow, changed, dbGet, fullText, ignored, invalidateKeep, isBot, isOnline, opts, refreshOwnId, resetLookups, save, settings, state, statusOf, store, tick,
-    versionOf,
+    bumpNow, changed, dbGet, fullText, ignored, invalidateKeep, isBot, isOnline, mergeOnTop, opts, refreshOwnId, resetLookups, save, settings, state, statusOf,
+    store, tick, versionOf,
 } from "./state";
-import { deserialize, isOnlineStatus, merge, observeActivity, observeMessage, observePresence } from "./track";
+import { deserialize, isOnlineStatus, observeActivity, observeMessage, observePresence } from "./track";
 
 const SAVE_EVERY = 30_000;
 
@@ -37,8 +37,6 @@ const MUTED = "#949ba4";
 const CLOCK = `data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${MUTED}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 6.5V12l3.5 2"/></svg>`,
 )}`;
-
-// --- Observing -------------------------------------------------------------------------------
 
 /**
  * Presence updates and message history are recorded off the dispatch, when the browser is idle:
@@ -128,10 +126,6 @@ function messageLink(userId: string): string | undefined {
     return `https://discord.com/channels/${channel.guild_id ?? "@me"}/${entry.channelId}/${entry.messageId}`;
 }
 
-// --- UI --------------------------------------------------------------------------------------
-
-const css = lineCss;
-
 export default definePlugin({
     settings,
 
@@ -205,19 +199,12 @@ export default definePlugin({
         state.context = ctx;
         state.tracker = new Map();
         state.loaded = false;
-        ctx.addStyle(css);
+        ctx.addStyle(lineCss);
 
         dbGet().then(data => {
             if (state.context !== ctx) return;
-            // Merge what was seen while loading on top of the saved data
-            const live = state.tracker;
-            const tracker = deserialize(data, opts);
-            for (const [id, entry] of live) {
-                const old = tracker.get(id);
-                tracker.delete(id);
-                tracker.set(id, merge(old, entry));
-            }
-            state.tracker = tracker;
+            // What was seen while loading goes on top of the saved data
+            state.tracker = mergeOnTop(deserialize(data, opts), state.tracker);
             state.loaded = true;
             seed();
             state.dirty = true;

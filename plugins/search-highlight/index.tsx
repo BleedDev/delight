@@ -50,6 +50,7 @@ const FADE_MS = 600;
 const JUMP = "evi-search-jump";
 const ALL = "evi-search-all";
 /** Where the words aren't searchable text, or aren't text Discord's search matched */
+const MESSAGE = "[id^='message-content-']";
 const SKIP = "code, pre, a, [class*='mention'], [class*='emoji'], [class*='spoilerContent'], [class*='timestamp'], [role='button'], img, svg";
 
 const searchActions = filters.byProps("fetchTabMessages", "clearSearchMessages");
@@ -58,7 +59,7 @@ const messageActions = filters.byProps("jumpToMessage", "trackJump");
 let context: PluginContext<typeof settings> | undefined;
 let terms: Term[] = [];
 let regex: RegExp | undefined;
-let jump: { messageId: string; at: number; } | undefined;
+let jump: { messageId: string; } | undefined;
 let observer: MutationObserver | undefined;
 let frame = 0;
 let fadeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -104,7 +105,7 @@ function onSearch({ args }: { args: any[]; }) {
 function onJump({ args }: { args: any[]; }) {
     const messageId = args[0]?.messageId;
     if (!terms.length || typeof messageId !== "string") return;
-    jump = { messageId, at: Date.now() };
+    jump = { messageId };
     setFade(1);
     clearTimeout(fadeTimer);
     if (context?.settings.get("duration") === "fade") fadeTimer = setTimeout(fadeOut, HOLD_MS);
@@ -116,8 +117,6 @@ function clearSearch() {
     cancelAnimationFrame(fadeFrame);
     setTerms([]);
 }
-
-// ---- Painting -----------------------------------------------------------------------------------
 
 const setFade = (v: number) => document.documentElement.style.setProperty("--evi-search-fade", String(v));
 
@@ -172,10 +171,9 @@ function paint() {
         return;
     }
     const jumped = jump ? document.querySelectorAll(`[id="message-content-${CSS.escape(jump.messageId)}"]`) : [];
-    const jumpRanges = [...jumped].flatMap(rangesIn);
-    registry.set(JUMP, new Highlight(...jumpRanges));
+    registry.set(JUMP, new Highlight(...[...jumped].flatMap(rangesIn)));
     if (context?.settings.get("scope") === "all") {
-        const all = [...document.querySelectorAll("[id^='message-content-']")].filter(el => !jump || el.id !== `message-content-${jump.messageId}`);
+        const all = [...document.querySelectorAll(MESSAGE)].filter(el => !jump || el.id !== `message-content-${jump.messageId}`);
         registry.set(ALL, new Highlight(...all.flatMap(rangesIn)));
     } else registry.delete(ALL);
 }
@@ -183,8 +181,6 @@ function paint() {
 function schedule() {
     if (!frame) frame = requestAnimationFrame(paint);
 }
-
-const MESSAGE = "[id^='message-content-']";
 
 /** Whether a DOM change can add or change message text: the rest of Discord changes all the time */
 function touchesMessages(records: MutationRecord[]) {

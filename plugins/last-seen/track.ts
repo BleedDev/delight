@@ -230,14 +230,15 @@ export function pack(tracker: Tracker, now: number): Packed {
         flags[i] = (e.online ? 1 : 0) | (e.approx ? 2 : 0);
         i++;
     }
+    const fit = <T extends Float64Array | Uint8Array>(column: T): T => i < n ? column.slice(0, i) as T : column;
     return {
         v: 3,
         savedAt: now,
         ids: ids.join(SEP),
-        seen: i < n ? seen.slice(0, i) : seen,
-        message: i < n ? message.slice(0, i) : message,
-        active: i < n ? active.slice(0, i) : active,
-        flags: i < n ? flags.slice(0, i) : flags,
+        seen: fit(seen),
+        message: fit(message),
+        active: fit(active),
+        flags: fit(flags),
         channelIds: channelIds.join(SEP),
         messageIds: messageIds.join(SEP),
     };

@@ -4,8 +4,6 @@
  * Nothing here touches Discord, so it's all tested directly.
  */
 
-// ---- ring buffer ----------------------------------------------------------------------------------
-
 /** The last `capacity` items pushed, oldest dropped first. Pushing never allocates past the first lap. */
 export class RingBuffer<T> {
     private items: (T | undefined)[] = [];
@@ -51,8 +49,6 @@ export class RingBuffer<T> {
         this.start = this.count = this.total = 0;
     }
 }
-
-// ---- reading values safely ------------------------------------------------------------------------
 
 export type ValueKind =
     | "string" | "number" | "boolean" | "null" | "undefined" | "bigint" | "symbol"
@@ -216,8 +212,6 @@ export function treeChildren(value: unknown, ancestors: readonly unknown[], limi
     return { children, more: Math.max(0, total - raw.length) };
 }
 
-// ---- Flux actions ---------------------------------------------------------------------------------
-
 /** An action's keys besides `type`, the first few, for its row in the log */
 export function actionKeys(action: unknown, max = 4): { keys: string[]; more: number; } {
     const keys = safe(() => Object.keys(action as object).filter(k => k !== "type"), [] as string[]);
@@ -230,8 +224,6 @@ export function matchesType(type: string, filter: string) {
     const lower = type.toLowerCase();
     return words.every(w => lower.includes(w));
 }
-
-// ---- stores ---------------------------------------------------------------------------------------
 
 const GETTER = /^(?:get|is|has|can|should|are|was)(?:[A-Z_]|$)/;
 
@@ -267,8 +259,6 @@ export function evaluateGetters(store: object, names: readonly string[]): Getter
         }
     });
 }
-
-// ---- patch hits -----------------------------------------------------------------------------------
 
 /** What perf.ts reports per plugin (Perf.snapshot()), as far as patch hits need it */
 export interface SiteNumbers {

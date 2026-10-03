@@ -1,13 +1,12 @@
-import { matchesCombo } from "@shared/keybinds";
-
-import { Logger } from "./logger";
-import { Perf } from "./perf";
-
 /**
  * Plugins' keyboard shortcuts. A plugin registers a handler for one of its `keybind` settings
  * (ctx.keybind); one capture-phase listener on the window reads each setting's current value on
  * every key press, so changing a shortcut applies at once and there's nothing to re-register.
  */
+import { matchesCombo } from "@shared/keybinds";
+
+import { Logger } from "./logger";
+import { Perf } from "./perf";
 
 interface Entry {
     pluginId: string;

@@ -6,13 +6,6 @@ import { compareVersions } from "./store";
 export const SECTION_KINDS = ["added", "improved", "fixed", "progress"] as const;
 export type SectionKind = typeof SECTION_KINDS[number];
 
-export const SECTION_TITLES: Record<SectionKind, string> = {
-    added: "New Features",
-    improved: "Improvements",
-    fixed: "Fixes",
-    progress: "In Progress",
-};
-
 /** Where Evi's releases are published, linked from the modal's footer */
 export const RELEASES_URL = "https://github.com/BleedDev/evi/releases";
 

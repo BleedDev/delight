@@ -77,13 +77,6 @@ function findRoots(): Element[] {
 }
 
 function known(): KnownValues {
-    const get = (name: string) => {
-        try {
-            return findStore(name);
-        } catch {
-            return undefined;
-        }
-    };
     const call = <T>(fn: () => T): T | undefined => {
         try {
             return fn();
@@ -92,11 +85,11 @@ function known(): KnownValues {
         }
     };
     return collectKnown({
-        user: call(() => get("UserStore")?.getCurrentUser?.()),
-        connectedAccounts: call(() => get("ConnectedAccountsStore")?.getAccounts?.()),
-        authorizedApps: call(() => get("AuthorizedAppsStore")?.getNewestTokens?.()),
-        sessions: call(() => get("AuthSessionsStore")?.getSessions?.()),
-        paymentSources: call(() => get("PaymentSourceStore")?.paymentSources),
+        user: call(() => findStore("UserStore")?.getCurrentUser?.()),
+        connectedAccounts: call(() => findStore("ConnectedAccountsStore")?.getAccounts?.()),
+        authorizedApps: call(() => findStore("AuthorizedAppsStore")?.getNewestTokens?.()),
+        sessions: call(() => findStore("AuthSessionsStore")?.getSessions?.()),
+        paymentSources: call(() => findStore("PaymentSourceStore")?.paymentSources),
     });
 }
 
@@ -121,7 +114,7 @@ function scan(node: Node, values: KnownValues) {
     if (node.nodeType === Node.TEXT_NODE) return checkText(node as Text, values);
     if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) return;
     const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-    for (let t = walker.nextNode(); t; t = walker.nextNode()) checkText(t as Text, values);
+    for (let text = walker.nextNode(); text; text = walker.nextNode()) checkText(text as Text, values);
 }
 
 /** Tagged elements whose text changed (React reuses elements) or that left the page get untagged */
@@ -178,8 +171,8 @@ function refresh() {
             if (r.type === "characterData") pending.add(r.target);
             // React rewrote a className and dropped ours
             else if (r.type === "attributes") {
-                if (tagged.has(r.target as Element) && !(r.target as Element).classList.contains(BLUR)) (r.target as Element).classList.add(BLUR);
-                continue;
+                const el = r.target as Element;
+                if (tagged.has(el) && !el.classList.contains(BLUR)) el.classList.add(BLUR);
             } else r.addedNodes.forEach(n => pending.add(n));
         }
         if (pending.size) schedule();

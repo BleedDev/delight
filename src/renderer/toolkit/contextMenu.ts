@@ -110,8 +110,6 @@ export function addContextMenuPatch(navId: string | string[], callback: ContextM
 /** Whether the Menu component is currently hooked (some plugin registered an item and Menu loaded) */
 export const isMenuHooked = () => menuHook.installed;
 
-// ---- Discord's menu item components -------------------------------------------------------------
-
 export interface MenuItemProps {
     id: string;
     label?: ReactNode;

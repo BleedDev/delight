@@ -10,9 +10,10 @@ import { parseArgs } from "util";
 
 import pkg from "../../package.json";
 import { readAsarFile } from "../shared/asar";
+import { FLAVORS } from "../shared/release";
 import { createShimAsar, ORIGINAL_ASAR } from "../shared/shim";
 import { parseRemovedPlugins, REMOVED_PLUGINS_FILE, RETIRED_PLUGINS, STORE_MARKER } from "../shared/store";
-import { DiscordInstall, findInstalls, FLAVORS, injectionState, isDiscordRunning, killDiscord, searchedLocations, startDiscord, waitForExit } from "./discord";
+import { DiscordInstall, findInstalls, injectionState, isDiscordRunning, killDiscord, searchedLocations, startDiscord, waitForExit } from "./discord";
 import { APP_DATA, giveBackToUser, isSudo } from "./paths";
 import { cleanupPreviousUpdate, COMPILED, downloadVerified, fetchLatestRelease, isNewer, replaceExecutable, UpdateError } from "./update";
 

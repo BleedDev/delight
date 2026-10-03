@@ -27,14 +27,15 @@ import { AuthorsResult, CrashReportResult, HealthReportResult, HealthResult, IPC
 import { validatePluginReport } from "@shared/pluginReports";
 import { parsePulled, PulledPlugins } from "@shared/pulls";
 import { STORE_MARKER } from "@shared/store";
-import { app, ipcMain, webContents } from "electron";
+import { app, ipcMain } from "electron";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { onHotfixesAnnounced, onPullsAnnounced } from "./badges";
 import { apiRequest, apiUrl } from "./evirest";
-import { DATA_DIR, PLUGINS_DIR } from "./paths";
 import { mt } from "./locale";
+import { DATA_DIR, PLUGINS_DIR } from "./paths";
+import { broadcast, rateLimit, sleep } from "./util";
 
 const CACHE_DIR = join(DATA_DIR, "cache");
 
@@ -98,6 +99,7 @@ const authors = cachedGet("authors.json", "/authors", parseAuthors);
 export function authorBanners(): Set<string> {
     return new Set(Object.values(authors.saved()).flatMap(a => a.banner ? [a.banner] : []));
 }
+
 const health = cachedGet("health.json", "/health", json => ({ plugins: parseHealth(json), pulled: parsePulled(json) }));
 
 async function getAuthors(): Promise<AuthorsResult> {
@@ -111,8 +113,6 @@ async function getHealth(): Promise<HealthResult> {
     updatePulls(result.value.pulled);
     return { ok: true, ...result.value };
 }
-
-// ---- pulled plugins ---------------------------------------------------------------------------
 
 const PULLS_EVERY = 30 * 60 * 1000;
 /** After startup settles: until then the copy on disk covers it */
@@ -137,13 +137,8 @@ function updatePulls(next: PulledPlugins) {
     if (JSON.stringify(before) === JSON.stringify(next)) return;
     console.log(`[Evi] Reports: pulled plugins are now ${Object.keys(next).join(", ") || "none"}`);
     for (const listener of pullListeners) listener(next);
-    // Every Discord window, not just the one that asked
-    for (const wc of webContents.getAllWebContents()) {
-        if (!wc.isDestroyed()) wc.send(IPC.PULLS_CHANGED, next);
-    }
+    broadcast(IPC.PULLS_CHANGED, next);
 }
-
-// ---- hotfixes ---------------------------------------------------------------------------------
 
 const hotfixes = cachedGet("hotfixes.json", "/hotfixes", parseHotfixes);
 let hotfixList: Hotfix[] | undefined;
@@ -161,12 +156,8 @@ async function refreshHotfixes() {
     hotfixList = result.value;
     if (JSON.stringify(before) === JSON.stringify(result.value)) return;
     console.log(`[Evi] Reports: hotfixes for ${[...new Set(result.value.map(h => h.plugin))].join(", ") || "no plugins"}`);
-    for (const wc of webContents.getAllWebContents()) {
-        if (!wc.isDestroyed()) wc.send(IPC.HOTFIXES_CHANGED, result.value);
-    }
+    broadcast(IPC.HOTFIXES_CHANGED, result.value);
 }
-
-// ---- reports ----------------------------------------------------------------------------------
 
 /**
  * Whether the store installed this plugin here, at exactly this version: its marker in the plugins
@@ -209,10 +200,8 @@ async function reportHealth(input: unknown): Promise<HealthReportResult> {
     }
 }
 
-/** Plugin reports sent in the last hour. A person reports a plugin now and then, not five an hour. */
-const REPORTS_PER_HOUR = 5;
-const HOUR = 60 * 60 * 1000;
-let reportsSent: number[] = [];
+/** A person reports a plugin now and then, not five an hour */
+const reportAllowed = rateLimit(5, 60 * 60 * 1000);
 
 /**
  * A store plugin reported to Evi's team. Any plugin in the registry, installed or not. The server's
@@ -221,10 +210,7 @@ let reportsSent: number[] = [];
 async function reportPlugin(id: unknown, input: unknown): Promise<PluginReportResult> {
     const checked = validatePluginReport(id, input, mt);
     if ("error" in checked) return { ok: false, error: checked.error };
-    const now = Date.now();
-    reportsSent = reportsSent.filter(at => now - at < HOUR);
-    if (reportsSent.length >= REPORTS_PER_HOUR) return { ok: false, error: mt("main.rate.reportsSent") };
-    reportsSent.push(now);
+    if (!reportAllowed()) return { ok: false, error: mt("main.rate.reportsSent") };
     const { plugin, ...report } = checked.report;
     try {
         await apiRequest("POST", `/plugins/${plugin}/reports`, { headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) });
@@ -248,12 +234,12 @@ export function initReports() {
         setInterval(() => void getHealth(), PULLS_EVERY);
         // evi.rest says so the moment a plugin is pulled: asked for within a few seconds, spread out so
         // every install doesn't ask in the same instant
-        onPullsAnnounced(() => void new Promise(resolve => setTimeout(resolve, Math.random() * 5000)).then(() => getHealth()));
+        onPullsAnnounced(() => void sleep(Math.random() * 5000).then(() => getHealth()));
 
         // Right away, not after startup settles: a fix that's here before the page boots applies as
         // Discord's modules first load, with nothing to re-run
         void refreshHotfixes();
         setInterval(() => void refreshHotfixes(), PULLS_EVERY);
-        onHotfixesAnnounced(() => void new Promise(resolve => setTimeout(resolve, Math.random() * 5000)).then(() => refreshHotfixes()));
+        onHotfixesAnnounced(() => void sleep(Math.random() * 5000).then(() => refreshHotfixes()));
     });
 }

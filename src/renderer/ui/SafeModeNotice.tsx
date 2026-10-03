@@ -11,13 +11,13 @@ import { PluginManager } from "../plugins/manager";
 import { SafeMode } from "../safeMode";
 import { Settings } from "../settings";
 import { Themes } from "../themes";
-import { createRoot, React } from "../webpack/common";
+import { React } from "../webpack/common";
 import { filters, waitFor } from "../webpack/find";
 import { whenAppReady } from "./appReady";
 import { Button, Icon, IconButton, useExit, useStore } from "./components";
 import { SuspectLine } from "./CrashDetective";
 import { ensureStyles } from "./index";
-import { DiscordContext } from "./discordContext";
+import { mountRoot } from "./discordContext";
 
 const reasons: Record<SafeModeInfo["reason"], (info: SafeModeInfo) => string> = {
     "crash-loop": info => t("safeMode.reason.crashLoop", { count: info.failures }),
@@ -139,10 +139,7 @@ export function showSafeModeNotice() {
     shown = true;
     ensureStyles();
     const mount = () => {
-        const container = document.createElement("div");
-        container.className = "dl-root";
-        document.body.append(container);
-        createRoot(container).render(<DiscordContext><Floating /></DiscordContext>);
+        mountRoot(<Floating />, "dl-root");
     };
     // react-dom/client loads after React and Flux, which is all onCommonReady waits for
     waitFor(filters.byProps("createRoot"), () => whenAppReady(() => {

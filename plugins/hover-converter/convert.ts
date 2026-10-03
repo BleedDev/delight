@@ -48,8 +48,6 @@ export interface Match {
     found: Found;
 }
 
-// ---- Numbers ------------------------------------------------------------------------------------
-
 /** 1,234.56 · 1.234,56 · 1234 · 1,5 · 0.5 */
 const NUM = String.raw`\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d{1,3}(?:\.\d{3}){2,}(?:,\d+)?|\d{1,3}\.\d{3},\d+|\d+(?:[.,]\d+)?|\.\d+`;
 
@@ -67,8 +65,6 @@ export function parseNumber(raw: string): number {
 
 const SCALE: Record<string, number> = { k: 1e3, K: 1e3, m: 1e6, M: 1e6, b: 1e9, B: 1e9, bn: 1e9 };
 
-// ---- Money --------------------------------------------------------------------------------------
-
 const SYMBOLS: Record<string, string> = {
     "US$": "USD", "C$": "CAD", "CA$": "CAD", "A$": "AUD", "AU$": "AUD", "NZ$": "NZD", "HK$": "HKD", "R$": "BRL",
     "$": "USD", "€": "EUR", "£": "GBP", "¥": "JPY", "₺": "TRY", "TL": "TRY", "₽": "RUB", "₹": "INR", "₩": "KRW", "zł": "PLN",
@@ -83,8 +79,6 @@ const esc = (s: string) => s.replace(/[$.*+?^()[\]{}|\\]/g, "\\$&");
 const PREFIX_SYMBOLS = ["US$", "CA$", "AU$", "NZ$", "HK$", "C$", "A$", "R$", "$", "€", "£", "¥", "₺", "₽", "₹", "₩"].map(esc).join("|");
 const SUFFIX_SYMBOLS = ["€", "£", "\\$", "₺", "₽", "₹", "₩", "zł", "TL"].join("|");
 const CODE_ALT = CODES.join("|");
-
-// ---- Units --------------------------------------------------------------------------------------
 
 /** Spelled out, or a symbol nothing else uses; either may sit right after the number */
 const UNIT_WORDS: [RegExp, Unit][] = [
@@ -108,8 +102,6 @@ const SPACED_ONLY = String.raw`m|g`;
 /** Which system each unit belongs to; a found unit already in yours isn't converted */
 const IMPERIAL = new Set<Unit>(["ft", "in", "yd", "mi", "lb", "oz", "F", "mph", "gal", "floz"]);
 
-// ---- Times --------------------------------------------------------------------------------------
-
 /** Fixed offsets, in minutes; a bare "ET" follows daylight saving through its IANA zone */
 const ZONES: Record<string, number | string> = {
     UTC: 0, GMT: 0, WET: 0, WEST: 60, BST: 60, CET: 60, CEST: 120, EET: 120, EEST: 180, MSK: 180, TRT: 180,
@@ -119,8 +111,6 @@ const ZONES: Record<string, number | string> = {
     ET: "America/New_York", CT: "America/Chicago", MT: "America/Denver", PT: "America/Los_Angeles",
 };
 const ZONE_ALT = Object.keys(ZONES).sort((a, b) => b.length - a.length).join("|");
-
-// ---- Finding ------------------------------------------------------------------------------------
 
 /** Not glued to a word or another number on either side */
 const B = String.raw`(?<![\p{L}\p{N}_.,$€£¥₺₽₹₩/])`;
@@ -235,8 +225,6 @@ export function find(text: string): Match[] {
     }
     return out;
 }
-
-// ---- Converting ---------------------------------------------------------------------------------
 
 const UNIT_INTL: Record<Unit, string> = {
     ft: "foot", in: "inch", yd: "yard", mi: "mile", mm: "millimeter", cm: "centimeter", m: "meter", km: "kilometer",
@@ -413,8 +401,6 @@ export function segments(text: string, prefs: Prefs, kinds?: Kinds): Segment[] |
     if (last < text.length) out.push(text.slice(last));
     return out;
 }
-
-// ---- Defaults from where you are ----------------------------------------------------------------
 
 const REGION_CURRENCY: Record<string, string> = {
     US: "USD", GB: "GBP", CA: "CAD", AU: "AUD", NZ: "NZD", IE: "EUR", DE: "EUR", AT: "EUR", FR: "EUR", BE: "EUR", NL: "EUR", ES: "EUR",

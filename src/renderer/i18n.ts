@@ -4,8 +4,8 @@
  * changes live: components re-render through useLocale().
  */
 import { FALLBACK_LOCALE, matchLocale, Message, translate, Vars } from "@shared/i18n";
-import type { ReactNode } from "react";
 import { CATALOGS, EviKey, LOCALES } from "@shared/locales";
+import type { ReactNode } from "react";
 
 import { React } from "./webpack/common";
 import { filters, findStore, waitFor } from "./webpack/find";
@@ -34,8 +34,7 @@ function refresh() {
     const next = read();
     if (next === discordLocale) return;
     discordLocale = next;
-    const matched = matchLocale(next, LOCALES) ?? FALLBACK_LOCALE;
-    locale = matched;
+    locale = matchLocale(next, LOCALES) ?? FALLBACK_LOCALE;
     listeners.forEach(l => l());
 }
 

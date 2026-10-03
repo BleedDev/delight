@@ -40,8 +40,9 @@ function hiddenAuthors(): (message: any) => boolean {
 function widen(options: any) {
     const items: MediaItem[] = Array.isArray(options?.items) ? options.items : [];
     const start = options?.startingIndex ?? 0;
-    const message = items[start]?.sourceMetadata?.message;
-    if (items[start]?.type !== "IMAGE" || !message?.id || !message.channel_id) return;
+    const clicked = items[start];
+    const message = clicked?.sourceMetadata?.message;
+    if (clicked?.type !== "IMAGE" || !message?.id || !message.channel_id) return;
     // Already a multi-message gallery (a media channel, search...): Discord knows best there
     if (!items.every(i => i?.sourceMetadata?.message?.id === message.id)) return;
 

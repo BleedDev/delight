@@ -181,8 +181,6 @@ function HotfixCard({ json }: { json: string; }) {
     );
 }
 
-// ---- fixing a plugin's patch ------------------------------------------------------------------
-
 /** "plugin:index", or "" for a new patch. Kept with the draft. */
 let fixing = "";
 

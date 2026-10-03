@@ -263,6 +263,14 @@ export function getUnhooked<F extends Function>(fn: F): F {
     return (fn as any)?.[SYM_HOOK_ORIGINAL] ?? fn;
 }
 
+/** Wraps `original`, the function now at record.target[record.key], and installs the new wrapper */
+function rewrap(record: HookedFunction, original: (...args: any[]) => any) {
+    record.original = original;
+    record.descriptor = Object.getOwnPropertyDescriptor(record.target, record.key);
+    record.wrapper = createWrapper(record);
+    install(record);
+}
+
 /**
  * After live module replacement put new values on an object, move every hook on it onto the new
  * functions: hooks on `obj.key` itself, and hooks on functions of objects stored in `obj.key`.
@@ -273,10 +281,7 @@ export function rebaseHooks(target: object, oldValues: Map<PropertyKey, unknown>
         for (const record of own.values()) {
             const next = (target as any)[record.key];
             if (next === record.wrapper || typeof next !== "function") continue;
-            record.original = next;
-            record.descriptor = Object.getOwnPropertyDescriptor(target, record.key);
-            record.wrapper = createWrapper(record);
-            install(record);
+            rewrap(record, next);
         }
     }
 
@@ -293,10 +298,7 @@ export function rebaseHooks(target: object, oldValues: Map<PropertyKey, unknown>
             let byKey = hooked.get(newValue);
             if (!byKey) hooked.set(newValue, byKey = new Map());
             record.target = newValue;
-            record.original = newValue[record.key];
-            record.descriptor = Object.getOwnPropertyDescriptor(newValue, record.key);
-            record.wrapper = createWrapper(record);
-            install(record);
+            rewrap(record, newValue[record.key]);
             byKey.set(record.key, record);
         }
     }

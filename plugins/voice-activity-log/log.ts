@@ -156,6 +156,9 @@ export interface LogEntry {
     stillThere?: boolean;
 }
 
+/** An entry before the log numbers it and files it under its session */
+type NewEntry = Omit<LogEntry, "id" | "sessionId" | "channelId">;
+
 export interface Session {
     id: number;
     channelId: string;
@@ -275,7 +278,7 @@ export class VoiceLog {
 
     getVersion = () => this.version;
 
-    private push(session: Session, entry: Omit<LogEntry, "id" | "sessionId" | "channelId">): LogEntry {
+    private push(session: Session, entry: NewEntry): LogEntry {
         const full: LogEntry = { id: this.nextId++, sessionId: session.id, channelId: session.channelId, ...entry };
         session.entries.push(full);
         return full;
@@ -291,7 +294,7 @@ export class VoiceLog {
 
     private apply(session: Session, event: RawEvent, now: number, nameOf: (id: string) => string, channelName: (id: string) => string) {
         const { kind, userId, otherChannelId } = event;
-        const entry: Omit<LogEntry, "id" | "sessionId" | "channelId"> = { kind, userId, name: nameOf(userId), at: now };
+        const entry: NewEntry = { kind, userId, name: nameOf(userId), at: now };
         if (otherChannelId) {
             entry.otherChannelId = otherChannelId;
             entry.otherChannelName = channelName(otherChannelId);
@@ -322,7 +325,7 @@ export class VoiceLog {
             }
         }
         session.here = {};
-        const entry: Omit<LogEntry, "id" | "sessionId" | "channelId"> = { kind: "selfLeave", userId: selfId ?? "", name: "You", at: now, stayed: now - session.startedAt };
+        const entry: NewEntry = { kind: "selfLeave", userId: selfId ?? "", name: "You", at: now, stayed: now - session.startedAt };
         if (nextChannel) {
             entry.otherChannelId = nextChannel;
             entry.otherChannelName = channelName(nextChannel);
@@ -351,8 +354,6 @@ export class VoiceLog {
         }
     }
 }
-
-// ---- Words --------------------------------------------------------------------------------------
 
 /**
  * The words the log is described with. English lives here so this file stays pure; strings.ts
@@ -456,8 +457,6 @@ export function formatSessions(sessions: readonly Pick<Session, "channelName" | 
     }).join("\n\n");
 }
 
-// ---- Filters ------------------------------------------------------------------------------------
-
 export type KindFilter = "all" | "people" | "streams" | "voice";
 
 /** The filter chips: the English label, and the word key for the translated one */
@@ -479,8 +478,6 @@ export function filterEntries(entries: readonly LogEntry[], kind: KindFilter, qu
     return entries.filter(e => (kind === "all" || GROUPS[kind].has(e.kind)) && (!q || e.name.toLowerCase().includes(q)));
 }
 
-// ---- Toasts -------------------------------------------------------------------------------------
-
 export interface ToastSettings {
     toasts: boolean;
     onlyUnfocused: boolean;
@@ -491,8 +488,6 @@ export function shouldToast(entry: LogEntry, settings: ToastSettings, focused: b
     if (!settings.toasts || (settings.onlyUnfocused && focused)) return false;
     return entry.kind === "join" || entry.kind === "leave" || entry.kind === "moveIn" || entry.kind === "moveOut";
 }
-
-// ---- Source patch -------------------------------------------------------------------------------
 
 export const PATCHES = {
     /**

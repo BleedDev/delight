@@ -19,7 +19,7 @@ import { PluginManager } from "../plugins/manager";
 import { Settings } from "../settings";
 import { Store, StoreKind, StoreOp, UpdateAllResult } from "../store";
 import { React } from "../webpack/common";
-import { Badge, Button, Collapse, Dialog, Dropdown, EmptyState, FilterChips, Icon, IconButton, List, Notice, Pagination, scrollToTop, SearchField, Status, SwitchRow, Text, Tooltip, useStore } from "./components";
+import { Badge, Button, Collapse, Dialog, discordAvatarUrl, Dropdown, EmptyState, FilterChips, Icon, IconButton, List, Notice, Pagination, scrollToTop, SearchField, Status, SwitchRow, Text, Tooltip, useStore } from "./components";
 import { SettingsUI } from "./index";
 import { openStore, showTab, takeStoreTarget } from "./nav";
 import { PluginChangelogSetting } from "./PluginChangelog";
@@ -132,8 +132,6 @@ export function useStoreState() {
 }
 
 const formatDate = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString(I18n.discordLocale, { dateStyle: "medium" });
-
-// ---- shared pieces ----------------------------------------------------------------------------
 
 function OpStatus({ op }: { op: StoreOp | undefined; }) {
     if (!op) return null;
@@ -422,8 +420,6 @@ function Authors({ entry, onAuthor }: { entry: ListingInfo; onAuthor(slug: strin
 export function Glyph({ name, size }: { name: string; size?: "lg"; }) {
     return <span className="dl-store-glyph" data-size={size} aria-hidden="true">{name.charAt(0)}</span>;
 }
-
-// ---- listing ----------------------------------------------------------------------------------
 
 function StoreCard({ item, onOpen, onAuthor, pinned }: { item: Item; onOpen(): void; onAuthor(slug: string): void; pinned?: boolean; }) {
     const { entry } = item;
@@ -1013,8 +1009,6 @@ function StoreSettings({ kind, registryUrl }: { kind: StoreKind; registryUrl?: s
     );
 }
 
-// ---- detail -----------------------------------------------------------------------------------
-
 function Screenshot({ url, name, index }: { url: string; name: string; index: number; }) {
     const [src, setSrc] = React.useState<string | null | undefined>();
     React.useEffect(() => {
@@ -1159,14 +1153,7 @@ function StoreDetail({ item, onBack, onAuthor, onOpen }: { item: Item; onBack():
     );
 }
 
-// ---- author -----------------------------------------------------------------------------------
-
 /** Their Discord avatar, or Discord's default one for their account */
-function avatarUrl({ userId, avatar }: AuthorProfile) {
-    if (avatar) return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png?size=64`;
-    return `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(userId) >> BigInt(22)) % BigInt(6))}.png`;
-}
-
 /** A verified author: who they are, where to find them, and what they've published here */
 function AuthorView({ kind, profile, items, backLabel, onBack, onOpen, onAuthor }: {
     kind: StoreKind;
@@ -1202,7 +1189,7 @@ function AuthorView({ kind, profile, items, backLabel, onBack, onOpen, onAuthor 
 
             {profile.banner && <AuthorBanner url={profile.banner} />}
             <header className="dl-store-detail-head">
-                <img className="dl-author-avatar" src={avatarUrl(profile)} alt="" width={64} height={64} />
+                <img className="dl-author-avatar" src={discordAvatarUrl(profile.userId, profile.avatar, 64)} alt="" width={64} height={64} />
                 <div className="dl-store-detail-title">
                     <div className="dl-row-title">
                         <Text tag="h2" variant="heading-xl/bold" color="text-strong" id={headingId}>{profile.name}</Text>
@@ -1234,8 +1221,6 @@ function AuthorView({ kind, profile, items, backLabel, onBack, onOpen, onAuthor 
         </article>
     );
 }
-
-// ---- shared in chat ---------------------------------------------------------------------------
 
 /** A plugin shared in chat (evi.rest/p/<id>): the card Evi draws under the message, in place of Discord's embed */
 export function SharedPluginCard({ id }: { id: string; }) {
@@ -1299,8 +1284,6 @@ function CopyShareLink({ id }: { id: string; }) {
     });
     return <Button icon="link" onClick={copy}>{t(copied ? "share.copied" : "share.copy")}</Button>;
 }
-
-// ---- supporters ------------------------------------------------------------------------------
 
 /** "Supporters", in the gold of the supporter trophies */
 function SupportersPill() {

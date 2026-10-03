@@ -155,8 +155,6 @@ export function UpdatesTab() {
     );
 }
 
-// ---- the notice over Discord ------------------------------------------------------------------
-
 function UpdateNotice({ status, onClose }: { status: Available; onClose(): void; }) {
     const { installing, error } = useStore(Updates.subscribe, Updates.getSnapshot);
     const { version } = status.release;

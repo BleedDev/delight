@@ -15,7 +15,7 @@
  */
 import { Components, definePlugin, filters, find, findComponent, getStore, openLayer, React } from "@evi/api";
 import type { CloseLayer, PluginContext, SourcePatch } from "@evi/api";
-import type { MouseEvent, ReactNode } from "react";
+import type { MouseEvent, ReactElement, ReactNode } from "react";
 
 import { t } from "./strings";
 import { copyText, gradient, hasDetails, NameStyle, profileDetails, ProfileDetails, toInt } from "./details";
@@ -29,6 +29,12 @@ let ctx: PluginContext | undefined;
 let ViewerButton: ((props: any) => ReactNode) | undefined;
 
 const openExternal = (url: string) => void window.open(url, "_blank", "noopener,noreferrer");
+
+/** Wraps a button in Discord's tooltip, when there is one */
+function withTooltip(text: string, position: "top" | "bottom", button: ReactElement) {
+    const Tooltip = Components.Tooltip;
+    return Tooltip ? <Tooltip text={text} position={position}>{button}</Tooltip> : button;
+}
 
 const PATCHES = {
     /**
@@ -67,8 +73,6 @@ const PATCHES = {
     },
 } satisfies Record<string, SourcePatch>;
 
-// ---- Whose picture it is ------------------------------------------------------------------------
-
 function ownerName(linked: LinkedPicture): string {
     const id = linked.ownerId;
     if (!id) return "discord";
@@ -76,8 +80,6 @@ function ownerName(linked: LinkedPicture): string {
     if (user) return user.username || user.globalName || id;
     return getStore("GuildStore")?.getGuild?.(id)?.name || getStore("ChannelStore")?.getChannel?.(id)?.name || id;
 }
-
-// ---- The viewer ---------------------------------------------------------------------------------
 
 /** A picture's real width / height once it loads (which also has it ready for the viewer) */
 function measure(url: string): Promise<number | null> {
@@ -126,8 +128,6 @@ async function openViewer(picture: Picture) {
         openExternal(picture.url);
     }
 }
-
-// ---- Download -----------------------------------------------------------------------------------
 
 /** Saves bytes with the desktop app's save dialog, or else a browser download */
 async function save(data: Uint8Array, name: string, type: string): Promise<void> {
@@ -185,11 +185,8 @@ function DownloadButton({ picture }: { picture: Picture; }) {
             <DownloadIcon />
         </button>
     );
-    const Tooltip = Components.Tooltip;
-    return Tooltip ? <Tooltip text={t("download")} position="bottom">{button}</Tooltip> : button;
+    return withTooltip(t("download"), "bottom", button);
 }
-
-// ---- Profile details ----------------------------------------------------------------------------
 
 let closeDetails: CloseLayer | undefined;
 
@@ -242,8 +239,7 @@ function IconAction({ label, path, onClick, done }: { label: string; path: strin
             <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d={done ? CHECK_PATH : path} /></svg>
         </button>
     );
-    const Tooltip = Components.Tooltip;
-    return Tooltip ? <Tooltip text={label} position="top">{button}</Tooltip> : button;
+    return withTooltip(label, "top", button);
 }
 
 /** One colour: its swatch, what it is and its hex, with Copy and (when it can) Apply right there */
@@ -286,7 +282,7 @@ function StyledName({ name, style }: { name: string; style: NameStyle; }) {
 function openShop(skuId: string) {
     const go = find(filters.byCode("transitionTo - Transitioning to"));
     if (typeof go === "function") go(`/shop#itemSkuId=${skuId}`);
-    else window.open(`https://discord.com/shop#itemSkuId=${skuId}`, "_blank", "noopener,noreferrer");
+    else openExternal(`https://discord.com/shop#itemSkuId=${skuId}`);
 }
 
 function Row({ title, children }: { title: string; children: ReactNode; }) {
@@ -321,6 +317,7 @@ function DetailsDialog({ name, username, details, onClose }: { name: string; use
         const me = getStore("UserStore")?.getCurrentUser?.();
         return me ? profileDetails(me, getStore("UserProfileStore")?.getUserProfile?.(me.id)) : undefined;
     };
+    const applyTheme = (primary: string, accent: string) => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(primary), toInt(accent)] });
     const nameColors = nameStyle?.colors ?? [];
 
     return (
@@ -341,10 +338,10 @@ function DetailsDialog({ name, username, details, onClose }: { name: string; use
                         <Row title={t("details.theme")}>
                             <div className="evi-vi-preview evi-vi-theme" style={{ background: gradient([theme.primary, theme.accent]) }} aria-hidden="true" />
                             <ul className="evi-vi-swatches">
-                                <Swatch color={theme.primary} label={t("details.primary")} apply={{ label: t("details.useTop"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(mine()?.theme?.accent ?? theme.accent)] }) }} />
-                                <Swatch color={theme.accent} label={t("details.accent")} apply={{ label: t("details.useBottom"), run: () => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(mine()?.theme?.primary ?? theme.primary), toInt(theme.accent)] }) }} />
+                                <Swatch color={theme.primary} label={t("details.primary")} apply={{ label: t("details.useTop"), run: () => applyTheme(theme.primary, mine()?.theme?.accent ?? theme.accent) }} />
+                                <Swatch color={theme.accent} label={t("details.accent")} apply={{ label: t("details.useBottom"), run: () => applyTheme(mine()?.theme?.primary ?? theme.primary, theme.accent) }} />
                             </ul>
-                            <SectionAction label={t("details.applyTheme")} onClick={() => void applyToProfile("/users/@me/profile", { theme_colors: [toInt(theme.primary), toInt(theme.accent)] })} />
+                            <SectionAction label={t("details.applyTheme")} onClick={() => applyTheme(theme.primary, theme.accent)} />
                         </Row>
                     )}
                     {bannerColor && (
@@ -415,8 +412,7 @@ function DetailsButton({ user, displayProfile }: { user: any; displayProfile: an
             </svg>
         </button>
     );
-    const Tooltip = Components.Tooltip;
-    return Tooltip ? <Tooltip text={t("details.open")} position="bottom">{button}</Tooltip> : button;
+    return withTooltip(t("details.open"), "bottom", button);
 }
 
 /** The button fills the banner, so the banner has to be what it's positioned against */
@@ -530,7 +526,7 @@ const css = `
 @media (hover: hover) { .evi-vi-shop:hover { background: var(--button-filled-brand-background-hover, var(--brand-560, #4752c4)); } }
 .evi-vi-shop:active { scale: .97; }
 .evi-vi-shop:focus-visible { outline: 2px solid var(--focus-primary); outline-offset: 2px; }
-@media (hover: hover) { .evi-vi-plain { margin: 0; font-size: 14px; line-height: 18px; }
+.evi-vi-plain { margin: 0; font-size: 14px; line-height: 18px; }
 .evi-vi-empty { color: var(--text-muted, #949ba4); }
 `;
 

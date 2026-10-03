@@ -55,8 +55,6 @@ let state: CategoryState = EMPTY;
 type Storage = { get(key: string): unknown; set(key: string, value: unknown): void; };
 const storage = () => ctx?.settings as unknown as Storage | undefined;
 
-// ---- The DM list --------------------------------------------------------------------------------
-
 interface DmList {
     props: { padding?: number; selectedChannelId?: string | null; privateChannelIds?: string[]; };
     _list?: { scrollIntoViewRect?(rect: { start: number; end: number; }): void; } | null;
@@ -156,8 +154,6 @@ function onReadState() {
     if (collapsedKey(next) !== shownWhileCollapsed) refresh();
 }
 
-// ---- Discord's context menu (for the headers) ---------------------------------------------------
-
 type OpenContextMenu = (event: ReactMouseEvent, render: (props: any) => ReactNode) => void;
 const openContextMenu = (): OpenContextMenu | undefined => find(filters.byCode("enableSpellCheck", "renderLazy"));
 const MenuRoot = (): React.ComponentType<any> | undefined => find(filters.componentByCode("Menu API only allows Items"));
@@ -194,8 +190,6 @@ function openHeaderMenu(event: ReactMouseEvent, category: Category) {
     ));
 }
 
-// ---- Category headers ---------------------------------------------------------------------------
-
 function useStateVersion() {
     const [, rerender] = React.useReducer((n: number) => n + 1, 0);
     React.useEffect(() => {
@@ -229,8 +223,6 @@ function CategoryHeader({ entry }: { entry: LaidOutCategory; }) {
         </li>
     );
 }
-
-// ---- Naming dialog ------------------------------------------------------------------------------
 
 let closeOpen: CloseLayer | undefined;
 
@@ -328,8 +320,6 @@ function NameDialog({ category, channelId, onClose }: { category?: Category; cha
     );
 }
 
-// ---- DM right-click menus -----------------------------------------------------------------------
-
 function dmMenuItems(channelId: string): ReactNode {
     const inCategory = categoryOf(state, channelId);
     if (!state.categories.length) {
@@ -356,8 +346,6 @@ function dmMenuItems(channelId: string): ReactNode {
     }
     return items;
 }
-
-// ---- Plugin -------------------------------------------------------------------------------------
 
 export default definePlugin({
     settings,

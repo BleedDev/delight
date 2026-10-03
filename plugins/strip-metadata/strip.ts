@@ -47,7 +47,6 @@ function concat(parts: Uint8Array[]) {
     return out;
 }
 
-/* ---------------------------------- JPEG ---------------------------------- */
 
 /** Reads the Orientation tag (0x0112) from an APP1 EXIF payload (after the length bytes) */
 export function readExifOrientation(seg: Uint8Array): number | undefined {
@@ -142,7 +141,6 @@ function stripJpeg(b: Uint8Array): Uint8Array | null {
     return concat(parts);
 }
 
-/* ---------------------------------- PNG ----------------------------------- */
 
 function stripPng(b: Uint8Array): Uint8Array | null {
     const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
@@ -170,7 +168,6 @@ function stripPng(b: Uint8Array): Uint8Array | null {
     return removed ? concat(parts) : null;
 }
 
-/* ---------------------------------- WebP ---------------------------------- */
 
 function stripWebp(b: Uint8Array): Uint8Array | null {
     const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
@@ -205,7 +202,6 @@ function stripWebp(b: Uint8Array): Uint8Array | null {
     return concat([header, body]);
 }
 
-/* -------------------------------- File names ------------------------------- */
 
 /** A random name keeping the extension: "IMG_2041.JPG" -> "k3v9x0q2m7ab.JPG" */
 export function randomFileName(name: string, random: () => number = Math.random) {

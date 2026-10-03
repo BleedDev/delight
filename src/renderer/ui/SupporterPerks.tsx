@@ -10,7 +10,7 @@ import { I18n, t } from "../i18n";
 import { Native } from "../native";
 import { React } from "../webpack/common";
 import { Icon } from "./icons";
-import { Section, Status, SwitchRow, Text, useStore } from "./components";
+import { discordAvatarUrl, Section, Status, SwitchRow, Text, useStore } from "./components";
 import { currentUserId } from "./StoreCommunity";
 
 const CREDITS_URL = "https://evi.rest/credits";
@@ -104,10 +104,6 @@ interface Supporter {
     level: string;
 }
 
-const avatarOf = (s: Supporter) => s.avatar
-    ? `https://cdn.discordapp.com/avatars/${s.userId}/${s.avatar}.webp?size=64`
-    : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(s.userId) >> 22n) % 6n)}.png`;
-
 /** How many people the Updates tab shows before "+N more" */
 const SHOWN = 24;
 
@@ -150,7 +146,7 @@ export function Credits() {
                     <ul className="dl-credits-list">
                         {shown.map(s => (
                             <li key={s.userId} className="dl-credits-person">
-                                <img className="dl-credits-avatar" src={avatarOf(s)} alt="" width={40} height={40} loading="lazy" />
+                                <img className="dl-credits-avatar" src={discordAvatarUrl(s.userId, s.avatar, 64, "webp")} alt="" width={40} height={40} loading="lazy" />
                                 <span className="dl-row-text">
                                     <Text variant="text-md/semibold" color="text-strong">{s.name}</Text>
                                     {isSupporterBadge(s.level) && (

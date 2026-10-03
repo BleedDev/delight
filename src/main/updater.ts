@@ -22,14 +22,15 @@ import { compareVersions, isVersion } from "@shared/store";
 import { installerArgs, installerCommandLine, isStagedRelevant, parseStaged, shouldApplyOnQuit, shouldStage, StagedUpdate } from "@shared/silentUpdate";
 import { execFile, execFileSync, spawn } from "child_process";
 import { createHash } from "crypto";
-import { app, ipcMain, net, webContents, WebContents } from "electron";
+import { app, ipcMain, net, WebContents } from "electron";
 import { accessSync, constants, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 
 import { applyCorePayload, parseCorePayload } from "./coreUpdate";
+import { mt } from "./locale";
 import { DATA_DIR } from "./paths";
 import { settings } from "./settings";
-import { mt } from "./locale";
+import { broadcast } from "./util";
 
 /** evi.rest's mirror of GitHub's release API, then GitHub itself. EVI_UPDATE_API alone when set: tests serve fake releases from a local server */
 const APIS = releaseApis(process.env.EVI_UPDATE_API);
@@ -58,6 +59,8 @@ let forcedVersion: string | undefined;
 
 const silentOn = () => settings.silentUpdates === true;
 
+const DEV_BUILD_ERROR = "This Evi runs from a dev build. Update it with git pull and bun run build.";
+
 /** Running from a repo's build output rather than the core `evi install` put in the data folder */
 export function isDevBuild() {
     return resolve(globalThis.__eviCoreDir ?? "") !== resolve(DATA_DIR, "core");
@@ -73,8 +76,6 @@ function blockedReason(): string | undefined {
         return mt("main.update.rootOwned");
     }
 }
-
-// ---- the staged installer -----------------------------------------------------------------------
 
 function readStaged(): StagedUpdate | undefined {
     try {
@@ -110,8 +111,6 @@ function sha256Of(file: string) {
 function stagedFile(sha256: string) {
     return [CORE_PENDING, PENDING, EXE].find(file => existsSync(file) && sha256Of(file) === sha256);
 }
-
-// ---- checking -----------------------------------------------------------------------------------
 
 /** The newest release. /releases/latest never answers with a prerelease, so betas pick from the list instead */
 async function fetchLatest(beta: boolean): Promise<ReleaseInfo | null> {
@@ -163,8 +162,6 @@ export function checkForUpdate(force = false): Promise<UpdateStatus> {
     }).finally(() => void (checking = undefined));
     return checking;
 }
-
-// ---- downloading --------------------------------------------------------------------------------
 
 async function fetchBytes(url: string, max: number, onProgress?: (done: number, total: number) => void) {
     const res = await net.fetch(url, { headers: { "User-Agent": HEADERS["User-Agent"] }, cache: "no-store" });
@@ -236,13 +233,9 @@ function stageInBackground(status: UpdateStatus) {
     download(status.release).then(() => {
         console.log(`[Evi] Evi ${version} is downloaded and installs when Discord quits`);
         if (last?.state === "available" && last.release.version === version) last = withReady(last);
-        for (const contents of webContents.getAllWebContents()) {
-            if (!contents.isDestroyed()) contents.send(IPC.UPDATE_READY, version);
-        }
+        broadcast(IPC.UPDATE_READY, version);
     }, err => console.warn(`[Evi] Couldn’t download Evi ${version} in the background:`, (err as Error).message));
 }
-
-// ---- installing ---------------------------------------------------------------------------------
 
 /** PowerShell asking WMI to start a hidden process that isn't Discord's child */
 function wmiArgs(commandLine: string) {
@@ -345,7 +338,7 @@ function applyOnExit(staged: StagedUpdate, flavor: Flavor) {
  */
 async function prepare(minimum: unknown): Promise<UpdateInstallResult> {
     if (!isVersion(minimum)) return { ok: false, error: "No version given" };
-    if (isDevBuild()) return { ok: false, error: "This Evi runs from a dev build. Update it with git pull and bun run build." };
+    if (isDevBuild()) return { ok: false, error: DEV_BUILD_ERROR };
     const blocked = blockedReason();
     if (blocked) return { ok: false, error: blocked };
     try {
@@ -367,7 +360,7 @@ async function install(sender: WebContents): Promise<UpdateInstallResult> {
     const report = (progress: UpdateProgress) => {
         if (!sender.isDestroyed()) sender.send(IPC.UPDATE_PROGRESS, progress);
     };
-    if (isDevBuild()) return { ok: false, error: "This Evi runs from a dev build. Update it with git pull and bun run build." };
+    if (isDevBuild()) return { ok: false, error: DEV_BUILD_ERROR };
     const blocked = blockedReason();
     if (blocked) return { ok: false, error: blocked };
     if (installing) return { ok: false, error: mt("main.update.already") };

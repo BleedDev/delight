@@ -11,23 +11,11 @@ import { ipcMain } from "electron";
 
 import { apiRequest } from "./evirest";
 import { mt } from "./locale";
+import { rateLimit } from "./util";
 
 const HOUR = 60 * 60 * 1000;
-
-/** At most `max` in any hour */
-function hourly(max: number) {
-    const times: number[] = [];
-    return () => {
-        const now = Date.now();
-        while (times.length && times[0] <= now - HOUR) times.shift();
-        if (times.length >= max) return false;
-        times.push(now);
-        return true;
-    };
-}
-
-const submitAllowed = hourly(10);
-const reportAllowed = hourly(5);
+const submitAllowed = rateLimit(10, HOUR);
+const reportAllowed = rateLimit(5, HOUR);
 
 async function submitTheme(raw: unknown): Promise<ThemeSubmitResult> {
     const checked = validateThemeSubmission(raw, mt);

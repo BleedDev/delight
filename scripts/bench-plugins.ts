@@ -17,7 +17,7 @@ const ROOT = resolve(import.meta.dirname, "..");
 const REV = process.argv[2] ?? "HEAD";
 const PLUGINS = ["last-seen", "inline-translate"];
 
-// --- Timers and idle callbacks, run by hand ----------------------------------------------------
+// Timers and idle callbacks, run by hand
 
 type Timer = { fn: (...args: any[]) => void; at: number; id: number; };
 let timers: Timer[] = [];
@@ -49,7 +49,7 @@ g.addEventListener = () => { };
 g.removeEventListener = () => { };
 g.document = { documentElement: { lang: "en" }, hasFocus: () => true };
 
-// --- A stand-in for React: components, hooks, memo, and a render counter -----------------------
+// A stand-in for React: components, hooks, memo, and a render counter
 
 const MEMO = Symbol("memo");
 const Fragment = Symbol("Fragment");
@@ -196,8 +196,6 @@ const React: any = {
     },
 };
 
-// --- A fake @evi/api -----------------------------------------------------------------------------
-
 const stores = new Map<string, any>();
 const settingsListeners = new Set<() => void>();
 let settingsData: Record<string, Record<string, unknown>> = {};
@@ -242,7 +240,6 @@ function fakeContext(id: string, schema: Record<string, { default: unknown; }>) 
         toast() { },
         native: { call: async (_m: string, text: string) => ({ source: "es", text: `[${text}]` }) },
     };
-    ctx.flux = flux;
     (ctx as any).flux.subscribe = (type: string, fn: any) => void flux.set(type, fn);
     return ctx;
 }
@@ -270,7 +267,7 @@ plugin({
     },
 });
 
-// --- Discord's stores, with 1000 people --------------------------------------------------------
+// Discord's stores, with 1000 people
 
 const PEOPLE = 1000;
 const ids = Array.from({ length: PEOPLE }, (_, i) => `1${String(i).padStart(17, "0")}`);
@@ -281,8 +278,6 @@ stores.set("RelationshipStore", { isFriend: (id: string) => id.endsWith("7"), ge
 stores.set("PrivateChannelStore", { getPrivateChannelIds: () => [] });
 stores.set("ChannelStore", { getChannel: (id: string) => ({ id, type: 0, name: "general", guild_id: "g" }) });
 stores.set("LocaleStore", { locale: "en-US", addChangeListener() { }, removeChangeListener() { } });
-
-// --- Loading the code at REV and in the working tree -------------------------------------------
 
 const BEFORE = join(tmpdir(), `evi-bench-${process.pid}`);
 function checkout() {
@@ -301,8 +296,6 @@ const time = (fn: () => void) => {
 };
 const ms = (n: number) => `${n.toFixed(2)} ms`;
 const rendersOf = (name: string) => renders.get(name) ?? 0;
-
-// --- Last Seen -----------------------------------------------------------------------------------
 
 async function lastSeen(dir: string) {
     const index = (await import(join(dir, "last-seen/index.tsx"))).default;
@@ -390,8 +383,6 @@ async function lastSeen(dir: string) {
     };
 }
 
-// --- Inline Translate ----------------------------------------------------------------------------
-
 async function inlineTranslate(dir: string) {
     const index = (await import(join(dir, "inline-translate/index.tsx"))).default;
     const ctx = fakeContext("inline-translate", index.settings);
@@ -432,8 +423,6 @@ async function inlineTranslate(dir: string) {
         "mount 1000 messages, automatic on": ms(mountAuto),
     };
 }
-
-// --- Run -------------------------------------------------------------------------------------------
 
 checkout();
 try {

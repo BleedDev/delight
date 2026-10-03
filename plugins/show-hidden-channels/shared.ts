@@ -65,8 +65,6 @@ export function findCached<T>(search: () => T | undefined): () => T | undefined 
     };
 }
 
-// ---- permissions --------------------------------------------------------------------------------
-
 /**
  * PermissionStore changes seen while the plugin runs (see watchPermissions). Anything cached from
  * PermissionStore remembers the count it was made under and is worked out again once it moved.

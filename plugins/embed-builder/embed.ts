@@ -34,8 +34,6 @@ export interface Embed {
     timestamp: string;
 }
 
-// ---- Components V2 ------------------------------------------------------------------------------
-
 export interface MediaItem { url: string; description: string; spoiler: boolean; }
 export interface LinkButton { label: string; url: string; /** A unicode emoji, or "" */ emoji: string; }
 
@@ -129,16 +127,12 @@ export const emptyDraft = (mode: Mode = "classic"): Draft => ({
     components: mode === "v2" ? [emptyBlock("container")] : [],
 });
 
-// ---- colours ------------------------------------------------------------------------------------
-
 export function hexToInt(hex: string): number | undefined {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
     return m ? parseInt(m[1], 16) : undefined;
 }
 
 export const intToHex = (n: number) => `#${(n & 0xffffff).toString(16).padStart(6, "0")}`;
-
-// ---- lengths and checks -------------------------------------------------------------------------
 
 /** What counts toward the 6000 characters an embed may hold */
 export const embedLength = (e: Embed) =>
@@ -242,7 +236,8 @@ export function problems(d: Draft, attachments?: string[]): Problem[] {
         // An author icon or URL without a name, or a footer icon without text, isn't shown
         if (!hasContent(e) && (e.url || e.color || e.timestamp || e.authorIcon || e.footerIcon)) out.push({ kind: "emptyEmbed", where: p });
     });
-    if (totalLength(d) > LIMITS.total) out.push({ kind: "tooLong", where: "total", limit: LIMITS.total, length: totalLength(d) });
+    const total = totalLength(d);
+    if (total > LIMITS.total) out.push({ kind: "tooLong", where: "total", limit: LIMITS.total, length: total });
     if (!d.content.trim() && !d.embeds.some(hasContent)) out.push({ kind: "empty" });
     return out;
 }
@@ -280,11 +275,10 @@ function componentProblems(
                 if (!c.items.length || c.items.length > LIMITS.galleryItems) empty(where);
                 c.items.forEach((m, i) => media(`${where}.i${i + 1}`, m));
                 break;
-            case "file": {
+            case "file":
                 if (!c.name.trim()) empty(where);
                 else if (attachments && !attachments.includes(c.name)) out.push({ kind: "noAttachment", where, name: c.name });
                 break;
-            }
             case "buttons":
                 if (!c.buttons.length || c.buttons.length > LIMITS.rowButtons) empty(where);
                 c.buttons.forEach((b, i) => button(`${where}.b${i + 1}`, b));
@@ -307,8 +301,6 @@ function componentProblems(
     if (text > LIMITS.componentText) out.push({ kind: "tooLong", where: "componentText", limit: LIMITS.componentText, length: text });
     if (!blocks.length) out.push({ kind: "empty" });
 }
-
-// ---- to and from Discord's JSON -----------------------------------------------------------------
 
 const clean = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== "")) as T;
 const opt = (s: string) => s.trim() || undefined;
@@ -585,8 +577,6 @@ export function galleryRows(count: number): number[] | "tall" {
     }
 }
 
-// ---- links --------------------------------------------------------------------------------------
-
 /** https://discord.com/channels/<guild>/<channel>/<message>, from any Discord host */
 export function parseMessageLink(link: string): { guildId: string; channelId: string; messageId: string; } | undefined {
     const m = /^https?:\/\/(?:(?:ptb|canary)\.)?discord(?:app)?\.com\/channels\/(\d{15,22}|@me)\/(\d{15,22})\/(\d{15,22})\/?$/i.exec(link.trim());
@@ -634,6 +624,6 @@ export function requestBody(body: Record<string, unknown>, files: { name: string
     const kept = keep.map(a => ({ id: a.id, filename: a.filename }));
     const fresh = files.map((f, i) => ({ id: i, filename: f.name }));
     const attachments = [...kept, ...fresh];
-    const json = attachments.length || keep.length ? { ...body, attachments } : body;
+    const json = attachments.length ? { ...body, attachments } : body;
     return { json, multipart: files.length > 0 };
 }

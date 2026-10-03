@@ -5,7 +5,7 @@
 import { getStore, React } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
-import { DEFAULT_CAP, describe, isIgnored, isOnlineStatus, lineText, pack, PRUNE_SLACK } from "./track";
+import { DEFAULT_CAP, describe, isIgnored, isOnlineStatus, lineText, merge, pack, PRUNE_SLACK } from "./track";
 import type { Entry, Options, Tracker } from "./track";
 import { t, words } from "./strings";
 
@@ -54,8 +54,6 @@ export const state = {
     /** False until the saved data has loaded; saving waits for it so nothing is overwritten */
     loaded: false,
 };
-
-// --- Discord stores --------------------------------------------------------------------------
 
 const stores = new Map<string, any>();
 
@@ -145,8 +143,6 @@ export function fullText(id: string): string | null {
     const entry = entryOf(id);
     return describe(entry, isOnline(id), Date.now(), channelLabel(entry?.channelId), words);
 }
-
-// --- Re-rendering ----------------------------------------------------------------------------
 
 /**
  * Lines subscribe per person, so a change re-renders only that person's lines. Changes are batched
@@ -259,8 +255,6 @@ export function lineOf(userId: string, setting: Where): string {
     return lineText(entryOf(userId), clock, words) ?? "";
 }
 
-// --- Storage ---------------------------------------------------------------------------------
-
 const DB_NAME = "evi-last-seen";
 const DB_STORE = "kv";
 const DB_KEY = "data";
@@ -312,6 +306,16 @@ export async function save() {
         state.dirty = true;
         state.context?.logger.error("Couldn't save", e);
     }
+}
+
+/** Merges each of `newer`'s entries into `base` (moved to the most recently used end) and returns `base` */
+export function mergeOnTop(base: Tracker, newer: Tracker): Tracker {
+    for (const [id, entry] of newer) {
+        const old = base.get(id);
+        base.delete(id);
+        base.set(id, merge(old, entry));
+    }
+    return base;
 }
 
 /** Replaces all data (clear, undo, import) and saves right away */

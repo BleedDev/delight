@@ -3,8 +3,6 @@
  * touches Discord or the network: the renderer (index.tsx) and the main process (native.ts) both use it.
  */
 
-// --- Languages ---------------------------------------------------------------------------------
-
 /** Codes Google still answers with, mapped to the current ISO ones users type */
 const ALIASES: Record<string, string> = { iw: "he", jw: "jv", in: "id", ji: "yi", fil: "tl", nb: "no" };
 
@@ -52,8 +50,6 @@ export function languageName(code: string, uiLocale?: string): string {
     return code;
 }
 
-// --- Google's response -------------------------------------------------------------------------
-
 export interface Translation {
     text: string;
     /** Language Google detected, normalized ("es", "zh-CN") */
@@ -77,14 +73,14 @@ export function parseGoogleResponse(data: unknown): Translation {
     return { text, source };
 }
 
-export const TRANSLATE_ORIGIN = "https://translate.googleapis.com";
+const TRANSLATE_ORIGIN = "https://translate.googleapis.com";
 
 export function translateUrl(text: string, target: string) {
     return `${TRANSLATE_ORIGIN}/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(target)}&dt=t&q=${encodeURIComponent(text)}`;
 }
 
 /** URL-encoded characters per request, well under what Google accepts in a GET */
-export const MAX_ENCODED_CHUNK = 6000;
+const MAX_ENCODED_CHUNK = 6000;
 
 const encodedLength = (s: string) => encodeURIComponent(s).length;
 
@@ -124,8 +120,6 @@ export function chunkText(text: string, maxEncoded = MAX_ENCODED_CHUNK): string[
     if (rest) chunks.push(rest);
     return chunks;
 }
-
-// --- What to translate -------------------------------------------------------------------------
 
 /**
  * Parts of a message that must come back untouched: code, links, mentions, channels, roles,
@@ -209,8 +203,6 @@ export function isTranslatable(text: string | undefined | null): boolean {
     return answer;
 }
 
-// --- Scripts: cheap hints before asking Google ---------------------------------------------------
-
 type Script = "latin" | "cyrillic" | "greek" | "arabic" | "hebrew" | "cjk" | "japanese" | "hangul" | "thai" | "devanagari" | "other";
 
 const SCRIPT_TESTS: [Exclude<Script, "latin" | "other">, RegExp][] = [
@@ -225,18 +217,16 @@ const SCRIPT_TESTS: [Exclude<Script, "latin" | "other">, RegExp][] = [
     ["devanagari", /\p{Script=Devanagari}/u],
 ];
 
-const LANGUAGE_SCRIPTS: Record<string, Script[]> = {
+/** Non-Latin scripts are only listed for these languages; undefined means Latin or unknown */
+const LANGUAGE_SCRIPTS: Partial<Record<string, Script[]>> = {
     ja: ["japanese", "cjk"], "zh-CN": ["cjk"], "zh-TW": ["cjk"], ko: ["hangul", "cjk"],
     ru: ["cyrillic"], uk: ["cyrillic"], bg: ["cyrillic"], be: ["cyrillic"], mk: ["cyrillic"], kk: ["cyrillic"], ky: ["cyrillic"], mn: ["cyrillic"], sr: ["cyrillic", "latin"], tg: ["cyrillic"],
     el: ["greek"], ar: ["arabic"], fa: ["arabic"], ur: ["arabic"], ps: ["arabic"], he: ["hebrew"], yi: ["hebrew"], th: ["thai"],
     hi: ["devanagari"], mr: ["devanagari"], ne: ["devanagari"],
 };
 
-/** Non-Latin scripts are only listed for the languages above; undefined means Latin or unknown */
-const scriptsOf = (language: string): Script[] | undefined => LANGUAGE_SCRIPTS[language];
-
 /** Which scripts the letters of a text use */
-export function scriptsIn(text: string): Set<Script> {
+function scriptsIn(text: string): Set<Script> {
     const found = new Set<Script>();
     for (const ch of translatableText(text)) {
         if (!/\p{L}/u.test(ch)) continue;
@@ -255,7 +245,7 @@ export function mightBeIn(text: string, languages: string[]): boolean {
     const present = scriptsIn(text);
     if (!present.size) return false;
     return languages.some(lang => {
-        const scripts = scriptsOf(lang);
+        const scripts = LANGUAGE_SCRIPTS[lang];
         if (!scripts) return present.has("latin") || present.has("other");
         return scripts.some(s => present.has(s));
     });
@@ -272,8 +262,6 @@ export function mightBeForeign(text: string, target: string): boolean {
     const own = unique[normalizeLanguage(target) ?? ""];
     return !(own && present.size === 1 && present.has(own));
 }
-
-// --- Automatic mode ----------------------------------------------------------------------------
 
 export type AutoMode = "off" | "list" | "foreign";
 
@@ -320,8 +308,6 @@ export function shouldShowAuto(result: Translation, original: string, options: P
 }
 
 const normalizeForCompare = (s: string) => s.toLocaleLowerCase().replace(/[\s\p{P}]+/gu, "");
-
-// --- Cache -------------------------------------------------------------------------------------
 
 /** A Map that forgets its least recently used entries past `capacity` */
 export class LRU<K, V> {
@@ -370,8 +356,6 @@ export class LRU<K, V> {
 }
 
 export const cacheKey = (messageId: string, target: string) => `${messageId}:${target}`;
-
-// --- Queue -------------------------------------------------------------------------------------
 
 interface Job {
     key: string;

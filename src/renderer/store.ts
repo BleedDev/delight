@@ -4,11 +4,10 @@ import type { PluginHealth } from "@shared/health";
 import type { PluginManifest } from "@shared/ipc";
 import { localizePlugin } from "@shared/pluginLocales";
 import { PulledPlugin, pullFor } from "@shared/pulls";
+import { PluginPage, RatingSummary, ratingScore } from "@shared/reviews";
 import { starKey, StarsSnapshot } from "@shared/stars";
-import type { PluginPage, RatingSummary } from "@shared/reviews";
-import { ratingScore } from "@shared/reviews";
-import type { StoreHome } from "@shared/storeHome";
 import { betaOf, InstalledPlugin, InstalledTheme, RegistryEntry, storeAction, StoreProgress, StoreResult, ThemeEntry } from "@shared/store";
+import type { StoreHome } from "@shared/storeHome";
 
 import { I18n, t } from "./i18n";
 import { Logger } from "./logger";
@@ -138,10 +137,6 @@ async function run(kind: StoreKind, id: string, label: string, action: () => Pro
     return result;
 }
 
-/**
- * What's installed under a plugin id. Main only looks in the plugins folder, so a plugin loaded from
- * somewhere else (a dev build) counts as installed outside the store instead of being offered again.
- */
 /** What a fresh install says, from how the plugin actually ended up rather than what was asked */
 function installedMessage(plugin: ReturnType<typeof PluginManager.get>) {
     if (SafeMode.active) return t("op.installedSafeMode");
@@ -151,6 +146,10 @@ function installedMessage(plugin: ReturnType<typeof PluginManager.get>) {
     return plugin.running ? t("op.installedOn") : t("store.installed");
 }
 
+/**
+ * What's installed under a plugin id. Main only looks in the plugins folder, so a plugin loaded from
+ * somewhere else (a dev build) counts as installed outside the store instead of being offered again.
+ */
 function installedPlugin(id: string): InstalledPlugin | undefined {
     const listed = state.installed[id];
     if (listed) return listed;
@@ -175,6 +174,7 @@ const media = new Map<string, Promise<{ url: string; video: boolean; } | null>>(
 function entryFor(entry: RegistryEntry): RegistryEntry {
     return Settings.data.pluginBetas?.includes(entry.id) ? betaOf(entry) ?? entry : entry;
 }
+
 let autoTimer: ReturnType<typeof setInterval> | undefined;
 const AUTO_UPDATE_EVERY = 6 * 60 * 60 * 1000;
 
@@ -311,8 +311,6 @@ export const Store = {
         return result;
     },
 
-    // ---- wishlist ------------------------------------------------------------------------------
-
     isWished: (kind: StoreKind, id: string) => !!Settings.data.wishlist?.includes(starKey(kind, id)),
 
     /** Hearts or un-hearts a store item. Its current version counts as seen: you hear about the next. */
@@ -337,8 +335,6 @@ export const Store = {
         });
         set({});
     },
-
-    // ---- betas ---------------------------------------------------------------------------------
 
     entryFor,
 

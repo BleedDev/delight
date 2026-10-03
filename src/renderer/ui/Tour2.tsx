@@ -75,7 +75,6 @@ async function turnOn(id: string): Promise<boolean> {
     return result.ok;
 }
 
-// ---- The illustrations ---------------------------------------------------------------------------
 // Each is a small scene drawn with plain boxes; only transform and opacity move. The resting styles are
 // the finished picture, so with motion off (or paused off screen) it still reads.
 
@@ -164,8 +163,6 @@ function Art({ id, root }: { id: TourPlugin; root?: React.RefObject<HTMLElement 
     const Scene = ART[id];
     return <span className="dl-tour-art" data-art={id} data-play={play ? "" : undefined} aria-hidden="true" ref={ref}><Scene /></span>;
 }
-
-// ---- The steps -----------------------------------------------------------------------------------
 
 function Dots({ step }: { step: Step; }) {
     const steps: Step[] = ["welcome", "pick", "install", "done"];
@@ -295,8 +292,6 @@ function Done({ on, failed, names }: { on: string[]; failed: string[]; names: (i
         </div>
     );
 }
-
-// ---- The modal -----------------------------------------------------------------------------------
 
 export function Tour2({ onClose }: { onClose(): void; }) {
     useLocale();

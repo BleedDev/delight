@@ -85,8 +85,6 @@ async function run(channel: any, action: Action, toastKey: ToastKey, target?: an
     }
 }
 
-// ---- Confirmation -------------------------------------------------------------------------------
-
 let closeOpen: CloseLayer | undefined;
 
 function confirm(title: string, body: string, button: string, onConfirm: () => void) {
@@ -132,8 +130,6 @@ function Confirm({ title, body, button, onCancel, onConfirm }: { title: string; 
     );
 }
 
-// ---- Menu ---------------------------------------------------------------------------------------
-
 function menuFor(channel: any) {
     if (!channel?.guild_id || !VOICE_TYPES.has(channel.type)) return;
     const states = store("VoiceStateStore")?.getVoiceStatesForChannel?.(channel.id);
@@ -176,13 +172,16 @@ function menuFor(channel: any) {
         }
     }
     const state = toggles(states);
+    const toggle = (key: "mute" | "unmute" | "deafen" | "undeafen", kind: "mute" | "deafen", value: boolean) => {
+        if (state[key]) items.push(<Menu.Item key={`evi-vcu-${key}`} id={`evi-vcu-${key}`} label={t(`menu.${key}`)} action={() => void run(channel, { kind, value }, `toast.${key}`)} />);
+    };
     if (canMute) {
-        if (state.mute) items.push(<Menu.Item key="evi-vcu-mute" id="evi-vcu-mute" label={t("menu.mute")} action={() => void run(channel, { kind: "mute", value: true }, "toast.mute")} />);
-        if (state.unmute) items.push(<Menu.Item key="evi-vcu-unmute" id="evi-vcu-unmute" label={t("menu.unmute")} action={() => void run(channel, { kind: "mute", value: false }, "toast.unmute")} />);
+        toggle("mute", "mute", true);
+        toggle("unmute", "mute", false);
     }
     if (canDeafen) {
-        if (state.deafen) items.push(<Menu.Item key="evi-vcu-deafen" id="evi-vcu-deafen" label={t("menu.deafen")} action={() => void run(channel, { kind: "deafen", value: true }, "toast.deafen")} />);
-        if (state.undeafen) items.push(<Menu.Item key="evi-vcu-undeafen" id="evi-vcu-undeafen" label={t("menu.undeafen")} action={() => void run(channel, { kind: "deafen", value: false }, "toast.undeafen")} />);
+        toggle("deafen", "deafen", true);
+        toggle("undeafen", "deafen", false);
     }
     if (!items.length) return;
 

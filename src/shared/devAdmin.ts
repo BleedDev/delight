@@ -49,8 +49,6 @@ export function isAdminRoute(method: unknown, path: unknown): method is AdminMet
         && ROUTES.some(([m, re]) => m === method && re.test(path));
 }
 
-// ---- reading answers ---------------------------------------------------------------------------
-
 const n = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : 0;
 const s = (v: unknown, max = 500) => typeof v === "string" ? v.slice(0, max) : "";
 const opt = (v: unknown, max = 500) => typeof v === "string" && v ? v.slice(0, max) : undefined;

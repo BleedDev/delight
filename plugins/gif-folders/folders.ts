@@ -186,9 +186,6 @@ export function filterFavourites<T extends { url: string; }>(items: readonly T[]
     return items.filter(item => urls.has(item.url));
 }
 
-// ---- Source patch -------------------------------------------------------------------------------
-
-
 /**
  * The GIF picker's class component, found against Discord's web build cached in
  * test-results/chunks (Sep 2026). `\i` is Evi's identifier shorthand and `$self` the plugin.

@@ -1,4 +1,4 @@
-import { definePlugin, find, findStore, React } from "@evi/api";
+import { definePlugin, find, findStore } from "@evi/api";
 import type { PluginContext } from "@evi/api";
 
 import { t } from "./strings";
@@ -7,9 +7,9 @@ import { PATCHES, readShowCurrentGame } from "./toggle";
 
 /**
  * "Share my activity" is the showCurrentGame user setting (status.showCurrentGame in the
- * PreloadedUserSettings proto). Source patches:
- *  - capture Discord's own setting object ({ getSetting, updateSetting, useSetting }) when its
- *    module defines it, so writes go through the same path as the settings page;
+ * PreloadedUserSettings proto). A source patch captures Discord's own setting object
+ * ({ getSetting, updateSetting, useSetting }) when its module defines it, so writes go through the
+ * same path as the settings page.
  *
  * The switch sits in the user panel through Evi (ctx.panelToggle): a gamepad button of its own, or
  * a line in Evi's menu there when other plugins add switches too.
@@ -82,7 +82,6 @@ async function toggle() {
     }
 }
 
-
 function GamepadIcon({ off }: { off: boolean; }) {
     return (
         <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -100,7 +99,6 @@ function GamepadIcon({ off }: { off: boolean; }) {
         </svg>
     );
 }
-
 
 interface IconProps { width?: number; height?: number; }
 

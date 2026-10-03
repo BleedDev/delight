@@ -67,7 +67,6 @@ type ModuleListener = (exports: any, id: string, source: () => string) => void;
 /** Called after every module finishes executing */
 export const moduleListeners = new Set<ModuleListener>();
 
-
 /** The untouched factory, whether or not we wrapped it. */
 export function getOriginalFactory(factory: ModuleFactory | undefined): ModuleFactory | undefined {
     return (factory as any)?.[SYM_ORIGINAL] ?? factory;

@@ -69,8 +69,6 @@ const manifest: PluginManifest = JSON.parse(new TextDecoder().decode(files["mani
 const code = new TextDecoder().decode(files["index.js"]);
 const nativeCode = files["native.js"] && new TextDecoder().decode(files["native.js"]);
 
-// ---- checks ----------------------------------------------------------------------------------
-
 async function publishedVersion(): Promise<string | undefined> {
     if (values.offline) return;
     try {
@@ -105,8 +103,6 @@ const entry: RegistryEntry = "entry" in built ? built.entry : {
     files: {} as RegistryEntry["files"], permissions: readPermissions(manifest.permissions),
 };
 const report = analyzePermissions({ code, manifest, native: entry.native });
-
-// ---- the page --------------------------------------------------------------------------------
 
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 /** **Bold** lead-ins, like the app's changelogs */
@@ -243,8 +239,6 @@ const previewDir = join(ROOT, "dist", "preview");
 mkdirSync(previewDir, { recursive: true });
 const page = join(previewDir, `${id}.html`);
 writeFileSync(page, html);
-
-// ---- the terminal ----------------------------------------------------------------------------
 
 for (const f of findings) console.log(`${f.level === "error" ? "✗" : "!"} ${f.message}`);
 if (!findings.length) console.log("✓ Nothing the store would refuse or ask about");

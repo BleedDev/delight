@@ -68,8 +68,6 @@ button {
     display: none !important;
 }
 
-/* ── Title bar ── */
-
 .titlebar {
     display: flex;
     align-items: center;
@@ -119,8 +117,6 @@ button {
         color: #fff;
     }
 }
-
-/* ── Layout ── */
 
 main {
     display: flex;
@@ -179,8 +175,6 @@ h1 {
     color: var(--color-text-secondary);
 }
 
-/* ── Update banner ── */
-
 .banner {
     display: flex;
     align-items: center;
@@ -197,8 +191,6 @@ h1 {
     font-size: 13px;
     font-weight: 500;
 }
-
-/* ── Install list ── */
 
 .installs {
     display: flex;
@@ -338,8 +330,6 @@ h1 {
     text-wrap: pretty;
 }
 
-/* ── Buttons ── */
-
 .actions {
     display: flex;
     gap: 8px;
@@ -394,8 +384,6 @@ h1 {
         background: var(--color-bg-control-hover);
     }
 }
-
-/* ── Working / done ── */
 
 .status-view {
     align-items: center;
@@ -523,7 +511,7 @@ h1 {
     }
 }
 
-/* ── Motion, only for people who haven't asked for less ── */
+/* Motion, only for people who haven't asked for less */
 
 @media (prefers-reduced-motion: no-preference) {
     .view.entering {

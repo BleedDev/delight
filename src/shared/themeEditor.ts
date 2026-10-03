@@ -79,10 +79,6 @@ export function blankDraft(base: ThemeBase, author = ""): ThemeDraft {
     return { name: "", description: "", author, version: "1.0.0", base, colors: { ...PRESETS[base] }, radius: 100, font: "", extraCss: "" };
 }
 
-// ---- colours ----------------------------------------------------------------------------------
-
-export const isHexColor = (value: string) => /^#[0-9a-f]{6}$/i.test(value);
-
 /** #rgb, #rrggbb, #rrggbbaa (alpha dropped) and rgb()/rgba() as #rrggbb, or undefined */
 export function toHex(raw: string): string | undefined {
     const value = raw.trim().toLowerCase();
@@ -112,8 +108,6 @@ export function contrast(a: string, b: string) {
     const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
     return (hi + 0.05) / (lo + 0.05);
 }
-
-// ---- writing ----------------------------------------------------------------------------------
 
 const mix = (color: string, percent: number, other: string) => `color-mix(in oklab, ${color} ${percent}%, ${other})`;
 const tint = (color: string, percent: number) => `color-mix(in srgb, ${color} ${percent}%, transparent)`;
@@ -257,8 +251,6 @@ export function buildThemeCss(draft: ThemeDraft): string {
     if (extra) parts.push(`${EXTRA_MARKER}\n${extra}`);
     return `${parts.join("\n\n")}\n`;
 }
-
-// ---- reading ----------------------------------------------------------------------------------
 
 /** Where each colour is read from, first match wins: the editor's own variable, then older names */
 const READ_FROM: Record<ColorKey, readonly string[]> = {

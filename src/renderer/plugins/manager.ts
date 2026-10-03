@@ -79,8 +79,6 @@ function emit() {
     for (const listener of listeners) listener();
 }
 
-// ---- evaluation -------------------------------------------------------------------------------
-
 const requireMap: Record<string, unknown> = {
     "@evi/api": api,
     // Plugins built before the rename to Evi
@@ -115,8 +113,6 @@ function evaluate({ manifest, code }: PluginPayload): PluginDefinition {
     if (!definition || typeof definition !== "object") throw new Error("Plugin has no default export");
     return definition;
 }
-
-// ---- source patches ---------------------------------------------------------------------------
 
 function patchesSignature(patches: SourcePatch[] | undefined) {
     return JSON.stringify(patches ?? [], (_, v) => v instanceof RegExp || typeof v === "function" ? String(v) : v);
@@ -158,14 +154,10 @@ function disablePatches(state: PluginState) {
     if (state.patchesRegistered) setPatches(state, undefined);
 }
 
-// ---- pulls ------------------------------------------------------------------------------------
-
 /** The pull that keeps this plugin off, if any. Dev builds are the developer's own and never pulled. */
 function pullOf({ manifest, source }: Pick<PluginState, "manifest" | "source">) {
     return source === "dev" ? undefined : pullFor(pulls, manifest.id, manifest.version);
 }
-
-// ---- hotfixes ---------------------------------------------------------------------------------
 
 /** Evi's fix for this plugin's version, if any. Dev builds are the developer's own, like with pulls. */
 function hotfixOf({ manifest, source }: Pick<PluginState, "manifest" | "source">) {
@@ -181,16 +173,14 @@ function takeHotfix(state: PluginState, hotfix: Hotfix | undefined) {
 }
 
 /** The plugin's source patches with Evi's fixes in place. Its definition keeps its own. */
-function patchesOf(state: PluginState, definition = state.definition): SourcePatch[] | undefined {
-    return applyPatchFixes(definition?.patches, state.hotfix);
+function patchesOf(state: PluginState): SourcePatch[] | undefined {
+    return applyPatchFixes(state.definition?.patches, state.hotfix);
 }
 
 /** Turned on, and not pulled by Evi */
 function shouldRun(state: PluginState, settings = Settings.data) {
     return isPluginEnabled(settings, state.manifest) && !state.pulled;
 }
-
-// ---- lifecycle --------------------------------------------------------------------------------
 
 async function start(state: PluginState) {
     const { definition } = state;
@@ -364,8 +354,6 @@ async function applyEnabled(state: PluginState, enabled: boolean) {
         }
     }
 }
-
-// ---- public -----------------------------------------------------------------------------------
 
 export const PluginManager = {
     /** Evaluate every plugin and register source patches of enabled ones. Runs before Discord's code. */

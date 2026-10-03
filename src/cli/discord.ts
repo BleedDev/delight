@@ -7,10 +7,6 @@ import { Flavor, FLAVORS } from "../shared/release";
 import { LEGACY_SHIM_MARKERS, ORIGINAL_ASAR, SHIM_MARKER } from "../shared/shim";
 import { isSudo, userHome } from "./paths";
 
-// Shared with the app's updater, which works out which Discord it runs in
-export { FLAVORS };
-export type { Flavor };
-
 export type InjectionState = "clean" | "evi" | "other-mod";
 
 export interface DiscordInstall {
@@ -21,7 +17,7 @@ export interface DiscordInstall {
     versions: { version: string; resources: string; }[];
 }
 
-export function compareVersions(a: string, b: string) {
+function compareVersions(a: string, b: string) {
     const pa = a.split(".").map(Number);
     const pb = b.split(".").map(Number);
     for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
@@ -114,7 +110,7 @@ export function findInstalls(): DiscordInstall[] {
     return [];
 }
 
-export function isOurShim(asar: string) {
+function isOurShim(asar: string) {
     try {
         if (!statSync(asar).isFile()) return false;
         const code = readAsarFile(asar, "index.js");

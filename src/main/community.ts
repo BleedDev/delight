@@ -7,31 +7,30 @@
  * Also the daily usage check-in (shared/analytics.ts): once a day, which store plugins this install
  * has and which are on, unless it's turned off in the store's settings.
  */
-import type { CommunityResult } from "@shared/ipc";
-import { IPC } from "@shared/ipc";
-import { parseCredits } from "@shared/badges";
-import { parseRequired } from "@shared/required";
 import { parseAnnouncements } from "@shared/announcements";
-import { isAdminRoute } from "@shared/devAdmin";
-import { imageType } from "@shared/images";
-import { parseDevLive } from "@shared/devLive";
 import { AUTHOR_LINKS, clampDays, NOT_AUTHOR, parseAuthorStats } from "@shared/authorStats";
+import { parseCredits } from "@shared/badges";
+import { isAdminRoute } from "@shared/devAdmin";
+import { parseDevLive } from "@shared/devLive";
+import { imageType } from "@shared/images";
+import { CommunityResult, IPC } from "@shared/ipc";
 import { parseNotifications } from "@shared/notifications";
+import { parseRequired } from "@shared/required";
 import { parsePluginPage, parseRatings, validateReview } from "@shared/reviews";
-import { parseStoreHome } from "@shared/storeHome";
 import { isPluginId } from "@shared/store";
-import { ipcMain, shell, webContents } from "electron";
+import { parseStoreHome } from "@shared/storeHome";
+import { ipcMain, shell } from "electron";
 import { readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { inlineBadgeIcons, onAnnouncementsChanged, onInboxAnnounced, onRequiredChanged } from "./badges";
 import { apiRequest, apiUrl } from "./evirest";
+import { mt } from "./locale";
 import { DATA_DIR } from "./paths";
 import { cachedGet } from "./reports";
 import { settings } from "./settings";
 import { storeUsage } from "./store";
-import { mt } from "./locale";
-
+import { broadcast, rateLimit } from "./util";
 
 const home = cachedGet("store-home.json", "/store/home", parseStoreHome);
 const ratings = cachedGet("ratings.json", "/ratings", parseRatings);
@@ -52,24 +51,9 @@ async function call<T>(run: () => Promise<T>): Promise<CommunityResult<T>> {
 const cached = async <T>(get: () => Promise<{ ok: true; value: T; } | { ok: false; error: string; }>): Promise<CommunityResult<T>> => get();
 
 /** Writes from the page (reviews, reports, follows) a few at a time: no plugin can make this install spam evi.rest */
-const writes: number[] = [];
-function allowWrite() {
-    const now = Date.now();
-    while (writes.length && now - writes[0] > 60_000) writes.shift();
-    if (writes.length >= 10) return false;
-    writes.push(now);
-    return true;
-}
-
+const allowWrite = rateLimit(10, 60_000);
 /** Admin changes from the Developers page: a person reviewing, not a loop */
-const adminWrites: number[] = [];
-function allowAdminWrite() {
-    const now = Date.now();
-    while (adminWrites.length && now - adminWrites[0] > 60_000) adminWrites.shift();
-    if (adminWrites.length >= 30) return false;
-    adminWrites.push(now);
-    return true;
-}
+const allowAdminWrite = rateLimit(30, 60_000);
 
 const json = (body: unknown) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
@@ -81,14 +65,6 @@ async function review(id: unknown, input: unknown) {
     if ("error" in checked) return { ok: false as const, error: checked.error };
     return call(async () => (await apiRequest("PUT", `/plugins/${id}/review`, json(checked))).json);
 }
-
-// ---- the inbox ----------------------------------------------------------------------------------
-
-function announceInboxChange() {
-    for (const wc of webContents.getAllWebContents()) if (!wc.isDestroyed()) wc.send(IPC.COMMUNITY_INBOX_CHANGED);
-}
-
-// ---- usage check-in -------------------------------------------------------------------------------
 
 const CHECKIN_FILE = join(DATA_DIR, "checkin.json");
 const CHECK_EVERY = 3 * 60 * 60 * 1000;
@@ -187,15 +163,11 @@ export function initCommunity() {
     });
 
     // The stream says the inbox changed (or it reconnected and something may have): the page asks again
-    onInboxAnnounced(announceInboxChange);
-    // Spread out: every running Evi hears it in the same instant
+    onInboxAnnounced(() => broadcast(IPC.COMMUNITY_INBOX_CHANGED));
     // Spread over half a minute: every Evi that has to update would otherwise download in the same instant
-    onRequiredChanged(() => setTimeout(() => {
-        for (const wc of webContents.getAllWebContents()) if (!wc.isDestroyed()) wc.send(IPC.REQUIRED_CHANGED);
-    }, Math.random() * 30_000));
-    onAnnouncementsChanged(() => setTimeout(() => {
-        for (const wc of webContents.getAllWebContents()) if (!wc.isDestroyed()) wc.send(IPC.ANNOUNCEMENTS_CHANGED);
-    }, Math.random() * 5000));
+    onRequiredChanged(() => setTimeout(() => broadcast(IPC.REQUIRED_CHANGED), Math.random() * 30_000));
+    // Spread out: every running Evi hears it in the same instant
+    onAnnouncementsChanged(() => setTimeout(() => broadcast(IPC.ANNOUNCEMENTS_CHANGED), Math.random() * 5000));
 
     setTimeout(() => void checkin(), FIRST_AFTER).unref?.();
     setInterval(() => void checkin(), CHECK_EVERY).unref?.();

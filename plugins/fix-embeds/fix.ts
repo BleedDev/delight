@@ -43,11 +43,12 @@ export function fixLink(raw: string, choices: Choices): string {
     } catch {
         return raw;
     }
-    const labels = url.hostname.toLowerCase().split(".");
+    const hostname = url.hostname.toLowerCase();
+    const labels = hostname.split(".");
     for (const service of SERVICES) {
         const site = choices[service.id];
         if (!site || site === "off") continue;
-        const host = service.hosts.find(h => url.hostname.toLowerCase() === h || url.hostname.toLowerCase().endsWith(`.${h}`));
+        const host = service.hosts.find(h => hostname === h || hostname.endsWith(`.${h}`));
         if (!host) continue;
         const sub = labels.slice(0, labels.length - host.split(".").length);
         if (sub.length > 1) return raw;

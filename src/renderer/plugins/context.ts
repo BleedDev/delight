@@ -1,6 +1,7 @@
 import type { PluginManifest } from "@shared/ipc";
 import type { ReactNode } from "react";
 
+import { Keybinds } from "../keybinds";
 import { Logger } from "../logger";
 import { Native } from "../native";
 import { ProfileBadgeProvider, ProfileBadges } from "../profileBadges";
@@ -10,17 +11,16 @@ import { Settings } from "../settings";
 import { createStyle, ManagedStyle } from "../styles";
 import { CommandDefinition, registerCommand } from "../toolkit/commands";
 import { addContextMenuPatch, ContextMenuCallback } from "../toolkit/contextMenu";
+import { addPanelToggle, ensurePanelPatch, PanelToggle } from "../toolkit/panel";
 import { showToast, ToastOptions } from "../toolkit/toasts";
 import { Dispatcher, FluxAction, React } from "../webpack/common";
 import { Filter, FoundExport, waitFor } from "../webpack/find";
-import { Keybinds } from "../keybinds";
 import { PluginActivity } from "./activity";
 import { PluginGuard } from "./guard";
 import { fixedLookup } from "./hotfixes";
 import { diagnoseLookups, isLookupProblem, LOOKUP_GRACE_MS, trackLookup, untrackLookup } from "./lookups";
 import type { SettingsSchema, SettingsValues } from "./types";
 import { PluginUsage } from "./usage";
-import { addPanelToggle, ensurePanelPatch, PanelToggle } from "../toolkit/panel";
 
 export class PluginSettings<S extends SettingsSchema> {
     constructor(

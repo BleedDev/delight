@@ -92,8 +92,6 @@ const store = (name: string): any => {
 type Storage = { get(key: string): unknown; set(key: string, value: unknown): void; };
 const storage = () => context?.settings as unknown as Storage | undefined;
 
-// ---- Shared re-render signal --------------------------------------------------------------------
-
 /** Bumped on zone and settings changes and once a minute, on the minute */
 let version = 0;
 /** Bumped on zone and settings changes only: what a time that shows nothing waits for */
@@ -129,8 +127,6 @@ function commit(next: ZoneMap) {
     bump();
 }
 
-// ---- Formatting with the user's settings --------------------------------------------------------
-
 const locale = () => document.documentElement.lang || navigator.language || "en-US";
 
 function cycle(): HourCycle {
@@ -158,8 +154,6 @@ function userName(userId: string) {
     const user = store("UserStore")?.getUser?.(userId);
     return user?.globalName || user?.username || t("user.them");
 }
-
-// ---- Inline times -------------------------------------------------------------------------------
 
 function WithTooltip({ text, children }: { text: string; children: React.ReactElement; }) {
     const Tooltip = Components.Tooltip;
@@ -206,8 +200,6 @@ function clockIcon(zone: string, at: Date) {
         + `<circle cx="12" cy="12" r="9.5"/><path d="M12 12L${hand(h * 30, 4.5)}"/><path d="M12 12L${hand(m * 6, 6.5)}"/></svg>`;
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
-
-// ---- The picker ---------------------------------------------------------------------------------
 
 let closeOpen: CloseLayer | undefined;
 
@@ -282,8 +274,8 @@ function Picker({ userId, onClose }: { userId: string; onClose(): void; }) {
                         <h2 id="evi-tz-title">{t("picker.title", { name })}</h2>
                         <p>
                             {current
-                                ? <>{t("picker.now", { city: cityOf(current), time: formatTime(now, current, { cycle: cyc, locale: loc, weekday: true }) })}</>
-                                : <>{t("picker.hint")}</>}
+                                ? t("picker.now", { city: cityOf(current), time: formatTime(now, current, { cycle: cyc, locale: loc, weekday: true }) })
+                                : t("picker.hint")}
                         </p>
                     </div>
                     <button type="button" className="evi-tz-close" aria-label={t("picker.close")} onClick={onClose}>
@@ -338,8 +330,6 @@ function Picker({ userId, onClose }: { userId: string; onClose(): void; }) {
         </div>
     );
 }
-
-// ---- Settings panel -----------------------------------------------------------------------------
 
 function SavedPanel() {
     useVersion();

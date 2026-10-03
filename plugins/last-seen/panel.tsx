@@ -4,7 +4,7 @@
  */
 import { Components, React, useLocale } from "@evi/api";
 
-import { fullText, opts, replaceAll, state, store, useVersion } from "./state";
+import { fullText, mergeOnTop, opts, replaceAll, state, store, useVersion } from "./state";
 import { people, t } from "./strings";
 import { DEFAULT_CAP, deserialize, merge, serialize } from "./track";
 import type { Entry, Tracker } from "./track";
@@ -60,8 +60,6 @@ function download(data: unknown) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// --- Remembered: count, clear with undo, export, import --------------------------------------
-
 function Remembered() {
     useLocale();
     useVersion();
@@ -85,12 +83,7 @@ function Remembered() {
     const restore = () => {
         if (!undo) return;
         // Keep anything seen since clearing, on top of what's restored
-        const tracker = new Map(undo.tracker);
-        for (const [id, entry] of state.tracker) {
-            const old = tracker.get(id);
-            tracker.delete(id);
-            tracker.set(id, merge(old, entry));
-        }
+        const tracker = mergeOnTop(new Map(undo.tracker), state.tracker);
         setUndo(undefined);
         void replaceAll(tracker);
         state.context?.toast(t("toast.restored", { people: people(tracker.size) }), { type: "success" });
@@ -162,8 +155,6 @@ function Remembered() {
         </div>
     );
 }
-
-// --- Everyone, searchable --------------------------------------------------------------------
 
 function Avatar({ user, name }: { user: any; name: string; }) {
     const [broken, setBroken] = React.useState(false);

@@ -34,8 +34,6 @@ const OPEN_KEY = "open";
 const MAX_DRAFTS = 30;
 const WEBHOOK_NAME = "Evi Embeds";
 
-// ---- Discord ------------------------------------------------------------------------------------
-
 const store = (name: string): any => {
     try {
         return getStore(name);
@@ -88,17 +86,19 @@ function firstError(node: any, path = ""): string | undefined {
 
 interface Webhook { id: string; name: string; token: string; avatar: string | null; channelId: string; }
 
-async function listWebhooks(channel: any): Promise<Webhook[]> {
+function apiClient(): HttpClient {
     const client = http();
     if (!client) throw new Error(t("error.noClient"));
-    const res = await client.get({ url: `/channels/${webhookChannelId(channel)}/webhooks`, rejectWithError: true });
+    return client;
+}
+
+async function listWebhooks(channel: any): Promise<Webhook[]> {
+    const res = await apiClient().get({ url: `/channels/${webhookChannelId(channel)}/webhooks`, rejectWithError: true });
     return usableWebhooks(res?.body);
 }
 
 async function createWebhook(channel: any): Promise<Webhook> {
-    const client = http();
-    if (!client) throw new Error(t("error.noClient"));
-    const res = await client.post({ url: `/channels/${webhookChannelId(channel)}/webhooks`, body: { name: WEBHOOK_NAME }, rejectWithError: true });
+    const res = await apiClient().post({ url: `/channels/${webhookChannelId(channel)}/webhooks`, body: { name: WEBHOOK_NAME }, rejectWithError: true });
     const [hook] = usableWebhooks([res?.body]);
     if (!hook) throw new Error(t("error.createFailed"));
     return hook;
@@ -140,8 +140,6 @@ async function copy(text: string, done: string) {
         context?.toast(t("toast.copyFailed"), { type: "failure" });
     }
 }
-
-// ---- Drafts -------------------------------------------------------------------------------------
 
 interface SavedDraft { name: string; savedAt: number; draft: Draft; }
 
@@ -206,8 +204,6 @@ const draftName = (d: Draft) => {
     return text ? text.slice(0, 48) : t("drafts.untitled");
 };
 
-// ---- Icons --------------------------------------------------------------------------------------
-
 const ICON = {
     up: "M12 7.4 5.7 13.7a1 1 0 1 0 1.4 1.4L12 10.2l4.9 4.9a1 1 0 0 0 1.4-1.4L12 7.4Z",
     down: "M12 16.6l6.3-6.3a1 1 0 1 0-1.4-1.4L12 13.8 7.1 8.9a1 1 0 0 0-1.4 1.4l6.3 6.3Z",
@@ -243,8 +239,6 @@ function IconButton({ label, icon, onClick, disabled, danger }: { label: string;
     );
 }
 
-// ---- Preview ------------------------------------------------------------------------------------
-
 /** Discord's own markdown: its embed title rules for titles, its message rules for the rest */
 function Markdown({ text, channelId, inline }: { text: string; channelId: string; inline?: boolean; }) {
     let nodes: ReactNode = text;
@@ -272,6 +266,9 @@ function EmbedPreview({ e, channelId, resolve }: { e: Embed; channelId: string; 
     const fields = e.fields.filter(f => f.name.trim() || f.value.trim());
     const thumb = resolve(e.thumbnail);
     const image = resolve(e.image);
+    const authorIcon = resolve(e.authorIcon);
+    const footerIcon = resolve(e.footerIcon);
+    const footerText = e.footerText.trim();
     const time = e.timestamp && !Number.isNaN(Date.parse(e.timestamp)) ? new Date(e.timestamp) : undefined;
     const columns = fieldColumns(fields.map(f => f.inline), thumb ? 2 : 3);
     return (
@@ -279,7 +276,7 @@ function EmbedPreview({ e, channelId, resolve }: { e: Embed; channelId: string; 
             <div className="evi-eb-embed-grid" data-thumb={thumb ? "" : undefined}>
                 {e.authorName.trim() && (
                     <div className="evi-eb-embed-author">
-                        {resolve(e.authorIcon) && <img src={resolve(e.authorIcon)} alt="" />}
+                        {authorIcon && <img src={authorIcon} alt="" />}
                         {/^https?:/i.test(e.authorUrl.trim()) ? <a href={e.authorUrl.trim()} target="_blank" rel="noreferrer">{e.authorName}</a> : <span>{e.authorName}</span>}
                     </div>
                 )}
@@ -301,12 +298,12 @@ function EmbedPreview({ e, channelId, resolve }: { e: Embed; channelId: string; 
                 )}
                 {image && <img className="evi-eb-embed-image" src={image} alt="" />}
                 {thumb && <img className="evi-eb-embed-thumb" src={thumb} alt="" />}
-                {(e.footerText.trim() || time) && (
+                {(footerText || time) && (
                     <div className="evi-eb-embed-footer">
-                        {resolve(e.footerIcon) && e.footerText.trim() && <img src={resolve(e.footerIcon)} alt="" />}
+                        {footerIcon && footerText && <img src={footerIcon} alt="" />}
                         <span>
-                            {e.footerText.trim()}
-                            {e.footerText.trim() && time && <span className="evi-eb-dot">•</span>}
+                            {footerText}
+                            {footerText && time && <span className="evi-eb-dot">•</span>}
                             {time && time.toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}
                         </span>
                     </div>
@@ -458,8 +455,6 @@ function MessagePreview({ draft, webhook, channelId, resolve, files }: { draft: 
     );
 }
 
-// ---- Problems -----------------------------------------------------------------------------------
-
 function problemText(p: Problem): string {
     switch (p.kind) {
         case "tooLong": return t("problem.tooLong", { where: whereText(p.where), length: p.length, limit: p.limit });
@@ -517,8 +512,6 @@ const cardKeys = (where: string) => {
     }
     return keys;
 };
-
-// ---- Form controls ------------------------------------------------------------------------------
 
 function Counter({ length, limit }: { length: number; limit: number; }) {
     if (length < limit * 0.8) return null;
@@ -658,8 +651,6 @@ const move = <T,>(list: T[], i: number, by: number): T[] => {
 };
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
 
-// ---- Classic editor -----------------------------------------------------------------------------
-
 function FieldEditor({ field, index, count, where, onChange, onMove, onRemove }: {
     field: Field; index: number; count: number; where: string; onChange(f: Field): void; onMove(by: number): void; onRemove(): void;
 }) {
@@ -769,8 +760,6 @@ function EmbedEditor({ embed, index, count, open, onToggle, onChange, onMove, on
         </Card>
     );
 }
-
-// ---- Components V2 editor -----------------------------------------------------------------------
 
 const KINDS: Kind[] = ["text", "section", "gallery", "buttons", "separator", "file", "container"];
 
@@ -1031,8 +1020,6 @@ function BlockEditor({ block, where, index, count, tree, onChange, onMove, onRem
     );
 }
 
-// ---- Attachments ---------------------------------------------------------------------------------
-
 function Attachments({ files, kept, onAdd, onRemove }: { files: File[]; kept: SentAttachment[]; onAdd(list: FileList): void; onRemove(i: number): void; }) {
     const input = React.useRef<HTMLInputElement>(null);
     return (
@@ -1076,8 +1063,6 @@ function Attachments({ files, kept, onAdd, onRemove }: { files: File[]; kept: Se
     );
 }
 
-// ---- The dialog ---------------------------------------------------------------------------------
-
 type Panel = "none" | "import" | "edit" | "drafts";
 
 /** Cards open at the start: the first embed, or the first component and what's in it */
@@ -1086,6 +1071,9 @@ const FIRST_OPEN = ["e1", "c1", "c1.c1"];
 const UNFINISHED = new Set<Problem["kind"]>(["empty", "emptyEmbed", "emptyComponent", "fieldNeedsBoth", "buttonNeedsLabel"]);
 
 interface Editing { messageId: string; attachments: SentAttachment[]; }
+
+/** The classic editor always has an embed card to fill in */
+const withEmbed = (d: Draft): Draft => ({ ...d, embeds: d.embeds.length ? d.embeds : [emptyEmbed()] });
 
 function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
     const [draft, setDraftState] = React.useState<Draft>(() => loadOpen(channel.id) ?? emptyDraft());
@@ -1218,8 +1206,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
         setError(undefined);
         try {
             const hook = webhook ?? await makeWebhook();
-            const v2 = draft.mode === "v2";
-            const { json } = requestBody(payload(draft, !!editing), files, editing?.attachments ?? []);
+            const { json } = requestBody(payload(draft, !!editing), files, kept);
             if (editing) {
                 await callWebhook(webhookUrl(hook.id, hook.token, { messageId: editing.messageId, threadId, components: v2 }), "PATCH", json, files);
                 context?.toast(t("toast.edited"), { type: "success" });
@@ -1273,7 +1260,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
                 ? message.attachments.filter((a: any) => typeof a?.id === "string" && typeof a?.filename === "string").map((a: any) => ({ id: a.id, filename: a.filename, url: String(a.url ?? "") }))
                 : [];
             const { skipped, ...loaded } = draftFromJson(JSON.stringify({ content: message?.content ?? "", embeds: message?.embeds ?? [], flags: message?.flags ?? 0, components: message?.components ?? [] }), attachments);
-            setDraft({ ...loaded, username: "", avatarUrl: "", embeds: loaded.embeds.length ? loaded.embeds : [emptyEmbed()] });
+            setDraft(withEmbed({ ...loaded, username: "", avatarUrl: "" }));
             setOpenKeys(new Set(FIRST_OPEN));
             setEditing({ messageId: link.messageId, attachments });
             setFiles([]);
@@ -1289,7 +1276,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
     function importJson() {
         try {
             const { skipped, ...next } = draftFromJson(importText);
-            setDraft({ ...next, embeds: next.embeds.length ? next.embeds : [emptyEmbed()] });
+            setDraft(withEmbed(next));
             setOpenKeys(new Set(FIRST_OPEN));
             setPanel("none");
             setImportText("");
@@ -1503,7 +1490,7 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
                                         <li key={`${d.savedAt}-${i}`}>
                                             <button type="button" className="evi-eb-draft" onClick={() => {
                                                 if (editing) setEditing(undefined);
-                                                setDraft({ ...d.draft, embeds: d.draft.embeds.length ? d.draft.embeds : [emptyEmbed()] });
+                                                setDraft(withEmbed(d.draft));
                                                 setOpenKeys(new Set(FIRST_OPEN));
                                                 setPanel("none");
                                             }}>
@@ -1563,8 +1550,6 @@ function Builder({ channel, onClose }: { channel: any; onClose(): void; }) {
         </div>
     );
 }
-
-// ---- Opening it ---------------------------------------------------------------------------------
 
 let closeOpen: CloseLayer | undefined;
 /** The builder's ~30 KB of CSS goes in the first time it opens, not at startup: a new stylesheet makes Discord restyle the whole app */

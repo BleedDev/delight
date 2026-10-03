@@ -20,7 +20,7 @@ import { SettingsUI } from "./index";
 import { showTab } from "./nav";
 import { SafeModeHint } from "./SafeModeNotice";
 
-// ---- the bar shown while an unsaved preview is on and the editor isn't ----------------------------
+// The bar shown while an unsaved preview is on and the editor isn't
 
 /** Editors on screen: the floating panel and Discord's own settings can each show one */
 let editorsShown = 0;
@@ -58,8 +58,6 @@ function PreviewBar() {
         </div>
     );
 }
-
-// ---- pieces -----------------------------------------------------------------------------------
 
 /** Which appearance Discord shows now, kept up to date as it switches */
 function useDiscordBase(): ThemeBase {
@@ -143,8 +141,6 @@ function Folded({ id, title, children }: { id: string; title: string; children: 
     );
 }
 
-// ---- starting ---------------------------------------------------------------------------------
-
 /** Discord's own colours in miniature: frame, panel, chat, a line of text and the accent */
 function Mini({ base }: { base: ThemeBase; }) {
     const c = PRESETS[base];
@@ -201,8 +197,6 @@ function StartPicker() {
         </Section>
     );
 }
-
-// ---- editing ----------------------------------------------------------------------------------
 
 type Problems = Partial<Record<"name" | "version" | "save", string>>;
 
@@ -378,8 +372,6 @@ function Field({ id, label, error, wide, children }: {
     );
 }
 
-// ---- publishing -------------------------------------------------------------------------------
-
 type Account = { state: "checking"; } | { state: "linked"; } | { state: "unlinked"; } | { state: "offline"; error: string; };
 type Sent = { name: string; version: string; };
 
@@ -498,8 +490,6 @@ function PublishDialog({ session, onClose }: { session: EditorSession; onClose()
         </Dialog>
     );
 }
-
-// ---- the tab ----------------------------------------------------------------------------------
 
 export function ThemeEditorTab() {
     const session = useStore(ThemeEditor.subscribe, ThemeEditor.getSnapshot);

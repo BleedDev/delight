@@ -83,9 +83,7 @@ function renderInstalls(animate) {
     });
 
     const found = state.scan.installs.some(i => i.state !== "missing");
-    $("hint").textContent = found
-        ? t("hint")
-        : t("hintMissing");
+    $("hint").textContent = found ? t("hint") : t("hintMissing");
     updateButtons();
 }
 

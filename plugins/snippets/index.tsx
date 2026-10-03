@@ -76,8 +76,6 @@ function load() {
     notify();
 }
 
-// ---- Discord ------------------------------------------------------------------------------------
-
 const store = (name: string): any => {
     try {
         return getStore(name);
@@ -169,8 +167,6 @@ async function insertSnippet(snippet: Snippet, channel: any) {
     return true;
 }
 
-// ---- /snip --------------------------------------------------------------------------------------
-
 let unregisterCommand: (() => void) | undefined;
 let registeredChoices = "";
 
@@ -215,8 +211,6 @@ function syncCommand() {
         },
     }, plugin.id);
 }
-
-// ---- Editor -------------------------------------------------------------------------------------
 
 interface EditorProps {
     /** The snippet being edited, undefined for a new one */
@@ -313,8 +307,6 @@ function Editor({ snippet, initial, onDone, autoFocusText }: EditorProps) {
     );
 }
 
-// ---- A snippet in a list ------------------------------------------------------------------------
-
 function Row({ snippet, active, id, onPick, onEdit, onDelete, onHover }: {
     snippet: Snippet;
     active?: boolean;
@@ -365,8 +357,6 @@ function Row({ snippet, active, id, onPick, onEdit, onDelete, onHover }: {
         </li>
     );
 }
-
-// ---- Picker -------------------------------------------------------------------------------------
 
 type View = { kind: "list"; } | { kind: "edit"; snippet?: Snippet; initial?: Partial<SnippetInput>; };
 
@@ -480,9 +470,7 @@ function Picker({ channel, onClose }: { channel: any; onClose(): void; }) {
                 )
                 : (
                     <p className="evi-snip-empty">
-                        {current.snippets.length
-                            ? <>{t("picker.noMatch", { query })}</>
-                            : <>{t("picker.empty")}</>}
+                        {current.snippets.length ? t("picker.noMatch", { query }) : t("picker.empty")}
                     </p>
                 )}
             <footer className="evi-snip-foot">
@@ -493,8 +481,6 @@ function Picker({ channel, onClose }: { channel: any; onClose(): void; }) {
         </div>
     );
 }
-
-// ---- Popover and dialog hosts -------------------------------------------------------------------
 
 let closeOpen: CloseLayer | undefined;
 let openAnchor: HTMLElement | null = null;
@@ -590,8 +576,6 @@ function openEditorDialog(initial: Partial<SnippetInput>) {
     ));
 }
 
-// ---- Chat bar button ----------------------------------------------------------------------------
-
 /**
  * A webpack lookup, kept once found. Each search walks every loaded module, and the chat bar renders
  * on every keystroke, so a miss (Discord renamed it) is searched again at most every 10 seconds.
@@ -646,8 +630,6 @@ function SnippetsButton({ channel }: { channel: any; }) {
     );
 }
 
-// ---- Settings panel -----------------------------------------------------------------------------
-
 /** "Type \{user} to keep one as written", with the example in a <code> wherever the translation puts it */
 function escapeHint() {
     const [before, after = ""] = t("panel.escape").split("{code}");
@@ -687,8 +669,6 @@ function ManagePanel() {
         </section>
     );
 }
-
-// ---- Plugin -------------------------------------------------------------------------------------
 
 export default definePlugin({
     settings,

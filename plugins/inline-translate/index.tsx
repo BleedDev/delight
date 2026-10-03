@@ -62,10 +62,11 @@ const CACHE_SIZE = 500;
 
 const accessoriesFilter = filters.byCode("channelMessageProps:{message:", "isAutomodBlockedMessage:");
 const renderedContentFilter = filters.byCode('"useMessageRenderedContent"', "hideSimpleEmbedContent");
+const MARKUP_CLASS = /^markup_+[\da-f]+$/;
 /** Discord's `markup` CSS module. Plain-string code hints: a regex over every module's source costs far more. */
 const markupFilter: Filter = Object.assign(
     (v: any) => !!v && typeof v === "object" && !Array.isArray(v)
-        && Object.values(v).some(c => typeof c === "string" && /^markup_+[\da-f]+$/.test(c))
+        && Object.values(v).some(c => typeof c === "string" && MARKUP_CLASS.test(c))
         && Object.values(v).some(c => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)),
     { $code: ['"markup_', '"codeContainer_'] },
 );
@@ -427,7 +428,7 @@ export default definePlugin({
         // Kept from an earlier start: no need to search every module again
         if (!useRenderedContent) ctx.waitFor(renderedContentFilter, fn => void (useRenderedContent = fn));
         if (!markupClass) ctx.waitFor(markupFilter, classes => {
-            markupClass = Object.values(classes).find((c): c is string => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
+            markupClass = Object.values(classes).find((c): c is string => typeof c === "string" && MARKUP_CLASS.test(c)) ?? "";
         });
 
         // Discord's renderMessageAccessories({ channelMessageProps: { message }, ... }): our block goes first

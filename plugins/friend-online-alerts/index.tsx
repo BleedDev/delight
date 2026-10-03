@@ -117,8 +117,6 @@ const subscribe = (cb: () => void) => {
     return () => void listeners.delete(cb);
 };
 
-// ---- Discord ------------------------------------------------------------------------------------
-
 const store = (name: string): any => {
     try {
         return getStore(name);
@@ -176,8 +174,6 @@ function openDm(userId: string) {
     }
 }
 
-// ---- Watch list ---------------------------------------------------------------------------------
-
 type Storage = { get(key: string): unknown; set(key: string, value: unknown): void; };
 const storage = () => ctx?.settings as unknown as Storage | undefined;
 
@@ -214,15 +210,13 @@ function everyoneWatched(): string[] {
     return [...ids];
 }
 
-/** Re-reads everyone watched from PresenceStore without alerting */
-function seedAll() {
+/** Re-reads everyone watched (or only those not tracked yet) from PresenceStore without alerting */
+function seedAll(onlyNew = false) {
     const now = Date.now();
     for (const id of everyoneWatched()) {
-        if (presenceKnown(id)) engine.seed(id, snapshot(id), now);
+        if ((!onlyNew || !engine.has(id)) && presenceKnown(id)) engine.seed(id, snapshot(id), now);
     }
 }
-
-// ---- Alerts -------------------------------------------------------------------------------------
 
 /** What an alert says, in Discord's language: a title (the person), the rest of the sentence, and the whole sentence */
 function messageFor(alert: Alert, name: string) {
@@ -318,8 +312,6 @@ function grace() {
         if (ctx) seedAll();
     }, STARTUP_GRACE_MS + 100);
 }
-
-// ---- Settings panel -----------------------------------------------------------------------------
 
 function useVersion() {
     React.useSyncExternalStore(subscribe, () => version);
@@ -420,8 +412,6 @@ function WatchPanel() {
     );
 }
 
-// ---- Plugin -------------------------------------------------------------------------------------
-
 export default definePlugin({
     settings,
 
@@ -454,8 +444,7 @@ export default definePlugin({
 
         context.settings.onChange(() => {
             // Newly watched friends start from their current state
-            const now = Date.now();
-            for (const id of everyoneWatched()) if (!engine.has(id) && presenceKnown(id)) engine.seed(id, snapshot(id), now);
+            seedAll(true);
             bump();
         });
 

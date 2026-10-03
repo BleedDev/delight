@@ -85,8 +85,6 @@ export const actionInfo = (type: number): ActionInfo => ACTIONS[type] ?? { group
 /** Every action in a group, for the API's action_type filter */
 export const actionsIn = (group: Group) => Object.entries(ACTIONS).filter(([, a]) => a.group === group).map(([n]) => Number(n));
 
-// ---- Raw API shapes ---------------------------------------------------------------------------
-
 export interface RawChange { key: string; old_value?: unknown; new_value?: unknown; }
 export interface RawEntry {
     id: string;
@@ -109,8 +107,6 @@ export interface RawLog {
     application_commands?: { id: string; name?: string; }[];
 }
 
-// ---- Time --------------------------------------------------------------------------------------
-
 const DISCORD_EPOCH = 1420070400000n;
 /** When a snowflake (here, the entry) was made */
 export function snowflakeTime(id: string): number {
@@ -120,8 +116,6 @@ export function snowflakeTime(id: string): number {
         return 0;
     }
 }
-
-// ---- Names -------------------------------------------------------------------------------------
 
 export interface Person { id: string; name: string; avatar?: string | null; bot?: boolean; webhook?: boolean; }
 export interface Target { type: TargetType; id?: string; name: string; color?: number; }
@@ -200,8 +194,6 @@ function changeName(entry: RawEntry): string | undefined {
     const v = c?.new_value ?? c?.old_value;
     return typeof v === "string" && v ? v : undefined;
 }
-
-// ---- Changes -----------------------------------------------------------------------------------
 
 export const PERMISSIONS: [string, number][] = [
     ["CREATE_INSTANT_INVITE", 0], ["KICK_MEMBERS", 1], ["BAN_MEMBERS", 2], ["ADMINISTRATOR", 3], ["MANAGE_CHANNELS", 4],
@@ -304,8 +296,6 @@ export function changeViews(entry: RawEntry): ChangeView[] {
     return out;
 }
 
-// ---- Durations ---------------------------------------------------------------------------------
-
 /** 90 -> [1, "minute"], 7200 -> [2, "hour"]; whole units only, the biggest that fits */
 export function durationParts(seconds: number): [number, "second" | "minute" | "hour" | "day" | "week"] {
     const units = [["week", 604800], ["day", 86400], ["hour", 3600], ["minute", 60]] as const;
@@ -313,8 +303,6 @@ export function durationParts(seconds: number): [number, "second" | "minute" | "
     for (const [unit, size] of units) if (seconds >= size) return [Math.round(seconds / size), unit];
     return [seconds, "second"];
 }
-
-// ---- Described entries --------------------------------------------------------------------------
 
 export interface Described {
     entry: RawEntry;
@@ -375,8 +363,6 @@ export function matches(d: Pick<Described, "entry" | "info" | "time" | "text">, 
     if (q && !q.split(/\s+/).every(word => d.text.includes(word))) return false;
     return true;
 }
-
-// ---- Export ------------------------------------------------------------------------------------
 
 export interface ExportRow {
     time: string;

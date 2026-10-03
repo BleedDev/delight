@@ -232,9 +232,7 @@ export class MessageLog {
     /** Records the version a message had before an edit. Returns deleted messages evicted to make room. */
     addEdit(channelId: string, id: string, version: PreviousVersion): MessageRef[] {
         const previous = this.get(channelId, id);
-        const edits = [...previous?.edits ?? [], version];
-        // Keep the original, drop the oldest edits after it
-        while (edits.length > Math.max(1, this.limits.edits)) edits.splice(1, 1);
+        const edits = this.trimEdits([...previous?.edits ?? [], version]);
         return this.put({ ...previous, channelId, id, deletedAt: previous?.deletedAt, edits });
     }
 
@@ -255,10 +253,7 @@ export class MessageLog {
         const evicted: MessageRef[] = [];
         for (const [channelId, channel] of this.channels) {
             for (const [id, entry] of channel) {
-                if (entry.edits.length <= Math.max(1, this.limits.edits)) continue;
-                const edits = [...entry.edits];
-                while (edits.length > Math.max(1, this.limits.edits)) edits.splice(1, 1);
-                channel.set(id, { ...entry, edits });
+                if (entry.edits.length > Math.max(1, this.limits.edits)) channel.set(id, { ...entry, edits: this.trimEdits([...entry.edits]) });
             }
             evicted.push(...this.trimChannel(channelId, channel));
         }
@@ -344,6 +339,12 @@ export class MessageLog {
         const evicted = [...this.trimChannel(entry.channelId, channel), ...this.trimChannels()];
         this.changed();
         return evicted;
+    }
+
+    /** Keeps the original, drops the oldest edits after it. Mutates and returns `edits`. */
+    private trimEdits(edits: PreviousVersion[]) {
+        while (edits.length > Math.max(1, this.limits.edits)) edits.splice(1, 1);
+        return edits;
     }
 
     private trimChannel(channelId: string, channel: Map<string, LoggedMessage>): MessageRef[] {

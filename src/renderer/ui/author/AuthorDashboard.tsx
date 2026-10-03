@@ -8,7 +8,7 @@ import type { AuthorPluginStats, AuthorStats } from "@shared/authorStats";
 import { I18n, t, timeAgo } from "../../i18n";
 import { Native } from "../../native";
 import { React } from "../../webpack/common";
-import { Badge, Button, Dropdown, FilterChips, Icon, Notice, Section, Text, Tooltip } from "../components";
+import { Badge, Button, discordAvatarUrl, Dropdown, FilterChips, Icon, Notice, Section, Text, Tooltip } from "../components";
 import { dayLabel, format } from "../developers/data";
 
 export const DAY_CHOICES = ["7", "30", "90"] as const;
@@ -106,10 +106,6 @@ function StarRow({ rating }: { rating: number; }) {
     );
 }
 
-const avatarUrl = (user: { id: string; avatar: string | null; }) => user.avatar
-    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
-    : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(/^\d+$/.test(user.id) ? user.id : "0") >> 22n) % 6n)}.png`;
-
 function Reviews({ plugin }: { plugin: AuthorPluginStats; }) {
     const { rating, reviews } = plugin;
     if (!rating.count && !reviews.length) {
@@ -130,7 +126,7 @@ function Reviews({ plugin }: { plugin: AuthorPluginStats; }) {
             <ul className="dl-authorhub-review-list">
                 {reviews.map(r => (
                     <li key={r.id} className="dl-authorhub-review">
-                        <img src={avatarUrl(r.user)} alt="" width={32} height={32} className="dl-authorhub-avatar" />
+                        <img src={discordAvatarUrl(r.user.id, r.user.avatar, 64)} alt="" width={32} height={32} className="dl-authorhub-avatar" />
                         <div className="dl-authorhub-review-text">
                             <div className="dl-authorhub-review-head">
                                 <Text tag="span" variant="text-sm/semibold" color="text-strong">{r.user.name}</Text>

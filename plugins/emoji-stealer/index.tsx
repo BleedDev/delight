@@ -15,7 +15,7 @@
  * Both fall back to Discord's HTTP client ({ get, post, put, patch, del }) if the creator moved.
  * Their errors are Discord's HTTP errors, whose body holds the reason shown in the toast.
  */
-import { definePlugin, Dropdown, filters, find, findByCode, findMenuGroup, getStore, Menu, openLayer, React } from "@evi/api";
+import { definePlugin, Dropdown, find, findByCode, findMenuGroup, getStore, Menu, openLayer, React } from "@evi/api";
 import type { CloseLayer, PluginContext } from "@evi/api";
 import type { ReactNode } from "react";
 
@@ -27,8 +27,6 @@ import {
 import { t } from "./strings";
 
 let context: PluginContext | undefined;
-
-// ---- Discord ------------------------------------------------------------------------------------
 
 const store = (name: string): any => {
     try {
@@ -179,8 +177,6 @@ async function copy(text: string, done: string) {
     }
 }
 
-// ---- The dialog ---------------------------------------------------------------------------------
-
 let closeOpen: CloseLayer | undefined;
 
 function openDialog(expression: Expression, guildId?: string) {
@@ -190,6 +186,8 @@ function openDialog(expression: Expression, guildId?: string) {
     });
     closeOpen = close;
 }
+
+const optionLabel = (guild: any, slots: { left: number; detail: string; }) => `${guild.name} (${slots.left <= 0 ? t("dialog.full") : slots.detail})`;
 
 const previewUrl = (e: Expression) => e.kind === "emoji" ? emojiUrl(e.id, e.animated, 128) : stickerUrl(e.id, e.formatType);
 
@@ -291,19 +289,13 @@ function Dialog({ expression, initialGuildId, onClose }: { expression: Expressio
                                     value={guildId}
                                     disabled={busy}
                                     onChange={setGuildId}
-                                    options={guilds.map(({ guild, slots }) => ({
-                                        value: guild.id,
-                                        label: `${guild.name} (${slots.left <= 0 ? t("dialog.full") : slots.detail})`,
-                                        disabled: slots.left <= 0,
-                                    }))}
+                                    options={guilds.map(({ guild, slots }) => ({ value: guild.id, label: optionLabel(guild, slots), disabled: slots.left <= 0 }))}
                                 />
                             )
                             : (
                                 <select id="evi-es-guild" className="evi-es-input" value={guildId} disabled={busy} onChange={e => setGuildId(e.currentTarget.value)}>
                                     {guilds.map(({ guild, slots }) => (
-                                        <option key={guild.id} value={guild.id} disabled={slots.left <= 0}>
-                                            {guild.name} ({slots.left <= 0 ? t("dialog.full") : slots.detail})
-                                        </option>
+                                        <option key={guild.id} value={guild.id} disabled={slots.left <= 0}>{optionLabel(guild, slots)}</option>
                                     ))}
                                 </select>
                             )
@@ -359,8 +351,6 @@ const css = `
 @media (prefers-reduced-motion: reduce) { .evi-es-button { transition: none; } }
 `;
 
-// ---- Menus --------------------------------------------------------------------------------------
-
 function menuItems(expression: Expression, children: ReactNode[]): ReactNode[] {
     const isEmoji = expression.kind === "emoji";
     const items: ReactNode[] = [];
@@ -368,8 +358,9 @@ function menuItems(expression: Expression, children: ReactNode[]): ReactNode[] {
     if (isEmoji || canCopySticker(expression.formatType)) {
         const source = sourceGuildId(expression);
         const guilds = eligibleGuilds().filter(g => g.id !== source);
+        const label = t(isEmoji ? "menu.add.emoji" : "menu.add.sticker");
         items.push(guilds.length ? (
-            <Menu.Item key="evi-es-add" id="evi-es-add" label={t(isEmoji ? "menu.add.emoji" : "menu.add.sticker")}>
+            <Menu.Item key="evi-es-add" id="evi-es-add" label={label}>
                 {guilds.map(g => {
                     const slots = slotsLeft(g, expression);
                     return (
@@ -385,7 +376,7 @@ function menuItems(expression: Expression, children: ReactNode[]): ReactNode[] {
                 })}
             </Menu.Item>
         ) : (
-            <Menu.Item key="evi-es-add" id="evi-es-add" label={t(isEmoji ? "menu.add.emoji" : "menu.add.sticker")} subtext={t("menu.noServers")} disabled />
+            <Menu.Item key="evi-es-add" id="evi-es-add" label={label} subtext={t("menu.noServers")} disabled />
         ));
     }
 

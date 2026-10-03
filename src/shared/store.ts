@@ -225,8 +225,6 @@ export interface StoreProgress {
     total: number;
 }
 
-// ---- versions ---------------------------------------------------------------------------------
-
 const VERSION_RE = /^\d{1,9}(?:\.\d{1,9}){0,3}(?:-[0-9A-Za-z.-]{1,32})?$/;
 
 export const isVersion = (v: unknown): v is string => typeof v === "string" && VERSION_RE.test(v);
@@ -265,8 +263,6 @@ function splitPre(v: string): [number[], string | undefined] {
     const core = dash === -1 ? v : v.slice(0, dash);
     return [core.split(".").map(Number), dash === -1 ? undefined : v.slice(dash + 1)];
 }
-
-// ---- validation -------------------------------------------------------------------------------
 
 const ID_RE = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 const SHA256_RE = /^[0-9a-f]{64}$/;
@@ -530,8 +526,6 @@ export function whyNotManifest(manifest: unknown, entry: RegistryEntry): string 
     if (badPermissions) return `manifest.json: ${badPermissions}`;
     if (!samePermissions(readPermissions(m.permissions), entry.permissions)) return "manifest.json's permissions don't match the registry's";
 }
-
-// ---- hashes -----------------------------------------------------------------------------------
 
 export async function sha256Hex(data: Uint8Array): Promise<string> {
     const digest = await crypto.subtle.digest("SHA-256", data as Uint8Array<ArrayBuffer>);

@@ -228,8 +228,7 @@ async function compileCli() {
     for (const { asset } of builds) {
         if (RELEASE) {
             if (asset.startsWith("evi-macos-")) adhocSign(join(DIST, asset));
-            const hash = new Bun.CryptoHasher("sha256").update(readFileSync(join(DIST, asset))).digest("hex");
-            writeFileSync(join(DIST, `${asset}.sha256`), `${hash}  ${asset}\n`);
+            writeChecksum(asset);
         }
         console.log(`✓ dist/${asset}`);
     }

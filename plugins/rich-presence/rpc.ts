@@ -231,11 +231,13 @@ export function toActivity(p: Preset, appId: string, times: ActivityTimes, asset
     const assetsOut: Record<string, string> = {};
     if (large) {
         assetsOut.large_image = large;
-        if (text(p.largeText)) assetsOut.large_text = text(p.largeText)!;
+        const largeText = text(p.largeText);
+        if (largeText) assetsOut.large_text = largeText;
     }
     if (small) {
         assetsOut.small_image = small;
-        if (text(p.smallText)) assetsOut.small_text = text(p.smallText)!;
+        const smallText = text(p.smallText);
+        if (smallText) assetsOut.small_text = smallText;
     }
     if (Object.keys(assetsOut).length) activity.assets = assetsOut;
 
@@ -265,11 +267,12 @@ function timesFor(p: Preset, { since, now }: ActivityTimes): { start?: number; e
     }
 }
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
 /** "1:02:03" or "02:03", like Discord's activity timer */
 export function formatTimer(ms: number) {
     const total = Math.max(0, Math.floor(ms / 1000));
     const h = Math.floor(total / 3600), m = Math.floor(total / 60) % 60, s = total % 60;
-    const pad = (n: number) => String(n).padStart(2, "0");
     return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
@@ -277,7 +280,6 @@ export function formatTimer(ms: number) {
 export function toLocalInput(ms: number) {
     if (!ms) return "";
     const d = new Date(ms);
-    const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 

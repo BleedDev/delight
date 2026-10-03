@@ -14,7 +14,7 @@ import { imageDataUrl, imageType } from "@shared/images";
 import { IPC } from "@shared/ipc";
 import { isPluginId } from "@shared/store";
 import { SUPPORTER_TIERS } from "@shared/supporter";
-import { ipcMain, net, WebContents, webContents } from "electron";
+import { ipcMain, net, WebContents } from "electron";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import { join } from "path";
 
@@ -22,6 +22,7 @@ import { confirmWithUser } from "./confirm";
 import { downloadHttps } from "./download";
 import { apiRequest, apiUrl, getInstallId } from "./evirest";
 import { DATA_DIR } from "./paths";
+import { broadcast, sleep } from "./util";
 
 const CACHE_FILE = join(DATA_DIR, "cache", "badges.json");
 const ADMIN_FILE = join(DATA_DIR, "evi-admin.json");
@@ -73,15 +74,22 @@ function sameHost(url: string) {
     }
 }
 
+/** A badge icon as a data URL, or why it couldn't be had */
+async function iconData(url: string): Promise<{ data: string; } | { error: string; }> {
+    const download = await downloadHttps(url, MAX_ICON_BYTES, { what: "The badge icon" });
+    if (!download.ok) return { error: download.error };
+    const data = imageDataUrl(download.body);
+    return data ? { data } : { error: "not an image" };
+}
+
 async function fetchIcons(doc: BadgesDocument, known: Record<string, string>) {
     const icons: Record<string, string> = {};
     await Promise.all(Object.values(doc.badges).map(async ({ icon }) => {
         if (known[icon]) return void (icons[icon] = known[icon]);
         if (!sameHost(icon)) return;
-        const download = await downloadHttps(icon, MAX_ICON_BYTES, { what: "The badge icon" });
-        const data = download.ok ? imageDataUrl(download.body) : undefined;
-        if (data) icons[icon] = data;
-        else console.warn(`[Evi] Badges: couldn't load ${icon}`, download.ok ? "not an image" : download.error);
+        const result = await iconData(icon);
+        if ("data" in result) icons[icon] = result.data;
+        else console.warn(`[Evi] Badges: couldn't load ${icon}`, result.error);
     }));
     return icons;
 }
@@ -104,9 +112,8 @@ export async function inlineBadgeIcons<T>(value: T): Promise<T> {
     };
     walk(value);
     await Promise.all([...found].filter(url => !inlined.has(url)).map(async url => {
-        const download = await downloadHttps(url, MAX_ICON_BYTES, { what: "The badge icon" });
-        const data = download.ok ? imageDataUrl(download.body) : undefined;
-        if (data) inlined.set(url, data);
+        const result = await iconData(url);
+        if ("data" in result) inlined.set(url, result.data);
     }));
     const swap = (v: unknown): unknown => {
         if (typeof v === "string") return inlined.get(v) ?? v;
@@ -139,7 +146,7 @@ async function refresh(): Promise<BadgesResult> {
             const icons = await fetchIcons(doc, cache?.icons ?? {});
             cache = { etag: res.etag, doc, icons };
             writeCache(cache);
-            broadcast(forPage(cache));
+            broadcast(IPC.BADGES_CHANGED, forPage(cache));
         }
     } catch (err) {
         console.warn("[Evi] Badges: using the cached list,", (err as Error).message);
@@ -158,47 +165,32 @@ function getBadges(cachedOnly = false): Promise<BadgesResult> {
     return pending;
 }
 
-/** Every Discord window gets the new list, not just the one that asked */
-function broadcast(result: BadgesResult) {
-    for (const wc of webContents.getAllWebContents()) {
-        if (!wc.isDestroyed()) wc.send(IPC.BADGES_CHANGED, result);
-    }
+/** Listeners for one kind of change stream event */
+function signal() {
+    const listeners = new Set<() => void>();
+    return {
+        on: (listener: () => void) => void listeners.add(listener),
+        fire: () => listeners.forEach(listener => listener()),
+    };
 }
 
-// ---- change stream ----------------------------------------------------------------------------
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const pulls = signal();
+const hotfixes = signal();
+const inbox = signal();
+const announcements = signal();
+const required = signal();
 
 /** Told when the stream says pulled plugins changed, and after it reconnects (one may have been missed) */
-const pullsListeners = new Set<() => void>();
-export function onPullsAnnounced(listener: () => void) {
-    pullsListeners.add(listener);
-}
-const announcePulls = () => pullsListeners.forEach(listener => listener());
+export const onPullsAnnounced = pulls.on;
 /** Told when the stream says Evi's hotfixes changed, and after it reconnects */
-const hotfixListeners = new Set<() => void>();
-export function onHotfixesAnnounced(listener: () => void) {
-    hotfixListeners.add(listener);
-}
-const announceHotfixes = () => hotfixListeners.forEach(listener => listener());
+export const onHotfixesAnnounced = hotfixes.on;
 /** Told when the stream says this account's inbox changed, and after it reconnects */
-const inboxListeners = new Set<() => void>();
-export function onInboxAnnounced(listener: () => void) {
-    inboxListeners.add(listener);
-}
-const announceInbox = () => inboxListeners.forEach(listener => listener());
+export const onInboxAnnounced = inbox.on;
 /** Told when an announcement from Evi's team was sent or withdrawn */
-const announcementListeners = new Set<() => void>();
-export function onAnnouncementsChanged(listener: () => void) {
-    announcementListeners.add(listener);
-}
-const announceAnnouncements = () => announcementListeners.forEach(listener => listener());
+export const onAnnouncementsChanged = announcements.on;
 /** Told when the required Evi version changed, and after the stream reconnects (it may have meanwhile) */
-const requiredListeners = new Set<() => void>();
-export function onRequiredChanged(listener: () => void) {
-    requiredListeners.add(listener);
-}
-const announceRequired = () => requiredListeners.forEach(listener => listener());
+export const onRequiredChanged = required.on;
+
 /** Everyone reconnects at once after a server restart: spread them out */
 const jitter = (ms: number) => ms / 2 + Math.random() * ms;
 
@@ -229,11 +221,11 @@ async function listen() {
             const end = buffer.lastIndexOf("\n\n");
             if (end < 0) continue;
             const chunk = buffer.slice(0, end);
-            if (hasPullsEvent(chunk)) announcePulls();
-            if (hasHotfixesEvent(chunk)) announceHotfixes();
-            if (hasNotificationsEvent(chunk)) announceInbox();
-            if (hasAnnouncementsEvent(chunk)) announceAnnouncements();
-            if (hasRequiredEvent(chunk)) announceRequired();
+            if (hasPullsEvent(chunk)) pulls.fire();
+            if (hasHotfixesEvent(chunk)) hotfixes.fire();
+            if (hasNotificationsEvent(chunk)) inbox.fire();
+            if (hasAnnouncementsEvent(chunk)) announcements.fire();
+            if (hasRequiredEvent(chunk)) required.fire();
             const etags = parseBadgeEvents(chunk);
             buffer = buffer.slice(end + 2);
             const latest = etags.at(-1);
@@ -267,14 +259,12 @@ async function stream() {
         await sleep(jitter(Math.min(5_000 * 2 ** failures, 5 * 60 * 1000)));
         // Whatever changed while we were away
         void getBadges();
-        announcePulls();
-        announceHotfixes();
-        announceInbox();
-        announceRequired();
+        pulls.fire();
+        hotfixes.fire();
+        inbox.fire();
+        required.fire();
     }
 }
-
-// ---- admin ------------------------------------------------------------------------------------
 
 function adminToken() {
     try {

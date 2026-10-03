@@ -7,8 +7,7 @@ import { isPluginEnabled } from "@shared/ipc";
 
 import { getPatchRecords } from "./patching/source";
 import { diagnoseLookups } from "./plugins/lookups";
-import type { PluginState } from "./plugins/manager";
-import { PluginManager } from "./plugins/manager";
+import { PluginManager, PluginState } from "./plugins/manager";
 import { SafeMode } from "./safeMode";
 import { Settings } from "./settings";
 import { Store } from "./store";

@@ -10,9 +10,8 @@ import type { Announcement } from "@shared/announcements";
 import { t, useLocale } from "../i18n";
 import { Native } from "../native";
 import { Settings } from "../settings";
-import { createRoot, React } from "../webpack/common";
 import { Icon, IconButton, Text, useExit, useStore } from "./components";
-import { DiscordContext } from "./discordContext";
+import { mountRoot } from "./discordContext";
 import { ensureStyles } from "./index";
 
 /** Looked at this often besides the live event, for a connection that missed it */
@@ -87,10 +86,7 @@ export function startAnnouncements() {
     if (started || !Native.announcements) return;
     started = true;
     ensureStyles();
-    const container = document.createElement("div");
-    container.className = "dl-root dl-announcements";
-    document.body.append(container);
-    createRoot(container).render(<DiscordContext><Host /></DiscordContext>);
+    mountRoot(<Host />, "dl-root dl-announcements");
 
     void check();
     setInterval(() => void check(), EVERY);

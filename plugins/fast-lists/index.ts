@@ -39,10 +39,12 @@ interface ListKind {
     flattenPills?: boolean;
 }
 
+const itemOf = (listId: string) => `[data-list-item-id^="${listId}___"]`;
+
 const LISTS: ListKind[] = [
-    { key: "servers", list: '[data-list-id="guildsnav"]', item: id => `[data-list-item-id^="${id}___"]`, flattenPills: true },
-    { key: "chat", list: '[data-list-id^="chat-messages"]', item: id => `[data-list-item-id^="${id}___"]` },
-    { key: "members", list: '[data-list-id^="members"]', item: id => `[data-list-item-id^="${id}___"]` },
+    { key: "servers", list: '[data-list-id="guildsnav"]', item: itemOf, flattenPills: true },
+    { key: "chat", list: '[data-list-id^="chat-messages"]', item: itemOf },
+    { key: "members", list: '[data-list-id^="members"]', item: itemOf },
 ];
 
 function isScrollable(el: Element) {
@@ -452,15 +454,19 @@ export default definePlugin({
             return found;
         };
 
+        const drop = (key: ListKind["key"]) => {
+            sessions.get(key)?.dispose();
+            sessions.delete(key);
+            pending.delete(key);
+        };
+
         const refresh = (force = false) => {
             const missing: ListKind[] = [];
             for (const kind of LISTS) {
                 const current = sessions.get(kind.key);
                 const enabled = ctx.settings.get(kind.key);
                 if (!enabled) {
-                    current?.dispose();
-                    sessions.delete(kind.key);
-                    pending.delete(kind.key);
+                    drop(kind.key);
                     continue;
                 }
                 // The list we're on is still there and nothing changed: no page search (most ticks).
@@ -479,9 +485,7 @@ export default definePlugin({
                 const current = sessions.get(kind.key);
                 const list = lists.get(kind.key);
                 if (!list) {
-                    current?.dispose();
-                    sessions.delete(kind.key);
-                    pending.delete(kind.key);
+                    drop(kind.key);
                     continue;
                 }
                 if (!force && current?.list === list) continue;

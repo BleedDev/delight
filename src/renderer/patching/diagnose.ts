@@ -54,12 +54,9 @@ export function diagnosePatches(): PatchDiagnosis[] {
 export function hasPatchProblems(plugin: string): boolean {
     const records = getPatchRecords(plugin);
     if (records.some(r => r.state === "failed" || r.state === "partial")) return true;
-    // An optional patch finding nothing isn't a problem: often its module is in a chunk Discord loads
-    // on demand (the image viewer), which isn't registered until it's first used. Once it loads, a
-    // patch that doesn't fit still shows up above as failed or partial.
-    // A patch still waiting isn't one either, optional or not: its module may simply not have loaded
-    // yet. Volume Booster's patch the user right-click menu, which Discord loads the first time it
-    // opens, and every install that hadn't opened one yet reported it broken. A patch that doesn't
-    // fit once its module loads shows up above as failed or partial.
+    // A patch still waiting isn't a problem, optional or not: its module may be in a chunk Discord
+    // loads on demand and only registers on first use (the image viewer; Volume Booster patches the
+    // user right-click menu, and every install that hadn't opened one yet reported it broken). A patch
+    // that doesn't fit once its module loads shows up above as failed or partial.
     return false;
 }

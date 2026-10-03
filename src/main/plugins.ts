@@ -2,7 +2,7 @@ import type { NativeContext, NativePlugin } from "@evi/api/native";
 import { EviSettings, IPC, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
 import { pullFor } from "@shared/pulls";
 import { parseRemovedPlugins, REMOVED_PLUGINS_FILE, RETIRED_PLUGINS, STORE_MARKER } from "@shared/store";
-import { ipcMain, session, WebContents, webContents } from "electron";
+import { app, ipcMain, session, WebContents } from "electron";
 import { existsSync, FSWatcher, readdirSync, readFileSync, renameSync, rmSync, watch, writeFileSync } from "fs";
 import { join, resolve, sep } from "path";
 
@@ -13,6 +13,7 @@ import { currentPulls, onPullsChange } from "./reports";
 import { addRequestFilter } from "./requests";
 import { SafeMode } from "./safeMode";
 import { settings } from "./settings";
+import { broadcast } from "./util";
 
 interface LoadedPlugin extends PluginPayload {
     dir: string;
@@ -35,8 +36,6 @@ if (devPlugins) roots.push({ dir: devPlugins, source: "dev" });
 
 const plugins = new Map<string, LoadedPlugin>();
 const natives = new Map<string, NativeInstance>();
-
-// ---- removed and retired plugins --------------------------------------------------------------
 
 const REMOVED_FILE = join(DATA_DIR, REMOVED_PLUGINS_FILE);
 let removed: Set<string> | undefined;
@@ -89,7 +88,7 @@ export function hideDevPlugin(id: string) {
     stopNative(id);
     natives.delete(id);
     plugins.delete(id);
-    broadcast({ type: "remove", id });
+    announce({ type: "remove", id });
 }
 
 function readPlugin(dir: string, source: Source): LoadedPlugin | null {
@@ -111,8 +110,6 @@ function readPlugin(dir: string, source: Source): LoadedPlugin | null {
 function toPayload({ dir: _, signature: __, ...payload }: LoadedPlugin): PluginPayload {
     return payload;
 }
-
-// ---- native modules ---------------------------------------------------------------------------
 
 /** Turned off by Evi on every install (shared/pulls.ts). Dev builds are the developer's own, never pulled. */
 function isPulled({ manifest, source }: { manifest: PluginManifest; source: Source; }) {
@@ -189,13 +186,7 @@ function stopNative(id: string) {
     }
 }
 
-// ---- hot reload -------------------------------------------------------------------------------
-
-function broadcast(change: PluginChange) {
-    for (const wc of webContents.getAllWebContents()) {
-        if (!wc.isDestroyed()) wc.send(IPC.PLUGIN_CHANGED, change);
-    }
-}
+const announce = (change: PluginChange) => broadcast(IPC.PLUGIN_CHANGED, change);
 
 function reloadFolder(root: string, source: Source, folder: string) {
     const dir = join(root, folder);
@@ -211,7 +202,7 @@ function reloadFolder(root: string, source: Source, folder: string) {
         stopNative(id);
         natives.delete(id);
         plugins.delete(id);
-        if (next?.manifest.id !== id) broadcast({ type: "remove", id });
+        if (next?.manifest.id !== id) announce({ type: "remove", id });
     }
 
     if (!next) return;
@@ -219,7 +210,7 @@ function reloadFolder(root: string, source: Source, folder: string) {
     SafeMode.recordChange({ kind: "plugin", id: next.manifest.id, action: previous ? "updated" : "installed" });
     // Plugins added or re-enabled while Discord runs need their native side started too
     if (restartNative || isPluginEnabled(settings, next.manifest)) startNative(next.manifest.id);
-    broadcast({ type: "upsert", plugin: toPayload(next) });
+    announce({ type: "upsert", plugin: toPayload(next) });
 }
 
 /** Re-reads every plugin folder under a root, including ones that disappeared */
@@ -265,8 +256,6 @@ function watchRoot(root: string, source: Source) {
 
     start();
 }
-
-// ---- turning on plugins that reach beyond the page ------------------------------------------------
 
 /**
  * Plugins the user just said yes to in main (a confirmed store install), with when that runs out.
@@ -325,15 +314,12 @@ export function askToEnable(manifest: PluginManifest, sender: WebContents | unde
     return answer;
 }
 
-// ---- chromium switches ------------------------------------------------------------------------
-
 /**
  * Runs before Electron is ready, the only time command line switches still apply.
  * Reads manifests directly since the plugin host starts later.
  */
 export function applyChromiumSwitches() {
     if (SafeMode.active) return;
-    const { app } = require("electron") as typeof import("electron");
     for (const { dir, source } of roots) {
         if (!existsSync(dir)) continue;
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -350,8 +336,6 @@ export function applyChromiumSwitches() {
         }
     }
 }
-
-// ---- setup ------------------------------------------------------------------------------------
 
 /** Picks up a change to a folder in the user plugins dir now, without waiting for the watcher */
 export function refreshUserPlugin(folder: string) {

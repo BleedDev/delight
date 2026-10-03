@@ -87,7 +87,7 @@ r = cli("install");
 check("refuses to install over another client mod", r.out.includes("another client mod"), r.out);
 check("other mod's files left alone", readAsarFile(asar, "index.js") === "// vencord");
 
-// ── evi update, against a local fake of GitHub's API. Never touches the network. ──
+// evi update, against a local fake of GitHub's API. Never touches the network.
 
 let latest: { status: number; tag?: string; } = { status: 404 };
 let asset = new Uint8Array();

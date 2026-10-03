@@ -8,8 +8,6 @@ import { format, Vars } from "@shared/i18n";
 export type HourCycle = "12h" | "24h";
 export type ZoneMap = Record<string, string>;
 
-// ---- Validation ---------------------------------------------------------------------------------
-
 const valid = new Map<string, boolean>();
 
 /** Whether Intl knows this IANA zone id ("Europe/Berlin", "UTC"...) */
@@ -90,9 +88,6 @@ const RENAMED: [string, string][] = [
 ];
 const OTHER_NAME = new Map<string, string>(RENAMED.flatMap(([a, b]) => [[a, b], [b, a]] as [string, string][]));
 
-/** The zone's other name, if it was renamed */
-export const otherName = (zone: string) => OTHER_NAME.get(zone);
-
 /** `zone` as it appears in `known`, trying its other name; undefined if neither is there */
 export function resolveIn(zone: string, known: ReadonlySet<string>): string | undefined {
     if (known.has(zone)) return zone;
@@ -102,8 +97,6 @@ export function resolveIn(zone: string, known: ReadonlySet<string>): string | un
 
 /** Whether two ids name the same zone */
 export const sameZone = (a: string, b: string) => a === b || OTHER_NAME.get(a) === b;
-
-// ---- Offsets ------------------------------------------------------------------------------------
 
 const partsFormatters = new Map<string, Intl.DateTimeFormat>();
 
@@ -156,8 +149,6 @@ export function describeDiff(theirOffset: number, yourOffset: number, tr: Tr = e
     const amount = h && m ? tr("amount.hm", { h, m }) : h ? tr("amount.h", { h }) : tr("amount.m", { m });
     return tr(diff > 0 ? "diff.ahead" : "diff.behind", { amount });
 }
-
-// ---- Formatting ---------------------------------------------------------------------------------
 
 const uses12h = new Map<string, boolean>();
 
@@ -248,8 +239,6 @@ export function describeTime(date: Date, zone: string, yourZone: string, o: Omit
 export function tooltipText(d: Describe, label = "Their time"): string {
     return `${label}: ${d.long} (${d.offset}) · ${d.diff}`;
 }
-
-// ---- Search -------------------------------------------------------------------------------------
 
 /** Common abbreviations; the first zone of each is the best guess and ranks first */
 export const ABBREVIATIONS: Record<string, string[]> = {
@@ -441,18 +430,18 @@ export function searchZones(query: string, zones: readonly string[], date: Date,
     return [...scores].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])).slice(0, limit).map(([z]) => z);
 }
 
-let popularCache: { zones: readonly string[]; known: Set<string>; popular: Set<string>; } | undefined;
+let indexCache: { zones: readonly string[]; known: Set<string>; popular: Set<string>; } | undefined;
 
 /** The zones as a set, and the ones people actually live in (named by abbreviations and aliases) */
 function zoneIndex(zones: readonly string[]) {
-    if (popularCache?.zones === zones) return popularCache;
+    if (indexCache?.zones === zones) return indexCache;
     const known = new Set(zones);
     const popular = new Set<string>();
     for (const z of [...Object.values(ABBREVIATIONS).flat(), ...Object.values(ALIASES)]) {
         const found = resolveIn(z, known);
         if (found) popular.add(found);
     }
-    return popularCache = { zones, known, popular };
+    return indexCache = { zones, known, popular };
 }
 
 const shortNames = new Map<string, Intl.DateTimeFormat>();

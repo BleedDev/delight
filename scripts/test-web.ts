@@ -505,8 +505,6 @@ await page.addInitScript(fakeNative, boot);
 await page.addInitScript(renderer);
 await page.goto("https://discord.com/login", { waitUntil: "domcontentloaded" });
 
-// ---- core ---------------------------------------------------------------------------------------
-
 await page.waitForFunction(() => (window as any).Evi?.plugins.getSnapshot().some((p: any) => p.running), null, { timeout: 60_000 });
 
 const core = await page.evaluate(() => {
@@ -530,7 +528,7 @@ check("found Flux dispatcher", core.dispatcherSubs > 10, { subscriptions: core.d
 check("found UserStore by name", core.userStore === "function");
 check("enabled plugins started", ["clear-urls", "experiments", "no-track"].every(id => core.running.includes(id)), core.running);
 
-// ---- what's new (first: it's a modal, so it covers the page until closed) -----------------------
+// What's new (first: it's a modal, so it covers the page until closed)
 
 const whatsNew = await page.waitForSelector(".dl-whats-new[role=dialog]", { timeout: 10_000 }).then(() => page.evaluate(async () => {
     const modal = document.querySelector(".dl-whats-new")!;
@@ -575,7 +573,7 @@ await page.screenshot({ path: join(OUT, "ui-plugin-whats-new.png") });
 const pluginNewsExit = await closesWithExit(".dl-plugin-whats-new", () => page.locator(".dl-plugin-whats-new").getByRole("button", { name: "Close", exact: true }).click());
 check("Plugin changelogs close with an exit animation", pluginNewsExit.closing && pluginNewsExit.gone, pluginNewsExit);
 
-// ---- dialog motion: a plugin's dialog, on Discord's real page ------------------------------------
+// Dialog motion: a plugin's dialog, on Discord's real page
 
 {
     const opened = await page.evaluate(async () => {
@@ -657,8 +655,6 @@ check("Plugin changelogs close with an exit animation", pluginNewsExit.closing &
     });
 }
 
-// ---- flux ---------------------------------------------------------------------------------------
-
 const flux = await page.evaluate(async () => {
     const { Dispatcher } = (window as any).Evi.api;
     let got: unknown = null;
@@ -669,8 +665,6 @@ const flux = await page.evaluate(async () => {
     return got;
 });
 check("flux subscribe + dispatch", flux === 7);
-
-// ---- source patch -------------------------------------------------------------------------------
 
 const patch = await page.evaluate(() => {
     const D = (window as any).Evi;
@@ -685,8 +679,6 @@ const patch = await page.evaluate(() => {
 });
 check("experiments source patch applied", patch.health === "applied", patch);
 check("DeveloperExperimentStore.isDeveloper is true", patch.isDeveloper === true);
-
-// ---- export hooks -------------------------------------------------------------------------------
 
 const hooks = await page.evaluate(async () => {
     const { api, plugins } = (window as any).Evi;
@@ -722,8 +714,6 @@ check("before-hook rewrote the message", hooks.captured === "look https://exampl
 check("disabling restores the original function", !!hooks.restored);
 check("re-enabling hooks again", !!hooks.rehooked);
 
-// ---- hot reload ---------------------------------------------------------------------------------
-
 const hot = await page.evaluate(async () => {
     const { plugins } = (window as any).Evi;
     const test = (window as any).__test;
@@ -747,8 +737,6 @@ const hot = await page.evaluate(async () => {
 });
 check("hot reload swaps plugin code live", hot.v1 === 1 && hot.v2 === 2, hot);
 check("old instance disposed on reload and removal", hot.disposedOnReload === 1 && hot.disposedTotal === 2 && !hot.stillListed);
-
-// ---- live module replacement --------------------------------------------------------------------
 
 const live = await page.evaluate(async () => {
     const { plugins, api, wreq } = (window as any).Evi;
@@ -792,8 +780,6 @@ const live = await page.evaluate(async () => {
 check("found a safe loaded module to live-patch", !!live.found, live.target);
 check("source patch applied live, no reload", live.after === "https://evi.invalid/live" && live.needsReload === false && !!live.sameObject, live);
 check("disabling reverts the module live", live.reverted === live.before);
-
-// ---- smooth typing ------------------------------------------------------------------------------
 
 // The draft store ignores drafts while logged out, so watch what reaches Discord's subscribers
 const drafts = await page.evaluate(async () => {
@@ -852,11 +838,9 @@ check("a message you send drops its own pending draft, but not a different one",
 check("a slash command's clear drops pending drafts of any type in its channel", JSON.stringify(drafts.afterCommand) === '["abc","still typing"]', drafts.afterCommand);
 check("switching channels writes a pending draft right away", JSON.stringify(drafts.onSwitch) === '["abc","still typing","half a thought"]', drafts.onSwitch);
 
-// ---- native bridge ------------------------------------------------------------------------------
-
 // That Evi.plugins hands out no contexts outside this test is checked in test-electron.ts
 
-// ---- toolkit: toasts, context menus, slash commands ---------------------------------------------
+// Toolkit: toasts, context menus, slash commands
 
 await page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: "https://discord.com" });
 
@@ -1036,8 +1020,6 @@ await page.evaluate(() => {
     };
 });
 
-// ---- silent-typing ------------------------------------------------------------------------------
-
 const silent = await page.evaluate(async () => {
     const { api, plugins, toolkit, diagnosePatches, wreq } = (window as any).Evi;
     const { sleep, toastText, load } = (window as any).__qa;
@@ -1084,7 +1066,7 @@ const silent = await page.evaluate(async () => {
     const botActions = api.findByProps("sendBotMessage", "sendMessage");
     const replies: [string, string][] = [];
     const unhookBot = botActions && api.hook(botActions, "sendBotMessage", "instead", (c: any) => void replies.push([c.args[0], c.args[1]]), "test");
-    const returned = await command?.execute([], { channel: { id: "1" } });
+    await command?.execute([], { channel: { id: "1" } });
     const afterCommand = state?.ctx.settings.get("enabled");
     await command?.execute([], { channel: { id: "1" } });
     const afterSecondCommand = state?.ctx.settings.get("enabled");
@@ -1150,7 +1132,7 @@ check("silent-typing: button goes before the send button", JSON.stringify(silent
 check("silent-typing: button renders with Discord's chat button and toggles", silent.discordButton && silent.wrapperClass.startsWith("buttonContainer_") && /on/.test(silent.labelOn ?? "") && /off/.test(silent.labelOff ?? "") && silent.settingAfterClick === false, { on: silent.labelOn, off: silent.labelOff, wrapper: silent.wrapperClass });
 check("silent-typing: disabling restores startTyping and removes the command", silent.restored && silent.sentAfterDisable && silent.commandRemoved);
 
-// ---- lookups: a waitFor / hookExport target that never shows up is reported, not silent ---------
+// Lookups: a waitFor / hookExport target that never shows up is reported, not silent
 
 const lookups = await page.evaluate(async () => {
     const { api, plugins, diagnoseLookups } = (window as any).Evi;
@@ -1178,8 +1160,6 @@ check("lookups: a hookExport target that exists is found", lookups.hook?.health 
 check("lookups: an unfound target counts as waiting while Discord starts", lookups.early[codeTarget] === "waiting" && lookups.early[propsTarget] === "waiting", lookups.early);
 check("lookups: after that, code no module has is broken and unknown props are missing", lookups.afterGrace[codeTarget] === "broken" && lookups.afterGrace[propsTarget] === "missing", lookups.afterGrace);
 check("lookups: stopping the plugin drops its lookups", lookups.afterStop === 0, lookups.afterStop);
-
-// ---- message logger -----------------------------------------------------------------------------
 
 // Logged out, MessageStore still works for a channel we "load" ourselves: dispatch Discord's own
 // actions for a fake channel and check what the plugin and the store make of them
@@ -1428,8 +1408,6 @@ check("disabling deletes kept messages for real and restores MessageStore's hand
 check("disabling clears the log, unmounts tags and history, removes the tint", logger.beforeStop.rendered && logger.beforeStop.rowBackground !== "rgba(0, 0, 0, 0)" && logger.stopped.renderedGone && logger.stopped.logCleared.deleted + logger.stopped.logCleared.edited === 0
     && logger.stopped.rowBackground === "rgba(0, 0, 0, 0)" && !logger.stopped.style, { before: logger.beforeStop, after: logger.stopped });
 check("with the plugin off, deletes behave like stock Discord", logger.stockDelete);
-
-// ---- badges ---------------------------------------------------------------------------------------
 
 // The core (not a plugin) hooks Discord's profile-badges hook, and leaves the message username alone
 // (badges are on profiles only). Where the logged-out page has them loaded, the real ones are used; otherwise stand-ins with the same shape
@@ -1693,8 +1671,6 @@ check("Plugins' profile badges show on the profile and in Discord's badge direct
     });
     check("an update found in the background shows a notice; Skip this version keeps it from coming back", after.gone && after.dismissed === "9.9.0" && after.stillQuiet, after);
 }
-
-// ---- UI -----------------------------------------------------------------------------------------
 
 await page.keyboard.press("Control+Shift+D");
 await page.waitForSelector(".dl-panel", { timeout: 5000 });
@@ -2253,7 +2229,7 @@ check("Plugin details list its permissions with risk levels and its changelog", 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(200);
 
-// ---- view-icons: Download in the image viewer, and banners that open in it ------------------------
+// View-icons: Download in the image viewer, and banners that open in it
 
 const viewIcons = await page.evaluate(async () => {
     const { api, plugins, diagnosePatches } = (window as any).Evi;
@@ -2507,8 +2483,6 @@ await page.waitForFunction(() => document.querySelector("#dl-ph-result .dl-statu
 const broken = await page.evaluate(() => document.querySelector("#dl-ph-result .dl-error")?.textContent ?? null);
 check("Patch Helper: reports a patch that breaks compilation", !!broken?.includes("SyntaxError"), broken?.slice(0, 120));
 
-// ---- themes -------------------------------------------------------------------------------------
-
 await openTab("themes", "installed");
 await page.waitForSelector("#dl-theme-web-test_css", { timeout: 5000 });
 await page.waitForTimeout(200);
@@ -2559,8 +2533,6 @@ const added = {
 check("Add from URL lists the theme and turns it on", added.value === "on" && added.listed && /Remote Theme/.test(added.status ?? ""), added);
 await page.screenshot({ path: join(OUT, "ui-themes-added.png") });
 
-// ---- backup -------------------------------------------------------------------------------------
-
 await openTab("general", "backup");
 await page.getByRole("button", { name: "Export backup" }).click();
 await page.waitForTimeout(200);
@@ -2587,7 +2559,6 @@ const restored = {
 };
 check("Backup: restoring applies the new settings live", restored.applied?.mode === "merge" && restored.theme === "edited" && restored.previewGone && restored.status.includes("Restored evi-backup-2026-09-20.json, 7 changes applied"), restored);
 await page.screenshot({ path: join(OUT, "ui-backup-restored.png") });
-// ---- store --------------------------------------------------------------------------------------
 
 await openTab("plugins", "installed");
 await page.waitForSelector("#dl-plugin-see-updates", { timeout: 5000 });
@@ -2622,7 +2593,7 @@ check("Stars: cards show counts, and starring counts once and is sent to main",
 await page.screenshot({ path: join(OUT, "ui-store-grid.png") });
 check("native plugins carry a badge", storeList.rpc.includes("Native") && !storeList.clock.includes("Native"));
 
-// ---- the store's community side: front page, ratings, hearts, Not installed, a plugin's page ----
+// The store's community side: front page, ratings, hearts, Not installed, a plugin's page
 {
     const home = await page.evaluate(() => {
         const h = document.querySelector(".dl-home");
@@ -3000,8 +2971,6 @@ const healthReports = await page.evaluate(() => (window as any).__test.healthRep
 check("plugin health: a store plugin that can't find a part of Discord is reported to evi.rest, and only it",
     healthReports.length === 1 && healthReports[0].plugin === "store-lookup" && healthReports[0].version === "1.0.0" && healthReports[0].kind === "lookups" && typeof healthReports[0].discordBuild === "string", healthReports);
 
-// ---- theme store --------------------------------------------------------------------------------
-
 await openTab("themes", "store");
 await page.waitForSelector('[data-store-id="midnight"]', { timeout: 5000 });
 await page.screenshot({ path: join(OUT, "ui-theme-store.png") });
@@ -3019,7 +2988,7 @@ await page.waitForTimeout(200);
 const themeRow = await page.evaluate(() => document.querySelector('li[aria-labelledby="dl-theme-midnight_css"]')?.textContent ?? "");
 check("store themes show a Store badge in the Themes tab", themeRow.includes("Midnight") && themeRow.includes("Store"), themeRow);
 
-// ---- Evi 1.0: the inbox, DevTools, recording a shortcut, and blob: media under Discord's CSP ------
+// Evi 1.0: the inbox, DevTools, recording a shortcut, and blob: media under Discord's CSP
 {
     await openTab("plugins", "inbox");
     await page.waitForSelector(".dl-inbox-row", { timeout: 5000 }).catch(() => { });
@@ -3412,8 +3381,6 @@ check("healthy start reported once plugins ran for a while", await page.evaluate
 // The broken plugin's start failures are the point of it
 const unexpected = eviErrors.filter(e => !e.includes(BROKEN));
 check("no Evi errors in console", unexpected.length === 0, unexpected.slice(0, 5));
-
-// ---- safe mode ----------------------------------------------------------------------------------
 
 // A fresh page that main booted in safe mode, after a crash loop with a few recorded changes
 const now = Date.now();

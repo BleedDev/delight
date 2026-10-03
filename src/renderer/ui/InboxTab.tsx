@@ -11,7 +11,8 @@ import { React } from "../webpack/common";
 import { Button, EmptyState, Icon, IconName, IconButton, Notice, Status, SwitchRow, Text, useStore } from "./components";
 import { openStore, showTab } from "./nav";
 
-const kindIcon: Record<NotificationKind, IconName> = {
+/** Each kind of notification's icon, in the inbox and its live toasts */
+export const kindIcon: Record<NotificationKind, IconName> = {
     review: "star",
     submission: "puzzle",
     theme: "palette",

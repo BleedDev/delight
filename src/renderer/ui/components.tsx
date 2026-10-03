@@ -21,7 +21,15 @@ export type { IconName };
 
 export const cx = (...names: (string | false | undefined)[]) => names.filter(Boolean).join(" ");
 
-// ---- typography -------------------------------------------------------------------------------
+/** A Discord user's avatar on Discord's CDN, or their default one. "auto" is a GIF for animated avatars. */
+export function discordAvatarUrl(userId: string, avatar: string | null | undefined, size: number, format: "png" | "webp" | "auto" = "png") {
+    if (avatar) {
+        const ext = format === "auto" ? (avatar.startsWith("a_") ? "gif" : "png") : format;
+        return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.${ext}?size=${size}`;
+    }
+    const index = /^\d+$/.test(userId) ? Number((BigInt(userId) >> 22n) % 6n) : 0;
+    return `https://cdn.discordapp.com/embed/avatars/${index}.png`;
+}
 
 /**
  * Discord's text component: `variant` is a name from its type scale ("heading-md/medium",
@@ -44,8 +52,6 @@ export function Text({ variant, tag = "div", color, className, id, children, tab
     const Tag = tag as "div";
     return <Tag className={cx("dl-text", tabular && "dl-tabular", className)} data-variant={variant} data-color={color} id={id} role={role}>{children}</Tag>;
 }
-
-// ---- buttons ----------------------------------------------------------------------------------
 
 type ButtonVariant = "accent" | "secondary" | "danger" | "icon";
 
@@ -128,8 +134,6 @@ export function IconButton({ icon, label, onClick, className, ...props }: {
         </Tooltip>
     );
 }
-
-// ---- inputs -----------------------------------------------------------------------------------
 
 export function Switch({ checked, onChange, label, labelledBy, disabled }: {
     checked: boolean;
@@ -424,8 +428,6 @@ export function Pagination({ page, count, onChange, label }: { page: number; cou
     );
 }
 
-// ---- status -----------------------------------------------------------------------------------
-
 export type Tone = "success" | "warning" | "danger" | "muted";
 
 const toneIcon = { success: "circleCheck", warning: "warning", danger: "circleError", muted: "clock" } as const;
@@ -465,8 +467,6 @@ export function Notice({ tone, action, children }: { tone: "warning" | "danger" 
         );
     return <div className="dl-notice" role={tone === "danger" ? "alert" : "status"}>{body}</div>;
 }
-
-// ---- layout -----------------------------------------------------------------------------------
 
 /** A titled group of settings, like one of Discord's settings categories */
 export function Section({ title, description, action, children, id }: {
@@ -524,8 +524,6 @@ export function Collapse({ open, id, children }: { open: boolean; id: string; ch
         </div>
     );
 }
-
-// ---- plugin settings --------------------------------------------------------------------------
 
 /** Lists longer than this get a filter box */
 const FILTER_FROM = 12;
@@ -1010,8 +1008,6 @@ export function useStore<T>(subscribe: (cb: () => void) => () => void, getSnapsh
     return React.useSyncExternalStore(subscribe, getSnapshot);
 }
 
-// ---- errors -----------------------------------------------------------------------------------
-
 type BoundaryProps = { children: ReactNode; resetKey?: unknown; };
 let Boundary: ComponentType<BoundaryProps> | undefined;
 
@@ -1050,9 +1046,23 @@ export function ErrorBoundary(props: BoundaryProps) {
     return <Boundary {...props} />;
 }
 
-// ---- dialogs ----------------------------------------------------------------------------------
-
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Keeps Tab and Shift+Tab cycling inside `container` */
+export function trapTab(e: { key: string; shiftKey: boolean; preventDefault(): void; }, container: HTMLElement | null) {
+    if (e.key !== "Tab" || !container) return;
+    const focusable = [...container.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => el.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || active === container)) {
+        e.preventDefault();
+        last.focus();
+    } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+    }
+}
 
 /** How many Evi dialogs are open: Escape closes the top one instead of the whole panel */
 export let openDialogs = 0;
@@ -1090,21 +1100,7 @@ export function useModal(onClose: () => void) {
         };
     }, []);
 
-    const trapTab = (e: React.KeyboardEvent) => {
-        if (e.key !== "Tab" || !ref.current) return;
-        const focusable = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => el.offsetParent !== null);
-        if (!focusable.length) return;
-        const first = focusable[0], last = focusable[focusable.length - 1];
-        if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) {
-            e.preventDefault();
-            last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-        }
-    };
-
-    return { ref, onKeyDown: trapTab };
+    return { ref, onKeyDown: (e: React.KeyboardEvent) => trapTab(e, ref.current) };
 }
 
 /**

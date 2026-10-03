@@ -120,7 +120,7 @@ describe("hide blocked: decisions", () => {
     });
 });
 
-// ---- Running Discord's real stream builder, patched, against a fake channel ----
+// Running Discord's real stream builder, patched, against a fake channel
 
 const TZK = Object.fromEntries(["FORUM_POST_ACTION_BAR", "DIVIDER", "MESSAGE", "THREAD_STARTER_MESSAGE", "MESSAGE_GROUP_BLOCKED", "MESSAGE_GROUP_IGNORED", "MESSAGE_GROUP_SPAMMER", "MESSAGE_GROUP_SUSPENDED_USER"].map(k => [k, k]));
 
@@ -300,7 +300,7 @@ describe("hide blocked: member list and voice patches", () => {
     });
 });
 
-// ---- Against the whole cached build, when it's there ----
+// Against the whole cached build, when it's there
 
 const CHUNKS = join(import.meta.dir, "..", "test-results", "chunks");
 const haveChunks = existsSync(CHUNKS);

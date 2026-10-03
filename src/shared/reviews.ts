@@ -91,8 +91,6 @@ export interface PluginPage {
 /** Fewer installs than this are shown as "fewer than 10", so a count can't point at someone */
 export const MIN_SHOWN_INSTALLS = 10;
 
-// ---- reading the server's answers ----------------------------------------------------------------
-
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const cleanText = (v: unknown, max: number) => typeof v === "string" ? v.slice(0, max).replace(/[\0-\x08\x0e-\x1f]/g, "") : "";
 

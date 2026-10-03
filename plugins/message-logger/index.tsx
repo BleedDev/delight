@@ -40,9 +40,10 @@ const renderedContentFilter = filters.byCode('"useMessageRenderedContent"', "hid
  * The CSS module with Discord's `markup` class, which styles rendered message content. Its code hint
  * is plain strings: a regex tested against every module's source costs far more.
  */
+const MARKUP_CLASS = /^markup_+[\da-f]+$/;
 const markupFilter: Filter = Object.assign(
     (v: any) => !!v && typeof v === "object" && !Array.isArray(v)
-        && Object.values(v).some(c => typeof c === "string" && /^markup_+[\da-f]+$/.test(c))
+        && Object.values(v).some(c => typeof c === "string" && MARKUP_CLASS.test(c))
         && Object.values(v).some(c => typeof c === "string" && /^codeContainer_+[\da-f]+$/.test(c)),
     { $code: ['"markup_', '"codeContainer_'] },
 );
@@ -193,6 +194,10 @@ function RichContent({ message, content, render }: { message: any; content: stri
     });
     return <>{rendered?.content ?? content}</>;
 }
+
+const revokeAll = (media: readonly SavedMedia[]) => {
+    for (const m of media) URL.revokeObjectURL(m.url);
+};
 
 const formatSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
@@ -456,9 +461,9 @@ function install(ctx: Ctx, log: MessageLog, store: any, saver: ReturnType<typeof
         const attachments = store.getMessage(channelId, id)?.attachments;
         if (!attachments?.length || log.get(channelId, id)?.media?.length) return;
         const now = saver.keep(attachments, later => {
-            if (!log.addMedia(channelId, id, later)) for (const m of later) URL.revokeObjectURL(m.url);
+            if (!log.addMedia(channelId, id, later)) revokeAll(later);
         });
-        if (!log.addMedia(channelId, id, now)) for (const m of now) URL.revokeObjectURL(m.url);
+        if (!log.addMedia(channelId, id, now)) revokeAll(now);
     };
 
     ctx.hook.instead(handlers, "MESSAGE_DELETE", (call: HookContext) => {
@@ -476,8 +481,7 @@ function install(ctx: Ctx, log: MessageLog, store: any, saver: ReturnType<typeof
         const keep: string[] = [];
         const drop: string[] = [];
         for (const id of action.ids ?? []) (shouldKeep(action, action.channelId, id) ? keep : drop).push(id);
-        const evicted = keep.flatMap(id => log.markDeleted(action.channelId, id));
-        void purge(evicted);
+        void purge(keep.flatMap(id => log.markDeleted(action.channelId, id)));
         for (const id of keep) keepMedia(action.channelId, id);
         return drop.length ? call.callOriginal({ ...action, ids: drop }) : false;
     });
@@ -495,7 +499,7 @@ function install(ctx: Ctx, log: MessageLog, store: any, saver: ReturnType<typeof
         if (!changedText && !removed.length) return;
         const timestamp = Number(old.editedTimestamp ?? old.timestamp) || Date.now();
         const media = saver.keep(removed, later => {
-            if (!log.addEditMedia(channelId, next.id, timestamp, later)) for (const m of later) URL.revokeObjectURL(m.url);
+            if (!log.addEditMedia(channelId, next.id, timestamp, later)) revokeAll(later);
         });
         void purge(log.addEdit(channelId, next.id, { content: old.content, timestamp, ...(media.length && { media }) }));
     });
@@ -563,8 +567,6 @@ function markDeleted(ctx: Ctx, log: MessageLog) {
     ctx.onDispose(log.subscribe(update));
 }
 
-// ---- Menus --------------------------------------------------------------------------------------
-
 /** "3 deleted, 1 edited" */
 function countLabel({ deleted, edited }: { deleted: number; edited: number; }) {
     return [deleted && t("count.deleted", { count: deleted }), edited && t("count.edited", { count: edited })].filter(Boolean).join(t("count.sep"));
@@ -602,13 +604,12 @@ export default definePlugin({
     settings,
 
     start(ctx) {
-        const revoke = (m: SavedMedia) => URL.revokeObjectURL(m.url);
         // Saved copies are let go with the message they belong to
         const log = new MessageLog({ perChannel: ctx.settings.get("limit") }, entry => {
-            for (const m of entry.media ?? []) revoke(m);
-            for (const e of entry.edits) for (const m of e.media ?? []) revoke(m);
+            revokeAll(entry.media ?? []);
+            for (const e of entry.edits) revokeAll(e.media ?? []);
         });
-        const cache = new MediaCache<SavedMedia>(CACHE_BYTES, revoke);
+        const cache = new MediaCache<SavedMedia>(CACHE_BYTES, m => URL.revokeObjectURL(m.url));
         const saver = mediaSaver(ctx, cache);
         ctx.onDispose(() => cache.clear());
         ctx.addStyle(css);
@@ -631,7 +632,7 @@ export default definePlugin({
         // Kept from an earlier start: no need to search every module again
         if (!useRenderedContent) ctx.waitFor(renderedContentFilter, fn => void (useRenderedContent = fn));
         if (!markupClass) ctx.waitFor(markupFilter, classes => {
-            markupClass = Object.values(classes).find((c): c is string => typeof c === "string" && /^markup_+[\da-f]+$/.test(c)) ?? "";
+            markupClass = Object.values(classes).find((c): c is string => typeof c === "string" && MARKUP_CLASS.test(c)) ?? "";
         });
 
         ctx.contextMenu(["channel-context", "thread-context", "gdm-context"], (children, props) => {

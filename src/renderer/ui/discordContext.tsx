@@ -9,7 +9,7 @@
  */
 import type { Context, ReactNode } from "react";
 
-import { React } from "../webpack/common";
+import { createRoot, React } from "../webpack/common";
 
 let context: Context<unknown> | null | undefined;
 
@@ -43,4 +43,13 @@ export function DiscordContext({ children }: { children: ReactNode; }) {
     if (!mana) return <>{children}</>;
     const Provider = (mana.context as any).Provider ?? mana.context;
     return <Provider value={mana.value}>{children}</Provider>;
+}
+
+/** Renders `element` in a new root of its own at the end of the page, inside DiscordContext */
+export function mountRoot(element: ReactNode, className?: string): HTMLDivElement {
+    const container = document.createElement("div");
+    if (className) container.className = className;
+    document.body.append(container);
+    createRoot(container).render(<DiscordContext>{element}</DiscordContext>);
+    return container;
 }

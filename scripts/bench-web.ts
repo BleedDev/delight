@@ -10,7 +10,7 @@ import { disablePasskeys } from "./no-passkeys.ts";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const DIST = join(ROOT, "dist");
-const runs = Number(process.argv.find(a => /^d+$/.test(a)) ?? 3);
+const runs = Number(process.argv.find(a => /^\d+$/.test(a)) ?? 3);
 
 const plugins = readdirSync(join(DIST, "plugins")).map(id => ({
     manifest: JSON.parse(readFileSync(join(DIST, "plugins", id, "manifest.json"), "utf8")),

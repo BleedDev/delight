@@ -6,9 +6,9 @@
  * a beta, a plugin you have or hearted that evi.rest said was broken works again, a new Evi is out.
  * Each is told once: what was seen is kept in settings (wishlistSeen, brokenSeen).
  */
-import { compareVersions, RegistryEntry } from "@shared/store";
 import { EviNotification, MAX_NOTIFICATIONS, mergeNotifications, NotificationKind, NotificationLink, unreadCount } from "@shared/notifications";
 import { parseStarKey } from "@shared/stars";
+import { compareVersions, RegistryEntry } from "@shared/store";
 
 import { t } from "./i18n";
 import { Native } from "./native";
@@ -151,8 +151,9 @@ export const Inbox = {
         if (!Native.inbox) return;
         set({ loading: true });
         const result = await Native.inbox().catch(err => ({ ok: false as const, error: String(err) }));
-        if (result.ok) set({ server: result.value, linked: true, loading: false, error: undefined });
-        else set({ server: [], linked: "unlinked" in result && result.unlinked ? false : state.linked, loading: false, error: "unlinked" in result && result.unlinked ? undefined : result.error });
+        if (result.ok) return set({ server: result.value, linked: true, loading: false, error: undefined });
+        const unlinked = "unlinked" in result && result.unlinked;
+        set({ server: [], linked: unlinked ? false : state.linked, loading: false, error: unlinked ? undefined : result.error });
     },
 
     /** Marks everything read, here and on evi.rest */

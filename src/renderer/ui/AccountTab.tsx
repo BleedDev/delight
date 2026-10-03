@@ -9,7 +9,7 @@ import { t } from "../i18n";
 import { Developer } from "../developer";
 import { Native } from "../native";
 import { React } from "../webpack/common";
-import { Button, Section, Status, Text } from "./components";
+import { Button, discordAvatarUrl, Section, Status, Text } from "./components";
 import { SupporterPerks } from "./SupporterPerks";
 import { syncProfileNow } from "../accountSync";
 
@@ -23,10 +23,6 @@ type State =
     | { kind: "starting"; }
     | { kind: "waiting"; code: string; since: number; }
     | { kind: "linked"; user: AccountUser; };
-
-const avatarUrl = (u: AccountUser) => u.avatar
-    ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.${u.avatar.startsWith("a_") ? "gif" : "png"}?size=80`
-    : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(u.id) >> 22n) % 6n)}.png`;
 
 export function AccountTab() {
     const [state, setState] = React.useState<State>({ kind: "loading" });
@@ -112,7 +108,7 @@ export function AccountTab() {
 
                 {state.kind === "linked" && (
                     <>
-                        <img className="dl-account-avatar" src={avatarUrl(state.user)} alt="" width={40} height={40} />
+                        <img className="dl-account-avatar" src={discordAvatarUrl(state.user.id, state.user.avatar, 80, "auto")} alt="" width={40} height={40} />
                         <div className="dl-account-text">
                             <Text variant="text-md/semibold" color="text-strong">{state.user.globalName || state.user.username}</Text>
                             <Status tone="success" quiet>{t("account.linkedAs", { username: state.user.username })}</Status>

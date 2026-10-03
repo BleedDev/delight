@@ -55,12 +55,14 @@ export interface OpusTrack {
     packets: Uint8Array[];
 }
 
+interface TrackEntry { number?: number; codec?: string; head?: Uint8Array; channels?: number; }
+
 /** The Opus packets (and OpusHead) of a WebM file's first Opus track */
 export function readWebmOpus(b: Uint8Array): OpusTrack {
     let pos = 0;
     let trackNumber: number | undefined;
-    let current: { number?: number; codec?: string; head?: Uint8Array; channels?: number; } | undefined;
-    const tracks: { number?: number; codec?: string; head?: Uint8Array; channels?: number; }[] = [];
+    let current: TrackEntry | undefined;
+    const tracks: TrackEntry[] = [];
     const packets: Uint8Array[] = [];
     const block = (start: number, end: number) => {
         const track = vint(b, start, false);

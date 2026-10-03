@@ -20,8 +20,9 @@ function required<T>(value: T | undefined, what: string): T {
     return value;
 }
 
+const reactFilter = filters.byProps("useState", "createElement", "Component");
 export const React: typeof ReactTypes = lazy(
-    () => required(find(filters.byProps("useState", "createElement", "Component")), "React"),
+    () => required(find(reactFilter), "React"),
     REACT_KEYS,
 );
 
@@ -57,6 +58,6 @@ export function getStore<T = any>(name: string): T {
 export function onCommonReady(callback: () => void) {
     let pending = 2;
     const done = () => --pending === 0 && callback();
-    waitFor(filters.byProps("useState", "createElement", "Component"), done);
+    waitFor(reactFilter, done);
     waitFor(dispatcherFilter, done);
 }

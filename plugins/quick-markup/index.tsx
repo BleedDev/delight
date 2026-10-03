@@ -57,8 +57,6 @@ function loadImage(file: File): Promise<HTMLImageElement> {
     });
 }
 
-// ---- The editor ---------------------------------------------------------------------------------
-
 function Editor({ file, onSave, onClose }: { file: File; onSave(file: File): void; onClose(): void; }) {
     const [image, setImage] = React.useState<HTMLImageElement>();
     const [error, setError] = React.useState(false);
@@ -253,8 +251,6 @@ function Editor({ file, onSave, onClose }: { file: File; onSave(file: File): voi
         </div>
     );
 }
-
-// ---- Opening it from an upload ------------------------------------------------------------------
 
 let closeOpen: CloseLayer | undefined;
 

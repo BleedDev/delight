@@ -7,17 +7,13 @@ import { AdminBadge, parseAdminBadges, parsePeople, Person } from "@shared/devAd
 
 import { t, timeAgo } from "../../i18n";
 import { React } from "../../webpack/common";
-import { Badge, Button, EmptyState, Icon, Pagination, SearchField, Section, Text, Tooltip } from "../components";
+import { Badge, Button, discordAvatarUrl, EmptyState, Icon, Pagination, SearchField, Section, Text, Tooltip } from "../components";
 import { BadgesDialog } from "./BadgesDialog";
 import { LoadError } from "./common";
 import { useAdmin } from "./data";
 import { PersonDialog } from "./PersonDialog";
 
 const PAGE_SIZE = 25;
-
-export const avatarUrl = (u: { id: string; avatar?: string; }, size = 64) => u.avatar
-    ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.${u.avatar.startsWith("a_") ? "gif" : "png"}?size=${size}`
-    : `https://cdn.discordapp.com/embed/avatars/${/^\d+$/.test(u.id) ? Number((BigInt(u.id) >> 22n) % 6n) : 0}.png`;
 
 /** The badges someone shows in Discord, as their icons, with each one's name on hover */
 export function BadgeIcons({ ids, catalogue, size = 18 }: { ids: string[]; catalogue: Map<string, AdminBadge>; size?: number; }) {
@@ -47,7 +43,7 @@ function PersonRow({ person, catalogue, onOpen }: { person: Person; catalogue: M
     return (
         <li className="dl-row dl-dev-person-row">
             <button type="button" className="dl-dev-person" onClick={onOpen} aria-label={t("dev.people.open", { name: user.name })}>
-                <img className="dl-dev-avatar" src={avatarUrl(user, 64)} alt="" width={36} height={36} loading="lazy" />
+                <img className="dl-dev-avatar" src={discordAvatarUrl(user.id, user.avatar, 64, "auto")} alt="" width={36} height={36} loading="lazy" />
                 <span className="dl-dev-person-text">
                     <span className="dl-dev-person-names">
                         <Text tag="span" variant="text-md/semibold" color="text-strong" className="dl-dev-name">{user.name}</Text>

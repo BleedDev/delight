@@ -4,12 +4,12 @@ import { t, useLocale } from "../i18n";
 import { isRecording } from "../keybinds";
 import { Developer } from "../developer";
 import { Native } from "../native";
-import { createRoot, React } from "../webpack/common";
-import { Button, ErrorBoundary, Icon, openDialogs, Text, useStore } from "./components";
+import { React } from "../webpack/common";
+import { Button, ErrorBoundary, Icon, openDialogs, Text, trapTab, useStore } from "./components";
 import { PageView, visiblePages } from "./pages";
 import { currentRelease, WhatsNewModal } from "./WhatsNew";
 import { ensureStyles } from "./stylesheet";
-import { DiscordContext } from "./discordContext";
+import { mountRoot } from "./discordContext";
 
 type View = "closed" | "open" | "closing";
 
@@ -41,8 +41,6 @@ let tabs = visiblePages();
 let lastTab = tabs[0].id;
 /** The open panel's page switch, for SettingsUI.open(page) while it's already open */
 let switchPage: ((id: string) => void) | undefined;
-
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function Panel() {
     useLocale();
@@ -85,20 +83,7 @@ function Panel() {
     };
 
     // Keep Tab inside the dialog while it's open
-    const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key !== "Tab" || !panelRef.current) return;
-        const focusable = [...panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => el.offsetParent !== null);
-        if (!focusable.length) return;
-        const first = focusable[0], last = focusable[focusable.length - 1];
-        const active = document.activeElement;
-        if (e.shiftKey && (active === first || active === panelRef.current)) {
-            e.preventDefault();
-            last.focus();
-        } else if (!e.shiftKey && active === last) {
-            e.preventDefault();
-            first.focus();
-        }
-    };
+    const onKeyDown = (e: KeyboardEvent) => trapTab(e, panelRef.current);
 
     return (
         <div className="dl-scrim" data-closing={view === "closing" ? "" : undefined} onMouseDown={e => e.target === e.currentTarget && close()}>
@@ -164,10 +149,7 @@ function mount() {
     if (mounted) return;
     mounted = true;
     ensureStyles();
-    const container = document.createElement("div");
-    container.className = "dl-root";
-    document.body.append(container);
-    createRoot(container).render(<DiscordContext><Root /></DiscordContext>);
+    mountRoot(<Root />, "dl-root");
 }
 
 export const SettingsUI = {

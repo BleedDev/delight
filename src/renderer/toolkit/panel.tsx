@@ -77,8 +77,6 @@ export function ensurePanelPatch() {
     registerPatches("evi", [panelPatch]);
 }
 
-// ---- Discord's parts ----------------------------------------------------------------------------
-
 /** The user panel's button, the one mute and deafen use */
 let PanelButton: ComponentType<any> | undefined;
 const panelButton = () => PanelButton ??= find(filters.byCode(".GREEN,positionKeyStemOverride:"));

@@ -61,8 +61,10 @@ async function cleanFile(file: File): Promise<File> {
     return clean;
 }
 
+type FoundFile = { owner: any; key: PropertyKey; file: File; };
+
 /** Finds every File in the arguments (arrays and plain objects, a few levels deep) */
-function collectFiles(value: unknown, found: { owner: any; key: PropertyKey; file: File; }[], depth = 0) {
+function collectFiles(value: unknown, found: FoundFile[], depth = 0) {
     if (!value || typeof value !== "object" || depth > 4) return;
     const entries: [PropertyKey, unknown][] = Array.isArray(value) ? value.map((v, i) => [i, v]) : Object.entries(value);
     for (const [key, v] of entries) {
@@ -72,7 +74,7 @@ function collectFiles(value: unknown, found: { owner: any; key: PropertyKey; fil
 }
 
 async function cleanArgs(args: any[]) {
-    const found: { owner: any; key: PropertyKey; file: File; }[] = [];
+    const found: FoundFile[] = [];
     collectFiles(args, found);
     await Promise.all(found.map(async ({ owner, key, file }) => {
         try {
@@ -90,17 +92,18 @@ async function cleanArgs(args: any[]) {
 }
 
 function hasFiles(args: any[]) {
-    const found: { owner: any; key: PropertyKey; file: File; }[] = [];
+    const found: FoundFile[] = [];
     collectFiles(args, found);
     return found.some(f => !cleaned.has(f.file));
 }
 
+const enabled = () => !!context && (context.settings.get("stripImages") || context.settings.get("randomNames"));
+
 /** The entry point takes a FileList or an array of Files first */
 function interceptEntry(call: HookContext) {
-    const ctx = context;
     const [files, ...rest] = call.args;
     const list: unknown[] = files && typeof files === "object" && typeof files.length === "number" ? Array.from(files as ArrayLike<unknown>) : [];
-    if (!ctx || (!ctx.settings.get("stripImages") && !ctx.settings.get("randomNames")) || !list.some(f => f instanceof File && !cleaned.has(f))) {
+    if (!enabled() || !list.some(f => f instanceof File && !cleaned.has(f))) {
         return call.callOriginal(...call.args);
     }
     const clean = list.map(f => f instanceof File
@@ -113,8 +116,7 @@ function interceptEntry(call: HookContext) {
 }
 
 function interceptUpload(call: HookContext) {
-    const ctx = context;
-    if (!ctx || (!ctx.settings.get("stripImages") && !ctx.settings.get("randomNames")) || !hasFiles(call.args)) {
+    if (!enabled() || !hasFiles(call.args)) {
         return call.callOriginal(...call.args);
     }
     return cleanArgs(call.args).then(() => call.callOriginal(...call.args));

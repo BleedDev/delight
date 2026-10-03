@@ -74,8 +74,6 @@ const SELF: ApiDocEntry = {
 }]`,
 };
 
-// ---- text helpers ---------------------------------------------------------------------------------
-
 /** One line, single spaces: signatures read the same however they were wrapped */
 const oneLine = (text: string) => stripComments(text).replace(/\s+/g, " ").replace(/\(\s/g, "(").replace(/\s\)/g, ")").replace(/,\s*\)/g, ")").trim();
 
@@ -113,8 +111,6 @@ export function jsDocSummary(raw: string) {
 }
 
 const isInternal = (raw: string) => /@internal\b/.test(raw);
-
-// ---- AST helpers ----------------------------------------------------------------------------------
 
 type Node = any;
 
@@ -175,8 +171,6 @@ function membersShape(members: Node[]) {
     return lines.length ? `{\n${lines.join("\n")}\n}` : "{}";
 }
 
-// ---- declarations ---------------------------------------------------------------------------------
-
 interface Found {
     kind: string;
     signature: string;
@@ -226,8 +220,6 @@ function describeDeclarations(decls: Node[], name: string): Found | undefined {
         }
     }
 }
-
-// ---- walking @evi/api -----------------------------------------------------------------------------
 
 interface Program {
     getSourceFile(file: string): Node | undefined;
@@ -342,8 +334,6 @@ function collectEntry(program: Program, out: Map<string, ApiDocEntry>) {
     }
 }
 
-// ---- ctx and ctx.settings -------------------------------------------------------------------------
-
 /** Public members of a class, as `prefix.member` entries. Object-valued properties list their functions too. */
 function collectMembers(program: Program, className: string, prefix: string, out: Map<string, ApiDocEntry>) {
     const file = program.getSourceFile(normalize(CONTEXT));
@@ -405,8 +395,6 @@ function collectMembers(program: Program, className: string, prefix: string, out
         }
     }
 }
-
-// ---- run ------------------------------------------------------------------------------------------
 
 export function generateApiDocs(): ApiDocEntry[] {
     const api = new API({ cwd: ROOT });

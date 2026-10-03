@@ -70,8 +70,6 @@ export interface AuthorClaimInput {
     note: string;
 }
 
-export type ClaimStatus = "pending" | "approved" | "rejected";
-
 export const isAuthorSlug = (slug: unknown): slug is string => isPluginId(slug) && slug.length >= 2 && slug.length <= 32;
 
 function text(value: unknown, max: number): value is string {

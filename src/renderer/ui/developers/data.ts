@@ -14,8 +14,6 @@ export const format = (n: number) => n.toLocaleString(I18n.discordLocale);
 export const dayLabel = (day: string) =>
     new Date(`${day}T00:00:00Z`).toLocaleDateString(I18n.discordLocale, { month: "short", day: "numeric", timeZone: "UTC" });
 
-// ---- live numbers ------------------------------------------------------------------------------
-
 const EVERY = 10_000;
 
 let live: DevLive | undefined;
@@ -63,8 +61,6 @@ export function useLive() {
     }, []);
     return { live: value, error };
 }
-
-// ---- the admin API -----------------------------------------------------------------------------
 
 export type AdminResult<T> = { ok: true; value: T; } | { ok: false; error: string; };
 
