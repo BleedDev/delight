@@ -64,7 +64,10 @@ const results = await page.evaluate(async (pluginCode) => {
     (window as any).__setScroll = (el: Element, v: number) => { writingFromTest = true; el.scrollTop = v; writingFromTest = false; };
     const changeListeners: (() => void)[] = [];
     const disposers: (() => void)[] = [];
+    // What native.ts answers: Electron's accessibility support (a screen reader is on)
+    let assistive = false;
     const ctx = {
+        native: { call: async (name: string) => name === "accessibilityOn" ? assistive : undefined },
         addStyle(css: string) {
             const el = document.createElement("style");
             el.textContent = css;
@@ -292,6 +295,20 @@ const results = await page.evaluate(async (pluginCode) => {
     await new Promise(r => setTimeout(r, 2300));
     out.reattached = document.querySelectorAll(".dl-fl-row").length > 150;
 
+    // A screen reader turned on mid-session: every row renders again, so it can read them all
+    out.beforeAssistive = counts();
+    assistive = true;
+    await new Promise(r => setTimeout(r, 1300));
+    await frame();
+    out.withAssistive = counts();
+    // ...and off again: rows are skipped again
+    assistive = false;
+    await new Promise(r => setTimeout(r, 1300));
+    await frame();
+    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => requestIdleCallback(() => requestIdleCallback(r)));
+    out.afterAssistive = counts();
+
     // Disable: nothing may be left
     disposers.splice(0).reverse().forEach(fn => fn());
     await frame();
@@ -399,5 +416,7 @@ check("members: the plugin never writes the scroll position", r.pluginScrollWrit
 check("re-attaches when Discord rebuilds the sidebar", r.reattached);
 check("chat: skipping far messages makes a relayout much cheaper", gain.far > 100 && gain.afterMs < gain.beforeMs / 2, gain);
 check("chat is on by default, the member list off", gain.defaults.chat === true && gain.defaults.members === false, gain.defaults);
+check("a screen reader turning on brings every row back within a second", r.beforeAssistive.far > 0 && r.withAssistive.rows === 0 && r.withAssistive.far === 0, { before: r.beforeAssistive, with: r.withAssistive });
+check("and turning it off skips far rows again", r.afterAssistive.far > 0, r.afterAssistive);
 check("disabling leaves no trace", r.afterDisable.rows === 0 && r.afterDisable.far === 0 && r.styleRemoved, r.afterDisable);
 process.exit(failed ? 1 : 0);

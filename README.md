@@ -96,7 +96,7 @@ Evi comes with these, all off until you turn them on. There are more in the stor
 - **Voice Activity Log**: who joined and left your call
 
 **Speed**
-- **Fast Lists**, **Smooth Typing**, **Calm Name Effects**, **GPU Zero-Copy**: keep Discord smooth, even with hundreds of servers
+- **Fast Lists**, **Smooth Typing**, **Calm Name Effects**, **Dedicated GPU**: keep Discord smooth, even with hundreds of servers
 
 ## Questions
 

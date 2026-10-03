@@ -16,7 +16,8 @@
             "version": "2.2.0",
             "notes": [
                 "Skipping far messages in chat is now on by default, measured: redrawing a long chat after a resize takes about a seventh of the time. If you changed this setting yourself, your choice stays.",
-                "The member list option stays off: Discord already draws only the members near your screen, so there's nothing to skip."
+                "The member list option stays off: Discord already draws only the members near your screen, so there's nothing to skip.",
+                "Every list renders normally while a screen reader or other assistive technology is on, and goes back to skipping when it's off."
             ]
         },
         {
@@ -65,7 +66,8 @@
             "changelog": {
                 "2.2.0": [
                     "Das Überspringen weit entfernter Nachrichten im Chat ist jetzt standardmäßig an, gemessen: Einen langen Chat nach einer Größenänderung neu aufzubauen dauert nur noch etwa ein Siebtel der Zeit. Hast du die Einstellung selbst geändert, bleibt deine Wahl.",
-                    "Die Mitgliederliste bleibt aus: Discord zeichnet ohnehin nur die Mitglieder in der Nähe deines Bildschirms, es gibt also nichts zu überspringen."
+                    "Die Mitgliederliste bleibt aus: Discord zeichnet ohnehin nur die Mitglieder in der Nähe deines Bildschirms, es gibt also nichts zu überspringen.",
+                    "Solange ein Screenreader oder andere Hilfstechnik läuft, werden alle Listen normal gezeichnet; danach wird wieder übersprungen."
                 ],
                 "2.1.2": [
                     "Sparsamer im Leerlauf: Die sekündliche Prüfung sucht alle Listen in einem Durchgang durch die Seite und misst das Layout nie mitten im Bild."
@@ -94,7 +96,8 @@
             "changelog": {
                 "2.2.0": [
                     "Omitir los mensajes lejanos del chat ahora viene activado, medido: volver a dibujar un chat largo tras cambiar el tamaño tarda cerca de una séptima parte. Si cambiaste este ajuste tú mismo, se mantiene tu elección.",
-                    "La opción de la lista de miembros sigue desactivada: Discord ya dibuja solo los miembros cerca de tu pantalla, así que no hay nada que omitir."
+                    "La opción de la lista de miembros sigue desactivada: Discord ya dibuja solo los miembros cerca de tu pantalla, así que no hay nada que omitir.",
+                    "Mientras haya un lector de pantalla u otra tecnología de asistencia activa, todas las listas se dibujan con normalidad, y al apagarla se vuelve a omitir."
                 ],
                 "2.1.2": [
                     "Más ligero en reposo: su comprobación cada segundo busca todas las listas en una sola pasada por la página y nunca mide el diseño a mitad de un fotograma."
@@ -123,7 +126,8 @@
             "changelog": {
                 "2.2.0": [
                     "Ignorer les messages lointains du chat est maintenant activé par défaut, mesuré : redessiner un long chat après un redimensionnement prend environ un septième du temps. Si tu avais changé ce réglage toi-même, ton choix est conservé.",
-                    "L'option de la liste des membres reste désactivée : Discord n'affiche déjà que les membres proches de ton écran, il n'y a donc rien à ignorer."
+                    "L'option de la liste des membres reste désactivée : Discord n'affiche déjà que les membres proches de ton écran, il n'y a donc rien à ignorer.",
+                    "Tant qu'un lecteur d'écran ou une autre technologie d'assistance est actif, toutes les listes s'affichent normalement ; ensuite, l'omission reprend."
                 ],
                 "2.1.2": [
                     "Plus léger au repos : sa vérification chaque seconde cherche toutes les listes en un seul passage sur la page et ne mesure jamais la mise en page en plein affichage."
@@ -152,7 +156,8 @@
             "changelog": {
                 "2.2.0": [
                     "チャットで離れたメッセージの描画を省く設定が、計測のうえ既定でオンになりました。サイズ変更後に長いチャットを描き直す時間が約7分の1になります。この設定を自分で変えていた場合は、その選択がそのまま残ります。",
-                    "メンバーリストの設定はオフのままです。Discordはもともと画面付近のメンバーしか描画しないため、省くものがありません。"
+                    "メンバーリストの設定はオフのままです。Discordはもともと画面付近のメンバーしか描画しないため、省くものがありません。",
+                    "スクリーンリーダーなどの支援技術が有効な間は、すべてのリストを通常どおり描画し、無効になると再び描画を省きます。"
                 ],
                 "2.1.2": [
                     "待機中の負荷が軽くなりました。毎秒のチェックはページを一度たどるだけで全リストを探し、描画の途中でレイアウトを計測しません。"
@@ -181,7 +186,8 @@
             "changelog": {
                 "2.2.0": [
                     "Pomijanie dalekich wiadomości na czacie jest teraz domyślnie włączone, po pomiarach: ponowne rysowanie długiego czatu po zmianie rozmiaru trwa około jednej siódmej czasu. Jeśli zmieniłeś to ustawienie sam, Twój wybór zostaje.",
-                    "Opcja listy członków zostaje wyłączona: Discord i tak rysuje tylko członków blisko ekranu, więc nie ma czego pomijać."
+                    "Opcja listy członków zostaje wyłączona: Discord i tak rysuje tylko członków blisko ekranu, więc nie ma czego pomijać.",
+                    "Gdy działa czytnik ekranu lub inna technologia wspomagająca, wszystkie listy są rysowane normalnie, a po jej wyłączeniu pomijanie wraca."
                 ],
                 "2.1.2": [
                     "Lżejszy w bezczynności: sprawdzanie co sekundę szuka wszystkich list jednym przejściem po stronie i nigdy nie mierzy układu w trakcie rysowania klatki."
@@ -210,7 +216,8 @@
             "changelog": {
                 "2.2.0": [
                     "Pular mensagens distantes no chat agora vem ligado, medido: redesenhar um chat longo depois de redimensionar leva cerca de um sétimo do tempo. Se você mudou essa opção, sua escolha continua valendo.",
-                    "A opção da lista de membros continua desligada: o Discord já desenha só os membros perto da sua tela, então não há nada para pular."
+                    "A opção da lista de membros continua desligada: o Discord já desenha só os membros perto da sua tela, então não há nada para pular.",
+                    "Enquanto um leitor de tela ou outra tecnologia assistiva estiver ativa, todas as listas são desenhadas normalmente; quando desligar, volta a pular."
                 ],
                 "2.1.2": [
                     "Mais leve quando ocioso: a verificação a cada segundo procura todas as listas em uma única passada pela página e nunca mede o layout no meio de um quadro."
@@ -239,7 +246,8 @@
             "changelog": {
                 "2.2.0": [
                     "Пропуск далёких сообщений в чате теперь включён по умолчанию, по замерам: перерисовка длинного чата после изменения размера занимает примерно седьмую часть прежнего времени. Если вы меняли эту настройку сами, ваш выбор сохраняется.",
-                    "Список участников остаётся выключенным: Discord и так рисует только участников рядом с экраном, пропускать нечего."
+                    "Список участников остаётся выключенным: Discord и так рисует только участников рядом с экраном, пропускать нечего.",
+                    "Пока работает программа чтения с экрана или другая вспомогательная технология, все списки рисуются как обычно, а после её выключения пропуск возобновляется."
                 ],
                 "2.1.2": [
                     "Меньше нагрузки в простое: ежесекундная проверка ищет все списки за один проход по странице и никогда не измеряет раскладку посреди кадра."
@@ -268,7 +276,8 @@
             "changelog": {
                 "2.2.0": [
                     "Sohbette uzaktaki mesajları atlamak artık varsayılan olarak açık, ölçülerek: uzun bir sohbeti yeniden boyutlandırmadan sonra yeniden çizmek yaklaşık yedide bir süre alıyor. Bu ayarı kendin değiştirdiysen seçimin korunur.",
-                    "Üye listesi seçeneği kapalı kalıyor: Discord zaten yalnızca ekranına yakın üyeleri çizer, yani atlanacak bir şey yok."
+                    "Üye listesi seçeneği kapalı kalıyor: Discord zaten yalnızca ekranına yakın üyeleri çizer, yani atlanacak bir şey yok.",
+                    "Ekran okuyucu veya başka bir yardımcı teknoloji açıkken tüm listeler normal çizilir; kapandığında atlama yeniden başlar."
                 ],
                 "2.1.2": [
                     "Boştayken daha hafif: saniyede bir yapılan kontrol tüm listeleri sayfada tek geçişte arıyor ve düzeni asla bir karenin ortasında ölçmüyor."
