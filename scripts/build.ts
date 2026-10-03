@@ -101,6 +101,9 @@ async function buildCore() {
             format: "iife",
             plugins: [jsxShim],
             sourcemap: WATCH ? "inline" : "none",
+            // Parsed and compiled at every start with no code cache: a smaller bundle is a faster boot.
+            // Names stay as written, for stack traces and anything reading a function's name.
+            minify: WATCH ? false : { whitespace: true, syntax: true, identifiers: false },
         }),
     ]);
     if (results.every(Boolean)) console.log(`✓ core (${Math.round(performance.now() - start)}ms)`);

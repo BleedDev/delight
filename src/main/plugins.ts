@@ -1,5 +1,5 @@
 import type { NativeContext, NativePlugin } from "@evi/api/native";
-import { EviSettings, IPC, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import { BootPlugin, EviSettings, IPC, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
 import { pullFor } from "@shared/pulls";
 import { parseRemovedPlugins, REMOVED_PLUGINS_FILE, RETIRED_PLUGINS, STORE_MARKER } from "@shared/store";
 import { app, ipcMain, session, WebContents } from "electron";
@@ -346,6 +346,15 @@ export function getPluginPayloads() {
     return [...plugins.values()].map(toPayload);
 }
 
+/**
+ * What the page boots with: code only for plugins that run now (the same test as for their native
+ * side). The rest is most of it, and parsing it every start cost more than everything else plugins
+ * do at boot; the page asks for one's code (PLUGIN_CODE) once it's turned on or its settings opened.
+ */
+export function getBootPlugins(): BootPlugin[] {
+    return [...plugins.values()].map(plugin => mayRunNative(plugin) ? toPayload(plugin) : { manifest: plugin.manifest, source: plugin.source });
+}
+
 export function initPlugins() {
     // Left over from before these became part of Evi; a store-installed copy stays
     for (const id of RETIRED_PLUGINS) {
@@ -378,6 +387,10 @@ export function initPlugins() {
             const plugin = plugins.get(id);
             if (plugin && isPulled(plugin)) stopNative(id);
         }
+    });
+
+    ipcMain.on(IPC.PLUGIN_CODE, (e, id: unknown) => {
+        e.returnValue = typeof id === "string" ? plugins.get(id)?.code ?? null : null;
     });
 
     // Starting is checked in startNative; stopping is always fine

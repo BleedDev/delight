@@ -57,7 +57,10 @@ export function getStore<T = any>(name: string): T {
 /** Calls back once React and the Flux dispatcher are available */
 export function onCommonReady(callback: () => void) {
     let pending = 2;
-    const done = () => --pending === 0 && callback();
+    // Waiters run inside Discord's module evaluation, which would wait on starting every plugin. A
+    // microtask runs once that unwinds, still before React renders or Discord connects; source
+    // patches don't wait for it, they're registered at boot.
+    const done = () => --pending === 0 && queueMicrotask(callback);
     waitFor(reactFilter, done);
     waitFor(dispatcherFilter, done);
 }
