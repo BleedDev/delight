@@ -1,5 +1,5 @@
 import * as api from "@evi/api";
-import { EviSettings, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
+import { BootPlugin, EviSettings, isPluginEnabled, PluginChange, PluginManifest, PluginPayload } from "@shared/ipc";
 import { applyPatchFixes, Hotfix, hotfixFor, hotfixTag } from "@shared/hotfixes";
 import { localizePlugin } from "@shared/pluginLocales";
 import { PulledPlugin, PulledPlugins, pullFor } from "@shared/pulls";
@@ -89,7 +89,7 @@ const requireMap: Record<string, unknown> = {
     "react/jsx-dev-runtime": JsxRuntime,
 };
 
-function evaluate({ manifest, code }: PluginPayload): PluginDefinition {
+function evaluate({ manifest, code }: Pick<PluginPayload, "manifest" | "code">): PluginDefinition {
     const module = { exports: {} as any };
     // Held to the permissions it declares, in its own copy of the API and its network globals (guard.ts)
     const guard = new PluginGuard(manifest);
@@ -112,6 +112,61 @@ function evaluate({ manifest, code }: PluginPayload): PluginDefinition {
     const definition = module.exports?.default ?? module.exports;
     if (!definition || typeof definition !== "object") throw new Error("Plugin has no default export");
     return definition;
+}
+
+interface Deferred {
+    code?: string;
+    definition?: PluginDefinition;
+    evaluated: boolean;
+}
+const deferred = new WeakMap<PluginState, Deferred>();
+
+/**
+ * A plugin's code and definition, read on first use rather than when it loads: most installed plugins
+ * are off, and evaluating them all at every start cost more than anything else plugins did then. Code
+ * the boot data left out (main/plugins.ts getBootPlugins) comes from main. Turning a plugin on reads
+ * its definition (enablePatches), and so does anything showing its settings or permissions. Safe mode
+ * never evaluates. Assigning either one keeps what's assigned.
+ */
+function defer(state: PluginState, code: string | undefined) {
+    const lazy: Deferred = { code, evaluated: false };
+    deferred.set(state, lazy);
+    // Not enumerable: spreading a state (publicState) doesn't evaluate it
+    Object.defineProperties(state, {
+        code: {
+            configurable: true,
+            get: () => lazy.code ??= Native.pluginCode?.(state.manifest.id) ?? undefined,
+            set: (value: string | undefined) => void (lazy.code = value),
+        },
+        definition: {
+            configurable: true,
+            get: () => {
+                if (!lazy.evaluated && !SafeMode.active) {
+                    lazy.evaluated = true;
+                    lazy.definition = evaluateDeferred(state);
+                }
+                return lazy.definition;
+            },
+            set: (value: PluginDefinition | undefined) => {
+                lazy.evaluated = true;
+                lazy.definition = value;
+            },
+        },
+    });
+}
+
+function evaluateDeferred(state: PluginState) {
+    const manifest = rawManifests.get(state) ?? state.manifest;
+    try {
+        const { code } = state;
+        if (code === undefined) throw new Error(`${manifest.id}'s code isn't available`);
+        return evaluate({ manifest, code });
+    } catch (err) {
+        logger.error(`Failed to evaluate ${manifest.id}`, err);
+        state.error = String(err);
+        // Possibly read while React renders: listeners hear about it after
+        queueMicrotask(emit);
+    }
 }
 
 function patchesSignature(patches: SourcePatch[] | undefined) {
@@ -228,33 +283,21 @@ function stop(state: PluginState) {
     state.running = false;
 }
 
-function load(payload: PluginPayload): PluginState {
+function load(payload: BootPlugin): PluginState {
     const state: PluginState = {
         manifest: payload.manifest,
         source: payload.source,
-        code: payload.code,
         running: false,
         needsReload: false,
         patchesRegistered: false,
     };
     setManifest(state, payload.manifest);
     state.pulled = pullOf(state);
-
-    // Safe mode lists plugins so they can be turned off, but never runs their code, not even top-level
-    if (SafeMode.active) {
-        plugins.set(payload.manifest.id, state);
-        return state;
-    }
-
-    try {
-        state.definition = evaluate(payload);
-    } catch (err) {
-        logger.error(`Failed to evaluate ${payload.manifest.id}`, err);
-        state.error = String(err);
-    }
-
+    defer(state, payload.code);
     plugins.set(payload.manifest.id, state);
-    if (shouldRun(state)) enablePatches(state);
+    // Evaluated now, before Discord's code, so its patches apply as modules first load. Safe mode lists
+    // plugins so they can be turned off, but never runs their code, not even top-level.
+    if (!SafeMode.active && shouldRun(state)) enablePatches(state);
     return state;
 }
 
@@ -281,6 +324,17 @@ function upsert(payload: PluginPayload) {
     }
 
     stop(previous);
+    if (!enabled && !previous.patchesRegistered) {
+        // Nothing of it runs: the new code is evaluated once something needs it, like at boot
+        setManifest(previous, payload.manifest);
+        defer(previous, payload.code);
+        previous.error = undefined;
+        previous.pulled = pulled;
+        takeHotfix(previous, hotfixOf(previous));
+        logger.info(`Hot reloaded ${payload.manifest.name}`);
+        return emit();
+    }
+
     const sameShape = patchesSignature(patchesOf(previous));
     const hadPatches = previous.patchesRegistered;
 
@@ -356,8 +410,8 @@ async function applyEnabled(state: PluginState, enabled: boolean) {
 }
 
 export const PluginManager = {
-    /** Evaluate every plugin and register source patches of enabled ones. Runs before Discord's code. */
-    boot(payloads: PluginPayload[], pulled: PulledPlugins = {}, fixes: Hotfix[] = []) {
+    /** Evaluate enabled plugins and register their source patches. Runs before Discord's code. */
+    boot(payloads: BootPlugin[], pulled: PulledPlugins = {}, fixes: Hotfix[] = []) {
         pulls = pulled;
         // Before any patch registers, so fixed patches apply as Discord's modules first load
         hotfixes = fixes;
@@ -495,8 +549,9 @@ export const PluginManager = {
 export type PublicPluginState = Omit<PluginState, "ctx" | "definition" | "code"> & { evaluated: boolean; };
 const publicState = (state: PluginState | undefined): PublicPluginState | undefined => {
     if (!state) return undefined;
-    const { ctx: _ctx, definition: _definition, code: _code, ...rest } = state;
-    return { ...rest, evaluated: !!_definition };
+    // Code and definition aren't enumerable (defer): the spread leaves them out without evaluating anything
+    const { ctx: _ctx, ...rest } = state;
+    return { ...rest, evaluated: !!deferred.get(state)?.definition };
 };
 
 /**

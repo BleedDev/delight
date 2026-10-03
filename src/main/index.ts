@@ -14,7 +14,7 @@ import { setLocale } from "./locale";
 import { DATA_DIR, PLUGINS_DIR, QUICK_CSS_FILE, THEMES_DIR } from "./paths";
 import { persistAcrossUpdates } from "./persist";
 import { initIdle, relaunch } from "./idle";
-import { applyChromiumSwitches, askToEnable, enablesNeedingConsent, getPluginPayloads, initPlugins } from "./plugins";
+import { applyChromiumSwitches, askToEnable, enablesNeedingConsent, getBootPlugins, initPlugins } from "./plugins";
 import { currentHotfixes, currentPulls, initReports } from "./reports";
 import { SafeMode } from "./safeMode";
 import { saveSettings, settings } from "./settings";
@@ -63,7 +63,7 @@ function registerIpc() {
             version: EVI_VERSION,
             dataDir: DATA_DIR,
             settings,
-            plugins: getPluginPayloads(),
+            plugins: getBootPlugins(),
             quickCss: readQuickCss(),
             themes: getThemePayloads(),
             safeMode: SafeMode.info,

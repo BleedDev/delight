@@ -30,6 +30,8 @@ export const IPC = {
     PLUGIN_NATIVE_CALL: "evi:plugin-native-call",
     /** start / stop a plugin's native module */
     PLUGIN_NATIVE_STATE: "evi:plugin-native-state",
+    /** sync: a plugin's renderer code, for one the boot data left it out of (BootPlugin) */
+    PLUGIN_CODE: "evi:plugin-code",
     /** main -> renderer: a theme file was added, changed or removed on disk */
     THEME_CHANGED: "evi:theme-changed",
     /** download a theme from an https URL into the themes folder */
@@ -211,6 +213,9 @@ export interface PluginPayload {
     source: "user" | "dev";
 }
 
+/** A plugin as the boot data has it: without its code when it doesn't run at boot, fetched once it's needed */
+export type BootPlugin = Omit<PluginPayload, "code"> & { code?: string; };
+
 export type PluginChange =
     | { type: "upsert"; plugin: PluginPayload; }
     | { type: "remove"; id: string; };
@@ -333,7 +338,7 @@ export interface BootData {
     version: string;
     dataDir: string;
     settings: EviSettings;
-    plugins: PluginPayload[];
+    plugins: BootPlugin[];
     quickCss: string;
     themes: ThemePayload[];
     /** Set when this start is in safe mode: no plugins, themes or Quick CSS */
