@@ -389,7 +389,8 @@ export default definePlugin({
             type: "boolean",
             get label() { return t("settings.chat"); },
             get description() { return t("settings.chat.description"); },
-            default: true,
+            // Off until it stops pulling the chat back while you scroll up (2.2.0 had it on)
+            default: false,
         },
         members: {
             type: "boolean",

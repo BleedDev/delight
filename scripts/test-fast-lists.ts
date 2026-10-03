@@ -414,7 +414,7 @@ check("members: Discord's virtualized list leaves nothing far to skip", r.member
 check("members: the plugin never writes the scroll position", r.pluginScrollWritesWithMembers === 0, r.pluginScrollWritesWithMembers);
 check("re-attaches when Discord rebuilds the sidebar", r.reattached);
 check("chat: skipping far messages makes a relayout much cheaper", gain.far > 100 && gain.afterMs < gain.beforeMs / 2, gain);
-check("chat is on by default, the member list off", gain.defaults.chat === true && gain.defaults.members === false, gain.defaults);
+check("chat and the member list are off by default", gain.defaults.chat === false && gain.defaults.members === false, gain.defaults);
 check("a screen reader turning on brings every row back within a second", r.beforeAssistive.far > 0 && r.withAssistive.rows === 0 && r.withAssistive.far === 0, { before: r.beforeAssistive, with: r.withAssistive });
 check("and turning it off skips far rows again", r.afterAssistive.far > 0, r.afterAssistive);
 check("disabling leaves no trace", r.afterDisable.rows === 0 && r.afterDisable.far === 0 && r.styleRemoved, r.afterDisable);
