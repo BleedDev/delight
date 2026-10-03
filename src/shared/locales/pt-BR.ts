@@ -1500,4 +1500,7 @@ export const ptBR = {
     "perf.restart.settingHint": "Só depois de 30 minutos ausente e com o Discord aberto há uma hora, nunca durante uma chamada ou transmissão, e no máximo uma vez por dia. Ele abre de novo no mesmo canal, sem roubar o foco.",
     "perf.restart.limit": "Memória demais",
     "perf.restart.limitHint": "Quando a janela do Discord usa mais que isso.",
+    "perf.gameMode.title": "Modo de jogo",
+    "perf.gameMode.switch": "Usar o modo de jogo do Discord",
+    "perf.gameMode.hint": "Enquanto você joga e o Discord não está em primeiro plano, o Discord desenha a 10 quadros por segundo e pausa GIFs, emojis animados e figurinhas até você voltar. Ele fica desligado enquanto você está em um canal de voz ou chamada, para que transmissões e câmeras continuem fluidas. O Discord criou, mas ainda não ativou para todo mundo.",
 } satisfies Translation;

@@ -40,11 +40,22 @@ function tick() {
     Native.sendCrashBreadcrumb?.(breadcrumb);
 }
 
+let started = false;
+
+/** Hidden, the page renders nothing and plugins mostly wait: the breadcrumb sent on hiding holds */
+function follow() {
+    clearInterval(timer);
+    timer = undefined;
+    tick();
+    if (!document.hidden) timer = setInterval(tick, BREADCRUMB_MS);
+}
+
 export const CrashDetective = {
     /** Starts the breadcrumbs. Safe mode runs no plugins, so there's nothing to report. */
     start() {
-        if (timer || SafeMode.active) return;
-        tick();
-        timer = setInterval(tick, BREADCRUMB_MS);
+        if (started || SafeMode.active) return;
+        started = true;
+        follow();
+        document.addEventListener("visibilitychange", follow);
     },
 };

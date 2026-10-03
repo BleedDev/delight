@@ -1500,4 +1500,7 @@ export const tr = {
     "perf.restart.settingHint": "Yalnızca 30 dakikadır uzaktaysan ve Discord bir saattir açıksa, asla bir arama ya da yayın sırasında değil ve günde en fazla bir kez. Aynı kanalda, odağı çalmadan yeniden açılır.",
     "perf.restart.limit": "Çok fazla bellek",
     "perf.restart.limitHint": "Discord’un penceresi bundan fazlasını kullandığında.",
+    "perf.gameMode.title": "Oyun Modu",
+    "perf.gameMode.switch": "Discord’un Oyun Modunu kullan",
+    "perf.gameMode.hint": "Oyun oynarken Discord önde değilse, Discord saniyede 10 kare çizer ve sen dönene kadar GIF’leri, animasyonlu emojileri ve çıkartmaları duraklatır. Bir ses kanalında veya aramadayken kapalı kalır, böylece yayınlar ve kameralar akıcı kalır. Discord bunu yaptı ama henüz herkes için açmadı.",
 } satisfies Translation;

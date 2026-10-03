@@ -8,6 +8,7 @@ import { pullFor } from "@shared/pulls";
 import { Backup } from "./backup";
 import { CrashDetective } from "./crashDetective";
 import { Developer } from "./developer";
+import { GameMode, installGameMode, startGameMode } from "./gameMode";
 import { installCssFixes, warmUiFonts } from "./cssFixes";
 import { I18n } from "./i18n";
 import { startIdleReports } from "./idle";
@@ -28,6 +29,7 @@ import { Updates } from "./updates";
 import { Wallpaper } from "./wallpaper";
 import { QuickCss } from "./styles";
 import { Themes } from "./themes";
+import { installTypingDots, TypingDots } from "./typingDots";
 import { registerToolkitPatches, Toolkit } from "./toolkit";
 import { installLayerStyles } from "./toolkit/layer";
 import { renderPanelSlot } from "./toolkit/panel";
@@ -84,6 +86,10 @@ const Evi = {
     $: PluginManager.self,
     /** What the user panel calls for plugins' switches (toolkit/panel.tsx) */
     panelSlot: renderPanelSlot,
+    /** What Discord's patched typing indicator draws its dots with (typingDots.tsx) */
+    typingDots: TypingDots,
+    /** What Discord's patched GameModeStore asks (gameMode.ts) */
+    gameMode: GameMode,
 };
 
 function boot() {
@@ -125,6 +131,11 @@ function boot() {
     if (!SafeMode.active) registerToolkitPatches(data.plugins.filter(runs).map(p => p.code ?? ""));
     // Before Discord's first module runs: patches only search modules the saved index can't answer for
     if (!SafeMode.active) startFindCache(data.findCache, Native.saveFindCache);
+    // Fixes to Discord's own rendering waste, for everyone
+    if (!SafeMode.active) {
+        installTypingDots();
+        installGameMode();
+    }
     PluginManager.boot(data.plugins, data.pulled, data.hotfixes);
     installHotkey();
     installSettingsEntry();
@@ -137,6 +148,7 @@ function boot() {
             startBadges();
             startAccountSync();
             startPluginShare();
+            startGameMode();
         }
         // Even in safe mode: a new version may be the fix
         startUpdateChecks();

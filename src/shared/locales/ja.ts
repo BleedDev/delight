@@ -1497,4 +1497,7 @@ export const ja = {
     "perf.restart.settingHint": "30 分離席していて Discord を開いてから 1 時間たったときだけ、通話中や配信中は行わず、1 日 1 回までです。同じチャンネルで、フォーカスを奪わずに開き直します。",
     "perf.restart.limit": "使いすぎの目安",
     "perf.restart.limitHint": "Discord のウィンドウがこれより多く使ったとき。",
+    "perf.gameMode.title": "ゲームモード",
+    "perf.gameMode.switch": "Discordのゲームモードを使う",
+    "perf.gameMode.hint": "ゲーム中にDiscordが前面にないとき、Discordは毎秒10フレームで描画し、戻るまでGIF、アニメーション絵文字、スタンプを一時停止します。ボイスチャンネルや通話中はオフのままなので、配信やカメラは滑らかなままです。Discordが作った機能ですが、まだ全員には有効になっていません。",
 } satisfies Translation;

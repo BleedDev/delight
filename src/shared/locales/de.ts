@@ -1500,4 +1500,7 @@ export const de = {
     "perf.restart.settingHint": "Erst wenn du 30 Minuten weg warst und Discord seit einer Stunde offen ist, nie während eines Anrufs oder Streams und höchstens einmal am Tag. Es öffnet sich wieder im selben Kanal, ohne sich in den Vordergrund zu drängen.",
     "perf.restart.limit": "Zu viel Speicher",
     "perf.restart.limitHint": "Wenn Discords Fenster mehr als das nutzt.",
+    "perf.gameMode.title": "Spielmodus",
+    "perf.gameMode.switch": "Discords Spielmodus verwenden",
+    "perf.gameMode.hint": "Während du spielst und Discord nicht im Vordergrund ist, zeichnet Discord 10 Bilder pro Sekunde und pausiert GIFs, animierte Emojis und Sticker, bis du zurückkommst. In einem Sprachkanal oder Anruf bleibt er aus, damit Streams und Kameras flüssig bleiben. Discord hat ihn gebaut, aber noch nicht für alle eingeschaltet.",
 } satisfies Translation;

@@ -1500,4 +1500,7 @@ export const fr = {
     "perf.restart.settingHint": "Seulement après 30 minutes d’absence et une heure d’ouverture de Discord, jamais pendant un appel ou un stream, et au plus une fois par jour. Il se rouvre sur le même salon, sans te voler le focus.",
     "perf.restart.limit": "Trop de mémoire",
     "perf.restart.limitHint": "Quand la fenêtre de Discord utilise plus que ça.",
+    "perf.gameMode.title": "Mode jeu",
+    "perf.gameMode.switch": "Utiliser le mode jeu de Discord",
+    "perf.gameMode.hint": "Pendant que tu joues et que Discord n’est pas au premier plan, Discord s’affiche à 10 images par seconde et met en pause les GIF, les emojis animés et les stickers jusqu’à ton retour. Il reste désactivé pendant que tu es dans un salon vocal ou un appel, pour que les streams et les caméras restent fluides. Discord l’a créé, mais ne l’a pas encore activé pour tout le monde.",
 } satisfies Translation;

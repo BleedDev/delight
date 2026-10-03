@@ -1502,4 +1502,7 @@ export const pl = {
     "perf.restart.settingHint": "Tylko gdy nie ma cię od 30 minut, a Discord jest otwarty od godziny, nigdy podczas rozmowy ani streamu i najwyżej raz dziennie. Otwiera się ponownie na tym samym kanale, nie zabierając fokusu.",
     "perf.restart.limit": "Za dużo pamięci",
     "perf.restart.limitHint": "Gdy okno Discorda zużywa więcej niż tyle.",
+    "perf.gameMode.title": "Tryb gry",
+    "perf.gameMode.switch": "Używaj trybu gry Discorda",
+    "perf.gameMode.hint": "Gdy grasz, a Discord nie jest na pierwszym planie, Discord rysuje 10 klatek na sekundę i wstrzymuje GIF-y, animowane emoji i naklejki, dopóki nie wrócisz. Pozostaje wyłączony, gdy jesteś na kanale głosowym lub w rozmowie, żeby transmisje i kamery były płynne. Discord go stworzył, ale jeszcze nie włączył go dla wszystkich.",
 } satisfies Translation;
